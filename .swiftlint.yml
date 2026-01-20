@@ -1,0 +1,125 @@
+# SwiftLint Configuration for Screenize
+# macOS screen recording app with Korean comments
+
+# Paths to lint
+included:
+  - Screenize
+
+# Paths to exclude
+excluded:
+  - Screenize/Assets.xcassets
+  - .build
+  - DerivedData
+
+# Disabled rules
+disabled_rules:
+  - trailing_comma
+  - opening_brace
+  - todo
+  - cyclomatic_complexity
+
+# Opt-in rules
+opt_in_rules:
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - explicit_init
+  - fallthrough
+  - fatal_error_message
+  - first_where
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - literal_expression_end_indentation
+  - modifier_order
+  - overridden_super_call
+  - pattern_matching_keywords
+  - prefer_self_in_static_references
+  - prefer_zero_over_explicit_init
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - sorted_first_last
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+  - vertical_parameter_alignment_on_call
+  - yoda_condition
+
+# Rule configurations
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+  ignores_interpolated_strings: true
+
+file_length:
+  warning: 600
+  error: 1000
+
+type_body_length:
+  warning: 400
+  error: 600
+
+function_body_length:
+  warning: 80
+  error: 150
+
+type_name:
+  min_length: 2
+  max_length:
+    warning: 50
+    error: 60
+
+identifier_name:
+  min_length:
+    warning: 1
+  max_length:
+    warning: 50
+    error: 60
+  excluded:
+    - id
+    - x
+    - y
+    - i
+    - j
+    - dx
+    - dy
+    - dt
+
+function_parameter_count:
+  warning: 8
+  error: 12
+
+nesting:
+  type_level: 2
+  function_level: 5
+
+# Force cast/unwrap - warning only due to AXValue API requirements
+force_cast:
+  severity: warning
+
+force_try:
+  severity: error
+
+large_tuple:
+  warning: 4
+  error: 5
+
+trailing_whitespace:
+  ignores_empty_lines: true
+  ignores_comments: true
+
+vertical_whitespace:
+  max_empty_lines: 2
+
+colon:
+  apply_to_dictionaries: true
+
+# Reporter type
+reporter: xcode

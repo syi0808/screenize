@@ -1,0 +1,316 @@
+import SwiftUI
+import CoreGraphics
+
+/// Video preview view
+struct PreviewView: View {
+
+    // MARK: - Properties
+
+    /// Preview engine
+    @ObservedObject var previewEngine: PreviewEngine
+
+    /// Current time (two-way binding)
+    @Binding var currentTime: TimeInterval
+
+    /// Playback state
+    let isPlaying: Bool
+
+    /// Callback to toggle playback
+    var onPlayPauseToggle: (() -> Void)?
+
+    /// Seek callback
+    var onSeek: ((TimeInterval) async -> Void)?
+
+    // MARK: - State
+
+    @State private var showControls = true
+    @State private var controlsHideTimer: Timer?
+
+    // MARK: - Body
+
+    var body: some View {
+        GeometryReader { geometry in
+            let aspectRatio = previewEngine.videoAspectRatio
+            let containerSize = geometry.size
+
+            // Calculate video size to fit the container
+            let videoSize: CGSize = {
+                let containerAspect = containerSize.width / containerSize.height
+                if aspectRatio > containerAspect {
+                    // Wider than tall: fit by width
+                    let width = containerSize.width
+                    let height = width / aspectRatio
+                    return CGSize(width: width, height: height)
+                } else {
+                    // Taller than wide: fit by height
+                    let height = containerSize.height
+                    let width = height * aspectRatio
+                    return CGSize(width: width, height: height)
+                }
+            }()
+
+            ZStack {
+                // Background
+                Color.black
+
+                // Video frame
+                if let frame = previewEngine.currentFrame {
+                    frameView(frame, in: videoSize)
+                } else if previewEngine.isLoading {
+                    loadingView
+                } else {
+                    placeholderView
+                }
+
+                // Controls overlay
+                if showControls {
+                    controlsOverlay
+                }
+            }
+            .frame(width: videoSize.width, height: videoSize.height)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showControls.toggle()
+                }
+                resetControlsTimer()
+            }
+            .onHover { hovering in
+                if hovering {
+                    showControls = true
+                    resetControlsTimer()
+                }
+            }
+        }
+    }
+
+    // MARK: - Frame View
+
+    private func frameView(_ frame: CGImage, in size: CGSize) -> some View {
+        Image(frame, scale: 1, label: Text("Preview"))
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+    }
+
+    // MARK: - Loading View
+
+    private var loadingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .scaleEffect(1.5)
+
+            Text("Loading preview...")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Placeholder View
+
+    private var placeholderView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "film")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary.opacity(0.5))
+
+            Text("No preview available")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Controls Overlay
+
+    private var controlsOverlay: some View {
+        VStack {
+            Spacer()
+
+            // Bottom control bar
+            VStack(spacing: 8) {
+                // Progress bar
+                progressBar
+
+                // Control buttons
+                HStack(spacing: 16) {
+                    // Play/Pause
+                    Button {
+                        onPlayPauseToggle?()
+                    } label: {
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 20))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.white)
+
+                    // Current time display
+                    Text(formatTime(currentTime))
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.white)
+
+                    Text("/")
+                        .foregroundColor(.white.opacity(0.5))
+
+                    Text(formatTime(previewEngine.duration))
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+
+                    Spacer()
+
+                    // Frame display
+                    Text("Frame \(previewEngine.currentFrameNumber)")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+                .padding(.horizontal, 12)
+            }
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.7)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+        }
+        .transition(.opacity)
+    }
+
+    // MARK: - Progress Bar
+
+    private var progressBar: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.white.opacity(0.3))
+                    .frame(height: 4)
+
+                // Progress fill
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.accentColor)
+                    .frame(width: geometry.size.width * previewEngine.progress, height: 4)
+
+                // Draggable hit area
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let progress = max(0, min(1, value.location.x / geometry.size.width))
+                                let newTime = progress * previewEngine.duration
+                                currentTime = newTime
+                            }
+                            .onEnded { value in
+                                let progress = max(0, min(1, value.location.x / geometry.size.width))
+                                let newTime = progress * previewEngine.duration
+                                Task {
+                                    await onSeek?(newTime)
+                                }
+                            }
+                    )
+            }
+        }
+        .frame(height: 20)
+        .padding(.horizontal, 12)
+    }
+
+    // MARK: - Helpers
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let totalSeconds = Int(time)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        let frames = Int((time - Double(totalSeconds)) * 60)
+
+        return String(format: "%02d:%02d:%02d", minutes, seconds, frames)
+    }
+
+    private func resetControlsTimer() {
+        controlsHideTimer?.invalidate()
+
+        if !isPlaying {
+            return
+        }
+
+        controlsHideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showControls = false
+            }
+        }
+    }
+}
+
+// MARK: - Mini Preview (for timeline hover)
+
+/// Mini preview shown on timeline hover
+struct MiniPreviewView: View {
+
+    let frame: CGImage?
+    let time: TimeInterval
+
+    var body: some View {
+        VStack(spacing: 4) {
+            if let frame = frame {
+                Image(frame, scale: 1, label: Text("Mini Preview"))
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 160, height: 90)
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 160, height: 90)
+            }
+
+            Text(formatTime(time))
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(.secondary)
+        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(nsColor: .windowBackgroundColor))
+                .shadow(color: .black.opacity(0.2), radius: 8)
+        )
+    }
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let totalSeconds = Int(time)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    struct PreviewWrapper: View {
+        @StateObject private var engine = PreviewEngine()
+        @State private var currentTime: TimeInterval = 5.0
+
+        var body: some View {
+            PreviewView(
+                previewEngine: engine,
+                currentTime: $currentTime,
+                isPlaying: false,
+                onPlayPauseToggle: {
+                    print("Toggle playback")
+                },
+                onSeek: { time in
+                    print("Seek to \(time)")
+                }
+            )
+            .frame(width: 640, height: 360)
+            .padding()
+        }
+    }
+
+    return PreviewWrapper()
+}
