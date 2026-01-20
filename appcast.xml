@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>Screenize Updates</title>
+        <link>https://github.com/syi0808/screenize/releases</link>
+        <description>Screenize app updates</description>
+        <language>en</language>
+
+        <item>
+            <title>Version 0.1.1</title>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:releaseNotesLink>
+                https://github.com/syi0808/screenize/releases/tag/v0.1.1
+            </sparkle:releaseNotesLink>
+            <pubDate>Fri, 30 Jan 2026 22:51:22 +0900</pubDate>
+            <enclosure
+                url="https://github.com/syi0808/screenize/releases/download/v0.1.1/Screenize.dmg"
+                sparkle:edSignature="lWgOaiC7UDvNh1V2uZGI+vBYAavczhcaVHgm0EygN5USjt9FhhmW+uF0DGWw5KU6hVi+9L3PW+i0QfS8RDHXDA=="
+                length="2662350"
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+        </item>
+    </channel>
+</rss>

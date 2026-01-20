@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenize — Open Source Screen Recording for macOS</title>
+  <meta name="description" content="Free, open-source macOS screen recording with algorithm-driven smart zoom, click effects, timeline editing, and professional export. Built with pure Apple frameworks.">
+  <meta name="keywords" content="screen recording, macOS, open source, auto zoom, click effects, timeline editor, screencast, video capture">
+  <meta name="author" content="Sung YeIn">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Screenize — Open Source Screen Recording for macOS">
+  <meta property="og:description" content="Algorithm-driven smart zoom, click effects, and timeline editing. Free and open source.">
+  <meta property="og:image" content="https://syi0808.github.io/screenize/images/og-image.png">
+  <meta property="og:url" content="https://syi0808.github.io/screenize/">
+  <meta property="og:site_name" content="Screenize">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Screenize — Open Source Screen Recording for macOS">
+  <meta name="twitter:description" content="Algorithm-driven smart zoom, click effects, and timeline editing. Free and open source.">
+  <meta name="twitter:image" content="https://syi0808.github.io/screenize/images/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="images/icon-256.png">
+  <link rel="apple-touch-icon" href="images/icon-256.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200;12..96,400;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Screenize",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "macOS 13.0+",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "url": "https://github.com/syi0808/screenize",
+    "author": { "@type": "Person", "name": "Sung YeIn", "url": "https://github.com/syi0808" }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ============================================ -->
+  <!-- NAVIGATION                                   -->
+  <!-- ============================================ -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#" class="nav__brand">
+        <img src="images/icon-256.png" alt="Screenize" class="nav__icon" width="32" height="32">
+        <span class="nav__wordmark">Screenize</span>
+      </a>
+      <nav class="nav__links" id="navLinks">
+        <a href="#features" class="nav__link">Features</a>
+        <a href="#how-it-works" class="nav__link">How It Works</a>
+        <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener" class="nav__link nav__link--github">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+      </nav>
+      <button class="nav__hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============================================ -->
+    <!-- HERO                                         -->
+    <!-- ============================================ -->
+    <section class="hero" id="hero">
+      <div class="hero__glow hero__glow--1"></div>
+      <div class="hero__glow hero__glow--2"></div>
+      <div class="hero__grid-bg"></div>
+
+      <div class="hero__content">
+        <h1 class="hero__title anim-fade-in anim-delay-1">
+          Beautiful screen<br>recordings.<br>
+          <span class="hero__title--accent">Zero effort.</span>
+        </h1>
+        <p class="hero__sub anim-fade-in anim-delay-2">
+          A free, open-source macOS app that transforms raw screen captures
+          into polished videos with algorithm-driven smart zoom, click effects,
+          and timeline editing.
+        </p>
+        <div class="hero__ctas anim-fade-in anim-delay-3">
+          <a href="https://github.com/syi0808/screenize/releases/latest/download/Screenize.dmg" class="btn btn--primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download for macOS
+          </a>
+          <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener" class="btn btn--ghost">
+            View on GitHub
+          </a>
+        </div>
+        <p class="hero__req anim-fade-in anim-delay-3">Requires macOS 13.0 or later</p>
+      </div>
+
+      <img src="./assets/demo.gif" alt="Screenize Demo" class="hero__visual anim-fade-in anim-delay-4" style="border-radius: 16px; aspect-ratio: 820/533; width: 820px; max-width: 100%;" />
+    </section>
+
+    <!-- ============================================ -->
+    <!-- VALUE PROPOSITIONS                           -->
+    <!-- ============================================ -->
+    <section class="values" id="features">
+      <div class="container">
+        <div class="values__grid">
+
+          <div class="value-card reveal">
+            <div class="value-card__icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </div>
+            <h3 class="value-card__title">Algorithm-Driven Smart Zoom</h3>
+            <p class="value-card__desc">
+              Analyzes mouse movements, click patterns, and UI&nbsp;element boundaries
+              to auto-generate zoom keyframes. No manual work needed.
+            </p>
+          </div>
+
+          <div class="value-card reveal" style="--reveal-delay: 0.1s">
+            <div class="value-card__icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M6 10h2m3 0h2m3 0h2"/></svg>
+            </div>
+            <h3 class="value-card__title">Professional Timeline</h3>
+            <p class="value-card__desc">
+              Multi-track editor with Transform, Ripple, Cursor &amp; Keystroke tracks.
+              Full easing curve support for cinematic motion.
+            </p>
+          </div>
+
+          <div class="value-card reveal" style="--reveal-delay: 0.2s">
+            <div class="value-card__icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            </div>
+            <h3 class="value-card__title">Free &amp; Open Source</h3>
+            <p class="value-card__desc">
+              Apache 2.0 licensed. No subscriptions, no telemetry, no&nbsp;vendor lock&#8209;in.
+              Built with pure Apple frameworks.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- FEATURE SHOWCASE                             -->
+    <!-- ============================================ -->
+    <section class="features">
+      <div class="container">
+
+        <!-- Feature 1 -->
+        <div class="feature reveal">
+          <div class="feature__visual">
+            <div class="macos-window macos-window--sm">
+              <div class="macos-window__bar">
+                <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+              </div>
+              <div class="macos-window__body">
+                <div class="placeholder-zoom">
+                  <div class="placeholder-zoom__frame"></div>
+                  <div class="placeholder-zoom__lens"></div>
+                  <div class="placeholder-zoom__lines">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feature__text">
+            <span class="feature__label">Intelligent Recording</span>
+            <h2 class="feature__title">Smart Auto-Zoom</h2>
+            <p class="feature__desc">
+              Algorithms detect mouse movement patterns,
+              UI element boundaries, and scene transitions. Zoom keyframes
+              are generated automatically — focusing in when you click,
+              pulling out during navigation. Every keyframe is fully editable.
+            </p>
+            <span class="feature__tech">Activity Clustering · Session Analysis · Context-Aware Zoom</span>
+          </div>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature feature--reverse reveal">
+          <div class="feature__visual">
+            <div class="macos-window macos-window--sm">
+              <div class="macos-window__bar">
+                <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+              </div>
+              <div class="macos-window__body">
+                <div class="placeholder-timeline">
+                  <div class="placeholder-timeline__ruler"></div>
+                  <div class="placeholder-timeline__track" style="--track-color: var(--accent-start)">
+                    <span class="placeholder-timeline__kf" style="left:12%"></span>
+                    <span class="placeholder-timeline__kf" style="left:35%"></span>
+                    <span class="placeholder-timeline__kf" style="left:68%"></span>
+                    <span class="placeholder-timeline__kf" style="left:88%"></span>
+                  </div>
+                  <div class="placeholder-timeline__track" style="--track-color: #ef6461">
+                    <span class="placeholder-timeline__kf" style="left:20%"></span>
+                    <span class="placeholder-timeline__kf" style="left:55%"></span>
+                    <span class="placeholder-timeline__kf" style="left:78%"></span>
+                  </div>
+                  <div class="placeholder-timeline__track" style="--track-color: #60d394">
+                    <span class="placeholder-timeline__kf" style="left:8%"></span>
+                    <span class="placeholder-timeline__kf" style="left:42%"></span>
+                    <span class="placeholder-timeline__kf" style="left:92%"></span>
+                  </div>
+                  <div class="placeholder-timeline__track" style="--track-color: #ffd166">
+                    <span class="placeholder-timeline__kf" style="left:30%"></span>
+                    <span class="placeholder-timeline__kf" style="left:62%"></span>
+                  </div>
+                  <div class="placeholder-timeline__playhead"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feature__text">
+            <span class="feature__label">Precision Editing</span>
+            <h2 class="feature__title">Multi-Track Timeline</h2>
+            <p class="feature__desc">
+              Four dedicated tracks — Transform, Ripple, Cursor, Keystroke — each
+              with independent keyframes and easing curves. Add, move, or delete keyframes.
+              Preview changes in real time before export.
+            </p>
+            <span class="feature__tech">Transform · Ripple · Cursor · Keystroke Tracks</span>
+          </div>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature reveal">
+          <div class="feature__visual">
+            <div class="macos-window macos-window--sm">
+              <div class="macos-window__bar">
+                <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+              </div>
+              <div class="macos-window__body">
+                <div class="placeholder-ripple">
+                  <div class="placeholder-ripple__ring placeholder-ripple__ring--1"></div>
+                  <div class="placeholder-ripple__ring placeholder-ripple__ring--2"></div>
+                  <div class="placeholder-ripple__ring placeholder-ripple__ring--3"></div>
+                  <div class="placeholder-ripple__dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feature__text">
+            <span class="feature__label">Visual Feedback</span>
+            <h2 class="feature__title">Click Effects</h2>
+            <p class="feature__desc">
+              Every mouse click triggers a configurable ripple animation.
+              Color-coded by type — left clicks, right clicks, double-clicks —
+              each distinguishable at a glance. Adjust color, intensity, and duration.
+            </p>
+            <span class="feature__tech">Left · Right · Double Click · Custom Colors</span>
+          </div>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature feature--reverse reveal">
+          <div class="feature__visual">
+            <div class="macos-window macos-window--sm">
+              <div class="macos-window__bar">
+                <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+              </div>
+              <div class="macos-window__body">
+                <div class="placeholder-keystroke">
+                  <div class="placeholder-keystroke__keys">
+                    <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feature__text">
+            <span class="feature__label">Keyboard Display</span>
+            <h2 class="feature__title">Keystroke Overlays</h2>
+            <p class="feature__desc">
+              Keyboard shortcuts are detected and overlaid on screen automatically.
+              When you press ⌘C or ⇧⌘Z, it appears with customizable style,
+              duration, fade timing, and position.
+            </p>
+            <span class="feature__tech">Auto-Detection · Shortcuts Only · Repeat Filtering</span>
+          </div>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature reveal">
+          <div class="feature__visual">
+            <div class="macos-window macos-window--sm">
+              <div class="macos-window__bar">
+                <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+              </div>
+              <div class="macos-window__body">
+                <div class="placeholder-style">
+                  <div class="placeholder-style__cursors">
+                    <svg class="placeholder-style__cursor" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M5 3l14 8-6.5 1.5L11 19z"/></svg>
+                    <svg class="placeholder-style__cursor" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                    <svg class="placeholder-style__cursor" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M9 3h1v18H9z"/></svg>
+                  </div>
+                  <div class="placeholder-style__gradients">
+                    <span style="background:linear-gradient(135deg,#667eea,#764ba2)"></span>
+                    <span style="background:linear-gradient(135deg,#f093fb,#f5576c)"></span>
+                    <span style="background:linear-gradient(135deg,#4facfe,#00f2fe)"></span>
+                    <span style="background:linear-gradient(135deg,#43e97b,#38f9d7)"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feature__text">
+            <span class="feature__label">Aesthetics</span>
+            <h2 class="feature__title">Cursors &amp; Backgrounds</h2>
+            <p class="feature__desc">
+              Replace the system cursor with 7 built-in styles at adjustable scale.
+              Add gradient, solid color, or image backgrounds with configurable
+              padding, corner radius, and drop shadow.
+            </p>
+            <span class="feature__tech">7 Cursor Styles · Gradient Presets · Shadow Control</span>
+          </div>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature feature--reverse reveal">
+          <div class="feature__visual">
+            <div class="macos-window macos-window--sm">
+              <div class="macos-window__bar">
+                <span class="dot dot--red"></span><span class="dot dot--yellow"></span><span class="dot dot--green"></span>
+              </div>
+              <div class="macos-window__body">
+                <div class="placeholder-export">
+                  <div class="placeholder-export__codec">
+                    <span class="placeholder-export__tag placeholder-export__tag--active">H.264</span>
+                    <span class="placeholder-export__tag">HEVC</span>
+                    <span class="placeholder-export__tag">ProRes 422</span>
+                    <span class="placeholder-export__tag">ProRes 4444</span>
+                  </div>
+                  <div class="placeholder-export__res">
+                    <span>4K</span>
+                    <span>QHD</span>
+                    <span class="placeholder-export__res--active">1080p</span>
+                    <span>720p</span>
+                  </div>
+                  <div class="placeholder-export__bar">
+                    <div class="placeholder-export__progress"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="feature__text">
+            <span class="feature__label">Output</span>
+            <h2 class="feature__title">Professional Export</h2>
+            <p class="feature__desc">
+              Export to MP4 or MOV with H.264, H.265, ProRes 422, or ProRes 4444.
+              Up to 4K UHD at 24, 30, or 60 fps. Quality presets from Low to Original
+              with real-time file size estimation.
+            </p>
+            <span class="feature__tech">MP4 · MOV · Up to 4K · 24–60fps</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- HOW IT WORKS                                 -->
+    <!-- ============================================ -->
+    <section class="steps" id="how-it-works">
+      <div class="container">
+        <h2 class="section-title reveal">How It Works</h2>
+
+        <div class="steps__grid">
+
+          <div class="step reveal">
+            <div class="step__number">01</div>
+            <h3 class="step__title">Record</h3>
+            <p class="step__desc">
+              Select a screen or window. Screenize captures video alongside
+              mouse positions, clicks, and keyboard shortcuts automatically.
+            </p>
+          </div>
+
+          <div class="step__connector reveal" style="--reveal-delay: 0.1s">
+            <svg viewBox="0 0 80 2" fill="none"><line x1="0" y1="1" x2="80" y2="1" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/></svg>
+          </div>
+
+          <div class="step reveal" style="--reveal-delay: 0.15s">
+            <div class="step__number">02</div>
+            <h3 class="step__title">Edit</h3>
+            <p class="step__desc">
+              Review auto-generated keyframes in the timeline editor.
+              Adjust zoom, effects, cursors, and backgrounds.
+            </p>
+          </div>
+
+          <div class="step__connector reveal" style="--reveal-delay: 0.25s">
+            <svg viewBox="0 0 80 2" fill="none"><line x1="0" y1="1" x2="80" y2="1" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"/></svg>
+          </div>
+
+          <div class="step reveal" style="--reveal-delay: 0.3s">
+            <div class="step__number">03</div>
+            <h3 class="step__title">Export</h3>
+            <p class="step__desc">
+              Choose your codec, resolution, and quality.
+              Render the final video with all effects applied.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- OPEN SOURCE CTA                              -->
+    <!-- ============================================ -->
+    <section class="oss">
+      <div class="container">
+        <div class="oss__card reveal">
+          <h2 class="oss__title">Built in the open.<br>Contributions welcome.</h2>
+          <p class="oss__desc">
+            Screenize is open source under Apache 2.0.
+            Report issues, submit pull requests, or fork it to build your own version.
+          </p>
+          <div class="oss__links">
+            <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener" class="btn btn--primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              View Source
+            </a>
+            <a href="https://github.com/syi0808/screenize/issues" target="_blank" rel="noopener" class="btn btn--ghost">Report Issue</a>
+            <a href="https://github.com/syi0808/screenize/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" class="btn btn--ghost">Contributing</a>
+          </div>
+          <p class="oss__author">Created by <a href="https://github.com/syi0808" target="_blank" rel="noopener">Sung YeIn</a></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================ -->
+  <!-- FOOTER                                       -->
+  <!-- ============================================ -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__left">
+        <img src="images/icon-256.png" alt="" class="footer__icon" width="24" height="24">
+        <span class="footer__copy">&copy; 2026 Screenize. Apache 2.0 License.</span>
+      </div>
+      <div class="footer__right">
+        <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/syi0808/screenize/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/syi0808/screenize/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
