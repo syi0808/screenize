@@ -1,0 +1,51 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature. Please fill out the sections below.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Describe the problem or limitation you're experiencing.
+      placeholder: I want to add a watermark to my recordings, but there's currently no way to do that.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe how you'd like this feature to work.
+      placeholder: Add an option in export settings to specify a watermark image and its position.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any other approaches?
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: References
+      description: Attach any mockups, screenshots, or examples from other apps that illustrate your idea.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful.
+    validations:
+      required: false

@@ -1,0 +1,92 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the sections below as thoroughly as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: The app crashes when exporting a recording.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: List the steps to reproduce the issue.
+      placeholder: |
+        1. Launch the app
+        2. Start a screen recording
+        3. Stop the recording
+        4. Click the export button
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: The recorded video should be saved to the specified path.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: "The app crashes with the following error: ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Screen Recordings
+      description: If applicable, attach screenshots or screen recordings that demonstrate the issue.
+    validations:
+      required: false
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS Version
+      description: "e.g. macOS 14.2 (Sonoma)"
+      placeholder: macOS 14.2
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Screenize Version
+      description: "Found under Menu > Screenize > About Screenize."
+      placeholder: v0.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Crash Reports
+      description: Paste any relevant log output or crash reports here.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful.
+    validations:
+      required: false
