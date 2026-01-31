@@ -60,6 +60,7 @@ final class AppState: ObservableObject {
     private var durationTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     private var countdownPanel: CountdownPanel?
+    private var recordingFloatingPanel: RecordingFloatingPanel?
 
     // MARK: - Initialization
 
@@ -186,6 +187,7 @@ final class AppState: ObservableObject {
             recordingDuration = 0
             startDurationTimer()
             setupPreviewUpdates()
+            showRecordingFloatingPanel()
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
             recordingCoordinator = nil
@@ -199,6 +201,7 @@ final class AppState: ObservableObject {
         isRecording = false
         isPaused = false
         stopDurationTimer()
+        hideRecordingFloatingPanel()
 
         if let videoURL = await coordinator.stopRecording() {
             lastRecordingURL = videoURL
@@ -296,6 +299,19 @@ final class AppState: ObservableObject {
     private func showMainWindow() {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.windows.first { !($0 is NSPanel) }?.makeKeyAndOrderFront(nil)
+    }
+
+    // MARK: - Recording Floating Panel
+
+    private func showRecordingFloatingPanel() {
+        let panel = RecordingFloatingPanel(appState: self)
+        panel.show()
+        self.recordingFloatingPanel = panel
+    }
+
+    private func hideRecordingFloatingPanel() {
+        recordingFloatingPanel?.dismiss()
+        recordingFloatingPanel = nil
     }
 
     // MARK: - Project Navigation
