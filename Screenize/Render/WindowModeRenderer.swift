@@ -95,10 +95,19 @@ final class WindowModeRenderer {
         )
 
         // 4. Window effects (rounded corners + shadow)
+        // Scale corner radius and shadow radius by the same factor used in the transform
+        // so they remain visually consistent at all zoom levels
+        let availableWidth = outputSize.width - settings.padding * 2
+        let availableHeight = outputSize.height - settings.padding * 2
+        let scaleX = availableWidth / processedSourceSize.width
+        let scaleY = availableHeight / processedSourceSize.height
+        let baseScale = min(scaleX, scaleY)
+        let finalScale = baseScale * transform.zoom
+
         window = effectApplicator.apply(
             to: window,
-            cornerRadius: settings.cornerRadius,
-            shadowRadius: settings.shadowRadius,
+            cornerRadius: settings.cornerRadius * finalScale,
+            shadowRadius: settings.shadowRadius * finalScale,
             shadowOpacity: settings.shadowOpacity
         )
 
