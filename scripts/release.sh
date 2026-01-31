@@ -67,6 +67,12 @@ mkdir -p "$RELEASE_DIR"
 print_step "Updating Info.plist version to ${VERSION}..."
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION}" "$PROJECT_DIR/Screenize/Info.plist"
 
+# Increment build number (CFBundleVersion)
+CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PROJECT_DIR/Screenize/Info.plist")
+NEW_BUILD=$((CURRENT_BUILD + 1))
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${NEW_BUILD}" "$PROJECT_DIR/Screenize/Info.plist"
+print_step "Build number: ${CURRENT_BUILD} -> ${NEW_BUILD}"
+
 # Release build
 print_step "Performing Release build..."
 xcodebuild -project "$PROJECT_DIR/Screenize.xcodeproj" \

@@ -8,7 +8,7 @@
 
         <item>
             <title>Version 0.2.0</title>
-            <sparkle:version>1</sparkle:version>
+            <sparkle:version>2</sparkle:version>
             <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
             <sparkle:releaseNotesLink>
                 https://github.com/syi0808/screenize/releases/tag/v0.2.0
