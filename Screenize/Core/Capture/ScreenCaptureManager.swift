@@ -179,18 +179,11 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
             app.bundleIdentifier == Bundle.main.bundleIdentifier
         }
 
-        // Find the Dock app
-        let dockApp = content.applications.first { app in
-            app.bundleIdentifier == "com.apple.dock"
-        }
-
-        // Apps to exclude
+        // Apps to exclude (Screenize only — Dock must NOT be excluded
+        // because macOS renders the desktop wallpaper through com.apple.dock)
         var excludedApps: [SCRunningApplication] = []
         if let screenize = screenizeApp {
             excludedApps.append(screenize)
-        }
-        if let dock = dockApp {
-            excludedApps.append(dock)
         }
 
         // Exclude system UI windows (menu bar, control center, etc.) — compute for future use
