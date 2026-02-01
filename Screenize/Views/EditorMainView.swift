@@ -23,9 +23,6 @@ struct EditorMainView: View {
     /// Local event monitor for Delete/Backspace key
     @State private var deleteKeyMonitor: Any?
 
-    /// Show keyboard shortcuts help
-    @State private var showKeyboardShortcuts = false
-
     // MARK: - Initialization
 
     init(project: ScreenizeProject, projectURL: URL? = nil) {
@@ -146,12 +143,6 @@ struct EditorMainView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Do you want to save before starting a new recording?")
-        }
-        .sheet(isPresented: $showKeyboardShortcuts) {
-            KeyboardShortcutHelpView()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .showKeyboardShortcuts)) { _ in
-            showKeyboardShortcuts = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .editorUndo)) { _ in
             viewModel.undo()
@@ -281,6 +272,9 @@ struct EditorMainView: View {
                 Label("Export", systemImage: "square.and.arrow.up")
             }
             .buttonStyle(.borderedProminent)
+
+            // Keyboard shortcuts help
+            ShortcutHelpButton(context: .editor)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

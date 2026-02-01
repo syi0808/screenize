@@ -1,9 +1,35 @@
 import SwiftUI
 
+/// Context determines which shortcuts are shown
+enum ShortcutContext {
+    case welcome
+    case recording
+    case editor
+    case all
+}
+
 /// Keyboard shortcut help panel
 struct KeyboardShortcutHelpView: View {
 
     @Environment(\.dismiss) private var dismiss
+
+    let context: ShortcutContext
+
+    init(context: ShortcutContext = .all) {
+        self.context = context
+    }
+
+    /// Filtered categories based on context
+    private var filteredCategories: [ShortcutCategory] {
+        if context == .all {
+            return Self.categories
+        }
+        return Self.categories.compactMap { category in
+            let filtered = category.shortcuts.filter { $0.contexts.contains(context) }
+            guard !filtered.isEmpty else { return nil }
+            return ShortcutCategory(name: category.name, icon: category.icon, shortcuts: filtered)
+        }
+    }
 
     // MARK: - Body
 
@@ -35,7 +61,7 @@ struct KeyboardShortcutHelpView: View {
             // Shortcut list
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    ForEach(Self.categories) { category in
+                    ForEach(filteredCategories) { category in
                         shortcutSection(category)
                     }
                 }
@@ -110,6 +136,7 @@ struct ShortcutEntry: Identifiable {
     let id = UUID()
     let keys: String
     let description: String
+    let contexts: Set<ShortcutContext>
 }
 
 // MARK: - Shortcut Data
@@ -117,22 +144,45 @@ struct ShortcutEntry: Identifiable {
 extension KeyboardShortcutHelpView {
     static let categories: [ShortcutCategory] = [
         ShortcutCategory(name: "General", icon: "globe", shortcuts: [
-            ShortcutEntry(keys: "\u{2318}N", description: "New Recording"),
-            ShortcutEntry(keys: "\u{2318}O", description: "Open Video"),
-            ShortcutEntry(keys: "\u{21E7}\u{2318}O", description: "Open Project"),
-            ShortcutEntry(keys: "\u{2318}S", description: "Save Project"),
-            ShortcutEntry(keys: "\u{21E7}\u{2318}2", description: "Start/Stop Recording"),
+            ShortcutEntry(keys: "\u{2318}N", description: "New Recording", contexts: [.welcome]),
+            ShortcutEntry(keys: "\u{2318}O", description: "Open Video", contexts: [.welcome]),
+            ShortcutEntry(keys: "\u{21E7}\u{2318}O", description: "Open Project", contexts: [.welcome]),
+            ShortcutEntry(keys: "\u{2318}S", description: "Save Project", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{21E7}\u{2318}2", description: "Start/Stop Recording", contexts: [.welcome, .recording]),
         ]),
         ShortcutCategory(name: "Editor", icon: "slider.horizontal.3", shortcuts: [
-            ShortcutEntry(keys: "Space", description: "Play/Pause"),
-            ShortcutEntry(keys: "\u{232B}", description: "Delete Selected Keyframe"),
-            ShortcutEntry(keys: "\u{2318}Z", description: "Undo"),
-            ShortcutEntry(keys: "\u{21E7}\u{2318}Z", description: "Redo"),
+            ShortcutEntry(keys: "Space", description: "Play/Pause", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{232B}", description: "Delete Selected Keyframe", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{2318}Z", description: "Undo", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{21E7}\u{2318}Z", description: "Redo", contexts: [.editor]),
         ]),
         ShortcutCategory(name: "Help", icon: "questionmark.circle", shortcuts: [
-            ShortcutEntry(keys: "\u{2318}?", description: "Keyboard Shortcuts"),
+            ShortcutEntry(keys: "\u{2318}?", description: "Keyboard Shortcuts", contexts: [.welcome, .recording, .editor]),
         ]),
     ]
+}
+
+// MARK: - Reusable Help Button
+
+/// Reusable "?" button that shows keyboard shortcuts for a given context
+struct ShortcutHelpButton: View {
+    let context: ShortcutContext
+    @State private var showSheet = false
+
+    var body: some View {
+        Button {
+            showSheet = true
+        } label: {
+            Image(systemName: "questionmark.circle")
+                .font(.title3)
+                .foregroundColor(.secondary)
+        }
+        .buttonStyle(.plain)
+        .help("Keyboard Shortcuts")
+        .sheet(isPresented: $showSheet) {
+            KeyboardShortcutHelpView(context: context)
+        }
+    }
 }
 
 // MARK: - Notification

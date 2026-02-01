@@ -27,6 +27,10 @@ struct RecordingView: View {
             }
         }
         .frame(minWidth: 600, minHeight: 400)
+        .overlay(alignment: .topTrailing) {
+            ShortcutHelpButton(context: .recording)
+                .padding()
+        }
         .sheet(isPresented: $appState.showSourcePicker) {
             SourcePickerView(appState: appState)
         }

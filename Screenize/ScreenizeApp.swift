@@ -131,6 +131,18 @@ struct ContentView: View {
     @EnvironmentObject var projectManager: ProjectManager
     @EnvironmentObject var appState: AppState
     @State private var isCreatingProject: Bool = false
+    @State private var showKeyboardShortcuts = false
+
+    /// Determine current shortcut context based on active screen
+    private var currentShortcutContext: ShortcutContext {
+        if appState.currentProject != nil {
+            return .editor
+        } else if appState.isRecording || appState.selectedTarget != nil || appState.showSourcePicker {
+            return .recording
+        } else {
+            return .welcome
+        }
+    }
 
     var body: some View {
         Group {
@@ -203,6 +215,12 @@ struct ContentView: View {
                     isCreatingProject = false
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showKeyboardShortcuts)) { _ in
+            showKeyboardShortcuts = true
+        }
+        .sheet(isPresented: $showKeyboardShortcuts) {
+            KeyboardShortcutHelpView(context: currentShortcutContext)
         }
     }
 
@@ -340,6 +358,10 @@ struct MainWelcomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
+        .overlay(alignment: .topTrailing) {
+            ShortcutHelpButton(context: .welcome)
+                .padding()
+        }
     }
 
     private var dropZone: some View {
