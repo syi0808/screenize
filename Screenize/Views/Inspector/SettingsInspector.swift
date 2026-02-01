@@ -19,6 +19,11 @@ struct SettingsInspector: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Presets
+            PresetPickerView(settings: $settings, onChange: onChange)
+
+            Divider()
+
             // Cursor settings
             cursorSettingsSection
 

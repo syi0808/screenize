@@ -17,6 +17,8 @@
 		F0000004296A0001 /* RenderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000004296A0001 /* RenderSettings.swift */; };
 		F0000005296A0001 /* ProjectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000005296A0001 /* ProjectManager.swift */; };
 		F0000006296A0001 /* ProjectCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000006296A0001 /* ProjectCreator.swift */; };
+		F0000007296A0001 /* RenderSettingsPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000007296A0001 /* RenderSettingsPreset.swift */; };
+		F0000008296A0001 /* PresetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000008296A0001 /* PresetManager.swift */; };
 		F0000010296A0001 /* EasingCurve.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000010296A0001 /* EasingCurve.swift */; };
 		F0000011296A0001 /* Keyframe.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000011296A0001 /* Keyframe.swift */; };
 		F0000012296A0001 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000012296A0001 /* Track.swift */; };
@@ -50,6 +52,7 @@
 		F0000043296A0001 /* CursorInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000043296A0001 /* CursorInspector.swift */; };
 		F0000044296A0001 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000044296A0001 /* InspectorView.swift */; };
 		F0000045296A0001 /* SettingsInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000045296A0001 /* SettingsInspector.swift */; };
+		F0000046296A0001 /* PresetPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000046296A0001 /* PresetPickerView.swift */; };
 		F0000050296A0001 /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000050296A0001 /* PreviewView.swift */; };
 		F0000051296A0001 /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000051296A0001 /* ExportView.swift */; };
 		F0000052296A0001 /* EditorMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000052296A0001 /* EditorMainView.swift */; };
@@ -118,6 +121,8 @@
 		F1000004296A0001 /* RenderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettings.swift; sourceTree = "<group>"; };
 		F1000005296A0001 /* ProjectManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectManager.swift; sourceTree = "<group>"; };
 		F1000006296A0001 /* ProjectCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectCreator.swift; sourceTree = "<group>"; };
+		F1000007296A0001 /* RenderSettingsPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettingsPreset.swift; sourceTree = "<group>"; };
+		F1000008296A0001 /* PresetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetManager.swift; sourceTree = "<group>"; };
 		F1000010296A0001 /* EasingCurve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingCurve.swift; sourceTree = "<group>"; };
 		F1000011296A0001 /* Keyframe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keyframe.swift; sourceTree = "<group>"; };
 		F1000012296A0001 /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
@@ -151,6 +156,7 @@
 		F1000043296A0001 /* CursorInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorInspector.swift; sourceTree = "<group>"; };
 		F1000044296A0001 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		F1000045296A0001 /* SettingsInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsInspector.swift; sourceTree = "<group>"; };
+		F1000046296A0001 /* PresetPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetPickerView.swift; sourceTree = "<group>"; };
 		F1000050296A0001 /* PreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewView.swift; sourceTree = "<group>"; };
 		F1000051296A0001 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 		F1000052296A0001 /* EditorMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorMainView.swift; sourceTree = "<group>"; };
@@ -273,6 +279,8 @@
 				F1000002296A0001 /* MediaAsset.swift */,
 				F1000003296A0001 /* CaptureMeta.swift */,
 				F1000004296A0001 /* RenderSettings.swift */,
+				F1000007296A0001 /* RenderSettingsPreset.swift */,
+				F1000008296A0001 /* PresetManager.swift */,
 				F1000005296A0001 /* ProjectManager.swift */,
 				F1000006296A0001 /* ProjectCreator.swift */,
 			);
@@ -355,6 +363,7 @@
 				F100007B296A0001 /* KeystrokeInspector.swift */,
 				F1000044296A0001 /* InspectorView.swift */,
 				F1000045296A0001 /* SettingsInspector.swift */,
+				F1000046296A0001 /* PresetPickerView.swift */,
 			);
 			path = Inspector;
 			sourceTree = "<group>";
@@ -578,6 +587,8 @@
 				F0000004296A0001 /* RenderSettings.swift in Sources */,
 				F0000005296A0001 /* ProjectManager.swift in Sources */,
 				F0000006296A0001 /* ProjectCreator.swift in Sources */,
+				F0000007296A0001 /* RenderSettingsPreset.swift in Sources */,
+				F0000008296A0001 /* PresetManager.swift in Sources */,
 				F0000010296A0001 /* EasingCurve.swift in Sources */,
 				F0000011296A0001 /* Keyframe.swift in Sources */,
 				F0000012296A0001 /* Track.swift in Sources */,
@@ -616,6 +627,7 @@
 				F000007B296A0001 /* KeystrokeInspector.swift in Sources */,
 				F0000044296A0001 /* InspectorView.swift in Sources */,
 				F0000045296A0001 /* SettingsInspector.swift in Sources */,
+				F0000046296A0001 /* PresetPickerView.swift in Sources */,
 				F0000050296A0001 /* PreviewView.swift in Sources */,
 				F0000051296A0001 /* ExportView.swift in Sources */,
 				F0000052296A0001 /* EditorMainView.swift in Sources */,

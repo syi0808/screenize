@@ -108,6 +108,11 @@ struct ExportSheetView: View {
 
     private var settingsForm: some View {
         Form {
+            // Preset
+            Section("Preset") {
+                PresetPickerView(settings: $renderSettings)
+            }
+
             // Resolution
             Section("Resolution") {
                 Picker("Output Size", selection: $renderSettings.outputResolution) {
