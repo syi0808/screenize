@@ -56,6 +56,7 @@
 		F0000050296A0001 /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000050296A0001 /* PreviewView.swift */; };
 		F0000051296A0001 /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000051296A0001 /* ExportView.swift */; };
 		F0000052296A0001 /* EditorMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000052296A0001 /* EditorMainView.swift */; };
+		F0000053296A0001 /* KeyboardShortcutHelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000053296A0001 /* KeyboardShortcutHelpView.swift */; };
 		F0000060296A0001 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000060296A0001 /* EditorViewModel.swift */; };
 		F0000061296A0001 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000061296A0001 /* UndoStack.swift */; };
 		F0000070296A0001 /* KeyframeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000070296A0001 /* KeyframeGenerator.swift */; };
@@ -160,6 +161,7 @@
 		F1000050296A0001 /* PreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewView.swift; sourceTree = "<group>"; };
 		F1000051296A0001 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 		F1000052296A0001 /* EditorMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorMainView.swift; sourceTree = "<group>"; };
+		F1000053296A0001 /* KeyboardShortcutHelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardShortcutHelpView.swift; sourceTree = "<group>"; };
 		F1000060296A0001 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
 		F1000061296A0001 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		F1000070296A0001 /* KeyframeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeGenerator.swift; sourceTree = "<group>"; };
@@ -334,6 +336,7 @@
 				F1000050296A0001 /* PreviewView.swift */,
 				F1000051296A0001 /* ExportView.swift */,
 				F1000052296A0001 /* EditorMainView.swift */,
+				F1000053296A0001 /* KeyboardShortcutHelpView.swift */,
 				2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */,
 			);
 			path = Views;
@@ -631,6 +634,7 @@
 				F0000050296A0001 /* PreviewView.swift in Sources */,
 				F0000051296A0001 /* ExportView.swift in Sources */,
 				F0000052296A0001 /* EditorMainView.swift in Sources */,
+				F0000053296A0001 /* KeyboardShortcutHelpView.swift in Sources */,
 				F0000060296A0001 /* EditorViewModel.swift in Sources */,
 				F0000061296A0001 /* UndoStack.swift in Sources */,
 				F0000070296A0001 /* KeyframeGenerator.swift in Sources */,

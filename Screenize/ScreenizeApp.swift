@@ -53,6 +53,13 @@ struct ScreenizeApp: App {
                 .disabled(!appState.canRedo)
             }
 
+            CommandGroup(replacing: .help) {
+                Button("Keyboard Shortcuts") {
+                    NotificationCenter.default.post(name: .showKeyboardShortcuts, object: nil)
+                }
+                .keyboardShortcut("/", modifiers: [.command, .shift])
+            }
+
             CommandGroup(replacing: .newItem) {
                 Button("New Recording...") {
                     appState.showSourcePicker = true
