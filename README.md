@@ -1,3 +1,5 @@
+> **🚧 Beta:** This project is under active development. Expect breaking changes between versions.
+
 <p align="center">
   <img src="Screenize/Assets.xcassets/AppIcon.appiconset/icon_128x128.png" alt="Screenize" width="128" height="128">
 </p>
@@ -15,14 +17,20 @@ Screenize uses a two-pass processing model: first capture raw video alongside mo
 ## Features
 
 - **Screen & Window Capture** — Record entire displays or individual windows via ScreenCaptureKit with audio input
-- **Mouse Tracking** — Automatic cursor position and click logging saved alongside every recording
-- **Smart Auto-Zoom** — Intelligent zoom keyframes generated from mouse data and UI element analysis using the Vision framework
+- **Smart Generation** — Auto-generate zoom, click effect, and keystroke keyframes from mouse and keyboard data
 - **Timeline Editor** — Edit zoom, cursor, click effect, and keystroke keyframes on a multi-track timeline with easing curves
 - **Click Effects** — Configurable ripple animations triggered on mouse clicks
 - **Keystroke Overlays** — Automatically display keyboard shortcuts (e.g. ⌘C, ⇧⌘Z) on screen with customizable text, duration, and position
 - **Custom Cursors** — Replace the system cursor with styled alternatives in exports
 - **Background Styling** — Apply solid colors, gradients, or images as backgrounds around the recording
 - **Export** — Render final video to MP4 or MOV with all effects applied
+
+### Planned Features
+
+- System audio and microphone audio recording
+- Import Screen Studio projects
+- More export options (resolution, video format, color)
+- Variable frame rate (VFR) support
 
 ## Getting Started
 
@@ -76,6 +84,8 @@ Grant each permission when prompted, or enable them manually under **System Sett
 ## Contributing
 
 Contributions are welcome. Please read the [Contributing Guide](CONTRIBUTING.md) before submitting a pull request.
+
+AI-assisted contributions (Claude Code, GitHub Copilot, etc.) are welcome, but must be well-tested before submission. See [CLAUDE.md](CLAUDE.md) for AI agent guidance.
 
 ## License
 
