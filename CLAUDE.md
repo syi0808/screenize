@@ -57,12 +57,6 @@ Configuration in `.swiftlint.yml`. Key limits: line length 140/200, file length 
 **Permission Reset (when screen capture or microphone permissions break):**
 
 ```bash
-./scripts/reset-permissions.sh
-```
-
-Manual permission reset:
-
-```bash
 tccutil reset ScreenCapture com.screenize.Screenize
 tccutil reset Microphone com.screenize.Screenize
 ```
@@ -112,7 +106,7 @@ Screenize is a macOS screen recording application that captures screen/window co
 
 **Project system (`Project/`):**
 
-- `ScreenizeProject` - Main project model (`.fsproj` JSON files)
+- `ScreenizeProject` - Main project model (`.screenize` package directory containing `project.json`)
 - `MediaAsset` - Reference to video + mouse data files
 - `RenderSettings` - Export codec, quality, resolution settings
 
@@ -126,7 +120,7 @@ Screenize is a macOS screen recording application that captures screen/window co
 **Data flow:**
 
 - Mouse data stored as `<videoName>.mouse.json` alongside video files (contains positions, clicks, scrolls, keyboard events, drag events, UI state samples)
-- Project files (`.fsproj`) store timeline edits + render settings as JSON
+- Project packages (`.screenize/`) contain `project.json` with timeline edits + render settings, plus a `recording/` subdirectory for media files
 - ScreenCaptureDelegate for frame callbacks from ScreenCaptureKit
 
 ## Coordinate System
@@ -156,7 +150,6 @@ Target: macOS 13.0+.
 
 - `@MainActor` on all major state classes; `nonisolated(unsafe)` for properties accessed from ScreenCaptureKit capture queues
 - Manager/Coordinator suffixes for orchestration classes
-- Korean comments throughout the codebase
 - Sendable types and dispatch queues for thread safety
 - Keyframes always sorted by time within tracks (enforced in Track initializers)
 - Normalized coordinates (0–1, bottom-left origin) for all internal position data
