@@ -106,9 +106,25 @@ Screenize is a macOS screen recording application that captures screen/window co
 
 **Project system (`Project/`):**
 
-- `ScreenizeProject` - Main project model (`.screenize` package directory containing `project.json`)
-- `MediaAsset` - Reference to video + mouse data files
+- `ScreenizeProject` - Main project model (v2, `.screenize` package containing `project.json`)
+- `MediaAsset` - Stores relative paths (`videoPath`/`mouseDataPath`) in JSON; absolute URLs resolved at load time via `resolveURLs(from:)`
+- `PackageManager` - Singleton managing `.screenize` package CRUD (create, save, load, path resolution)
+- `ProjectManager` - Orchestrates project lifecycle, recent projects, delegates to PackageManager
+- `ProjectCreator` - Factory creating projects from recordings or imported videos (accepts `PackageInfo`)
+- `LegacyProjectMigrator` - Auto-migrates old `.fsproj` projects to `.screenize` format (remove in next minor version)
 - `RenderSettings` - Export codec, quality, resolution settings
+
+**`.screenize` package structure:**
+
+```
+MyProject.screenize/           # macOS package (appears as single file in Finder)
+├── project.json               # ScreenizeProject v2 (JSON)
+└── recording/
+    ├── recording.mp4          # Video (keeps original extension)
+    └── recording.mouse.json   # Mouse tracking data
+```
+
+UTType `com.screenize.project` conforming to `com.apple.package` is registered in `Info.plist`.
 
 **State management:**
 
