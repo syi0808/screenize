@@ -371,14 +371,61 @@ struct EditorMainView: View {
 
 // MARK: - Generator Panel View
 
-/// Smart generator panel
+/// Smart generator panel with per-type selection
 struct GeneratorPanelView: View {
 
     @ObservedObject var viewModel: EditorViewModel
 
     @State private var isGenerating: Bool = false
     @State private var generationResult: String?
-    @Environment(\.dismiss) private var dismiss
+    @State private var selectedTypes: Set<TrackType> = [
+        .transform, .ripple, .cursor, .keystroke
+    ]
+
+    private struct GeneratorOption: Identifiable {
+        let type: TrackType
+        let name: String
+        let description: String
+        let icon: String
+        var id: TrackType { type }
+    }
+
+    private let generatorOptions: [GeneratorOption] = [
+        GeneratorOption(
+            type: .transform,
+            name: "Smart Zoom",
+            description: "Auto-focus and zoom on activity",
+            icon: "sparkle.magnifyingglass"
+        ),
+        GeneratorOption(
+            type: .ripple,
+            name: "Click Ripple",
+            description: "Ripple effect at click positions",
+            icon: "circles.hexagonpath"
+        ),
+        GeneratorOption(
+            type: .cursor,
+            name: "Cursor Style",
+            description: "Cursor movement based on clicks",
+            icon: "cursorarrow.motionlines"
+        ),
+        GeneratorOption(
+            type: .keystroke,
+            name: "Keystroke",
+            description: "Keyboard shortcut overlays",
+            icon: "keyboard"
+        )
+    ]
+
+    private var allSelected: Bool {
+        selectedTypes.count == generatorOptions.count
+    }
+
+    private var buttonLabel: String {
+        if isGenerating { return "Generating..." }
+        if allSelected { return "Generate All Keyframes" }
+        return "Generate Selected (\(selectedTypes.count))"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -386,64 +433,61 @@ struct GeneratorPanelView: View {
             HStack {
                 Image(systemName: "wand.and.stars")
                     .foregroundColor(.accentColor)
-
                 Text("Smart Generation")
                     .font(.headline)
-
                 Spacer()
             }
 
             Divider()
 
-            // Description
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Automatically generate keyframes from mouse data and video analysis:")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Label("Smart zoom (auto-focus on activity)", systemImage: "sparkle.magnifyingglass")
-                    Label("Stable zoom during continuous sessions", systemImage: "cursorarrow.motionlines")
-                    Label("Scene change detection for zoom transitions", systemImage: "eye")
-                    Label("Click ripple effects", systemImage: "circles.hexagonpath")
-                    Label("Keystroke overlays for keyboard shortcuts", systemImage: "keyboard")
+            // Per-type toggles
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(generatorOptions) { option in
+                    Toggle(isOn: toggleBinding(for: option.type)) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Label(option.name, systemImage: option.icon)
+                                .font(.subheadline)
+                            Text(option.description)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .toggleStyle(.checkbox)
+                    .disabled(isGenerating)
                 }
-                .font(.caption)
-                .foregroundColor(.secondary)
             }
 
             Divider()
 
-            // Display generation result
+            // Generation result
             if let result = generationResult {
                 Text(result)
                     .font(.caption)
-                    .foregroundColor(.green)
+                    .foregroundColor(
+                        result.hasPrefix("Failed") ? .red : .green
+                    )
                     .padding(.vertical, 4)
             }
 
             // Generation button
             Button {
-                Task {
-                    await generateAllKeyframes()
-                }
+                Task { await generateKeyframes() }
             } label: {
                 HStack {
                     if isGenerating {
-                        ProgressView()
-                            .scaleEffect(0.7)
+                        ProgressView().scaleEffect(0.7)
                     } else {
                         Image(systemName: "sparkles")
                     }
-                    Text(isGenerating ? "Generating..." : "Generate All Keyframes")
+                    Text(buttonLabel)
                 }
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(isGenerating)
+            .disabled(isGenerating || selectedTypes.isEmpty)
 
             // Helper text
-            Text("Generated keyframes can be freely edited in the timeline.")
+            Text("Selected types replace existing keyframes. Unselected types are preserved.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -451,26 +495,53 @@ struct GeneratorPanelView: View {
         .frame(width: 320)
     }
 
+    private func toggleBinding(for type: TrackType) -> Binding<Bool> {
+        Binding(
+            get: { selectedTypes.contains(type) },
+            set: { isOn in
+                if isOn {
+                    selectedTypes.insert(type)
+                } else {
+                    selectedTypes.remove(type)
+                }
+            }
+        )
+    }
+
     @MainActor
-    private func generateAllKeyframes() async {
-        guard !isGenerating else { return }
+    private func generateKeyframes() async {
+        guard !isGenerating, !selectedTypes.isEmpty else { return }
 
         isGenerating = true
         generationResult = nil
 
-        // Use EditorViewModel's Smart Zoom generation
-        await viewModel.runSmartGeneration()
-
-        // Display the result counts
-        let transformCount = viewModel.project.timeline.transformTrack?.keyframes.count ?? 0
-        let rippleCount = viewModel.project.timeline.rippleTrack?.keyframes.count ?? 0
-        let cursorCount = viewModel.project.timeline.cursorTrack?.styleKeyframes?.count ?? 0
-        let keystrokeCount = viewModel.project.timeline.keystrokeTrack?.keyframes.count ?? 0
+        await viewModel.runSmartGeneration(for: selectedTypes)
 
         if let error = viewModel.errorMessage {
             generationResult = "Failed: \(error)"
         } else {
-            generationResult = "\(transformCount) transform, \(rippleCount) ripple, \(cursorCount) cursor, \(keystrokeCount) keystroke"
+            let parts = generatorOptions.compactMap { option -> String? in
+                guard selectedTypes.contains(option.type) else { return nil }
+                let count: Int
+                switch option.type {
+                case .transform:
+                    count = viewModel.project.timeline.transformTrack?
+                        .keyframes.count ?? 0
+                case .ripple:
+                    count = viewModel.project.timeline.rippleTrack?
+                        .keyframes.count ?? 0
+                case .cursor:
+                    count = viewModel.project.timeline.cursorTrack?
+                        .styleKeyframes?.count ?? 0
+                case .keystroke:
+                    count = viewModel.project.timeline.keystrokeTrack?
+                        .keyframes.count ?? 0
+                case .audio:
+                    return nil
+                }
+                return "\(count) \(option.name.lowercased())"
+            }
+            generationResult = parts.joined(separator: ", ")
         }
 
         isGenerating = false
