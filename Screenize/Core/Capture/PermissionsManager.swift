@@ -8,6 +8,7 @@ final class PermissionsManager: ObservableObject {
     @Published private(set) var screenCapturePermission: PermissionStatus = .unknown
     @Published private(set) var microphonePermission: PermissionStatus = .unknown
     @Published private(set) var inputMonitoringPermission: PermissionStatus = .unknown
+    @Published private(set) var accessibilityPermission: PermissionStatus = .unknown
 
     enum PermissionStatus {
         case unknown
@@ -16,9 +17,17 @@ final class PermissionsManager: ObservableObject {
         case restricted
     }
 
+    enum PermissionType {
+        case screenRecording
+        case microphone
+        case inputMonitoring
+        case accessibility
+    }
+
     init() {
         checkScreenCapturePermission()
         checkMicrophonePermission()
+        checkAccessibilityPermission()
         // Input Monitoring should be checked after the app has finished initializing
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             self?.checkInputMonitoringPermission()
@@ -29,6 +38,7 @@ final class PermissionsManager: ObservableObject {
         checkScreenCapturePermission()
         checkMicrophonePermission()
         checkInputMonitoringPermission()
+        checkAccessibilityPermission()
     }
 
     private func checkScreenCapturePermission() {
@@ -164,15 +174,28 @@ final class PermissionsManager: ObservableObject {
         checkInputMonitoringPermission()
     }
 
+    /// Request Accessibility permission (shows the system prompt)
+    func requestAccessibilityPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(options)
+        checkAccessibilityPermission()
+    }
+
     func requestAllPermissions() async -> Bool {
         let screenGranted = await requestScreenCapturePermission()
         let micGranted = await requestMicrophonePermission()
         requestInputMonitoringPermission()
-        return screenGranted && micGranted && inputMonitoringPermission == .granted
+        requestAccessibilityPermission()
+        return screenGranted && micGranted
+            && inputMonitoringPermission == .granted
+            && accessibilityPermission == .granted
     }
 
     var allPermissionsGranted: Bool {
-        screenCapturePermission == .granted && microphonePermission == .granted && inputMonitoringPermission == .granted
+        screenCapturePermission == .granted
+            && microphonePermission == .granted
+            && inputMonitoringPermission == .granted
+            && accessibilityPermission == .granted
     }
 
     var hasScreenCapturePermission: Bool {
@@ -187,9 +210,34 @@ final class PermissionsManager: ObservableObject {
         inputMonitoringPermission == .granted
     }
 
-    func openSystemPreferences() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+    var hasAccessibilityPermission: Bool {
+        accessibilityPermission == .granted
+    }
+
+    private func checkAccessibilityPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
+        let trusted = AXIsProcessTrustedWithOptions(options)
+        accessibilityPermission = trusted ? .granted : .denied
+    }
+
+    func openSystemPreferences(for permission: PermissionType) {
+        let urlString: String
+        switch permission {
+        case .screenRecording:
+            urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+        case .microphone:
+            urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+        case .inputMonitoring:
+            urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"
+        case .accessibility:
+            urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        }
+        if let url = URL(string: urlString) {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    func openSystemPreferences() {
+        openSystemPreferences(for: .screenRecording)
     }
 }

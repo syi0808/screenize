@@ -109,9 +109,15 @@
 		F0000201296A0001 /* SessionClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000201296A0001 /* SessionClusterer.swift */; };
 		F0000202296A0001 /* ZoomLevelCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000202296A0001 /* ZoomLevelCalculator.swift */; };
 		F0000203296A0001 /* SessionCenterResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000203296A0001 /* SessionCenterResolver.swift */; };
+		A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A0296A0001 /* PermissionWizardViewModel.swift */; };
+		A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A1296A0001 /* PermissionSetupWizardView.swift */; };
+		A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A3296A0001 /* PermissionStatusBadge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A11000A0296A0001 /* PermissionWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionWizardViewModel.swift; sourceTree = "<group>"; };
+		A11000A1296A0001 /* PermissionSetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionSetupWizardView.swift; sourceTree = "<group>"; };
+		A11000A3296A0001 /* PermissionStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusBadge.swift; sourceTree = "<group>"; };
 		2A626F2E2F2A280000510712 /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
 		2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
 		C7A2A0AC4BE1F8D342436D05 /* VideoFrameAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoFrameAnalyzer.swift; sourceTree = "<group>"; };
@@ -333,6 +339,7 @@
 				F2000041296A0001 /* Timeline */,
 				F2000042296A0001 /* Inspector */,
 				F20000F0296A0001 /* Recording */,
+				A12000A0296A0001 /* Onboarding */,
 				F1000050296A0001 /* PreviewView.swift */,
 				F1000051296A0001 /* ExportView.swift */,
 				F1000052296A0001 /* EditorMainView.swift */,
@@ -340,6 +347,15 @@
 				2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A12000A0296A0001 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				A11000A1296A0001 /* PermissionSetupWizardView.swift */,
+				A11000A3296A0001 /* PermissionStatusBadge.swift */,
+			);
+			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		F2000041296A0001 /* Timeline */ = {
@@ -376,6 +392,7 @@
 			children = (
 				F1000060296A0001 /* EditorViewModel.swift */,
 				F1000061296A0001 /* UndoStack.swift */,
+				A11000A0296A0001 /* PermissionWizardViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -682,6 +699,9 @@
 				F00000F1296A0001 /* SourcePickerView.swift in Sources */,
 				F00000F2296A0001 /* RecordingPreviewView.swift in Sources */,
 				98E0A84D3D3B09D78BC641AD /* VideoFrameAnalyzer.swift in Sources */,
+				A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */,
+				A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */,
+				A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
