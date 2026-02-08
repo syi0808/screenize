@@ -348,14 +348,9 @@ final class AppState: ObservableObject {
 
     // MARK: - Project Creation
 
-    func createProject(videoURL: URL? = nil, mouseDataURL: URL? = nil) async -> ScreenizeProject? {
-        guard let videoURL = videoURL ?? lastRecordingURL,
-              let mouseDataURL = mouseDataURL ?? lastMouseDataURL else {
-            return nil
-        }
-
+    func createProject(packageInfo: PackageInfo) async -> ScreenizeProject? {
         // Extract video metadata
-        guard let videoMetadata = await extractVideoMetadata(from: videoURL) else {
+        guard let videoMetadata = await extractVideoMetadata(from: packageInfo.videoURL) else {
             return nil
         }
 
@@ -386,10 +381,11 @@ final class AppState: ObservableObject {
             )
         }
 
-        // Create media asset
+        // Create media asset with relative paths
         let media = MediaAsset(
-            videoURL: videoURL,
-            mouseDataURL: mouseDataURL,
+            videoRelativePath: packageInfo.videoRelativePath,
+            mouseDataRelativePath: packageInfo.mouseDataRelativePath,
+            packageRootURL: packageInfo.packageURL,
             pixelSize: CGSize(width: videoMetadata.width, height: videoMetadata.height),
             frameRate: videoMetadata.frameRate,
             duration: videoMetadata.duration
@@ -429,7 +425,7 @@ final class AppState: ObservableObject {
             duration: videoMetadata.duration
         )
 
-        // Full screen 소스일 때 cornerRadius/windowInset 기본값 조정
+        // Adjust cornerRadius/windowInset defaults for full screen source
         var renderSettings = RenderSettings()
         if selectedTarget?.isFullScreen == true {
             renderSettings.cornerRadius = 8.0
@@ -437,7 +433,7 @@ final class AppState: ObservableObject {
         }
 
         return ScreenizeProject(
-            name: videoURL.deletingPathExtension().lastPathComponent,
+            name: packageInfo.packageURL.deletingPathExtension().lastPathComponent,
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,

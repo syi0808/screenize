@@ -181,20 +181,34 @@ struct EditorLoaderView: View {
         do {
             // Check for an existing project file
             if let existingProjectURL = ProjectManager.shared.findExistingProject(for: videoURL) {
-                project = try await ProjectManager.shared.load(from: existingProjectURL)
-            } else if let captureMeta = captureMeta, let mouseDataURL = mouseDataURL {
-                // Create a new project from the recording
-                project = try await ProjectCreator.createFromRecording(
+                let result = try await ProjectManager.shared.load(from: existingProjectURL)
+                project = result.project
+            } else {
+                // Create a .screenize package and project
+                let videoName = videoURL.deletingPathExtension().lastPathComponent
+                let parentDirectory = videoURL.deletingLastPathComponent()
+                let packageInfo = try ProjectManager.shared.createPackage(
+                    name: videoName,
                     videoURL: videoURL,
                     mouseDataURL: mouseDataURL,
-                    captureMeta: captureMeta
+                    in: parentDirectory
                 )
-            } else {
-                // Create a new project from the video file
-                project = try await ProjectCreator.createFromVideo(
-                    videoURL: videoURL,
-                    mouseDataURL: mouseDataURL
-                )
+
+                if let captureMeta {
+                    project = try await ProjectCreator.createFromRecording(
+                        packageInfo: packageInfo,
+                        captureMeta: captureMeta
+                    )
+                } else {
+                    project = try await ProjectCreator.createFromVideo(
+                        packageInfo: packageInfo
+                    )
+                }
+
+                // Save the project into the package
+                if let project {
+                    try PackageManager.shared.save(project, to: packageInfo.packageURL)
+                }
             }
 
             isLoading = false
@@ -300,8 +314,8 @@ struct RecentProjectsView: View {
     private func recentProjectRow(_ info: RecentProjectInfo) -> some View {
         Button {
             Task {
-                if await projectManager.tryLoad(from: info.projectURL) != nil {
-                    onSelect?(info.projectURL)
+                if await projectManager.tryLoad(from: info.packageURL) != nil {
+                    onSelect?(info.packageURL)
                 }
             }
         } label: {
@@ -340,7 +354,7 @@ struct RecentProjectsView: View {
             }
 
             Button("Show in Finder") {
-                NSWorkspace.shared.activateFileViewerSelecting([info.projectURL])
+                NSWorkspace.shared.activateFileViewerSelecting([info.packageURL])
             }
         }
     }

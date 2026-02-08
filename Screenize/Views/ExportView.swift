@@ -370,8 +370,9 @@ struct InlineExportProgressView: View {
                 project: ScreenizeProject(
                     name: "Test Project",
                     media: MediaAsset(
-                        videoURL: URL(fileURLWithPath: "/test.mp4"),
-                        mouseDataURL: URL(fileURLWithPath: "/test.json"),
+                        videoRelativePath: "recording/recording.mp4",
+                        mouseDataRelativePath: "recording/recording.mouse.json",
+                        packageRootURL: URL(fileURLWithPath: "/test.screenize"),
                         pixelSize: CGSize(width: 1920, height: 1080),
                         frameRate: 60,
                         duration: 30

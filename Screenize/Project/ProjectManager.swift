@@ -19,8 +19,8 @@ final class ProjectManager: ObservableObject {
 
     // MARK: - Properties
 
-    /// Project file extension
-    static let projectExtension = "fsproj"
+    /// Project package extension
+    static let projectExtension = ScreenizeProject.packageExtension
 
     /// Maximum number of recent projects
     private let maxRecentProjects = 10
@@ -31,6 +31,9 @@ final class ProjectManager: ObservableObject {
     /// File manager
     private let fileManager = FileManager.default
 
+    /// Package manager
+    private let packageManager = PackageManager.shared
+
     // MARK: - Singleton
 
     static let shared = ProjectManager()
@@ -39,49 +42,28 @@ final class ProjectManager: ObservableObject {
         loadRecentProjects()
     }
 
-    // MARK: - Project Folder
+    // MARK: - Package Creation
 
-    /// Create the project folder and move media files
+    /// Create a .screenize package and move media files into it
     /// - Parameters:
+    ///   - name: Project name
     ///   - videoURL: Original video file URL
     ///   - mouseDataURL: Mouse data file URL (optional)
-    /// - Returns: (moved video URL, moved mouse data URL, project folder URL)
-    func createProjectFolder(
-        for videoURL: URL,
-        mouseDataURL: URL? = nil
-    ) throws -> (videoURL: URL, mouseDataURL: URL, projectFolderURL: URL) {
-        let videoName = videoURL.deletingPathExtension().lastPathComponent
-        let parentDirectory = videoURL.deletingLastPathComponent()
-        let projectFolderURL = parentDirectory.appendingPathComponent(videoName)
-
-        // Create the project folder
-        if !fileManager.fileExists(atPath: projectFolderURL.path) {
-            try fileManager.createDirectory(at: projectFolderURL, withIntermediateDirectories: true)
-        }
-
-        // Move the video file
-        let newVideoURL = projectFolderURL.appendingPathComponent(videoURL.lastPathComponent)
-        if !fileManager.fileExists(atPath: newVideoURL.path) {
-            if fileManager.fileExists(atPath: videoURL.path) {
-                try fileManager.moveItem(at: videoURL, to: newVideoURL)
-            }
-        }
-
-        // Move the mouse data file
+    ///   - parentDirectory: Directory where the package will be created
+    /// - Returns: PackageInfo with resolved URLs
+    func createPackage(
+        name: String,
+        videoURL: URL,
+        mouseDataURL: URL? = nil,
+        in parentDirectory: URL
+    ) throws -> PackageInfo {
         let mouseURL = mouseDataURL ?? findMouseDataURL(for: videoURL)
-        let newMouseURL = projectFolderURL.appendingPathComponent(mouseURL.lastPathComponent)
-        if !fileManager.fileExists(atPath: newMouseURL.path) {
-            if fileManager.fileExists(atPath: mouseURL.path) {
-                try fileManager.moveItem(at: mouseURL, to: newMouseURL)
-            }
-        }
-
-        return (newVideoURL, newMouseURL, projectFolderURL)
-    }
-
-    /// Path to the .fsproj file inside the project folder
-    func projectFileURL(in projectFolderURL: URL, name: String) -> URL {
-        return projectFolderURL.appendingPathComponent("\(name).\(Self.projectExtension)")
+        return try packageManager.createPackage(
+            name: name,
+            videoURL: videoURL,
+            mouseDataURL: mouseURL,
+            in: parentDirectory
+        )
     }
 
     /// Find the mouse data file associated with a video
@@ -107,72 +89,59 @@ final class ProjectManager: ObservableObject {
 
     // MARK: - Save
 
-    /// Save a project
+    /// Save a project to its .screenize package
     /// - Parameters:
     ///   - project: Project to save
-    ///   - url: Save location (nil uses existing path or prompts)
-    /// - Returns: Saved file URL
-    func save(_ project: ScreenizeProject, to url: URL? = nil) async throws -> URL {
-        let saveURL: URL
-
-        if let url = url {
-            saveURL = url
-        } else {
-            // Default save location: same directory as the video file
-            let videoDirectory = project.media.videoURL.deletingLastPathComponent()
-            let projectName = project.media.videoURL.deletingPathExtension().lastPathComponent
-            saveURL = videoDirectory.appendingPathComponent("\(projectName).\(Self.projectExtension)")
+    ///   - packageURL: The .screenize package directory URL
+    /// - Returns: Package URL
+    func save(_ project: ScreenizeProject, to packageURL: URL?) async throws -> URL {
+        guard let packageURL else {
+            throw ProjectManagerError.saveFailed
         }
 
-        // JSON encoding
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-
-        let data = try encoder.encode(project)
-
-        // Write the file
-        try data.write(to: saveURL, options: .atomic)
+        try packageManager.save(project, to: packageURL)
 
         // Add to recent projects
-        await addToRecentProjects(project, url: saveURL)
+        await addToRecentProjects(project, packageURL: packageURL)
 
-        return saveURL
+        return packageURL
     }
 
     // MARK: - Load
 
-    /// Load a project
-    /// - Parameter url: Project file URL
-    /// - Returns: Loaded project
-    func load(from url: URL) async throws -> ScreenizeProject {
+    /// Load a project from a .screenize package or legacy .fsproj file
+    /// - Parameter url: Package URL (.screenize) or legacy file URL (.fsproj)
+    /// - Returns: Loaded project and its package URL
+    func load(from url: URL) async throws -> (project: ScreenizeProject, packageURL: URL) {
         isLoading = true
         errorMessage = nil
 
         defer { isLoading = false }
 
-        // Read the file
-        let data = try Data(contentsOf: url)
+        let project: ScreenizeProject
+        let packageURL: URL
 
-        // JSON decoding
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        let project = try decoder.decode(ScreenizeProject.self, from: data)
-
-        // Ensure the media file exists
-        guard fileManager.fileExists(atPath: project.media.videoURL.path) else {
-            throw ProjectManagerError.videoFileNotFound(project.media.videoURL)
+        // MARK: - Legacy (remove in next minor version)
+        if LegacyProjectMigrator.isLegacyProject(url) {
+            // Migrate legacy .fsproj to .screenize package
+            let result = try LegacyProjectMigrator.migrate(from: url)
+            project = result.project
+            packageURL = result.packageURL
+        } else if PackageManager.isPackage(url) {
+            project = try packageManager.load(from: url)
+            packageURL = url
+        } else {
+            throw ProjectManagerError.invalidProjectFile
         }
 
         // Add to recent projects
-        await addToRecentProjects(project, url: url)
+        await addToRecentProjects(project, packageURL: packageURL)
 
-        return project
+        return (project, packageURL)
     }
 
     /// Attempt to load from a URL (returns nil on failure)
-    func tryLoad(from url: URL) async -> ScreenizeProject? {
+    func tryLoad(from url: URL) async -> (project: ScreenizeProject, packageURL: URL)? {
         do {
             return try await load(from: url)
         } catch {
@@ -184,18 +153,17 @@ final class ProjectManager: ObservableObject {
     // MARK: - Recent Projects
 
     /// Add to recent projects
-    private func addToRecentProjects(_ project: ScreenizeProject, url: URL) async {
+    private func addToRecentProjects(_ project: ScreenizeProject, packageURL: URL) async {
         let info = RecentProjectInfo(
             id: project.id,
-            name: project.media.videoURL.deletingPathExtension().lastPathComponent,
-            projectURL: url,
-            videoURL: project.media.videoURL,
+            name: project.name,
+            packageURL: packageURL,
             duration: project.media.duration,
             lastOpened: Date()
         )
 
         // Remove existing entries
-        recentProjects.removeAll { $0.id == project.id || $0.projectURL == url }
+        recentProjects.removeAll { $0.id == project.id || $0.packageURL == packageURL }
 
         // Insert at the front
         recentProjects.insert(info, at: 0)
@@ -226,7 +194,7 @@ final class ProjectManager: ObservableObject {
 
         // Filter out projects that no longer exist
         recentProjects = projects.filter { info in
-            fileManager.fileExists(atPath: info.projectURL.path)
+            fileManager.fileExists(atPath: info.packageURL.path)
         }
     }
 
@@ -244,30 +212,44 @@ final class ProjectManager: ObservableObject {
 
     // MARK: - Delete
 
-    /// Delete a project file
-    func delete(at url: URL) throws {
-        try fileManager.removeItem(at: url)
+    /// Delete a project package
+    func delete(at packageURL: URL) throws {
+        try fileManager.removeItem(at: packageURL)
 
         // Also remove it from recent projects
-        recentProjects.removeAll { $0.projectURL == url }
+        recentProjects.removeAll { $0.packageURL == packageURL }
         saveRecentProjects()
     }
 
     // MARK: - Utilities
 
-    /// Check if the URL points to a project file
+    /// Check if the URL points to a project file or package
     static func isProjectFile(_ url: URL) -> Bool {
-        url.pathExtension.lowercased() == projectExtension
+        let ext = url.pathExtension.lowercased()
+        if ext == ScreenizeProject.packageExtension { return true }
+        // MARK: - Legacy (remove in next minor version)
+        if ext == ScreenizeProject.legacyFileExtension { return true }
+        return false
     }
 
-    /// Find the project file in the same directory as the video
+    /// Find an existing project for a video file
     func findExistingProject(for videoURL: URL) -> URL? {
         let projectName = videoURL.deletingPathExtension().lastPathComponent
         let directory = videoURL.deletingLastPathComponent()
-        let projectURL = directory.appendingPathComponent("\(projectName).\(Self.projectExtension)")
 
-        if fileManager.fileExists(atPath: projectURL.path) {
-            return projectURL
+        // Check for .screenize package
+        let packageURL = directory.appendingPathComponent(projectName)
+            .appendingPathExtension(ScreenizeProject.packageExtension)
+        if fileManager.fileExists(atPath: packageURL.path) {
+            return packageURL
+        }
+
+        // MARK: - Legacy (remove in next minor version)
+        // Check for legacy .fsproj file
+        let legacyURL = directory
+            .appendingPathComponent("\(projectName).\(ScreenizeProject.legacyFileExtension)")
+        if fileManager.fileExists(atPath: legacyURL.path) {
+            return legacyURL
         }
 
         return nil
@@ -280,10 +262,56 @@ final class ProjectManager: ObservableObject {
 struct RecentProjectInfo: Codable, Identifiable {
     let id: UUID
     let name: String
-    let projectURL: URL
-    let videoURL: URL
+    let packageURL: URL
     let duration: TimeInterval
     let lastOpened: Date
+
+    // MARK: - Legacy (remove in next minor version)
+    // Support decoding old format that had videoURL and projectURL fields
+    enum CodingKeys: String, CodingKey {
+        case id, name, duration, lastOpened
+        case packageURL
+        // Legacy keys
+        case legacyProjectURL = "projectURL"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(packageURL, forKey: .packageURL)
+        try container.encode(duration, forKey: .duration)
+        try container.encode(lastOpened, forKey: .lastOpened)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        duration = try container.decode(TimeInterval.self, forKey: .duration)
+        lastOpened = try container.decode(Date.self, forKey: .lastOpened)
+
+        if let url = try? container.decode(URL.self, forKey: .packageURL) {
+            packageURL = url
+        } else if let legacyURL = try? container.decode(URL.self, forKey: .legacyProjectURL) {
+            // MARK: - Legacy (remove in next minor version)
+            // Old format stored projectURL (pointing to .fsproj file)
+            packageURL = legacyURL
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .packageURL, in: container,
+                debugDescription: "Neither packageURL nor projectURL found"
+            )
+        }
+    }
+
+    init(id: UUID, name: String, packageURL: URL, duration: TimeInterval, lastOpened: Date) {
+        self.id = id
+        self.name = name
+        self.packageURL = packageURL
+        self.duration = duration
+        self.lastOpened = lastOpened
+    }
 
     /// Formatted date
     var formattedDate: String {

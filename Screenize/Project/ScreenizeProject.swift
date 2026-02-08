@@ -5,7 +5,7 @@ import CoreGraphics
 /// Contains recorded media and timeline editing data
 struct ScreenizeProject: Codable, Identifiable {
     let id: UUID
-    var version: Int = 1
+    var version: Int = 2
     var name: String
     var createdAt: Date
     var modifiedAt: Date
@@ -34,7 +34,7 @@ struct ScreenizeProject: Codable, Identifiable {
         frameAnalysisCache: [VideoFrameAnalyzer.FrameAnalysis]? = nil
     ) {
         self.id = id
-        self.version = 1
+        self.version = 2
         self.name = name
         self.createdAt = Date()
         self.modifiedAt = Date()
@@ -48,30 +48,35 @@ struct ScreenizeProject: Codable, Identifiable {
 
     // MARK: - File Operations
 
-    /// Save the project to a file
-    func save(to url: URL) throws {
+    /// Encode the project to JSON data
+    func encodeToJSON() throws -> Data {
         var project = self
         project.modifiedAt = Date()
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(project)
-        try data.write(to: url)
+        return try encoder.encode(project)
     }
 
-    /// Load the project from a file
-    static func load(from url: URL) throws -> Self {
-        let data = try Data(contentsOf: url)
+    /// Decode a project from JSON data
+    static func decodeFromJSON(_ data: Data) throws -> Self {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(Self.self, from: data)
     }
 
-    // MARK: - Computed Properties
+    // MARK: - Constants
 
-    /// Project file extension
-    static let fileExtension = "fsproj"
+    /// Package extension for .screenize packages
+    static let packageExtension = "screenize"
+
+    // MARK: - Legacy (remove in next minor version)
+
+    /// Legacy project file extension
+    static let legacyFileExtension = "fsproj"
+
+    // MARK: - Computed Properties
 
     /// Total duration
     var duration: TimeInterval {

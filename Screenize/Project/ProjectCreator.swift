@@ -9,22 +9,21 @@ struct ProjectCreator {
 
     /// Create a project from a recording
     /// - Parameters:
-    ///   - videoURL: Recorded video file URL
-    ///   - mouseDataURL: Mouse data file URL
+    ///   - packageInfo: Package info from PackageManager.createPackage
     ///   - captureMeta: Capture metadata
     /// - Returns: New project
     static func createFromRecording(
-        videoURL: URL,
-        mouseDataURL: URL,
+        packageInfo: PackageInfo,
         captureMeta: CaptureMeta
     ) async throws -> ScreenizeProject {
         // Load video information
-        let videoInfo = try await loadVideoInfo(from: videoURL)
+        let videoInfo = try await loadVideoInfo(from: packageInfo.videoURL)
 
-        // Create a media asset
+        // Create a media asset with relative paths
         let media = MediaAsset(
-            videoURL: videoURL,
-            mouseDataURL: mouseDataURL,
+            videoRelativePath: packageInfo.videoRelativePath,
+            mouseDataRelativePath: packageInfo.mouseDataRelativePath,
+            packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
             duration: videoInfo.duration
@@ -35,7 +34,7 @@ struct ProjectCreator {
 
         // Create the project
         return ScreenizeProject(
-            name: videoURL.deletingPathExtension().lastPathComponent,
+            name: packageInfo.packageURL.deletingPathExtension().lastPathComponent,
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
@@ -45,25 +44,20 @@ struct ProjectCreator {
 
     // MARK: - Create from Video
 
-    /// Create a project from an existing video file
-    /// - Parameters:
-    ///   - videoURL: Video file URL
-    ///   - mouseDataURL: Mouse data file URL (falls back if nil)
+    /// Create a project from an existing video file (already in package)
+    /// - Parameter packageInfo: Package info from PackageManager.createPackage
     /// - Returns: New project
     static func createFromVideo(
-        videoURL: URL,
-        mouseDataURL: URL? = nil
+        packageInfo: PackageInfo
     ) async throws -> ScreenizeProject {
         // Load video information
-        let videoInfo = try await loadVideoInfo(from: videoURL)
+        let videoInfo = try await loadVideoInfo(from: packageInfo.videoURL)
 
-        // Mouse data URL (fall back to default if missing)
-        let mouseURL = mouseDataURL ?? findMouseDataURL(for: videoURL)
-
-        // Create a media asset
+        // Create a media asset with relative paths
         let media = MediaAsset(
-            videoURL: videoURL,
-            mouseDataURL: mouseURL,
+            videoRelativePath: packageInfo.videoRelativePath,
+            mouseDataRelativePath: packageInfo.mouseDataRelativePath,
+            packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
             duration: videoInfo.duration
@@ -84,7 +78,7 @@ struct ProjectCreator {
         let timeline = createDefaultTimeline(duration: videoInfo.duration)
 
         return ScreenizeProject(
-            name: videoURL.deletingPathExtension().lastPathComponent,
+            name: packageInfo.packageURL.deletingPathExtension().lastPathComponent,
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
@@ -120,48 +114,16 @@ struct ProjectCreator {
         )
     }
 
-    // MARK: - Mouse Data
-
-    private static func findMouseDataURL(for videoURL: URL) -> URL {
-        // Look for a .mouse.json file next to the video
-        let baseName = videoURL.deletingPathExtension().lastPathComponent
-        let directory = videoURL.deletingLastPathComponent()
-
-        // Candidate filenames to try
-        let candidates = [
-            "\(baseName).mouse.json",
-            "\(baseName)_mouse.json",
-            "mouse.json"
-        ]
-
-        for candidate in candidates {
-            let candidateURL = directory.appendingPathComponent(candidate)
-            if FileManager.default.fileExists(atPath: candidateURL.path) {
-                return candidateURL
-            }
-        }
-
-        // Return the default path if none are present (file may be created later)
-        return directory.appendingPathComponent("\(baseName).mouse.json")
-    }
-
     // MARK: - Scale Factor Detection
 
     private static func detectScaleFactor(videoSize: CGSize) -> CGFloat {
-        // Estimate scale based on common resolutions
-        // 4K or above: 2.0
-        // 1440p up to 4K: 2.0
-        // 1080p: 1.0 or 2.0
-        // Others: 1.0
-
         let totalPixels = videoSize.width * videoSize.height
 
-        if totalPixels >= 3840 * 2160 { // 4K or greater
+        if totalPixels >= 3840 * 2160 {
             return 2.0
-        } else if totalPixels >= 2560 * 1440 { // 1440p or greater
+        } else if totalPixels >= 2560 * 1440 {
             return 2.0
-        } else if totalPixels >= 1920 * 1080 { // 1080p
-            // Most macOS displays are Retina, so estimate 2.0
+        } else if totalPixels >= 1920 * 1080 {
             return 2.0
         }
 
@@ -171,7 +133,6 @@ struct ProjectCreator {
     // MARK: - Default Timeline
 
     private static func createDefaultTimeline(duration: TimeInterval) -> Timeline {
-        // Create a default timeline with empty tracks
         Timeline(
             tracks: [
                 AnyTrack(TransformTrack(
@@ -179,7 +140,6 @@ struct ProjectCreator {
                     name: "Transform",
                     isEnabled: true,
                     keyframes: [
-                        // Start with one default keyframe
                         TransformKeyframe(
                             time: 0,
                             zoom: 1.0,
@@ -200,7 +160,6 @@ struct ProjectCreator {
                     name: "Cursor",
                     isEnabled: true,
                     styleKeyframes: [
-                        // Default cursor style
                         CursorStyleKeyframe(
                             time: 0,
                             style: .arrow,
