@@ -268,14 +268,16 @@ final class EditorViewModel: ObservableObject {
 
     // MARK: - Smart Generation
 
-    /// Auto-generate keyframes using mouse data (Smart Zoom)
-    func runSmartGeneration() async {
-        // Use the latest Smart Zoom generation algorithm
-        await runSmartZoomGeneration()
+    /// Auto-generate keyframes using mouse data
+    /// - Parameter selection: Which track types to generate. Unselected types are preserved.
+    func runSmartGeneration(
+        for selection: Set<TrackType> = [.transform, .ripple, .cursor, .keystroke]
+    ) async {
+        await runSmartZoomGeneration(for: selection)
     }
 
-    /// Smart Zoom generation (video analysis + UI state)
-    func runSmartZoomGeneration() async {
+    /// Smart generation with selective track types (video analysis + UI state)
+    private func runSmartZoomGeneration(for selection: Set<TrackType>) async {
         saveUndoSnapshot()
         guard project.media.mouseDataExists else {
             print("Smart generation skipped: No mouse data available")
@@ -289,7 +291,6 @@ final class EditorViewModel: ObservableObject {
             // 1. Load mouse data
             let mouseRecording = try MouseRecording.load(from: project.media.mouseDataURL)
 
-            // Create a MouseDataSource adapter
             let mouseDataSource = MouseRecordingAdapter(
                 recording: mouseRecording,
                 duration: project.media.duration,
@@ -298,56 +299,45 @@ final class EditorViewModel: ObservableObject {
 
             let settings = GeneratorSettings.default
 
-            // 2. Video frame analysis (check cache)
-            let frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis]
-            if let cachedAnalysis = project.frameAnalysisCache, !cachedAnalysis.isEmpty {
-                print("Using cached frame analysis (\(cachedAnalysis.count) frames)")
-                frameAnalysis = cachedAnalysis
-            } else {
-                print("Running video frame analysis...")
-                let analyzer = VideoFrameAnalyzer()
-                frameAnalysis = try await analyzer.analyze(
-                    videoURL: project.media.videoURL,
-                    progressHandler: { progress in
-                        Task { @MainActor in
-                            // Update progress (for potential UI)
-                            print("Frame analysis: \(Int(progress.percentage * 100))%")
+            // 2. Generate transform track (includes expensive video analysis)
+            var transformTrack: TransformTrack?
+            if selection.contains(.transform) {
+                let frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis]
+                if let cached = project.frameAnalysisCache, !cached.isEmpty {
+                    frameAnalysis = cached
+                } else {
+                    let analyzer = VideoFrameAnalyzer()
+                    frameAnalysis = try await analyzer.analyze(
+                        videoURL: project.media.videoURL,
+                        progressHandler: { progress in
+                            Task { @MainActor in
+                                print("Frame analysis: \(Int(progress.percentage * 100))%")
+                            }
                         }
-                    }
-                )
+                    )
+                    project.frameAnalysisCache = frameAnalysis
+                }
 
-                // Cache the analysis
-                project.frameAnalysisCache = frameAnalysis
-                print("Frame analysis completed: \(frameAnalysis.count) frames analyzed")
+                let uiStateSamples = mouseRecording.uiStateSamples
+                transformTrack = SmartZoomGenerator().generate(
+                    from: mouseDataSource,
+                    frameAnalysisArray: frameAnalysis,
+                    uiStateSamples: uiStateSamples,
+                    screenBounds: CGSize(
+                        width: mouseRecording.screenBounds.width,
+                        height: mouseRecording.screenBounds.height
+                    ),
+                    settings: settings.smartZoom
+                )
             }
 
-            // 3. Retrieve UI state samples
-            let uiStateSamples = mouseRecording.uiStateSamples
+            let rippleTrack = selection.contains(.ripple)
+                ? RippleGenerator().generate(from: mouseDataSource, settings: settings) : nil
+            let cursorTrack = selection.contains(.cursor)
+                ? ClickCursorGenerator().generate(from: mouseDataSource, settings: settings) : nil
+            let keystrokeTrack = selection.contains(.keystroke)
+                ? KeystrokeGenerator().generate(from: mouseDataSource, settings: settings) : nil
 
-            // 4. Generate the transform track via SmartZoomGenerator
-            let smartZoomGenerator = SmartZoomGenerator()
-            let transformTrack = smartZoomGenerator.generate(
-                from: mouseDataSource,
-                frameAnalysisArray: frameAnalysis,
-                uiStateSamples: uiStateSamples,
-                screenBounds: CGSize(width: mouseRecording.screenBounds.width,
-                                     height: mouseRecording.screenBounds.height),
-                settings: settings.smartZoom
-            )
-
-            // 5. Run the ripple generator
-            let rippleGenerator = RippleGenerator()
-            let rippleTrack = rippleGenerator.generate(from: mouseDataSource, settings: settings)
-
-            // 6. Run the ClickCursor generator
-            let cursorGenerator = ClickCursorGenerator()
-            let cursorTrack = cursorGenerator.generate(from: mouseDataSource, settings: settings)
-
-            // 7. Run the Keystroke generator
-            let keystrokeGenerator = KeystrokeGenerator()
-            let keystrokeTrack = keystrokeGenerator.generate(from: mouseDataSource, settings: settings)
-
-            // Update the timeline
             updateTimeline(
                 transformTrack: transformTrack,
                 rippleTrack: rippleTrack,
@@ -355,13 +345,13 @@ final class EditorViewModel: ObservableObject {
                 keystrokeTrack: keystrokeTrack
             )
 
-            print("Smart Zoom generation completed: \(transformTrack.keyframes.count) transform, \(rippleTrack.keyframes.count) ripple, \(cursorTrack.styleKeyframes?.count ?? 0) cursor, \(keystrokeTrack.keyframes.count) keystroke keyframes")
+            print("Smart generation completed for \(selection.count) track type(s)")
 
             hasUnsavedChanges = true
             invalidatePreviewCache()
 
         } catch {
-            print("Smart Zoom generation failed: \(error.localizedDescription)")
+            print("Smart generation failed: \(error.localizedDescription)")
             errorMessage = "Failed to generate keyframes: \(error.localizedDescription)"
         }
 
@@ -374,25 +364,29 @@ final class EditorViewModel: ObservableObject {
         hasUnsavedChanges = true
     }
 
-    /// Apply the generated tracks to the timeline
+    /// Apply the generated tracks to the timeline (nil = preserve existing)
     private func updateTimeline(
-        transformTrack: TransformTrack,
-        rippleTrack: RippleTrack,
+        transformTrack: TransformTrack? = nil,
+        rippleTrack: RippleTrack? = nil,
         cursorTrack: CursorTrack? = nil,
         keystrokeTrack: KeystrokeTrack? = nil
     ) {
-        // Update the transform track
-        if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) {
-            project.timeline.tracks[index] = .transform(transformTrack)
-        } else {
-            project.timeline.tracks.append(.transform(transformTrack))
+        // Update the transform track (only if provided)
+        if let transformTrack = transformTrack {
+            if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) {
+                project.timeline.tracks[index] = .transform(transformTrack)
+            } else {
+                project.timeline.tracks.append(.transform(transformTrack))
+            }
         }
 
-        // Update the ripple track
-        if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) {
-            project.timeline.tracks[index] = .ripple(rippleTrack)
-        } else {
-            project.timeline.tracks.append(.ripple(rippleTrack))
+        // Update the ripple track (only if provided)
+        if let rippleTrack = rippleTrack {
+            if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) {
+                project.timeline.tracks[index] = .ripple(rippleTrack)
+            } else {
+                project.timeline.tracks.append(.ripple(rippleTrack))
+            }
         }
 
         // Update the cursor track (if present)
