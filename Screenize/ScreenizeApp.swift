@@ -15,8 +15,10 @@ struct ScreenizeApp: App {
     // MARK: - Initialization
 
     init() {
-        // Request screen recording access at launch
-        _ = CGRequestScreenCaptureAccess()
+        // Only request screen recording at launch if permission setup is already completed
+        if UserDefaults.standard.bool(forKey: "hasCompletedPermissionSetup") {
+            _ = CGRequestScreenCaptureAccess()
+        }
 
         // Register a global hotkey (Cmd+Shift+2)
         GlobalHotkeyManager.shared.register {
@@ -147,6 +149,7 @@ struct ContentView: View {
 
     @EnvironmentObject var projectManager: ProjectManager
     @EnvironmentObject var appState: AppState
+    @AppStorage("hasCompletedPermissionSetup") private var hasCompletedSetup: Bool = false
     @State private var isCreatingProject: Bool = false
     @State private var showKeyboardShortcuts = false
 
@@ -163,7 +166,11 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if let project = appState.currentProject {
+            if !hasCompletedSetup {
+                PermissionSetupWizardView(onComplete: {
+                    hasCompletedSetup = true
+                })
+            } else if let project = appState.currentProject {
                 // Show the editor when a project exists
                 EditorMainView(project: project, projectURL: appState.currentProjectURL)
                     .id(project.id) // Force view rebuild when the project changes

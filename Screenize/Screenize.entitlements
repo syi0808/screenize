@@ -7,5 +7,8 @@
 	<!-- Network access for Sparkle updates -->
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Microphone access for audio recording (required under Hardened Runtime) -->
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
 </dict>
 </plist>
