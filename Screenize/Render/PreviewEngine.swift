@@ -78,8 +78,8 @@ final class PreviewEngine: ObservableObject {
     /// Preview scale (for performance)
     private let previewScale: CGFloat
 
-    /// Playback timer
-    private var playbackTimer: Timer?
+    /// Playback task (replaces timer for controlled async loop)
+    private var playbackTask: Task<Void, Never>?
 
     /// Last render time (for performance metrics)
     private var lastRenderTime: Date?
@@ -273,33 +273,40 @@ final class PreviewEngine: ObservableObject {
     private func startPlaybackLoop() {
         let frameDuration = 1.0 / frameRate
 
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: frameDuration, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self, self.isPlaying else { return }
+        playbackTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self = self, self.isPlaying else { break }
 
-                // Advance the time
+                let frameStart = ContinuousClock.now
+
+                // Advance time
                 let newTime = self.currentTime + frameDuration
 
-                // Stop playback when reaching the trim end
+                // Stop playback at trim end
                 if newTime >= self.effectiveTrimEnd {
                     self.currentTime = self.effectiveTrimEnd
                     self.pause()
-                    return
+                    break
                 }
 
                 self.currentTime = newTime
 
-                // Render the current frame
+                // Render frame (one at a time — no task piling)
                 await self.renderFrame(at: newTime)
+
+                // Sleep for the remaining frame budget
+                let elapsed = ContinuousClock.now - frameStart
+                let target = Duration.seconds(frameDuration)
+                if elapsed < target {
+                    try? await Task.sleep(for: target - elapsed)
+                }
             }
         }
-
-        RunLoop.main.add(playbackTimer!, forMode: .common)
     }
 
     private func stopPlaybackLoop() {
-        playbackTimer?.invalidate()
-        playbackTimer = nil
+        playbackTask?.cancel()
+        playbackTask = nil
     }
 
     // MARK: - Timeline Update
@@ -417,7 +424,7 @@ final class PreviewEngine: ObservableObject {
     }
 
     deinit {
-        playbackTimer?.invalidate()
+        playbackTask?.cancel()
     }
 }
 
