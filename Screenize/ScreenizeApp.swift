@@ -2,12 +2,36 @@ import SwiftUI
 import Sparkle
 import UniformTypeIdentifiers
 
+// MARK: - App Delegate
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard let url = urls.first else { return }
+        let ext = url.pathExtension.lowercased()
+        if ext == ScreenizeProject.packageExtension
+            || ext == ScreenizeProject.legacyFileExtension {
+            NotificationCenter.default.post(
+                name: .openProjectFile,
+                object: nil,
+                userInfo: ["url": url]
+            )
+        } else {
+            NotificationCenter.default.post(
+                name: .openVideoFile,
+                object: nil,
+                userInfo: ["url": url]
+            )
+        }
+    }
+}
+
 /// Screenize app entry point
 @main
 struct ScreenizeApp: App {
 
     // MARK: - State
 
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var projectManager = ProjectManager.shared
     @StateObject private var appState = AppState.shared
     @StateObject private var sparkleController = SparkleController()
