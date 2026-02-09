@@ -34,6 +34,12 @@ final class PreviewEngine: ObservableObject {
     /// Error message
     @Published private(set) var errorMessage: String?
 
+    /// Last render error (for UI display)
+    @Published private(set) var lastRenderError: RenderError?
+
+    /// Cumulative render error count
+    @Published private(set) var renderErrorCount: Int = 0
+
     // MARK: - Properties
 
     /// Frame evaluator
@@ -287,8 +293,23 @@ final class PreviewEngine: ObservableObject {
 
         } catch {
             guard generation == renderGeneration else { return }
-            print("Preview render error at \(time): \(error)")
+            handleRenderError(error, at: time)
         }
+    }
+
+    /// Record a render error and expose it to the UI
+    private func handleRenderError(_ error: Error, at time: TimeInterval) {
+        renderErrorCount += 1
+        lastRenderError = RenderError(
+            time: time,
+            frameIndex: Int(time * frameRate),
+            message: error.localizedDescription
+        )
+    }
+
+    /// Dismiss the render error banner
+    func clearRenderError() {
+        lastRenderError = nil
     }
 
     // MARK: - Playback Loop
@@ -575,5 +596,17 @@ enum PreviewEngineError: Error, LocalizedError {
         case .renderFailed:
             return "Frame rendering failed"
         }
+    }
+}
+
+/// User-visible render error
+struct RenderError: Identifiable, Equatable {
+    let id = UUID()
+    let time: TimeInterval
+    let frameIndex: Int
+    let message: String
+
+    static func == (lhs: RenderError, rhs: RenderError) -> Bool {
+        lhs.id == rhs.id
     }
 }

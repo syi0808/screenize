@@ -62,6 +62,11 @@ struct PreviewView: View {
                     placeholderView
                 }
 
+                // Render error banner
+                if let renderError = previewEngine.lastRenderError {
+                    renderErrorBanner(renderError)
+                }
+
                 // Controls overlay
                 if showControls {
                     controlsOverlay
@@ -243,6 +248,39 @@ struct PreviewView: View {
                 showControls = false
             }
         }
+    }
+    // MARK: - Render Error Banner
+
+    private func renderErrorBanner(_ error: RenderError) -> some View {
+        VStack {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.yellow)
+
+                Text("Render error at frame \(error.frameIndex)")
+                    .font(.caption.bold())
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Button {
+                    previewEngine.clearRenderError()
+                } label: {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.red.opacity(0.85))
+            .cornerRadius(6)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+
+            Spacer()
+        }
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 }
 
