@@ -96,6 +96,12 @@ final class PreviewEngine: ObservableObject {
     /// Last prefetched frame index (reset on seek)
     private var lastPrefetchedIndex: Int = -1
 
+    /// Wall-clock time when playback started (for real-time sync)
+    private var playbackStartWallTime: ContinuousClock.Instant?
+
+    /// Video time when playback started (for real-time sync)
+    private var playbackStartVideoTime: TimeInterval = 0
+
     /// Last render time (for performance metrics)
     private var lastRenderTime: Date?
 
@@ -200,6 +206,10 @@ final class PreviewEngine: ObservableObject {
             currentTime = effectiveTrimStart
         }
 
+        // Record wall-clock anchor for real-time sync
+        playbackStartWallTime = ContinuousClock.now
+        playbackStartVideoTime = currentTime
+
         isPlaying = true
         startPlaybackLoop()
         startPrefetching()
@@ -208,6 +218,7 @@ final class PreviewEngine: ObservableObject {
     /// Pause playback
     func pause() {
         isPlaying = false
+        playbackStartWallTime = nil
         stopPlaybackLoop()
         stopPrefetching()
     }
@@ -319,12 +330,15 @@ final class PreviewEngine: ObservableObject {
 
         playbackTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
-                guard let self = self, self.isPlaying else { break }
+                guard let self = self,
+                      self.isPlaying,
+                      let wallStart = self.playbackStartWallTime else { break }
 
-                let frameStart = ContinuousClock.now
-
-                // Advance time
-                let newTime = self.currentTime + frameDuration
+                // Compute target video time from wall-clock elapsed time
+                let wallElapsed = ContinuousClock.now - wallStart
+                let elapsedSeconds = Double(wallElapsed.components.seconds)
+                    + Double(wallElapsed.components.attoseconds) / 1e18
+                let newTime = self.playbackStartVideoTime + elapsedSeconds
 
                 // Stop playback at trim end
                 if newTime >= self.effectiveTrimEnd {
@@ -338,11 +352,14 @@ final class PreviewEngine: ObservableObject {
                 // Render frame (one at a time — no task piling)
                 await self.renderFrame(at: newTime)
 
-                // Sleep for the remaining frame budget
-                let elapsed = ContinuousClock.now - frameStart
-                let target = Duration.seconds(frameDuration)
-                if elapsed < target {
-                    try? await Task.sleep(for: target - elapsed)
+                // Sleep until the next frame boundary
+                let nextFrameVideoTime = (floor(newTime / frameDuration) + 1.0) * frameDuration
+                let nextFrameWallTime = wallStart + Duration.seconds(
+                    nextFrameVideoTime - self.playbackStartVideoTime
+                )
+                let sleepDuration = nextFrameWallTime - ContinuousClock.now
+                if sleepDuration > .zero {
+                    try? await Task.sleep(for: sleepDuration)
                 }
             }
         }
