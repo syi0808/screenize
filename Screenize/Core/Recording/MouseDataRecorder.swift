@@ -240,6 +240,10 @@ final class MouseDataRecorder {
         }
 
         lock.lock()
+        // DEBUG: Log first 3 mouse samples
+        if positions.count < 3 {
+            print("🔍 [DEBUG] Mouse sample #\(positions.count): mouseLocation=\(mouseLocation), relative=\(relativePosition), screenBounds=\(screenBounds)")
+        }
         positions.append(MousePosition(
             timestamp: timestamp,
             x: relativePosition.x,

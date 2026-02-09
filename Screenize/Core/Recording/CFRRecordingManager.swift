@@ -150,6 +150,9 @@ final class CFRRecordingManager: @unchecked Sendable {
 
     // MARK: - Frame Handling
 
+    /// Counter for debug logging (first frame only)
+    private var debugFrameCount: Int = 0
+
     /// Receive a new frame (invoked by SCStreamOutput)
     /// - Parameter sampleBuffer: Video sample buffer
     func receiveFrame(_ sampleBuffer: CMSampleBuffer) {
@@ -157,6 +160,19 @@ final class CFRRecordingManager: @unchecked Sendable {
 
         // Extract the pixel buffer
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        // DEBUG: Log first frame info
+        if debugFrameCount == 0 {
+            let bufW = CVPixelBufferGetWidth(pixelBuffer)
+            let bufH = CVPixelBufferGetHeight(pixelBuffer)
+            print("🔍 [DEBUG] First frame pixel buffer: \(bufW)x\(bufH)")
+
+            // Log sample buffer attachments
+            if let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[String: Any]] {
+                print("🔍 [DEBUG] Frame attachments: \(attachments)")
+            }
+        }
+        debugFrameCount += 1
 
         // Copy the pixel buffer (source buffer is reused)
         guard let copiedBuffer = copyPixelBuffer(pixelBuffer) else { return }

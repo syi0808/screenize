@@ -16,6 +16,9 @@ final class EffectCompositor {
     /// Cache for cursor hotspots (actual NSCursor hotSpot values)
     private var cursorHotspotCache: [CursorStyle: CGPoint] = [:]
 
+    /// DEBUG: Counter for first-call logging
+    private var debugCursorRenderCount = 0
+
     init(ciContext: CIContext? = nil) {
         self.ciContext = ciContext ?? CIContext(options: [
             .useSoftwareRenderer: false,
@@ -125,6 +128,12 @@ final class EffectCompositor {
         let pos = CoordinateConverter.normalizedToCoreImage(cursor.position, frameSize: frameSize)
         let posX = pos.x
         let posY = pos.y
+
+        // DEBUG: Log first cursor render
+        if debugCursorRenderCount == 0 {
+            print("🔍 [DEBUG] EffectCompositor.renderCursor: normalized=(\(cursor.position.x), \(cursor.position.y)), frameSize=\(frameSize), ciPos=(\(posX), \(posY))")
+        }
+        debugCursorRenderCount += 1
 
         // Cursor size
         let cursorSize = cursorImage.extent.size

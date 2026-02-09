@@ -10,6 +10,7 @@ struct CaptureConfiguration {
     var showsCursor: Bool
     var capturesAudio: Bool
     var scaleFactor: CGFloat
+    var capturesShadow: Bool
 
     init(
         width: Int = 1920,
@@ -18,7 +19,8 @@ struct CaptureConfiguration {
         pixelFormat: OSType = kCVPixelFormatType_32BGRA,
         showsCursor: Bool = false,
         capturesAudio: Bool = true,
-        scaleFactor: CGFloat = 2.0
+        scaleFactor: CGFloat = 2.0,
+        capturesShadow: Bool = true
     ) {
         self.width = width
         self.height = height
@@ -27,6 +29,7 @@ struct CaptureConfiguration {
         self.showsCursor = showsCursor
         self.capturesAudio = capturesAudio
         self.scaleFactor = scaleFactor
+        self.capturesShadow = capturesShadow
     }
 
     static let `default` = Self()
@@ -61,6 +64,9 @@ struct CaptureConfiguration {
         config.showsCursor = showsCursor
         config.capturesAudio = capturesAudio
         config.scalesToFit = true
+        if #available(macOS 14.0, *) {
+            config.ignoreShadowsSingleWindow = !capturesShadow
+        }
         return config
     }
 
@@ -72,7 +78,8 @@ struct CaptureConfiguration {
             width: width,
             height: height,
             frameRate: 60,
-            scaleFactor: scaleFactor
+            scaleFactor: scaleFactor,
+            capturesShadow: !target.isWindow
         )
     }
 }

@@ -76,6 +76,10 @@ final class RecordingCoordinator: ObservableObject {
 
         // Setup capture configuration
         let captureConfig = CaptureConfiguration.forTarget(target)
+
+        // DEBUG: Log capture setup details
+        print("🔍 [DEBUG] Recording target: \(target), captureBounds: \(captureBounds)")
+        print("🔍 [DEBUG] captureConfig: \(captureConfig.width)x\(captureConfig.height), shadow: \(captureConfig.capturesShadow)")
         self.captureConfiguration = captureConfig
 
         // Sync nonisolated variables

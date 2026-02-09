@@ -45,6 +45,10 @@ final class VideoFrameExtractor {
         self.frameRate = Double(nominalFR) > 0 ? Double(nominalFR) : 60.0
         self.duration = CMTimeGetSeconds(assetDuration)
 
+        // DEBUG: Log video metadata
+        let transform = try await videoTrack.load(.preferredTransform)
+        print("🔍 [DEBUG] VideoFrameExtractor: videoSize=\(size), frameRate=\(self.frameRate), transform=\(transform)")
+
         // Configure the image generator
         setupImageGenerator()
     }

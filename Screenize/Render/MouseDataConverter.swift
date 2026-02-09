@@ -18,6 +18,15 @@ struct MouseDataConverter {
             height: recording.screenBounds.height
         )
 
+        // DEBUG: Log mouse data conversion details
+        print("🔍 [DEBUG] MouseDataConverter: screenBounds=\(recording.screenBounds), boundsSize=\(boundsSize)")
+        for (i, pos) in recording.positions.prefix(3).enumerated() {
+            let normalized = CoordinateConverter.pixelToNormalized(
+                CGPoint(x: pos.x, y: pos.y), size: boundsSize
+            )
+            print("🔍 [DEBUG] MouseDataConverter: position[\(i)] raw=(\(pos.x), \(pos.y)) -> normalized=(\(normalized.x), \(normalized.y))")
+        }
+
         let positions = toRenderPositions(from: recording.positions, boundsSize: boundsSize)
         let clicks = toRenderClickEvents(from: recording.clicks, boundsSize: boundsSize)
 
