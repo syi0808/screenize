@@ -81,6 +81,9 @@ final class PreviewEngine: ObservableObject {
     /// Playback task (replaces timer for controlled async loop)
     private var playbackTask: Task<Void, Never>?
 
+    /// Render generation (incremented on seek to invalidate stale renders)
+    private var renderGeneration: Int = 0
+
     /// Last render time (for performance metrics)
     private var lastRenderTime: Date?
 
@@ -207,6 +210,11 @@ final class PreviewEngine: ObservableObject {
     /// Seek to a specific time (clamped to trim range)
     func seek(to time: TimeInterval) async {
         let clampedTime = max(effectiveTrimStart, min(effectiveTrimEnd, time))
+
+        // Invalidate in-flight renders and cancel pending extractions
+        renderGeneration += 1
+        frameExtractor?.cancelAllPendingRequests()
+
         currentTime = clampedTime
 
         if !isPlaying {
@@ -241,6 +249,7 @@ final class PreviewEngine: ObservableObject {
         }
 
         let frameIndex = Int(time * frameRate)
+        let generation = renderGeneration
 
         // Check the cache
         if let cachedFrame = cache.frame(at: frameIndex) {
@@ -252,18 +261,23 @@ final class PreviewEngine: ObservableObject {
             // Extract the frame
             let sourceFrame = try await extractor.extractFrame(at: time)
 
+            // Abort if a seek invalidated this render
+            guard generation == renderGeneration else { return }
+
             // Evaluate rendering state
             let state = evaluator.evaluate(at: time)
 
             // Perform rendering
-            if let rendered = renderer.renderToCGImage(sourceFrame: sourceFrame, state: state) {
-                // Store in cache
+            if let rendered = renderer.renderToCGImage(
+                sourceFrame: sourceFrame, state: state
+            ) {
+                guard generation == renderGeneration else { return }
                 cache.store(rendered, at: frameIndex)
                 currentFrame = rendered
             }
 
         } catch {
-            // Ignore errors (skip frame)
+            guard generation == renderGeneration else { return }
             print("Preview render error at \(time): \(error)")
         }
     }
