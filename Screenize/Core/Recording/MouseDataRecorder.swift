@@ -118,6 +118,19 @@ final class MouseDataRecorder {
 
         print("🖱️ [MouseDataRecorder] Recording stopped - positions: \(positions.count), clicks: \(clicks), scrolls: \(scrolls), keyboards: \(keyboards), drags: \(drags), UI samples: \(uiStateSamples.count) (scaleFactor: \(scaleFactor))")
 
+        // DEBUG: Position validation summary
+        if !positions.isEmpty {
+            let ys = positions.map { $0.y }
+            let xs = positions.map { $0.x }
+            let minY = ys.min()!, maxY = ys.max()!, avgY = ys.reduce(0, +) / CGFloat(ys.count)
+            let minX = xs.min()!, maxX = xs.max()!, avgX = xs.reduce(0, +) / CGFloat(xs.count)
+            print("🔍 [DEBUG] Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
+            print("🔍 [DEBUG] screenBounds=\(screenBounds) (origin.y=\(screenBounds.origin.y), size=\(screenBounds.size))")
+            if maxY > screenBounds.height * 1.05 {
+                print("⚠️ [DEBUG] WARNING: Y positions exceed screenBounds.height! Origin conversion likely incorrect.")
+            }
+        }
+
         // Clean up handlers
         clickHandler = nil
         scrollHandler = nil

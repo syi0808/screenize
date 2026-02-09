@@ -202,8 +202,33 @@ final class RecordingCoordinator: ObservableObject {
             // SCWindow.frame uses CG coordinates (top-left origin, Y increases downwards)
             // NSEvent.mouseLocation uses AppKit coordinates (bottom-left origin, Y increases upwards)
             // Convert to AppKit coordinates for mouse coordinate translation
-            let screenHeight = NSScreen.main?.frame.height ?? 0
+            //
+            // Find the screen containing the window (fall back to main screen)
+            // This ensures correct conversion on multi-display setups where NSScreen.main
+            // may not be the screen the window is on.
+            let windowMidX = window.frame.origin.x + window.frame.width / 2
+            let windowCGMidY = window.frame.origin.y + window.frame.height / 2
+            let primaryScreenHeight = NSScreen.screens.first?.frame.height ?? 0
+
+            let screenHeight: CGFloat
+            if let containingScreen = NSScreen.screens.first(where: { screen in
+                // Convert AppKit screen frame to CG coordinates for comparison with SCWindow.frame
+                let screenCGOriginY = primaryScreenHeight - screen.frame.origin.y - screen.frame.height
+                let screenCGRect = CGRect(
+                    x: screen.frame.origin.x, y: screenCGOriginY,
+                    width: screen.frame.width, height: screen.frame.height
+                )
+                return screenCGRect.contains(CGPoint(x: windowMidX, y: windowCGMidY))
+            }) {
+                // Use the containing screen's top edge in CG coordinates
+                // For primary screen: primaryScreenHeight. For others: convert accordingly.
+                screenHeight = primaryScreenHeight - containingScreen.frame.origin.y
+            } else {
+                screenHeight = NSScreen.main?.frame.height ?? 0
+            }
+
             let appKitOriginY = screenHeight - window.frame.origin.y - window.frame.height
+            print("🔍 [DEBUG] Window bounds: CG frame=\(window.frame), screenHeight=\(screenHeight), appKitOriginY=\(appKitOriginY)")
             return CGRect(
                 x: window.frame.origin.x,
                 y: appKitOriginY,

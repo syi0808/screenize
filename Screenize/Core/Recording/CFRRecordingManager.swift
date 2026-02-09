@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import CoreMedia
 import CoreVideo
+import ScreenCaptureKit
 
 /// CFR (Constant Frame Rate) recording manager
 /// Converts ScreenCaptureKit's VFR output to a fixed 60fps CFR recording
@@ -167,9 +168,19 @@ final class CFRRecordingManager: @unchecked Sendable {
             let bufH = CVPixelBufferGetHeight(pixelBuffer)
             print("🔍 [DEBUG] First frame pixel buffer: \(bufW)x\(bufH)")
 
-            // Log sample buffer attachments
-            if let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[String: Any]] {
-                print("🔍 [DEBUG] Frame attachments: \(attachments)")
+            // Extract SCStreamFrameInfo from sample buffer attachments
+            if let attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [NSDictionary],
+               let dict = attachmentsArray.first {
+                if let contentRectDict = dict[SCStreamFrameInfo.contentRect] as? NSDictionary,
+                   let contentRect = CGRect(dictionaryRepresentation: contentRectDict) {
+                    print("🔍 [DEBUG] contentRect: \(contentRect)")
+                }
+                if let contentScale = dict[SCStreamFrameInfo.contentScale] as? CGFloat {
+                    print("🔍 [DEBUG] contentScale: \(contentScale)")
+                }
+                if let scaleFactor = dict[SCStreamFrameInfo.scaleFactor] as? CGFloat {
+                    print("🔍 [DEBUG] scaleFactor: \(scaleFactor)")
+                }
             }
         }
         debugFrameCount += 1
