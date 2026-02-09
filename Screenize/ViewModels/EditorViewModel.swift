@@ -279,23 +279,17 @@ final class EditorViewModel: ObservableObject {
     /// Smart generation with selective track types (video analysis + UI state)
     private func runSmartZoomGeneration(for selection: Set<TrackType>) async {
         saveUndoSnapshot()
-        guard project.media.mouseDataExists else {
-            print("Smart generation skipped: No mouse data available")
-            return
-        }
 
         isLoading = true
         errorMessage = nil
 
         do {
-            // 1. Load mouse data
-            let mouseRecording = try MouseRecording.load(from: project.media.mouseDataURL)
-
-            let mouseDataSource = MouseRecordingAdapter(
-                recording: mouseRecording,
-                duration: project.media.duration,
-                frameRate: project.media.frameRate
-            )
+            // 1. Load mouse data source (prefers v4 event streams, falls back to v2)
+            guard let mouseDataSource = loadMouseDataSource() else {
+                print("Smart generation skipped: No mouse data available")
+                isLoading = false
+                return
+            }
 
             let settings = GeneratorSettings.default
 
@@ -318,15 +312,26 @@ final class EditorViewModel: ObservableObject {
                     project.frameAnalysisCache = frameAnalysis
                 }
 
-                let uiStateSamples = mouseRecording.uiStateSamples
+                // Load legacy MouseRecording for uiStateSamples (not in event streams)
+                let uiStateSamples: [UIStateSample]
+                let screenBounds: CGSize
+                if project.media.mouseDataExists,
+                   let recording = try? MouseRecording.load(from: project.media.mouseDataURL) {
+                    uiStateSamples = recording.uiStateSamples
+                    screenBounds = CGSize(
+                        width: recording.screenBounds.width,
+                        height: recording.screenBounds.height
+                    )
+                } else {
+                    uiStateSamples = []
+                    screenBounds = project.media.pixelSize
+                }
+
                 transformTrack = SmartZoomGenerator().generate(
                     from: mouseDataSource,
                     frameAnalysisArray: frameAnalysis,
                     uiStateSamples: uiStateSamples,
-                    screenBounds: CGSize(
-                        width: mouseRecording.screenBounds.width,
-                        height: mouseRecording.screenBounds.height
-                    ),
+                    screenBounds: screenBounds,
                     settings: settings.smartZoom
                 )
             }
@@ -356,6 +361,30 @@ final class EditorViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    /// Load mouse data source, preferring v4 event streams over legacy recording.mouse.json.
+    private func loadMouseDataSource() -> MouseDataSource? {
+        // v4 path: load from event streams
+        if let interop = project.interop, let packageURL = projectURL {
+            if let source = EventStreamLoader.load(
+                from: packageURL,
+                interop: interop,
+                duration: project.media.duration,
+                frameRate: project.media.frameRate
+            ) {
+                return source
+            }
+        }
+
+        // MARK: - Legacy v2 (remove in next minor version)
+        guard project.media.mouseDataExists else { return nil }
+        guard let recording = try? MouseRecording.load(from: project.media.mouseDataURL) else { return nil }
+        return MouseRecordingAdapter(
+            recording: recording,
+            duration: project.media.duration,
+            frameRate: project.media.frameRate
+        )
     }
 
     /// Invalidate the frame analysis cache
@@ -858,7 +887,7 @@ final class EditorViewModel: ObservableObject {
     }
 }
 
-// MARK: - MouseRecordingAdapter
+// MARK: - Legacy v2 (remove in next minor version)
 
 /// Adapter that converts MouseRecording into a MouseDataSource
 struct MouseRecordingAdapter: MouseDataSource {

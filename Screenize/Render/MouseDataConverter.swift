@@ -7,9 +7,34 @@ import CoreGraphics
 /// Shared by ExportEngine and PreviewEngine
 struct MouseDataConverter {
 
+    /// Convert from a MouseDataSource (v4 event streams or legacy adapter) to render data
+    static func convertFromMouseDataSource(
+        _ source: MouseDataSource
+    ) -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
+        let positions = source.positions.map { pos in
+            RenderMousePosition(
+                timestamp: pos.time,
+                x: pos.position.x,
+                y: pos.position.y,
+                velocity: 0
+            )
+        }
+        let clicks = source.clicks.map { click in
+            let clickType: ClickType = (click.clickType == .leftDown || click.clickType == .doubleClick) ? .left : .right
+            return RenderClickEvent(
+                timestamp: click.time,
+                duration: 0.1,
+                x: click.position.x,
+                y: click.position.y,
+                clickType: clickType
+            )
+        }
+        return (positions, clicks)
+    }
+
+    // MARK: - Legacy v2 (remove in next minor version)
+
     /// Convert mouse recording data for rendering (without interpolation)
-    /// - Parameter recording: Mouse recording data
-    /// - Returns: Converted mouse positions and click events (pre-interpolation)
     static func convert(
         from recording: MouseRecording
     ) -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
@@ -34,10 +59,6 @@ struct MouseDataConverter {
     }
 
     /// Convert MousePosition array to RenderMousePosition array
-    /// - Parameters:
-    ///   - positions: Original mouse positions
-    ///   - boundsSize: Capture bounds size
-    /// - Returns: Normalized mouse positions for rendering
     static func toRenderPositions(
         from positions: [MousePosition],
         boundsSize: CGSize
@@ -57,10 +78,6 @@ struct MouseDataConverter {
     }
 
     /// Convert MouseClickEvent array to RenderClickEvent array
-    /// - Parameters:
-    ///   - clicks: Original click events
-    ///   - boundsSize: Capture bounds size
-    /// - Returns: Normalized click events for rendering
     static func toRenderClickEvents(
         from clicks: [MouseClickEvent],
         boundsSize: CGSize
@@ -81,44 +98,73 @@ struct MouseDataConverter {
         }
     }
 
+    // MARK: - Load and Convert
+
     /// Load and convert mouse data from a project (without interpolation)
-    /// - Parameter project: Screenize project
-    /// - Returns: Converted mouse positions and click events (pre-interpolation), or empty arrays if missing
     static func loadAndConvert(
         from project: ScreenizeProject
     ) throws -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
+        // v4 path: load from event streams
+        if let source = loadMouseDataSourceFromEventStreams(project: project) {
+            return convertFromMouseDataSource(source)
+        }
+
+        // MARK: - Legacy v2 (remove in next minor version)
         guard project.media.mouseDataExists else {
             return ([], [])
         }
-
         let recording = try MouseRecording.load(from: project.media.mouseDataURL)
         return convert(from: recording)
     }
 
     /// Load and convert mouse data from a project (with interpolation)
-    /// - Parameters:
-    ///   - project: Screenize project
-    ///   - frameRate: Output frame rate
-    /// - Returns: Converted and interpolated mouse positions and click events
-    /// - Note: Must be called on the MainActor (interpolateMousePositions is MainActor-isolated)
     @MainActor
     static func loadAndConvertWithInterpolation(
         from project: ScreenizeProject,
         frameRate: Double
     ) throws -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
+        // v4 path: load from event streams
+        if let source = loadMouseDataSourceFromEventStreams(project: project) {
+            let result = convertFromMouseDataSource(source)
+            let interpolatedPositions = PreviewEngine.interpolateMousePositions(
+                result.positions,
+                outputFrameRate: frameRate
+            )
+            return (interpolatedPositions, result.clicks)
+        }
+
+        // MARK: - Legacy v2 (remove in next minor version)
         guard project.media.mouseDataExists else {
             return ([], [])
         }
-
         let recording = try MouseRecording.load(from: project.media.mouseDataURL)
         let result = convert(from: recording)
-
-        // Apply interpolation
         let interpolatedPositions = PreviewEngine.interpolateMousePositions(
             result.positions,
             outputFrameRate: frameRate
         )
-
         return (interpolatedPositions, result.clicks)
+    }
+
+    // MARK: - Private
+
+    /// Derive the package root URL from the project's video URL and load event streams.
+    private static func loadMouseDataSourceFromEventStreams(
+        project: ScreenizeProject
+    ) -> MouseDataSource? {
+        guard let interop = project.interop else { return nil }
+
+        // Package root is two levels up from the video file:
+        // <package>/recording/recording.mp4 → <package>
+        let packageURL = project.media.videoURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        return EventStreamLoader.load(
+            from: packageURL,
+            interop: interop,
+            duration: project.media.duration,
+            frameRate: project.media.frameRate
+        )
     }
 }

@@ -187,22 +187,51 @@ struct EditorLoaderView: View {
                 // Create a .screenize package and project
                 let videoName = videoURL.deletingPathExtension().lastPathComponent
                 let parentDirectory = videoURL.deletingLastPathComponent()
-                let packageInfo = try ProjectManager.shared.createPackage(
-                    name: videoName,
-                    videoURL: videoURL,
-                    mouseDataURL: mouseDataURL,
-                    in: parentDirectory
-                )
+                let appState = AppState.shared
 
-                if let captureMeta {
+                let packageInfo: PackageInfo
+
+                // v4 path: use event streams when mouse recording and capture meta are available
+                if let captureMeta,
+                   let mouseRecording = appState.lastMouseRecording {
+                    let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+                    packageInfo = try PackageManager.shared.createPackageV4(
+                        name: videoName,
+                        videoURL: videoURL,
+                        mouseRecording: mouseRecording,
+                        captureMeta: captureMeta,
+                        in: parentDirectory,
+                        recordingStartDate: appState.lastRecordingStartDate ?? Date(),
+                        processTimeStartMs: appState.lastProcessTimeStartMs,
+                        appVersion: appVersion
+                    )
+
                     project = try await ProjectCreator.createFromRecording(
                         packageInfo: packageInfo,
                         captureMeta: captureMeta
                     )
+
+                    // Clear retained mouse recording to free memory
+                    appState.lastMouseRecording = nil
                 } else {
-                    project = try await ProjectCreator.createFromVideo(
-                        packageInfo: packageInfo
+                    // MARK: - Legacy v2 (remove in next minor version)
+                    packageInfo = try ProjectManager.shared.createPackage(
+                        name: videoName,
+                        videoURL: videoURL,
+                        mouseDataURL: mouseDataURL,
+                        in: parentDirectory
                     )
+
+                    if let captureMeta {
+                        project = try await ProjectCreator.createFromRecording(
+                            packageInfo: packageInfo,
+                            captureMeta: captureMeta
+                        )
+                    } else {
+                        project = try await ProjectCreator.createFromVideo(
+                            packageInfo: packageInfo
+                        )
+                    }
                 }
 
                 // Save the project into the package

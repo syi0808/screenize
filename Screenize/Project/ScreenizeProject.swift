@@ -24,6 +24,9 @@ struct ScreenizeProject: Codable, Identifiable {
     var frameAnalysisCache: [VideoFrameAnalyzer.FrameAnalysis]?
     var frameAnalysisVersion: Int = 1  // Algorithm version (re-run analysis when it changes)
 
+    // v4: polyrecorder interop block (nil for v2 projects)
+    var interop: InteropBlock?
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -31,10 +34,11 @@ struct ScreenizeProject: Codable, Identifiable {
         captureMeta: CaptureMeta,
         timeline: Timeline = Timeline(),
         renderSettings: RenderSettings = RenderSettings(),
-        frameAnalysisCache: [VideoFrameAnalyzer.FrameAnalysis]? = nil
+        frameAnalysisCache: [VideoFrameAnalyzer.FrameAnalysis]? = nil,
+        interop: InteropBlock? = nil
     ) {
         self.id = id
-        self.version = 2
+        self.version = 4
         self.name = name
         self.createdAt = Date()
         self.modifiedAt = Date()
@@ -44,6 +48,7 @@ struct ScreenizeProject: Codable, Identifiable {
         self.renderSettings = renderSettings
         self.frameAnalysisCache = frameAnalysisCache
         self.frameAnalysisVersion = 1
+        self.interop = interop
     }
 
     // MARK: - File Operations

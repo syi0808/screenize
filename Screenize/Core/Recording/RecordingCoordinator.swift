@@ -28,6 +28,11 @@ final class RecordingCoordinator: ObservableObject {
     private var captureTarget: CaptureTarget?
     private var captureBounds: CGRect = .zero
 
+    // v4 event stream timebase
+    private(set) var recordingStartDate: Date?
+    private(set) var processTimeStartMs: Int64 = 0
+    private(set) var lastMouseRecording: MouseRecording?
+
     private let ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
         .highQualityDownsample: false,
@@ -97,6 +102,8 @@ final class RecordingCoordinator: ObservableObject {
         )
 
         // Start mouse recording after video capture begins (synchronize timestamps)
+        recordingStartDate = Date()
+        processTimeStartMs = Int64(ProcessInfo.processInfo.systemUptime * 1000)
         mouseDataRecorder = MouseDataRecorder()
         mouseDataRecorder?.startRecording(screenBounds: captureBounds, scaleFactor: captureConfig.scaleFactor)
 
@@ -125,6 +132,7 @@ final class RecordingCoordinator: ObservableObject {
 
         // Save mouse data
         if let mouseRecording = mouseDataRecorder?.stopRecording() {
+            lastMouseRecording = mouseRecording
             let mouseDataURL = MouseDataRecorder.mouseDataURL(for: session.outputURL)
             do {
                 try mouseRecording.save(to: mouseDataURL)

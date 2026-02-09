@@ -21,6 +21,10 @@ final class AppState: ObservableObject {
     @Published var hasRecording: Bool = false
     @Published var lastRecordingURL: URL?
     @Published var lastMouseDataURL: URL?
+    // v4 recording metadata (captured before coordinator is released)
+    var lastMouseRecording: MouseRecording?
+    var lastRecordingStartDate: Date?
+    var lastProcessTimeStartMs: Int64 = 0
 
     // Countdown state
     @Published var isCountingDown: Bool = false
@@ -211,9 +215,14 @@ final class AppState: ObservableObject {
         stopDurationTimer()
         hideRecordingFloatingPanel()
 
+        // Capture v4 timing metadata before releasing coordinator
+        lastRecordingStartDate = coordinator.recordingStartDate
+        lastProcessTimeStartMs = coordinator.processTimeStartMs
+
         if let videoURL = await coordinator.stopRecording() {
             lastRecordingURL = videoURL
             lastMouseDataURL = MouseDataRecorder.mouseDataURL(for: videoURL)
+            lastMouseRecording = coordinator.lastMouseRecording
             hasRecording = true
         } else {
             errorMessage = "Failed to stop recording"

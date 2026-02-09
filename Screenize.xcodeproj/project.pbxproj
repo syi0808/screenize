@@ -114,6 +114,11 @@
 		A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A0296A0001 /* PermissionWizardViewModel.swift */; };
 		A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A1296A0001 /* PermissionSetupWizardView.swift */; };
 		A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A3296A0001 /* PermissionStatusBadge.swift */; };
+		F0A00001296A0001 /* EventStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00001296A0001 /* EventStream.swift */; };
+		F0A00002296A0001 /* RecordingMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00002296A0001 /* RecordingMetadata.swift */; };
+		F0A00003296A0001 /* EventStreamAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00003296A0001 /* EventStreamAdapter.swift */; };
+		F0A00004296A0001 /* InteropBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00004296A0001 /* InteropBlock.swift */; };
+		F0A00005296A0001 /* EventStreamWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00005296A0001 /* EventStreamWriter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -225,6 +230,11 @@
 		F1000201296A0001 /* SessionClusterer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionClusterer.swift; sourceTree = "<group>"; };
 		F1000202296A0001 /* ZoomLevelCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomLevelCalculator.swift; sourceTree = "<group>"; };
 		F1000203296A0001 /* SessionCenterResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCenterResolver.swift; sourceTree = "<group>"; };
+		F1A00001296A0001 /* EventStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStream.swift; sourceTree = "<group>"; };
+		F1A00002296A0001 /* RecordingMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingMetadata.swift; sourceTree = "<group>"; };
+		F1A00003296A0001 /* EventStreamAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamAdapter.swift; sourceTree = "<group>"; };
+		F1A00004296A0001 /* InteropBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteropBlock.swift; sourceTree = "<group>"; };
+		F1A00005296A0001 /* EventStreamWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamWriter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -297,6 +307,7 @@
 				F1000006296A0001 /* ProjectCreator.swift */,
 				F1000009296A0001 /* PackageManager.swift */,
 				F100000A296A0001 /* LegacyProjectMigrator.swift */,
+				F1A00004296A0001 /* InteropBlock.swift */,
 			);
 			path = Project;
 			sourceTree = "<group>";
@@ -460,6 +471,7 @@
 				F10000C2296A0001 /* RecordingSession.swift */,
 				F10000C3296A0001 /* VideoWriter.swift */,
 				F10000CF296A0001 /* CFRRecordingManager.swift */,
+				F1A00005296A0001 /* EventStreamWriter.swift */,
 			);
 			path = Recording;
 			sourceTree = "<group>";
@@ -502,6 +514,9 @@
 				F10000E2296A0001 /* MouseEvent.swift */,
 				F10000E3296A0001 /* ZoomSettings.swift */,
 				F10000E4296A0001 /* ClickType.swift */,
+				F1A00001296A0001 /* EventStream.swift */,
+				F1A00002296A0001 /* RecordingMetadata.swift */,
+				F1A00003296A0001 /* EventStreamAdapter.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -710,6 +725,11 @@
 				A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */,
 				A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */,
 				A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */,
+				F0A00001296A0001 /* EventStream.swift in Sources */,
+				F0A00002296A0001 /* RecordingMetadata.swift in Sources */,
+				F0A00003296A0001 /* EventStreamAdapter.swift in Sources */,
+				F0A00004296A0001 /* InteropBlock.swift in Sources */,
+				F0A00005296A0001 /* EventStreamWriter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
