@@ -314,8 +314,8 @@ struct RecentProjectsView: View {
     private func recentProjectRow(_ info: RecentProjectInfo) -> some View {
         Button {
             Task {
-                if await projectManager.tryLoad(from: info.packageURL) != nil {
-                    onSelect?(info.packageURL)
+                if let result = await projectManager.tryLoad(from: info.packageURL) {
+                    onSelect?(result.packageURL)
                 }
             }
         } label: {
