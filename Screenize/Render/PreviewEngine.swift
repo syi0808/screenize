@@ -84,6 +84,12 @@ final class PreviewEngine: ObservableObject {
     /// Render generation (incremented on seek to invalidate stale renders)
     private var renderGeneration: Int = 0
 
+    /// Prefetch task (decodes frames ahead of playback)
+    private var prefetchTask: Task<Void, Never>?
+
+    /// Last prefetched frame index (reset on seek)
+    private var lastPrefetchedIndex: Int = -1
+
     /// Last render time (for performance metrics)
     private var lastRenderTime: Date?
 
@@ -98,7 +104,7 @@ final class PreviewEngine: ObservableObject {
 
     // MARK: - Initialization
 
-    init(previewScale: CGFloat = 0.5, cacheSize: Int = 60) {
+    init(previewScale: CGFloat = 0.5, cacheSize: Int = 180) {
         self.previewScale = previewScale
         self.cache = PreviewCache(maxSize: cacheSize)
     }
@@ -190,12 +196,14 @@ final class PreviewEngine: ObservableObject {
 
         isPlaying = true
         startPlaybackLoop()
+        startPrefetching()
     }
 
     /// Pause playback
     func pause() {
         isPlaying = false
         stopPlaybackLoop()
+        stopPrefetching()
     }
 
     /// Toggle playback/pause
@@ -211,9 +219,10 @@ final class PreviewEngine: ObservableObject {
     func seek(to time: TimeInterval) async {
         let clampedTime = max(effectiveTrimStart, min(effectiveTrimEnd, time))
 
-        // Invalidate in-flight renders and cancel pending extractions
+        // Invalidate in-flight renders, cancel pending extractions, reset prefetch
         renderGeneration += 1
         frameExtractor?.cancelAllPendingRequests()
+        lastPrefetchedIndex = -1
 
         currentTime = clampedTime
 
@@ -321,6 +330,77 @@ final class PreviewEngine: ObservableObject {
     private func stopPlaybackLoop() {
         playbackTask?.cancel()
         playbackTask = nil
+    }
+
+    // MARK: - Frame Prefetching
+
+    private func startPrefetching() {
+        stopPrefetching()
+
+        prefetchTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self = self,
+                      let extractor = self.frameExtractor,
+                      let evaluator = self.evaluator,
+                      let renderer = self.renderer else { break }
+
+                let currentIdx = Int(self.currentTime * self.frameRate)
+                let maxFrame = self.totalFrames - 1
+
+                // Prefetch 10–120 frames ahead of current position
+                let prefetchStart = min(maxFrame, currentIdx + 10)
+                let prefetchEnd = min(maxFrame, currentIdx + 120)
+
+                guard prefetchStart <= prefetchEnd,
+                      prefetchStart > self.lastPrefetchedIndex else {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    continue
+                }
+
+                // Collect uncached frames
+                var timesToFetch: [(index: Int, time: TimeInterval)] = []
+                for idx in prefetchStart...prefetchEnd {
+                    if !self.cache.isCached(idx) {
+                        timesToFetch.append((idx, Double(idx) / self.frameRate))
+                    }
+                }
+
+                // Batch extract (up to 30 at a time)
+                let batchSize = 30
+                for batchStart in stride(from: 0, to: timesToFetch.count, by: batchSize) {
+                    guard !Task.isCancelled else { break }
+
+                    let batchEnd = min(batchStart + batchSize, timesToFetch.count)
+                    let batch = Array(timesToFetch[batchStart..<batchEnd])
+                    let times = batch.map { $0.time }
+
+                    do {
+                        let frames = try await extractor.extractFrames(at: times)
+
+                        for (extracted, info) in zip(frames, batch) {
+                            guard !Task.isCancelled else { break }
+                            let state = evaluator.evaluate(at: extracted.0)
+                            if let img = renderer.renderToCGImage(
+                                sourceFrame: extracted.1, state: state
+                            ) {
+                                self.cache.store(img, at: info.index)
+                            }
+                        }
+                    } catch {
+                        break // Skip remaining batches on error
+                    }
+                }
+
+                self.lastPrefetchedIndex = prefetchEnd
+                try? await Task.sleep(for: .milliseconds(200))
+            }
+        }
+    }
+
+    private func stopPrefetching() {
+        prefetchTask?.cancel()
+        prefetchTask = nil
+        lastPrefetchedIndex = -1
     }
 
     // MARK: - Timeline Update
@@ -432,6 +512,7 @@ final class PreviewEngine: ObservableObject {
 
     func cleanup() {
         pause()
+        stopPrefetching()
         frameExtractor?.cancelAllPendingRequests()
         cache.invalidateAll()
         currentFrame = nil
@@ -439,6 +520,7 @@ final class PreviewEngine: ObservableObject {
 
     deinit {
         playbackTask?.cancel()
+        prefetchTask?.cancel()
     }
 }
 
