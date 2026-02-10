@@ -7,6 +7,22 @@
         <language>en</language>
 
         <item>
+            <title>Version 0.3.0</title>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+            <sparkle:releaseNotesLink>
+                https://github.com/syi0808/screenize/releases/tag/v0.3.0
+            </sparkle:releaseNotesLink>
+            <pubDate>Tue, 10 Feb 2026 19:46:43 +0900</pubDate>
+            <enclosure
+                url="https://github.com/syi0808/screenize/releases/download/v0.3.0/Screenize.dmg"
+                sparkle:edSignature="ALNE7xmfpTmzCsIuLwmdhQQ9UXEvcg3mk5rMjI3xW1kxlKLectZjRWtAkG5mEZLtIjI8RTy1BVSyvNslnivJBw=="
+                length="4594804"
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+        </item>
+
+        <item>
             <title>Version 0.2.2</title>
             <sparkle:version>4</sparkle:version>
             <sparkle:shortVersionString>0.2.2</sparkle:shortVersionString>

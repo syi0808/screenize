@@ -79,6 +79,8 @@ xcodebuild -project "$PROJECT_DIR/Screenize.xcodeproj" \
            -scheme Screenize \
            -configuration Release \
            -derivedDataPath "$BUILD_DIR" \
+           ARCHS="arm64 x86_64" \
+           ONLY_ACTIVE_ARCH=NO \
            clean build
 
 APP_PATH="$BUILD_DIR/Build/Products/Release/${APP_NAME}.app"
