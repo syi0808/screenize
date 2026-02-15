@@ -76,11 +76,6 @@ struct ScreenizeProject: Codable, Identifiable {
     /// Package extension for .screenize packages
     static let packageExtension = "screenize"
 
-    // MARK: - Legacy (remove in next minor version)
-
-    /// Legacy project file extension
-    static let legacyFileExtension = "fsproj"
-
     // MARK: - Computed Properties
 
     /// Total duration

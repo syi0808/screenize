@@ -8,8 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
         let ext = url.pathExtension.lowercased()
-        if ext == ScreenizeProject.packageExtension
-            || ext == ScreenizeProject.legacyFileExtension {
+        if ext == ScreenizeProject.packageExtension || ext == "fsproj" {
             NotificationCenter.default.post(
                 name: .openProjectFile,
                 object: nil,
@@ -137,11 +136,7 @@ struct ScreenizeApp: App {
 
     private func openProjectFile() {
         let panel = NSOpenPanel()
-        var contentTypes = [UTType(filenameExtension: ScreenizeProject.packageExtension)!]
-        // MARK: - Legacy (remove in next minor version)
-        if let legacyType = UTType(filenameExtension: ScreenizeProject.legacyFileExtension) {
-            contentTypes.append(legacyType)
-        }
+        let contentTypes = [UTType(filenameExtension: ScreenizeProject.packageExtension)!]
         panel.allowedContentTypes = contentTypes
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -166,6 +161,7 @@ struct ContentView: View {
     @AppStorage("hasCompletedPermissionSetup") private var hasCompletedSetup: Bool = false
     @State private var isCreatingProject: Bool = false
     @State private var showKeyboardShortcuts = false
+    @State private var showLegacyProjectAlert = false
 
     /// Determine current shortcut context based on active screen
     private var currentShortcutContext: ShortcutContext {
@@ -260,6 +256,11 @@ struct ContentView: View {
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutHelpView(context: currentShortcutContext)
         }
+        .alert("Unsupported Project Format", isPresented: $showLegacyProjectAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This project uses the old .fsproj format which is no longer supported. Please create a new recording.")
+        }
     }
 
     private func openVideo(url: URL) async {
@@ -287,6 +288,10 @@ struct ContentView: View {
     }
 
     private func openProject(url: URL) async {
+        if url.pathExtension.lowercased() == "fsproj" {
+            showLegacyProjectAlert = true
+            return
+        }
         do {
             let result = try await projectManager.load(from: url)
             appState.currentProjectURL = result.packageURL
@@ -453,12 +458,7 @@ struct MainWelcomeView: View {
             let ext = url.pathExtension.lowercased()
             let videoExtensions = ["mp4", "mov", "m4v", "mpeg4"]
 
-            if ext == ScreenizeProject.packageExtension {
-                DispatchQueue.main.async {
-                    onOpenProject?(url)
-                }
-            // MARK: - Legacy (remove in next minor version)
-            } else if ext == ScreenizeProject.legacyFileExtension {
+            if ext == ScreenizeProject.packageExtension || ext == "fsproj" {
                 DispatchQueue.main.async {
                     onOpenProject?(url)
                 }
@@ -484,11 +484,7 @@ struct MainWelcomeView: View {
 
     private func openProjectPanel() {
         let panel = NSOpenPanel()
-        var contentTypes = [UTType(filenameExtension: ScreenizeProject.packageExtension)!]
-        // MARK: - Legacy (remove in next minor version)
-        if let legacyType = UTType(filenameExtension: ScreenizeProject.legacyFileExtension) {
-            contentTypes.append(legacyType)
-        }
+        let contentTypes = [UTType(filenameExtension: ScreenizeProject.packageExtension)!]
         panel.allowedContentTypes = contentTypes
         panel.allowsMultipleSelection = false
         panel.treatsFilePackagesAsDirectories = false

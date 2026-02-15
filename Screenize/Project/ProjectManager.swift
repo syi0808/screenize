@@ -109,8 +109,8 @@ final class ProjectManager: ObservableObject {
 
     // MARK: - Load
 
-    /// Load a project from a .screenize package or legacy .fsproj file
-    /// - Parameter url: Package URL (.screenize) or legacy file URL (.fsproj)
+    /// Load a project from a .screenize package
+    /// - Parameter url: Package URL (.screenize)
     /// - Returns: Loaded project and its package URL
     func load(from url: URL) async throws -> (project: ScreenizeProject, packageURL: URL) {
         isLoading = true
@@ -118,26 +118,20 @@ final class ProjectManager: ObservableObject {
 
         defer { isLoading = false }
 
-        let project: ScreenizeProject
-        let packageURL: URL
+        if url.pathExtension.lowercased() == "fsproj" {
+            throw ProjectManagerError.legacyProjectUnsupported
+        }
 
-        // MARK: - Legacy (remove in next minor version)
-        if LegacyProjectMigrator.isLegacyProject(url) {
-            // Migrate legacy .fsproj to .screenize package
-            let result = try LegacyProjectMigrator.migrate(from: url)
-            project = result.project
-            packageURL = result.packageURL
-        } else if PackageManager.isPackage(url) {
-            project = try packageManager.load(from: url)
-            packageURL = url
-        } else {
+        guard PackageManager.isPackage(url) else {
             throw ProjectManagerError.invalidProjectFile
         }
 
-        // Add to recent projects
-        await addToRecentProjects(project, packageURL: packageURL)
+        let project = try packageManager.load(from: url)
 
-        return (project, packageURL)
+        // Add to recent projects
+        await addToRecentProjects(project, packageURL: url)
+
+        return (project, url)
     }
 
     /// Attempt to load from a URL (returns nil on failure)
@@ -223,13 +217,9 @@ final class ProjectManager: ObservableObject {
 
     // MARK: - Utilities
 
-    /// Check if the URL points to a project file or package
+    /// Check if the URL points to a .screenize project package
     static func isProjectFile(_ url: URL) -> Bool {
-        let ext = url.pathExtension.lowercased()
-        if ext == ScreenizeProject.packageExtension { return true }
-        // MARK: - Legacy (remove in next minor version)
-        if ext == ScreenizeProject.legacyFileExtension { return true }
-        return false
+        url.pathExtension.lowercased() == ScreenizeProject.packageExtension
     }
 
     /// Find an existing project for a video file
@@ -242,14 +232,6 @@ final class ProjectManager: ObservableObject {
             .appendingPathExtension(ScreenizeProject.packageExtension)
         if fileManager.fileExists(atPath: packageURL.path) {
             return packageURL
-        }
-
-        // MARK: - Legacy (remove in next minor version)
-        // Check for legacy .fsproj file
-        let legacyURL = directory
-            .appendingPathComponent("\(projectName).\(ScreenizeProject.legacyFileExtension)")
-        if fileManager.fileExists(atPath: legacyURL.path) {
-            return legacyURL
         }
 
         return nil
@@ -265,53 +247,6 @@ struct RecentProjectInfo: Codable, Identifiable {
     let packageURL: URL
     let duration: TimeInterval
     let lastOpened: Date
-
-    // MARK: - Legacy (remove in next minor version)
-    // Support decoding old format that had videoURL and projectURL fields
-    enum CodingKeys: String, CodingKey {
-        case id, name, duration, lastOpened
-        case packageURL
-        // Legacy keys
-        case legacyProjectURL = "projectURL"
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encode(name, forKey: .name)
-        try container.encode(packageURL, forKey: .packageURL)
-        try container.encode(duration, forKey: .duration)
-        try container.encode(lastOpened, forKey: .lastOpened)
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(UUID.self, forKey: .id)
-        name = try container.decode(String.self, forKey: .name)
-        duration = try container.decode(TimeInterval.self, forKey: .duration)
-        lastOpened = try container.decode(Date.self, forKey: .lastOpened)
-
-        if let url = try? container.decode(URL.self, forKey: .packageURL) {
-            packageURL = url
-        } else if let legacyURL = try? container.decode(URL.self, forKey: .legacyProjectURL) {
-            // MARK: - Legacy (remove in next minor version)
-            // Old format stored projectURL (pointing to .fsproj file)
-            packageURL = legacyURL
-        } else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .packageURL, in: container,
-                debugDescription: "Neither packageURL nor projectURL found"
-            )
-        }
-    }
-
-    init(id: UUID, name: String, packageURL: URL, duration: TimeInterval, lastOpened: Date) {
-        self.id = id
-        self.name = name
-        self.packageURL = packageURL
-        self.duration = duration
-        self.lastOpened = lastOpened
-    }
 
     /// Formatted date
     var formattedDate: String {
@@ -334,6 +269,7 @@ enum ProjectManagerError: Error, LocalizedError {
     case videoFileNotFound(URL)
     case mouseDataNotFound(URL)
     case invalidProjectFile
+    case legacyProjectUnsupported
     case saveFailed
 
     var errorDescription: String? {
@@ -344,6 +280,8 @@ enum ProjectManagerError: Error, LocalizedError {
             return "Mouse data file not found: \(url.lastPathComponent)"
         case .invalidProjectFile:
             return "Invalid project file format"
+        case .legacyProjectUnsupported:
+            return "This project uses the old .fsproj format which is no longer supported."
         case .saveFailed:
             return "Failed to save project"
         }
