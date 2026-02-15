@@ -288,10 +288,6 @@ struct GeneratorSettings: Codable {
 
     var sameObjectFollow = SameObjectFollowSettings()
 
-    // MARK: - Ripple
-
-    var ripple = RippleGeneratorSettings()
-
     // MARK: - Mouse Data Cleaner
 
     var mouseDataCleaner = MouseDataCleanerSettings()
@@ -499,26 +495,6 @@ struct SameObjectFollowSettings: Codable {
 
     /// Move easing
     var moveEasing: EasingCurve = .springSnappy
-}
-
-// MARK: - Ripple Generator Settings
-
-/// Ripple generator settings
-struct RippleGeneratorSettings: Codable {
-    /// Enabled
-    var enabled: Bool = true
-
-    /// Base intensity
-    var intensity: CGFloat = 0.7
-
-    /// Duration
-    var duration: TimeInterval = 0.5
-
-    /// Default color
-    var color: RippleColor = .leftClick
-
-    /// Apply to double-clicks only
-    var doubleClickOnly: Bool = false
 }
 
 // MARK: - Cursor Interpolation Settings

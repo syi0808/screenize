@@ -12,9 +12,6 @@ struct EvaluatedFrameState {
     /// Transform state (zoom/pan)
     let transform: TransformState
 
-    /// Active ripple effects
-    let ripples: [ActiveRipple]
-
     /// Cursor state
     let cursor: CursorState
 
@@ -24,13 +21,11 @@ struct EvaluatedFrameState {
     init(
         time: TimeInterval,
         transform: TransformState,
-        ripples: [ActiveRipple],
         cursor: CursorState,
         keystrokes: [ActiveKeystroke] = []
     ) {
         self.time = time
         self.transform = transform
-        self.ripples = ripples
         self.cursor = cursor
         self.keystrokes = keystrokes
     }
@@ -99,85 +94,6 @@ struct TransformState: Equatable {
     }
 }
 
-// MARK: - Active Ripple
-
-/// Currently active ripple effect
-struct ActiveRipple {
-    /// Position (normalized, 0-1, top-left origin)
-    let position: NormalizedPoint
-
-    /// Animation progress (0.0 - 1.0)
-    let progress: CGFloat
-
-    /// Intensity (0.0 - 1.0)
-    let intensity: CGFloat
-
-    /// Color
-    let color: RippleColor
-
-    /// Eased progress
-    let easedProgress: CGFloat
-
-    // MARK: - Initialization
-
-    init(
-        position: NormalizedPoint,
-        progress: CGFloat,
-        intensity: CGFloat,
-        color: RippleColor,
-        easing: EasingCurve = .easeOut
-    ) {
-        self.position = position
-        self.progress = Self.clamp(progress)
-        self.intensity = Self.clamp(intensity)
-        self.color = color
-        self.easedProgress = easing.apply(self.progress)
-    }
-
-    /// Initialization for backward compatibility
-    init(
-        position: CGPoint,
-        progress: CGFloat,
-        intensity: CGFloat,
-        color: RippleColor,
-        easing: EasingCurve = .easeOut
-    ) {
-        self.init(
-            position: NormalizedPoint(position),
-            progress: progress,
-            intensity: intensity,
-            color: color,
-            easing: easing
-        )
-    }
-
-    /// Created from a RippleKeyframe
-    init(from keyframe: RippleKeyframe, at time: TimeInterval) {
-        let progress = keyframe.progress(at: time)
-        self.init(
-            position: keyframe.position,
-            progress: progress,
-            intensity: keyframe.intensity,
-            color: keyframe.color,
-            easing: keyframe.easing
-        )
-    }
-
-    private static func clamp(_ value: CGFloat) -> CGFloat {
-        max(0, min(1, value))
-    }
-
-    /// Current radius (base radius * progress)
-    func radius(baseRadius: CGFloat = 50) -> CGFloat {
-        baseRadius * easedProgress
-    }
-
-    /// Current opacity (starts at 1 and fades to 0)
-    var opacity: CGFloat {
-        (1 - easedProgress) * intensity
-    }
-}
-
 // MARK: - Cursor State
 
 /// Cursor state for the current frame
@@ -206,6 +122,9 @@ struct CursorState {
     /// Movement direction (radians, for motion blur)
     let movementDirection: CGFloat
 
+    /// Click scale modifier (1.0 = neutral)
+    let clickScaleModifier: CGFloat
+
     // MARK: - Initialization
 
     init(
@@ -216,7 +135,8 @@ struct CursorState {
         isClicking: Bool = false,
         clickType: ClickType? = nil,
         velocity: CGFloat = 0,
-        movementDirection: CGFloat = 0
+        movementDirection: CGFloat = 0,
+        clickScaleModifier: CGFloat = 1.0
     ) {
         self.position = position.clamped()
         self.style = style
@@ -226,6 +146,7 @@ struct CursorState {
         self.clickType = clickType
         self.velocity = velocity
         self.movementDirection = movementDirection
+        self.clickScaleModifier = max(0.1, clickScaleModifier)
     }
 
     /// Initialization for backward compatibility
@@ -237,7 +158,8 @@ struct CursorState {
         isClicking: Bool = false,
         clickType: ClickType? = nil,
         velocity: CGFloat = 0,
-        movementDirection: CGFloat = 0
+        movementDirection: CGFloat = 0,
+        clickScaleModifier: CGFloat = 1.0
     ) {
         self.init(
             position: NormalizedPoint(position),
@@ -247,7 +169,8 @@ struct CursorState {
             isClicking: isClicking,
             clickType: clickType,
             velocity: velocity,
-            movementDirection: movementDirection
+            movementDirection: movementDirection,
+            clickScaleModifier: clickScaleModifier
         )
     }
 

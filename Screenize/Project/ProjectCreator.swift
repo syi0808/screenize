@@ -149,12 +149,6 @@ struct ProjectCreator {
                         )
                     ]
                 )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: []
-                )),
                 AnyTrack(CursorTrack(
                     id: UUID(),
                     name: "Cursor",
@@ -221,7 +215,6 @@ struct ProjectCreatorOptions {
 
     enum AutoGeneratorType {
         case clickZoom
-        case ripple
         case cursorSmooth
     }
 

@@ -136,23 +136,6 @@ struct TrackRowView<T: Track>: View {
                 )
                 .position(x: 6, y: Self.rowHeight / 2)
             }
-        } else if let rippleTrack = track as? RippleTrack {
-            ForEach(rippleTrack.keyframes) { keyframe in
-                DraggableKeyframeMarker(
-                    id: keyframe.id,
-                    time: keyframe.time,
-                    isSelected: selectedKeyframeID == keyframe.id,
-                    color: trackColor,
-                    pixelsPerSecond: pixelsPerSecond,
-                    scrollOffset: scrollOffset,
-                    duration: duration,
-                    onSelect: { onKeyframeSelect?(keyframe.id) },
-                    onTimeChange: { newTime in
-                        onKeyframeTimeChange?(keyframe.id, newTime)
-                    }
-                )
-                .position(x: 6, y: Self.rowHeight / 2)
-            }
         } else if let cursorTrack = track as? CursorTrack {
             ForEach(cursorTrack.styleKeyframes ?? []) { keyframe in
                 DraggableKeyframeMarker(
@@ -183,8 +166,6 @@ struct TrackRowView<T: Track>: View {
         switch trackType {
         case .transform:
             return "arrow.up.left.and.arrow.down.right"
-        case .ripple:
-            return "circles.hexagonpath"
         case .cursor:
             return "cursorarrow"
         case .keystroke:
@@ -280,25 +261,6 @@ struct AnyTrackRowView: View {
                     }
                 ),
                 trackType: .transform,
-                duration: duration,
-                pixelsPerSecond: pixelsPerSecond,
-                scrollOffset: scrollOffset,
-                selectedKeyframeID: $selectedKeyframeID,
-                onKeyframeSelect: onKeyframeSelect,
-                onKeyframeTimeChange: onKeyframeTimeChange,
-                onAddKeyframe: onAddKeyframe
-            )
-
-        case .ripple(var rippleTrack):
-            TrackRowView(
-                track: Binding(
-                    get: { rippleTrack },
-                    set: { newValue in
-                        rippleTrack = newValue
-                        track = .ripple(newValue)
-                    }
-                ),
-                trackType: .ripple,
                 duration: duration,
                 pixelsPerSecond: pixelsPerSecond,
                 scrollOffset: scrollOffset,

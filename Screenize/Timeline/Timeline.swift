@@ -58,7 +58,14 @@ struct Timeline: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        tracks = try container.decode([AnyTrack].self, forKey: .tracks)
+        var decodedTracks: [AnyTrack] = []
+        var tracksContainer = try container.nestedUnkeyedContainer(forKey: .tracks)
+        while !tracksContainer.isAtEnd {
+            if let track = try tracksContainer.decode(DiscardableJSON<AnyTrack>.self).value {
+                decodedTracks.append(track)
+            }
+        }
+        tracks = decodedTracks
         duration = try container.decode(TimeInterval.self, forKey: .duration)
         // Backward compatibility: trimStart/trimEnd may be missing
         trimStart = try container.decodeIfPresent(TimeInterval.self, forKey: .trimStart) ?? 0
@@ -70,7 +77,6 @@ struct Timeline: Codable, Equatable {
         Self(
             tracks: [
                 .transform(TransformTrack()),
-                .ripple(RippleTrack()),
                 .cursor(CursorTrack()),
                 .keystroke(KeystrokeTrack())
             ],
@@ -96,25 +102,6 @@ struct Timeline: Codable, Equatable {
                     tracks[index] = .transform(newTrack)
                 } else {
                     tracks.insert(.transform(newTrack), at: 0)
-                }
-            }
-        }
-    }
-
-    /// Ripple track (first)
-    var rippleTrack: RippleTrack? {
-        get {
-            for case .ripple(let track) in tracks {
-                return track
-            }
-            return nil
-        }
-        set {
-            if let newTrack = newValue {
-                if let index = tracks.firstIndex(where: { $0.trackType == .ripple }) {
-                    tracks[index] = .ripple(newTrack)
-                } else {
-                    tracks.append(.ripple(newTrack))
                 }
             }
         }
@@ -191,8 +178,6 @@ struct Timeline: Codable, Equatable {
             switch track {
             case .transform(let t):
                 count += t.keyframes.count
-            case .ripple(let t):
-                count += t.keyframes.count
             case .cursor(let t):
                 count += t.styleKeyframes?.count ?? 0
             case .keystroke(let t):
@@ -207,10 +192,6 @@ struct Timeline: Codable, Equatable {
         for track in tracks {
             switch track {
             case .transform(let t):
-                if t.keyframes.contains(where: { range.contains($0.time) }) {
-                    return true
-                }
-            case .ripple(let t):
                 if t.keyframes.contains(where: { range.contains($0.time) }) {
                     return true
                 }
@@ -238,5 +219,13 @@ struct Timeline: Codable, Equatable {
     /// Determine if the timeline is valid
     var isValid: Bool {
         duration > 0
+    }
+}
+
+private struct DiscardableJSON<T: Decodable>: Decodable {
+    let value: T?
+
+    init(from decoder: Decoder) {
+        value = try? T(from: decoder)
     }
 }

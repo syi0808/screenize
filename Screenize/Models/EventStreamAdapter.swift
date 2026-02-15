@@ -45,14 +45,27 @@ struct EventStreamAdapter: MouseDataSource {
             )
         }
 
-        // Mouse clicks (mouseDown only) -> ClickEventData
+        // Mouse clicks -> ClickEventData
         self.mouseClicksData = mouseClicks
-            .filter { $0.type == "mouseDown" }
-            .map { event in
+            .compactMap { event in
                 let timelineSec = Double(event.processTimeMs - sessionStartMs) / 1000.0
                 let xNorm = event.x / displayWidth
                 let yNorm = 1.0 - (event.y / displayHeight)
-                let clickType: ClickEventData.ClickType = (event.button == "left") ? .leftDown : .rightDown
+
+                let clickType: ClickEventData.ClickType
+                switch (event.type, event.button) {
+                case ("mouseDown", "left"):
+                    clickType = .leftDown
+                case ("mouseUp", "left"):
+                    clickType = .leftUp
+                case ("mouseDown", "right"):
+                    clickType = .rightDown
+                case ("mouseUp", "right"):
+                    clickType = .rightUp
+                default:
+                    return nil
+                }
+
                 return ClickEventData(
                     time: timelineSec,
                     position: NormalizedPoint(x: CGFloat(xNorm), y: CGFloat(yNorm)),

@@ -331,29 +331,6 @@ struct TimelineView: View {
                 .position(x: CGFloat(keyframe.time) * pixelsPerSecond, y: trackHeight / 2)
             }
 
-        case .ripple(let rippleTrack):
-            ForEach(rippleTrack.keyframes) { keyframe in
-                DraggableKeyframeMarker(
-                    id: keyframe.id,
-                    time: keyframe.time,
-                    isSelected: selectedKeyframeID == keyframe.id,
-                    color: color,
-                    pixelsPerSecond: pixelsPerSecond,
-                    scrollOffset: 0,
-                    duration: duration,
-                    onSelect: {
-                        selectedKeyframeID = keyframe.id
-                        selectedTrackType = .ripple
-                        onKeyframeSelect?(.ripple, keyframe.id)
-                    },
-                    onTimeChange: { newTime in
-                        onKeyframeChange?(keyframe.id, newTime)
-                    }
-                )
-                .opacity(isTimeInTrimRange(keyframe.time) ? 1.0 : 0.3)
-                .position(x: CGFloat(keyframe.time) * pixelsPerSecond, y: trackHeight / 2)
-            }
-
         case .cursor(let cursorTrack):
             if let keyframes = cursorTrack.styleKeyframes {
                 ForEach(keyframes) { keyframe in
@@ -410,8 +387,6 @@ struct TimelineView: View {
         switch type {
         case .transform:
             return "arrow.up.left.and.arrow.down.right"
-        case .ripple:
-            return "circles.hexagonpath"
         case .cursor:
             return "cursorarrow"
         case .keystroke:
@@ -538,15 +513,6 @@ private struct ScrollOffsetPreferenceKey: PreferenceKey {
                         TransformKeyframe(time: 2, zoom: 2.0, centerX: 0.3, centerY: 0.4),
                         TransformKeyframe(time: 5, zoom: 1.5, centerX: 0.7, centerY: 0.6),
                         TransformKeyframe(time: 8, zoom: 1.0, centerX: 0.5, centerY: 0.5),
-                    ]
-                )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: [
-                        RippleKeyframe(time: 1, x: 0.3, y: 0.4),
-                        RippleKeyframe(time: 4, x: 0.7, y: 0.6),
                     ]
                 )),
                 AnyTrack(CursorTrack(

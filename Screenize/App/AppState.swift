@@ -409,12 +409,6 @@ final class AppState: ObservableObject {
                     isEnabled: true,
                     keyframes: []
                 )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: []
-                )),
                 AnyTrack(CursorTrack(
                     id: UUID(),
                     name: "Cursor",

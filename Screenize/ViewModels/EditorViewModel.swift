@@ -262,8 +262,7 @@ final class EditorViewModel: ObservableObject {
     /// Check whether the timeline is empty
     private var isTimelineEmpty: Bool {
         let transformCount = project.timeline.transformTrack?.keyframes.count ?? 0
-        let rippleCount = project.timeline.rippleTrack?.keyframes.count ?? 0
-        return transformCount == 0 && rippleCount == 0
+        return transformCount == 0
     }
 
     // MARK: - Smart Generation
@@ -271,7 +270,7 @@ final class EditorViewModel: ObservableObject {
     /// Auto-generate keyframes using mouse data
     /// - Parameter selection: Which track types to generate. Unselected types are preserved.
     func runSmartGeneration(
-        for selection: Set<TrackType> = [.transform, .ripple, .cursor, .keystroke]
+        for selection: Set<TrackType> = [.transform, .cursor, .keystroke]
     ) async {
         await runSmartZoomGeneration(for: selection)
     }
@@ -336,8 +335,6 @@ final class EditorViewModel: ObservableObject {
                 )
             }
 
-            let rippleTrack = selection.contains(.ripple)
-                ? RippleGenerator().generate(from: mouseDataSource, settings: settings) : nil
             let cursorTrack = selection.contains(.cursor)
                 ? ClickCursorGenerator().generate(from: mouseDataSource, settings: settings) : nil
             let keystrokeTrack = selection.contains(.keystroke)
@@ -345,7 +342,6 @@ final class EditorViewModel: ObservableObject {
 
             updateTimeline(
                 transformTrack: transformTrack,
-                rippleTrack: rippleTrack,
                 cursorTrack: cursorTrack,
                 keystrokeTrack: keystrokeTrack
             )
@@ -396,7 +392,6 @@ final class EditorViewModel: ObservableObject {
     /// Apply the generated tracks to the timeline (nil = preserve existing)
     private func updateTimeline(
         transformTrack: TransformTrack? = nil,
-        rippleTrack: RippleTrack? = nil,
         cursorTrack: CursorTrack? = nil,
         keystrokeTrack: KeystrokeTrack? = nil
     ) {
@@ -406,15 +401,6 @@ final class EditorViewModel: ObservableObject {
                 project.timeline.tracks[index] = .transform(transformTrack)
             } else {
                 project.timeline.tracks.append(.transform(transformTrack))
-            }
-        }
-
-        // Update the ripple track (only if provided)
-        if let rippleTrack = rippleTrack {
-            if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) {
-                project.timeline.tracks[index] = .ripple(rippleTrack)
-            } else {
-                project.timeline.tracks.append(.ripple(rippleTrack))
             }
         }
 
@@ -501,8 +487,6 @@ final class EditorViewModel: ObservableObject {
         switch trackType {
         case .transform:
             addTransformKeyframe(at: time)
-        case .ripple:
-            addRippleKeyframe(at: time)
         case .cursor:
             addCursorKeyframe(at: time)
         case .keystroke:
@@ -538,29 +522,6 @@ final class EditorViewModel: ObservableObject {
         project.timeline.tracks[trackIndex] = .transform(track)
         selectedKeyframeID = newKeyframe.id
         selectedTrackType = .transform
-    }
-
-    private func addRippleKeyframe(at time: TimeInterval) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) else {
-            return
-        }
-
-        guard case .ripple(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        let newKeyframe = RippleKeyframe(
-            time: time,
-            x: 0.5,
-            y: 0.5
-        )
-
-        track.keyframes.append(newKeyframe)
-        track.keyframes.sort { $0.time < $1.time }
-
-        project.timeline.tracks[trackIndex] = .ripple(track)
-        selectedKeyframeID = newKeyframe.id
-        selectedTrackType = .ripple
     }
 
     private func addCursorKeyframe(at time: TimeInterval) {
@@ -627,8 +588,6 @@ final class EditorViewModel: ObservableObject {
         switch trackType {
         case .transform:
             deleteTransformKeyframe(id)
-        case .ripple:
-            deleteRippleKeyframe(id)
         case .cursor:
             deleteCursorKeyframe(id)
         case .keystroke:
@@ -656,19 +615,6 @@ final class EditorViewModel: ObservableObject {
 
         track.keyframes.removeAll { $0.id == id }
         project.timeline.tracks[trackIndex] = .transform(track)
-    }
-
-    private func deleteRippleKeyframe(_ id: UUID) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) else {
-            return
-        }
-
-        guard case .ripple(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        track.keyframes.removeAll { $0.id == id }
-        project.timeline.tracks[trackIndex] = .ripple(track)
     }
 
     private func deleteCursorKeyframe(_ id: UUID) {
@@ -723,16 +669,6 @@ final class EditorViewModel: ObservableObject {
                     return
                 }
 
-            case .ripple(var track):
-                if let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex].time = newTime
-                    track.keyframes.sort { $0.time < $1.time }
-                    project.timeline.tracks[trackIndex] = .ripple(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
-                }
-
             case .cursor(var track):
                 if var keyframes = track.styleKeyframes,
                    let keyframeIndex = keyframes.firstIndex(where: { $0.id == id }) {
@@ -782,9 +718,6 @@ final class EditorViewModel: ObservableObject {
             case .transform(var track):
                 track.keyframes.removeAll()
                 project.timeline.tracks[trackIndex] = .transform(track)
-            case .ripple(var track):
-                track.keyframes.removeAll()
-                project.timeline.tracks[trackIndex] = .ripple(track)
             case .cursor(var track):
                 track = CursorTrack(
                     id: track.id,
@@ -826,14 +759,6 @@ final class EditorViewModel: ObservableObject {
         switch trackType {
         case .transform:
             if let track = project.timeline.transformTrack,
-               let keyframe = track.keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
-            } else {
-                time = nil
-            }
-
-        case .ripple:
-            if let track = project.timeline.rippleTrack,
                let keyframe = track.keyframes.first(where: { $0.id == id }) {
                 time = keyframe.time
             } else {

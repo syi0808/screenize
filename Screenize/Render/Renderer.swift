@@ -61,14 +61,7 @@ final class Renderer {
     ) -> CIImage? {
         var result = sourceFrame
 
-        // 1. Composite ripple effects (over source frame, before transform)
-        for ripple in state.ripples {
-            if let rippleImage = compositor.renderRipple(ripple, frameSize: context.sourceSize) {
-                result = rippleImage.composited(over: result)
-            }
-        }
-
-        // 2. Render cursor (over source frame, before transform)
+        // 1. Render cursor (over source frame, before transform)
         // The cursor renders at the source frame's absolute position and scales/moves with the transform
         if state.cursor.visible {
             if let cursorImage = compositor.renderCursor(state.cursor, frameSize: context.sourceSize) {
@@ -76,7 +69,7 @@ final class Renderer {
             }
         }
 
-        // 3. Apply transform (mode-specific branch)
+        // 2. Apply transform (mode-specific branch)
         if isWindowMode, let windowRenderer = windowModeRenderer, let settings = renderSettings {
             // Window mode: background + window scale/offset + effects
             result = windowRenderer.render(
@@ -97,7 +90,7 @@ final class Renderer {
             )
         }
 
-        // 4. Keystroke overlay (after transform — fixed screen position)
+        // 3. Keystroke overlay (after transform — fixed screen position)
         if !state.keystrokes.isEmpty {
             if let keystrokeOverlay = compositor.renderKeystrokeOverlay(
                 state.keystrokes,

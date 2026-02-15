@@ -6,7 +6,6 @@ import CoreGraphics
 /// Track type
 enum TrackType: String, Codable, CaseIterable {
     case transform   // Zoom/pan
-    case ripple      // Click ripple effect
     case cursor      // Cursor style/visibility
     case keystroke   // Keystroke overlay
     case audio       // Audio (future extension)
@@ -78,54 +77,6 @@ struct TransformTrack: Track, Equatable {
     /// Keyframes within a time range
     func keyframes(in range: ClosedRange<TimeInterval>) -> [TransformKeyframe] {
         keyframes.filter { range.contains($0.time) }
-    }
-}
-
-// MARK: - Ripple Track
-
-/// Ripple effect track
-struct RippleTrack: Track, Equatable {
-    let id: UUID
-    var name: String
-    var isEnabled: Bool
-    var keyframes: [RippleKeyframe]
-
-    var trackType: TrackType { .ripple }
-    var keyframeCount: Int { keyframes.count }
-
-    init(
-        id: UUID = UUID(),
-        name: String = "Click Ripple",
-        isEnabled: Bool = true,
-        keyframes: [RippleKeyframe] = []
-    ) {
-        self.id = id
-        self.name = name
-        self.isEnabled = isEnabled
-        self.keyframes = keyframes.sorted { $0.time < $1.time }
-    }
-
-    // MARK: - Keyframe Management
-
-    mutating func addKeyframe(_ keyframe: RippleKeyframe) {
-        keyframes.append(keyframe)
-        keyframes.sort { $0.time < $1.time }
-    }
-
-    mutating func removeKeyframe(id: UUID) {
-        keyframes.removeAll { $0.id == id }
-    }
-
-    mutating func updateKeyframe(_ keyframe: RippleKeyframe) {
-        if let index = keyframes.firstIndex(where: { $0.id == keyframe.id }) {
-            keyframes[index] = keyframe
-            keyframes.sort { $0.time < $1.time }
-        }
-    }
-
-    /// Ripples active at the given time
-    func activeRipples(at time: TimeInterval) -> [RippleKeyframe] {
-        keyframes.filter { $0.isActive(at: time) }
     }
 }
 
@@ -220,14 +171,12 @@ struct KeystrokeTrack: Track, Equatable {
 /// Type-erased track wrapper (Codable support)
 enum AnyTrack: Codable, Identifiable, Equatable {
     case transform(TransformTrack)
-    case ripple(RippleTrack)
     case cursor(CursorTrack)
     case keystroke(KeystrokeTrack)
 
     var id: UUID {
         switch self {
         case .transform(let track): return track.id
-        case .ripple(let track): return track.id
         case .cursor(let track): return track.id
         case .keystroke(let track): return track.id
         }
@@ -237,7 +186,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
         get {
             switch self {
             case .transform(let track): return track.name
-            case .ripple(let track): return track.name
             case .cursor(let track): return track.name
             case .keystroke(let track): return track.name
             }
@@ -247,9 +195,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
             case .transform(var track):
                 track.name = newValue
                 self = .transform(track)
-            case .ripple(var track):
-                track.name = newValue
-                self = .ripple(track)
             case .cursor(var track):
                 track.name = newValue
                 self = .cursor(track)
@@ -264,7 +209,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
         get {
             switch self {
             case .transform(let track): return track.isEnabled
-            case .ripple(let track): return track.isEnabled
             case .cursor(let track): return track.isEnabled
             case .keystroke(let track): return track.isEnabled
             }
@@ -274,9 +218,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
             case .transform(var track):
                 track.isEnabled = newValue
                 self = .transform(track)
-            case .ripple(var track):
-                track.isEnabled = newValue
-                self = .ripple(track)
             case .cursor(var track):
                 track.isEnabled = newValue
                 self = .cursor(track)
@@ -290,7 +231,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
     var trackType: TrackType {
         switch self {
         case .transform: return .transform
-        case .ripple: return .ripple
         case .cursor: return .cursor
         case .keystroke: return .keystroke
         }
@@ -310,9 +250,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
         case .transform:
             let track = try container.decode(TransformTrack.self, forKey: .data)
             self = .transform(track)
-        case .ripple:
-            let track = try container.decode(RippleTrack.self, forKey: .data)
-            self = .ripple(track)
         case .cursor:
             let track = try container.decode(CursorTrack.self, forKey: .data)
             self = .cursor(track)
@@ -336,9 +273,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
         case .transform(let track):
             try container.encode(TrackType.transform, forKey: .type)
             try container.encode(track, forKey: .data)
-        case .ripple(let track):
-            try container.encode(TrackType.ripple, forKey: .type)
-            try container.encode(track, forKey: .data)
         case .cursor(let track):
             try container.encode(TrackType.cursor, forKey: .type)
             try container.encode(track, forKey: .data)
@@ -352,10 +286,6 @@ enum AnyTrack: Codable, Identifiable, Equatable {
 
     init(_ track: TransformTrack) {
         self = .transform(track)
-    }
-
-    init(_ track: RippleTrack) {
-        self = .ripple(track)
     }
 
     init(_ track: CursorTrack) {

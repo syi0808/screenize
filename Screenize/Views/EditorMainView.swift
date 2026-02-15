@@ -232,7 +232,6 @@ struct EditorMainView: View {
                 Label("Delete All", systemImage: "trash")
             }
             .disabled(viewModel.project.timeline.transformTrack?.keyframes.isEmpty != false
-                      && viewModel.project.timeline.rippleTrack?.keyframes.isEmpty != false
                       && viewModel.project.timeline.cursorTrack?.styleKeyframes?.isEmpty != false)
 
             Spacer()
@@ -283,12 +282,6 @@ struct EditorMainView: View {
                 viewModel.addKeyframe(to: .transform)
             } label: {
                 Label("Transform Keyframe", systemImage: "arrow.up.left.and.arrow.down.right")
-            }
-
-            Button {
-                viewModel.addKeyframe(to: .ripple)
-            } label: {
-                Label("Ripple Keyframe", systemImage: "circles.hexagonpath")
             }
 
             Button {
@@ -379,7 +372,7 @@ struct GeneratorPanelView: View {
     @State private var isGenerating: Bool = false
     @State private var generationResult: String?
     @State private var selectedTypes: Set<TrackType> = [
-        .transform, .ripple, .cursor, .keystroke
+        .transform, .cursor, .keystroke
     ]
 
     private struct GeneratorOption: Identifiable {
@@ -396,12 +389,6 @@ struct GeneratorPanelView: View {
             name: "Smart Zoom",
             description: "Auto-focus and zoom on activity",
             icon: "sparkle.magnifyingglass"
-        ),
-        GeneratorOption(
-            type: .ripple,
-            name: "Click Ripple",
-            description: "Ripple effect at click positions",
-            icon: "circles.hexagonpath"
         ),
         GeneratorOption(
             type: .cursor,
@@ -527,9 +514,6 @@ struct GeneratorPanelView: View {
                 case .transform:
                     count = viewModel.project.timeline.transformTrack?
                         .keyframes.count ?? 0
-                case .ripple:
-                    count = viewModel.project.timeline.rippleTrack?
-                        .keyframes.count ?? 0
                 case .cursor:
                     count = viewModel.project.timeline.cursorTrack?
                         .styleKeyframes?.count ?? 0
@@ -576,12 +560,6 @@ struct GeneratorPanelView: View {
                             TransformKeyframe(time: 0, zoom: 1.0, centerX: 0.5, centerY: 0.5),
                             TransformKeyframe(time: 5, zoom: 2.0, centerX: 0.3, centerY: 0.4),
                         ]
-                    )),
-                    AnyTrack(RippleTrack(
-                        id: UUID(),
-                        name: "Ripple",
-                        isEnabled: true,
-                        keyframes: []
                     )),
                     AnyTrack(CursorTrack(
                         id: UUID(),

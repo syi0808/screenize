@@ -1,6 +1,5 @@
 import Foundation
 import CoreGraphics
-import SwiftUI
 
 // MARK: - Keyframe Protocol
 
@@ -158,122 +157,6 @@ struct TransformValue: Interpolatable, Equatable {
 extension TransformKeyframe {
     var value: TransformValue {
         TransformValue(zoom: zoom, center: center)
-    }
-}
-
-// MARK: - Ripple Keyframe
-
-/// Ripple colors
-enum RippleColor: Codable, Equatable, Hashable {
-    case leftClick      // Blue
-    case rightClick     // Orange
-    case custom(r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat)
-
-    var cgColor: CGColor {
-        switch self {
-        case .leftClick:
-            return CGColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.6)
-        case .rightClick:
-            return CGColor(red: 1.0, green: 0.5, blue: 0.2, alpha: 0.6)
-        case .custom(let r, let g, let b, let a):
-            return CGColor(red: r, green: g, blue: b, alpha: a)
-        }
-    }
-
-    /// SwiftUI Color
-    var color: Color {
-        Color(cgColor)
-    }
-
-    /// Preset colors (custom excluded)
-    static let presetColors: [Self] = [.leftClick, .rightClick]
-}
-
-/// Ripple effect keyframe
-struct RippleKeyframe: TimedKeyframe, Equatable {
-    let id: UUID
-    var time: TimeInterval           // Measured in seconds
-    var position: NormalizedPoint    // 0.0–1.0 (normalized, top-left origin)
-    var intensity: CGFloat           // 0.0–1.0
-    var duration: TimeInterval       // Duration of the ripple
-    var color: RippleColor
-    var easing: EasingCurve          // Easing for the ripple animation
-
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use position.x instead")
-    var x: CGFloat {
-        get { position.x }
-        set { position = NormalizedPoint(x: newValue, y: position.y) }
-    }
-
-    @available(*, deprecated, message: "Use position.y instead")
-    var y: CGFloat {
-        get { position.y }
-        set { position = NormalizedPoint(x: position.x, y: newValue) }
-    }
-
-    // MARK: - Initialization
-
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        position: NormalizedPoint,
-        intensity: CGFloat = 0.8,
-        duration: TimeInterval = 0.4,
-        color: RippleColor = .leftClick,
-        easing: EasingCurve = .springBouncy
-    ) {
-        self.id = id
-        self.time = time
-        self.position = position.clamped()
-        self.intensity = Self.clamp(intensity)
-        self.duration = max(0.1, duration)
-        self.color = color
-        self.easing = easing
-    }
-
-    /// Legacy initializer
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        x: CGFloat,
-        y: CGFloat,
-        intensity: CGFloat = 0.8,
-        duration: TimeInterval = 0.4,
-        color: RippleColor = .leftClick,
-        easing: EasingCurve = .springBouncy
-    ) {
-        self.init(
-            id: id,
-            time: time,
-            position: NormalizedPoint(x: x, y: y),
-            intensity: intensity,
-            duration: duration,
-            color: color,
-            easing: easing
-        )
-    }
-
-    /// End time of the ripple
-    var endTime: TimeInterval {
-        time + duration
-    }
-
-    /// Check if the ripple is active at the given time
-    func isActive(at currentTime: TimeInterval) -> Bool {
-        currentTime >= time && currentTime <= endTime
-    }
-
-    /// Progress of the ripple at the given time (0.0–1.0)
-    func progress(at currentTime: TimeInterval) -> CGFloat {
-        guard isActive(at: currentTime), duration > 0 else { return 0 }
-        let elapsed = currentTime - time
-        return CGFloat(elapsed / duration)
-    }
-
-    private static func clamp(_ value: CGFloat) -> CGFloat {
-        max(0, min(1, value))
     }
 }
 

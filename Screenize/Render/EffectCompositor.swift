@@ -4,7 +4,7 @@ import CoreImage
 import AppKit
 
 /// Effect compositor
-/// Renders ripple effects and the cursor
+/// Renders cursor and keystroke overlays
 final class EffectCompositor {
 
     /// CoreImage context
@@ -26,89 +26,6 @@ final class EffectCompositor {
         ])
     }
 
-    // MARK: - Ripple Rendering
-
-    /// Render a ripple effect
-    /// - Parameters:
-    ///   - ripple: Active ripple information
-    ///   - frameSize: Frame size
-    /// - Returns: Ripple effect image
-    func renderRipple(_ ripple: ActiveRipple, frameSize: CGSize) -> CIImage? {
-        // Base radius
-        let baseRadius: CGFloat = 50
-        let currentRadius = ripple.radius(baseRadius: baseRadius * (frameSize.width / 1920))
-
-        // Enforce a minimum radius
-        guard currentRadius > 1 else { return nil }
-
-        // Compute position (normalized -> CoreImage pixels, bottom-left origin)
-        let center = CoordinateConverter.normalizedToCoreImage(ripple.position, frameSize: frameSize)
-        let centerX = center.x
-        let centerY = center.y
-
-        // Ripple color
-        let color = ripple.color.ciColor
-
-        // Ring width
-        let ringWidth: CGFloat = max(2, currentRadius * 0.15)
-
-        // Generate gradient ripple
-        guard let rippleImage = createRippleImage(
-            center: CGPoint(x: centerX, y: centerY),
-            radius: currentRadius,
-            ringWidth: ringWidth,
-            color: color,
-            opacity: ripple.opacity,
-            frameSize: frameSize
-        ) else { return nil }
-
-        return rippleImage
-    }
-
-    /// Create the ripple image
-    private func createRippleImage(
-        center: CGPoint,
-        radius: CGFloat,
-        ringWidth: CGFloat,
-        color: CIColor,
-        opacity: CGFloat,
-        frameSize: CGSize
-    ) -> CIImage? {
-        // Outer radius
-        let outerRadius = radius
-        let innerRadius = max(0, radius - ringWidth)
-
-        // Use CIRadialGradient
-        guard let gradientFilter = CIFilter(name: "CIRadialGradient") else { return nil }
-
-        // Create a fade-out ring effect
-        let fadeColor = CIColor(
-            red: color.red,
-            green: color.green,
-            blue: color.blue,
-            alpha: color.alpha * opacity
-        )
-        let transparentColor = CIColor(
-            red: color.red,
-            green: color.green,
-            blue: color.blue,
-            alpha: 0
-        )
-
-        gradientFilter.setValue(CIVector(x: center.x, y: center.y), forKey: "inputCenter")
-        gradientFilter.setValue(innerRadius, forKey: "inputRadius0")
-        gradientFilter.setValue(outerRadius, forKey: "inputRadius1")
-        gradientFilter.setValue(fadeColor, forKey: "inputColor0")
-        gradientFilter.setValue(transparentColor, forKey: "inputColor1")
-
-        guard var gradient = gradientFilter.outputImage else { return nil }
-
-        // Crop to the frame size
-        gradient = gradient.cropped(to: CGRect(origin: .zero, size: frameSize))
-
-        return gradient
-    }
-
     // MARK: - Cursor Rendering
 
     /// Render a cursor
@@ -120,7 +37,9 @@ final class EffectCompositor {
         guard cursor.visible else { return nil }
 
         // Retrieve the cursor image (uses cache)
-        guard let cursorImage = getCursorImage(style: cursor.style, scale: cursor.scale) else {
+        let effectiveScale = cursor.scale * cursor.clickScaleModifier
+
+        guard let cursorImage = getCursorImage(style: cursor.style, scale: effectiveScale) else {
             return nil
         }
 
@@ -142,7 +61,7 @@ final class EffectCompositor {
         // CoreImage uses a bottom-left origin, while hotspotOffset assumes top-left, so convert
         // Position the bottom of the image at (posY - cursorHeight + hotspotOffset.y)
         // That places the hotspot exactly at posY
-        let hotspotOffset = hotspotOffset(for: cursor.style, scale: cursor.scale)
+        let hotspotOffset = hotspotOffset(for: cursor.style, scale: effectiveScale)
         // Fine correction: shift slightly up-left to reduce perceived offset from actual click
         let correctionX: CGFloat = -2.0
         let correctionY: CGFloat = 2.0  // Positive goes upward due to CoreImage bottom-left origin
@@ -335,20 +254,5 @@ final class EffectCompositor {
     func clearCursorCache() {
         cursorImageCache.removeAll()
         cursorHotspotCache.removeAll()
-    }
-}
-
-// MARK: - RippleColor Extension
-
-extension RippleColor {
-    var ciColor: CIColor {
-        switch self {
-        case .leftClick:
-            return CIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.6)
-        case .rightClick:
-            return CIColor(red: 1.0, green: 0.5, blue: 0.2, alpha: 0.6)
-        case .custom(let r, let g, let b, let a):
-            return CIColor(red: r, green: g, blue: b, alpha: a)
-        }
     }
 }

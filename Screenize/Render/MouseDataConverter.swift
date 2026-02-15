@@ -19,16 +19,52 @@ struct MouseDataConverter {
                 velocity: 0
             )
         }
-        let clicks = source.clicks.map { click in
-            let clickType: ClickType = (click.clickType == .leftDown || click.clickType == .doubleClick) ? .left : .right
-            return RenderClickEvent(
-                timestamp: click.time,
-                duration: 0.1,
-                x: click.position.x,
-                y: click.position.y,
-                clickType: clickType
-            )
+        let sortedClicks = source.clicks.sorted { $0.time < $1.time }
+        var pendingDownByType: [ClickEventData.ClickType: ClickEventData] = [:]
+        var clicks: [RenderClickEvent] = []
+
+        for click in sortedClicks {
+            switch click.clickType {
+            case .leftDown, .rightDown:
+                pendingDownByType[click.clickType] = click
+
+            case .leftUp, .rightUp:
+                let downType: ClickEventData.ClickType = (click.clickType == .leftUp) ? .leftDown : .rightDown
+                guard let down = pendingDownByType[downType] else { continue }
+
+                let clickType: ClickType = (downType == .leftDown) ? .left : .right
+                let duration = max(0.03, click.time - down.time)
+                clicks.append(RenderClickEvent(
+                    timestamp: down.time,
+                    duration: duration,
+                    x: down.position.x,
+                    y: down.position.y,
+                    clickType: clickType
+                ))
+                pendingDownByType.removeValue(forKey: downType)
+
+            case .doubleClick:
+                clicks.append(RenderClickEvent(
+                    timestamp: click.time,
+                    duration: 0.1,
+                    x: click.position.x,
+                    y: click.position.y,
+                    clickType: .left
+                ))
+            }
         }
+
+        for pending in pendingDownByType.values {
+            let clickType: ClickType = (pending.clickType == .leftDown) ? .left : .right
+            clicks.append(RenderClickEvent(
+                timestamp: pending.time,
+                duration: 0.1,
+                x: pending.position.x,
+                y: pending.position.y,
+                clickType: clickType
+            ))
+        }
+
         return (positions, clicks)
     }
 

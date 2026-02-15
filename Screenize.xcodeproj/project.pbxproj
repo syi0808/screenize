@@ -50,11 +50,11 @@
 		F0000036296A0001 /* TrimHandleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000036296A0001 /* TrimHandleView.swift */; };
 		F0000040296A0001 /* EasingPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000040296A0001 /* EasingPicker.swift */; };
 		F0000041296A0001 /* TransformInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000041296A0001 /* TransformInspector.swift */; };
-		F0000042296A0001 /* RippleInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000042296A0001 /* RippleInspector.swift */; };
 		F0000043296A0001 /* CursorInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000043296A0001 /* CursorInspector.swift */; };
 		F0000044296A0001 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000044296A0001 /* InspectorView.swift */; };
 		F0000045296A0001 /* SettingsInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000045296A0001 /* SettingsInspector.swift */; };
 		F0000046296A0001 /* PresetPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000046296A0001 /* PresetPickerView.swift */; };
+		F0000047296A0001 /* PositionPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000047296A0001 /* PositionPicker.swift */; };
 		F0000050296A0001 /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000050296A0001 /* PreviewView.swift */; };
 		F0000051296A0001 /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000051296A0001 /* ExportView.swift */; };
 		F0000052296A0001 /* EditorMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000052296A0001 /* EditorMainView.swift */; };
@@ -62,7 +62,6 @@
 		F0000060296A0001 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000060296A0001 /* EditorViewModel.swift */; };
 		F0000061296A0001 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000061296A0001 /* UndoStack.swift */; };
 		F0000070296A0001 /* KeyframeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000070296A0001 /* KeyframeGenerator.swift */; };
-		F0000074296A0001 /* RippleGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000074296A0001 /* RippleGenerator.swift */; };
 		F0000075296A0001 /* CursorInterpolationGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000075296A0001 /* CursorInterpolationGenerator.swift */; };
 		F0000076296A0001 /* ClickCursorGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000076296A0001 /* ClickCursorGenerator.swift */; };
 		F0000077296A0001 /* SmartZoomGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000077296A0001 /* SmartZoomGenerator.swift */; };
@@ -168,11 +167,11 @@
 		F1000036296A0001 /* TrimHandleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrimHandleView.swift; sourceTree = "<group>"; };
 		F1000040296A0001 /* EasingPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingPicker.swift; sourceTree = "<group>"; };
 		F1000041296A0001 /* TransformInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformInspector.swift; sourceTree = "<group>"; };
-		F1000042296A0001 /* RippleInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippleInspector.swift; sourceTree = "<group>"; };
 		F1000043296A0001 /* CursorInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorInspector.swift; sourceTree = "<group>"; };
 		F1000044296A0001 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		F1000045296A0001 /* SettingsInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsInspector.swift; sourceTree = "<group>"; };
 		F1000046296A0001 /* PresetPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetPickerView.swift; sourceTree = "<group>"; };
+		F1000047296A0001 /* PositionPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionPicker.swift; sourceTree = "<group>"; };
 		F1000050296A0001 /* PreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewView.swift; sourceTree = "<group>"; };
 		F1000051296A0001 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 		F1000052296A0001 /* EditorMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorMainView.swift; sourceTree = "<group>"; };
@@ -180,7 +179,6 @@
 		F1000060296A0001 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
 		F1000061296A0001 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		F1000070296A0001 /* KeyframeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeGenerator.swift; sourceTree = "<group>"; };
-		F1000074296A0001 /* RippleGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippleGenerator.swift; sourceTree = "<group>"; };
 		F1000075296A0001 /* CursorInterpolationGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorInterpolationGenerator.swift; sourceTree = "<group>"; };
 		F1000076296A0001 /* ClickCursorGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCursorGenerator.swift; sourceTree = "<group>"; };
 		F1000077296A0001 /* SmartZoomGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartZoomGenerator.swift; sourceTree = "<group>"; };
@@ -394,9 +392,9 @@
 			children = (
 				F1000040296A0001 /* EasingPicker.swift */,
 				F1000041296A0001 /* TransformInspector.swift */,
-				F1000042296A0001 /* RippleInspector.swift */,
 				F1000043296A0001 /* CursorInspector.swift */,
 				F100007B296A0001 /* KeystrokeInspector.swift */,
+				F1000047296A0001 /* PositionPicker.swift */,
 				F1000044296A0001 /* InspectorView.swift */,
 				F1000045296A0001 /* SettingsInspector.swift */,
 				F1000046296A0001 /* PresetPickerView.swift */,
@@ -418,7 +416,6 @@
 			isa = PBXGroup;
 			children = (
 				F1000070296A0001 /* KeyframeGenerator.swift */,
-				F1000074296A0001 /* RippleGenerator.swift */,
 				F1000075296A0001 /* CursorInterpolationGenerator.swift */,
 				F1000076296A0001 /* ClickCursorGenerator.swift */,
 				F1000077296A0001 /* SmartZoomGenerator.swift */,
@@ -665,9 +662,9 @@
 				F0000036296A0001 /* TrimHandleView.swift in Sources */,
 				F0000040296A0001 /* EasingPicker.swift in Sources */,
 				F0000041296A0001 /* TransformInspector.swift in Sources */,
-				F0000042296A0001 /* RippleInspector.swift in Sources */,
 				F0000043296A0001 /* CursorInspector.swift in Sources */,
 				F000007B296A0001 /* KeystrokeInspector.swift in Sources */,
+				F0000047296A0001 /* PositionPicker.swift in Sources */,
 				F0000044296A0001 /* InspectorView.swift in Sources */,
 				F0000045296A0001 /* SettingsInspector.swift in Sources */,
 				F0000046296A0001 /* PresetPickerView.swift in Sources */,
@@ -678,7 +675,6 @@
 				F0000060296A0001 /* EditorViewModel.swift in Sources */,
 				F0000061296A0001 /* UndoStack.swift in Sources */,
 				F0000070296A0001 /* KeyframeGenerator.swift in Sources */,
-				F0000074296A0001 /* RippleGenerator.swift in Sources */,
 				F0000075296A0001 /* CursorInterpolationGenerator.swift in Sources */,
 				F0000076296A0001 /* ClickCursorGenerator.swift in Sources */,
 				F0000077296A0001 /* SmartZoomGenerator.swift in Sources */,

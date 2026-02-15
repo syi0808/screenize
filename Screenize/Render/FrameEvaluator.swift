@@ -60,13 +60,11 @@ final class FrameEvaluator {
     func evaluate(at time: TimeInterval) -> EvaluatedFrameState {
         let cursor = evaluateCursor(at: time)
         let transform = evaluateTransform(at: time)
-        let ripples = evaluateRipples(at: time)
         let keystrokes = evaluateKeystrokes(at: time)
 
         return EvaluatedFrameState(
             time: time,
             transform: transform,
-            ripples: ripples,
             cursor: cursor,
             keystrokes: keystrokes
         )
@@ -123,22 +121,6 @@ final class FrameEvaluator {
         )
     }
 
-    // MARK: - Ripple Evaluation
-
-    /// Evaluate the ripple track
-    private func evaluateRipples(at time: TimeInterval) -> [ActiveRipple] {
-        guard let track = timeline.rippleTrack, track.isEnabled else {
-            return []
-        }
-
-        // Find ripples active at the current time
-        let activeKeyframes = track.activeRipples(at: time)
-
-        return activeKeyframes.map { keyframe in
-            ActiveRipple(from: keyframe, at: time)
-        }
-    }
-
     // MARK: - Keystroke Evaluation
 
     /// Evaluate the keystroke overlay track
@@ -164,6 +146,7 @@ final class FrameEvaluator {
 
         // Check the click state
         let (isClicking, clickType) = checkClickState(at: time)
+        let clickScaleModifier = computeClickScaleModifier(at: time)
 
         // If style keyframes exist (one or more), apply style/visibility/scale from them
         if let styleKeyframes = track.styleKeyframes, !styleKeyframes.isEmpty {
@@ -185,7 +168,8 @@ final class FrameEvaluator {
                 isClicking: isClicking,
                 clickType: clickType,
                 velocity: cursorValues.velocity,
-                movementDirection: cursorValues.direction
+                movementDirection: cursorValues.direction,
+                clickScaleModifier: clickScaleModifier
             )
         } else {
             // Without keyframes, use raw mouse positions plus default values
@@ -199,7 +183,8 @@ final class FrameEvaluator {
                 isClicking: isClicking,
                 clickType: clickType,
                 velocity: 0,
-                movementDirection: 0
+                movementDirection: 0,
+                clickScaleModifier: clickScaleModifier
             )
         }
     }
@@ -467,6 +452,47 @@ final class FrameEvaluator {
             }
         }
         return (false, nil)
+    }
+
+    private func computeClickScaleModifier(at time: TimeInterval) -> CGFloat {
+        guard !clickEvents.isEmpty else { return 1.0 }
+
+        let pressDuration: TimeInterval = 0.08
+        let pressedScale: CGFloat = 0.8
+        let settleDuration: TimeInterval = 0.08
+
+        var candidates: [CGFloat] = []
+
+        for click in clickEvents {
+            let downTime = click.timestamp
+            let upTime = click.endTimestamp
+
+            let clickModifier: CGFloat
+            if time < downTime || time > upTime + settleDuration {
+                continue
+            } else if time <= downTime + pressDuration {
+                let t = CGFloat((time - downTime) / pressDuration)
+                clickModifier = 1.0 + (pressedScale - 1.0) * easeOutQuad(t)
+            } else if time <= upTime {
+                clickModifier = pressedScale
+            } else {
+                let t = CGFloat((time - upTime) / settleDuration)
+                clickModifier = pressedScale + (1.0 - pressedScale) * easeOutQuad(t)
+            }
+
+            candidates.append(clickModifier)
+        }
+
+        guard !candidates.isEmpty else { return 1.0 }
+        if let minimum = candidates.min(), minimum < 1.0 {
+            return minimum
+        }
+        return candidates.max() ?? 1.0
+    }
+
+    private func easeOutQuad(_ t: CGFloat) -> CGFloat {
+        let clamped = clamp(t, min: 0, max: 1)
+        return 1 - (1 - clamped) * (1 - clamped)
     }
 
     // MARK: - Helpers

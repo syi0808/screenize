@@ -108,16 +108,6 @@ struct InspectorView: View {
                         keyframeNotFound
                     }
 
-                case .ripple:
-                    if let binding = rippleKeyframeBinding(for: keyframeID) {
-                        RippleInspector(
-                            keyframe: binding,
-                            onChange: onKeyframeChange
-                        )
-                    } else {
-                        keyframeNotFound
-                    }
-
                 case .cursor:
                     if let binding = cursorKeyframeBinding(for: keyframeID) {
                         CursorInspector(
@@ -250,34 +240,6 @@ struct InspectorView: View {
         )
     }
 
-    private func rippleKeyframeBinding(for id: UUID) -> Binding<RippleKeyframe>? {
-        // Initial validation (ensure the keyframe exists)
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .ripple }),
-              case .ripple(let track) = timeline.tracks[trackIndex],
-              track.keyframes.contains(where: { $0.id == id }) else {
-            return nil
-        }
-
-        return Binding(
-            get: {
-                // Re-find the index by ID each time
-                if case .ripple(let track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    return track.keyframes[keyframeIndex]
-                }
-                return RippleKeyframe(time: 0, x: 0.5, y: 0.5)
-            },
-            set: { newValue in
-                // Re-find the index by ID each time
-                if case .ripple(var track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex] = newValue
-                    self.timeline.tracks[trackIndex] = .ripple(track)
-                }
-            }
-        )
-    }
-
     private func cursorKeyframeBinding(for id: UUID) -> Binding<CursorStyleKeyframe>? {
         // Initial validation (ensure the keyframe exists)
         guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
@@ -362,14 +324,6 @@ struct InspectorView: View {
                         TransformKeyframe(time: 2, zoom: 2.0, centerX: 0.3, centerY: 0.4),
                     ]
                 )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: [
-                        RippleKeyframe(time: 1, x: 0.3, y: 0.4),
-                    ]
-                )),
                 AnyTrack(CursorTrack(
                     id: UUID(),
                     name: "Cursor",
@@ -390,13 +344,6 @@ struct InspectorView: View {
                     Button("Select Transform KF") {
                         selectedTrackType = .transform
                         if let track = timeline.transformTrack {
-                            selectedKeyframeID = track.keyframes.first?.id
-                        }
-                    }
-
-                    Button("Select Ripple KF") {
-                        selectedTrackType = .ripple
-                        if let track = timeline.rippleTrack {
                             selectedKeyframeID = track.keyframes.first?.id
                         }
                     }

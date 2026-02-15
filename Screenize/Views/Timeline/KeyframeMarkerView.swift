@@ -180,7 +180,6 @@ struct KeyframeRangeView: View {
 /// Keyframe colors by track type
 enum KeyframeColor {
     static let transform = Color.blue
-    static let ripple = Color.purple
     static let cursor = Color.orange
     static let keystroke = Color.cyan
 
@@ -188,8 +187,6 @@ enum KeyframeColor {
         switch trackType {
         case .transform:
             return transform
-        case .ripple:
-            return ripple
         case .cursor:
             return cursor
         case .keystroke:
@@ -223,13 +220,6 @@ enum KeyframeColor {
             KeyframeMarkerView(
                 id: UUID(),
                 time: 2,
-                isSelected: false,
-                color: KeyframeColor.ripple
-            )
-
-            KeyframeMarkerView(
-                id: UUID(),
-                time: 3,
                 isSelected: false,
                 color: KeyframeColor.cursor
             )
