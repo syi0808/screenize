@@ -98,9 +98,6 @@ struct MediaAsset: Codable {
         case pixelSize
         case frameRate
         case duration
-        // MARK: - Legacy (remove in next minor version)
-        case legacyVideoURL = "videoURL"
-        case legacyMouseDataURL = "mouseDataURL"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -117,22 +114,10 @@ struct MediaAsset: Codable {
         pixelSize = try container.decode(CGSize.self, forKey: .pixelSize)
         frameRate = try container.decode(Double.self, forKey: .frameRate)
         duration = try container.decode(TimeInterval.self, forKey: .duration)
-
-        if let videoPath = try container.decodeIfPresent(String.self, forKey: .videoRelativePath),
-           let mousePath = try container.decodeIfPresent(String.self, forKey: .mouseDataRelativePath) {
-            // Version 2 format: relative paths
-            videoRelativePath = videoPath
-            mouseDataRelativePath = mousePath
-            // Placeholder URLs - must be resolved by caller via resolveURLs(from:)
-            videoURL = URL(fileURLWithPath: videoPath)
-            mouseDataURL = URL(fileURLWithPath: mousePath)
-        } else {
-            // MARK: - Legacy (remove in next minor version)
-            // Version 1 format: absolute URLs stored directly
-            videoURL = try container.decode(URL.self, forKey: .legacyVideoURL)
-            mouseDataURL = try container.decode(URL.self, forKey: .legacyMouseDataURL)
-            videoRelativePath = ""
-            mouseDataRelativePath = ""
-        }
+        videoRelativePath = try container.decode(String.self, forKey: .videoRelativePath)
+        mouseDataRelativePath = try container.decode(String.self, forKey: .mouseDataRelativePath)
+        // Placeholder URLs - must be resolved by caller via resolveURLs(from:)
+        videoURL = URL(fileURLWithPath: videoRelativePath)
+        mouseDataURL = URL(fileURLWithPath: mouseDataRelativePath)
     }
 }

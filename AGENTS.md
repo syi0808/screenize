@@ -126,7 +126,6 @@ General formatting expectations:
 ### File and Project System Expectations
 - Project package format is `.screenize` with `project.json` and `recording/` media.
 - Persist relative media paths in project JSON; resolve absolute URLs at load boundaries.
-- Respect existing migration path for legacy `.fsproj` handling.
 
 ## Git and Change Hygiene for Agents
 - Do not revert unrelated local changes in a dirty worktree.

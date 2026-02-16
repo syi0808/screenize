@@ -66,10 +66,45 @@ final class PackageManager {
 
     private init() {}
 
-    // MARK: - Package Creation (v4)
+    // MARK: - Package Creation
 
-    /// Create a v4 .screenize package from a recording with event streams.
-    /// Writes both polyrecorder-compatible event streams and legacy recording.mouse.json.
+    /// Create a .screenize package from an imported video file (no event streams).
+    func createPackageFromVideo(
+        name: String,
+        videoURL: URL,
+        in parentDirectory: URL
+    ) throws -> PackageInfo {
+        let packageURL = parentDirectory
+            .appendingPathComponent(name)
+            .appendingPathExtension(Self.packageExtension)
+
+        let recordingDir = packageURL.appendingPathComponent(Self.recordingDirectory)
+        try fileManager.createDirectory(at: recordingDir, withIntermediateDirectories: true)
+
+        let videoExtension = videoURL.pathExtension
+        let canonicalVideoFilename = "\(Self.canonicalVideoBaseName).\(videoExtension)"
+        let videoRelativePath = "\(Self.recordingDirectory)/\(canonicalVideoFilename)"
+        let mouseDataRelativePath = "\(Self.recordingDirectory)/\(Self.canonicalMouseDataFilename)"
+
+        let destVideoURL = packageURL.appendingPathComponent(videoRelativePath)
+        let destMouseDataURL = packageURL.appendingPathComponent(mouseDataRelativePath)
+
+        if fileManager.fileExists(atPath: videoURL.path),
+           !fileManager.fileExists(atPath: destVideoURL.path) {
+            try fileManager.moveItem(at: videoURL, to: destVideoURL)
+        }
+
+        return PackageInfo(
+            packageURL: packageURL,
+            projectJSONURL: packageURL.appendingPathComponent(Self.projectFilename),
+            videoURL: destVideoURL,
+            mouseDataURL: destMouseDataURL,
+            videoRelativePath: videoRelativePath,
+            mouseDataRelativePath: mouseDataRelativePath
+        )
+    }
+
+    /// Create a .screenize package from a recording with event streams.
     func createPackageV4(
         name: String,
         videoURL: URL,
@@ -112,9 +147,6 @@ final class PackageManager {
                 appVersion: appVersion
             )
 
-            // MARK: - Legacy v2 (remove in next minor version)
-            // Also write legacy mouse data for backward compatibility
-            try recording.save(to: destMouseDataURL)
         }
 
         let interop = InteropBlock.forRecording(videoRelativePath: videoRelativePath)
@@ -127,63 +159,6 @@ final class PackageManager {
             videoRelativePath: videoRelativePath,
             mouseDataRelativePath: mouseDataRelativePath,
             interop: interop
-        )
-    }
-
-    // MARK: - Legacy v2 (remove in next minor version)
-
-    /// Create a .screenize package from video and mouse data files
-    /// - Parameters:
-    ///   - name: Project name (used as package directory name)
-    ///   - videoURL: Source video file URL
-    ///   - mouseDataURL: Source mouse data file URL (optional)
-    ///   - parentDirectory: Directory where the package will be created
-    /// - Returns: PackageInfo with all resolved URLs
-    func createPackage(
-        name: String,
-        videoURL: URL,
-        mouseDataURL: URL?,
-        in parentDirectory: URL
-    ) throws -> PackageInfo {
-        let packageURL = parentDirectory
-            .appendingPathComponent(name)
-            .appendingPathExtension(Self.packageExtension)
-
-        let recordingDir = packageURL.appendingPathComponent(Self.recordingDirectory)
-
-        // Create package and recording directories
-        try fileManager.createDirectory(at: recordingDir, withIntermediateDirectories: true)
-
-        // Determine canonical video filename (preserve original extension)
-        let videoExtension = videoURL.pathExtension
-        let canonicalVideoFilename = "\(Self.canonicalVideoBaseName).\(videoExtension)"
-        let videoRelativePath = "\(Self.recordingDirectory)/\(canonicalVideoFilename)"
-        let mouseDataRelativePath = "\(Self.recordingDirectory)/\(Self.canonicalMouseDataFilename)"
-
-        let destVideoURL = packageURL.appendingPathComponent(videoRelativePath)
-        let destMouseDataURL = packageURL.appendingPathComponent(mouseDataRelativePath)
-
-        // Move video file into the package
-        if fileManager.fileExists(atPath: videoURL.path) {
-            if !fileManager.fileExists(atPath: destVideoURL.path) {
-                try fileManager.moveItem(at: videoURL, to: destVideoURL)
-            }
-        }
-
-        // Move mouse data file into the package
-        if let mouseDataURL, fileManager.fileExists(atPath: mouseDataURL.path) {
-            if !fileManager.fileExists(atPath: destMouseDataURL.path) {
-                try fileManager.moveItem(at: mouseDataURL, to: destMouseDataURL)
-            }
-        }
-
-        return PackageInfo(
-            packageURL: packageURL,
-            projectJSONURL: packageURL.appendingPathComponent(Self.projectFilename),
-            videoURL: destVideoURL,
-            mouseDataURL: destMouseDataURL,
-            videoRelativePath: videoRelativePath,
-            mouseDataRelativePath: mouseDataRelativePath
         )
     }
 

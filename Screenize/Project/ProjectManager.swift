@@ -42,51 +42,6 @@ final class ProjectManager: ObservableObject {
         loadRecentProjects()
     }
 
-    // MARK: - Package Creation
-
-    /// Create a .screenize package and move media files into it
-    /// - Parameters:
-    ///   - name: Project name
-    ///   - videoURL: Original video file URL
-    ///   - mouseDataURL: Mouse data file URL (optional)
-    ///   - parentDirectory: Directory where the package will be created
-    /// - Returns: PackageInfo with resolved URLs
-    func createPackage(
-        name: String,
-        videoURL: URL,
-        mouseDataURL: URL? = nil,
-        in parentDirectory: URL
-    ) throws -> PackageInfo {
-        let mouseURL = mouseDataURL ?? findMouseDataURL(for: videoURL)
-        return try packageManager.createPackage(
-            name: name,
-            videoURL: videoURL,
-            mouseDataURL: mouseURL,
-            in: parentDirectory
-        )
-    }
-
-    /// Find the mouse data file associated with a video
-    private func findMouseDataURL(for videoURL: URL) -> URL {
-        let baseName = videoURL.deletingPathExtension().lastPathComponent
-        let directory = videoURL.deletingLastPathComponent()
-
-        let candidates = [
-            "\(baseName).mouse.json",
-            "\(baseName)_mouse.json",
-            "mouse.json"
-        ]
-
-        for candidate in candidates {
-            let candidateURL = directory.appendingPathComponent(candidate)
-            if fileManager.fileExists(atPath: candidateURL.path) {
-                return candidateURL
-            }
-        }
-
-        return directory.appendingPathComponent("\(baseName).mouse.json")
-    }
-
     // MARK: - Save
 
     /// Save a project to its .screenize package
@@ -117,10 +72,6 @@ final class ProjectManager: ObservableObject {
         errorMessage = nil
 
         defer { isLoading = false }
-
-        if url.pathExtension.lowercased() == "fsproj" {
-            throw ProjectManagerError.legacyProjectUnsupported
-        }
 
         guard PackageManager.isPackage(url) else {
             throw ProjectManagerError.invalidProjectFile
@@ -269,7 +220,6 @@ enum ProjectManagerError: Error, LocalizedError {
     case videoFileNotFound(URL)
     case mouseDataNotFound(URL)
     case invalidProjectFile
-    case legacyProjectUnsupported
     case saveFailed
 
     var errorDescription: String? {
@@ -280,8 +230,6 @@ enum ProjectManagerError: Error, LocalizedError {
             return "Mouse data file not found: \(url.lastPathComponent)"
         case .invalidProjectFile:
             return "Invalid project file format"
-        case .legacyProjectUnsupported:
-            return "This project uses the old .fsproj format which is no longer supported."
         case .saveFailed:
             return "Failed to save project"
         }

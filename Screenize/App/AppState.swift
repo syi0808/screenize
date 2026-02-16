@@ -357,38 +357,39 @@ final class AppState: ObservableObject {
 
     // MARK: - Project Creation
 
+    /// Build CaptureMeta from the current selectedTarget, falling back to video dimensions.
+    func buildCaptureMeta(videoURL: URL) async -> CaptureMeta? {
+        if let target = selectedTarget {
+            switch target {
+            case .display(let display):
+                return CaptureMeta(
+                    boundsPt: CGRect(origin: .zero, size: CGSize(width: display.width, height: display.height)),
+                    scaleFactor: CGFloat(display.width) / CGFloat(display.width) * 2.0
+                )
+            case .window(let window):
+                return CaptureMeta(boundsPt: window.frame, scaleFactor: 2.0)
+            case .region(let rect, _):
+                return CaptureMeta(boundsPt: rect, scaleFactor: 2.0)
+            }
+        } else {
+            guard let videoMetadata = await extractVideoMetadata(from: videoURL) else { return nil }
+            return CaptureMeta(
+                boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
+                scaleFactor: 2.0
+            )
+        }
+    }
+
     func createProject(packageInfo: PackageInfo) async -> ScreenizeProject? {
         // Extract video metadata
         guard let videoMetadata = await extractVideoMetadata(from: packageInfo.videoURL) else {
             return nil
         }
 
-        // Capture metadata
-        let captureMeta: CaptureMeta
-        if let target = selectedTarget {
-            switch target {
-            case .display(let display):
-                captureMeta = CaptureMeta(
-                    boundsPt: CGRect(origin: .zero, size: CGSize(width: display.width, height: display.height)),
-                    scaleFactor: CGFloat(display.width) / CGFloat(display.width) * 2.0  // Retina
-                )
-            case .window(let window):
-                captureMeta = CaptureMeta(
-                    boundsPt: window.frame,
-                    scaleFactor: 2.0
-                )
-            case .region(let rect, _):
-                captureMeta = CaptureMeta(
-                    boundsPt: rect,
-                    scaleFactor: 2.0
-                )
-            }
-        } else {
-            captureMeta = CaptureMeta(
-                boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
-                scaleFactor: 2.0
-            )
-        }
+        let captureMeta = await buildCaptureMeta(videoURL: packageInfo.videoURL) ?? CaptureMeta(
+            boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
+            scaleFactor: 2.0
+        )
 
         // Create media asset with relative paths
         let media = MediaAsset(

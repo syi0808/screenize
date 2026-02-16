@@ -147,22 +147,14 @@ final class PreviewEngine: ObservableObject {
             trimStart = project.timeline.effectiveTrimStart
             trimEnd = project.timeline.trimEnd
 
-            // Load mouse data
             // Load and convert mouse data (with interpolation)
-            do {
-                let result = try MouseDataConverter.loadAndConvertWithInterpolation(
-                    from: project,
-                    frameRate: extractor.frameRate
-                )
-                renderMousePositions = result.positions
-                renderClickEvents = result.clicks
-                print("Loaded mouse data: \(renderMousePositions.count) positions, \(renderClickEvents.count) clicks")
-            } catch {
-                renderMousePositions = []
-                renderClickEvents = []
-                print("Failed to load mouse data: \(error.localizedDescription)")
-                // Continue without mouse data
-            }
+            let mouseResult = MouseDataConverter.loadAndConvertWithInterpolation(
+                from: project,
+                frameRate: extractor.frameRate
+            )
+            renderMousePositions = mouseResult.positions
+            renderClickEvents = mouseResult.clicks
+            print("Loaded mouse data: \(renderMousePositions.count) positions, \(renderClickEvents.count) clicks")
 
             // Build the render pipeline (Evaluator + Renderer)
             let pipeline = RenderPipelineFactory.createPreviewPipeline(

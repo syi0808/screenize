@@ -197,8 +197,7 @@ struct SessionCenterResolver {
                 moves.append(TransformKeyframe(
                     time: activity.time - 0.3,
                     zoom: session.zoom,
-                    centerX: lastMoveCenter.x,
-                    centerY: lastMoveCenter.y,
+                    center: NormalizedPoint(x: lastMoveCenter.x, y: lastMoveCenter.y),
                     easing: settings.moveEasing
                 ))
 
@@ -206,8 +205,7 @@ struct SessionCenterResolver {
                 moves.append(TransformKeyframe(
                     time: activity.time,
                     zoom: session.zoom,
-                    centerX: newCenter.x,
-                    centerY: newCenter.y,
+                    center: NormalizedPoint(x: newCenter.x, y: newCenter.y),
                     easing: settings.moveEasing
                 ))
 
@@ -278,8 +276,7 @@ struct SessionCenterResolver {
                     moves.append(TransformKeyframe(
                         time: moveStartTime,
                         zoom: session.zoom,
-                        centerX: currentCenter.x,
-                        centerY: currentCenter.y,
+                        center: NormalizedPoint(x: currentCenter.x, y: currentCenter.y),
                         easing: settings.moveEasing
                     ))
                 }
@@ -288,8 +285,7 @@ struct SessionCenterResolver {
                 moves.append(TransformKeyframe(
                     time: sample.timestamp,
                     zoom: session.zoom,
-                    centerX: newCenter.x,
-                    centerY: newCenter.y,
+                    center: NormalizedPoint(x: newCenter.x, y: newCenter.y),
                     easing: settings.moveEasing
                 ))
 

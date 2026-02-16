@@ -111,7 +111,6 @@ Screenize is a macOS screen recording application that captures screen/window co
 - `PackageManager` - Singleton managing `.screenize` package CRUD (create, save, load, path resolution)
 - `ProjectManager` - Orchestrates project lifecycle, recent projects, delegates to PackageManager
 - `ProjectCreator` - Factory creating projects from recordings or imported videos (accepts `PackageInfo`)
-- `LegacyProjectMigrator` - Auto-migrates old `.fsproj` projects to `.screenize` format (remove in next minor version)
 - `RenderSettings` - Export codec, quality, resolution settings
 
 **`.screenize` package structure:**

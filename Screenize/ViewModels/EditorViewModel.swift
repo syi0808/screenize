@@ -315,20 +315,18 @@ final class EditorViewModel: ObservableObject {
                     project.frameAnalysisCache = frameAnalysis
                 }
 
-                // Load legacy MouseRecording for uiStateSamples (not in event streams)
+                // Load UI state samples from event streams
                 let uiStateSamples: [UIStateSample]
                 let screenBounds: CGSize
-                if project.media.mouseDataExists,
-                   let recording = try? MouseRecording.load(from: project.media.mouseDataURL) {
-                    uiStateSamples = recording.uiStateSamples
-                    screenBounds = CGSize(
-                        width: recording.screenBounds.width,
-                        height: recording.screenBounds.height
+                if let interop = project.interop, let packageURL = projectURL {
+                    uiStateSamples = EventStreamLoader.loadUIStateSamples(
+                        from: packageURL,
+                        interop: interop
                     )
                 } else {
                     uiStateSamples = []
-                    screenBounds = project.media.pixelSize
                 }
+                screenBounds = project.media.pixelSize
 
                 transformTrack = SmartZoomGenerator().generate(
                     from: mouseDataSource,
@@ -377,14 +375,7 @@ final class EditorViewModel: ObservableObject {
             }
         }
 
-        // MARK: - Legacy v2 (remove in next minor version)
-        guard project.media.mouseDataExists else { return nil }
-        guard let recording = try? MouseRecording.load(from: project.media.mouseDataURL) else { return nil }
-        return MouseRecordingAdapter(
-            recording: recording,
-            duration: project.media.duration,
-            frameRate: project.media.frameRate
-        )
+        return nil
     }
 
     /// Invalidate the frame analysis cache
@@ -889,107 +880,3 @@ private extension EditorViewModel {
     }
 }
 
-// MARK: - Legacy v2 (remove in next minor version)
-
-/// Adapter that converts MouseRecording into a MouseDataSource
-struct MouseRecordingAdapter: MouseDataSource {
-    let recording: MouseRecording
-    let duration: TimeInterval
-    let frameRate: Double
-
-    var positions: [MousePositionData] {
-        recording.positions.map { pos in
-            // Convert screen coordinates to normalized space
-            let normalizedX = pos.x / recording.screenBounds.width
-            let normalizedY = pos.y / recording.screenBounds.height
-            return MousePositionData(
-                time: pos.timestamp,
-                x: normalizedX,
-                y: normalizedY,
-                appBundleID: nil,
-                elementInfo: nil
-            )
-        }
-    }
-
-    var clicks: [ClickEventData] {
-        recording.clicks.map { click in
-            // Convert screen coordinates into normalized values
-            let normalizedX = click.x / recording.screenBounds.width
-            let normalizedY = click.y / recording.screenBounds.height
-
-            // Convert ClickType (MouseEvent → ClickEventData)
-            let clickType: ClickEventData.ClickType
-            switch click.type {
-            case .left:
-                clickType = .leftDown
-            case .right:
-                clickType = .rightDown
-            }
-
-            return ClickEventData(
-                time: click.timestamp,
-                x: normalizedX,
-                y: normalizedY,
-                clickType: clickType,
-                appBundleID: click.targetElement?.applicationName,
-                elementInfo: click.targetElement
-            )
-        }
-    }
-
-    var keyboardEvents: [KeyboardEventData] {
-        recording.keyboardEvents.map { event in
-            let eventType: KeyboardEventData.EventType
-            switch event.type {
-            case .keyDown:
-                eventType = .keyDown
-            case .keyUp:
-                eventType = .keyUp
-            }
-
-            var modifiers: KeyboardEventData.ModifierFlags = []
-            if event.modifiers.shift { modifiers.insert(.shift) }
-            if event.modifiers.control { modifiers.insert(.control) }
-            if event.modifiers.option { modifiers.insert(.option) }
-            if event.modifiers.command { modifiers.insert(.command) }
-
-            return KeyboardEventData(
-                time: event.timestamp,
-                keyCode: event.keyCode,
-                eventType: eventType,
-                modifiers: modifiers,
-                character: event.character
-            )
-        }
-    }
-
-    var dragEvents: [DragEventData] {
-        recording.dragEvents.map { drag in
-            // Convert screen coordinates to normalized space
-            let normalizedStartX = drag.startX / recording.screenBounds.width
-            let normalizedStartY = drag.startY / recording.screenBounds.height
-            let normalizedEndX = drag.endX / recording.screenBounds.width
-            let normalizedEndY = drag.endY / recording.screenBounds.height
-
-            // Convert the drag type
-            let dragType: DragEventData.DragType
-            switch drag.type {
-            case .selection:
-                dragType = .selection
-            case .move:
-                dragType = .move
-            case .resize:
-                dragType = .resize
-            }
-
-            return DragEventData(
-                startTime: drag.startTimestamp,
-                endTime: drag.endTimestamp,
-                startPosition: NormalizedPoint(x: normalizedStartX, y: normalizedStartY),
-                endPosition: NormalizedPoint(x: normalizedEndX, y: normalizedEndY),
-                dragType: dragType
-            )
-        }
-    }
-}

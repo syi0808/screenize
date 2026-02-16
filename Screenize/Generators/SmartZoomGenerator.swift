@@ -34,8 +34,7 @@ final class SmartZoomGenerator {
         keyframes.append(TransformKeyframe(
             time: 0,
             zoom: settings.minZoom,
-            centerX: 0.5,
-            centerY: 0.5,
+            center: NormalizedPoint(x: 0.5, y: 0.5),
             easing: .linear
         ))
 
@@ -166,8 +165,7 @@ final class SmartZoomGenerator {
                 keyframes.append(TransformKeyframe(
                     time: zoomInStartTime,
                     zoom: settings.minZoom,
-                    centerX: 0.5,
-                    centerY: 0.5,
+                    center: NormalizedPoint(x: 0.5, y: 0.5),
                     easing: settings.zoomInEasing
                 ))
             }
@@ -176,8 +174,7 @@ final class SmartZoomGenerator {
             keyframes.append(TransformKeyframe(
                 time: zoomInEndTime,
                 zoom: session.zoom,
-                centerX: sessionCenter.x,
-                centerY: sessionCenter.y,
+                center: NormalizedPoint(x: sessionCenter.x, y: sessionCenter.y),
                 easing: settings.zoomInEasing
             ))
         }
@@ -228,8 +225,7 @@ final class SmartZoomGenerator {
             keyframes.append(TransformKeyframe(
                 time: moveStartTime,
                 zoom: session.zoom,
-                centerX: effectiveCenter.x,
-                centerY: effectiveCenter.y,
+                center: NormalizedPoint(x: effectiveCenter.x, y: effectiveCenter.y),
                 easing: settings.moveEasing
             ))
 
@@ -239,8 +235,7 @@ final class SmartZoomGenerator {
                 keyframes.append(TransformKeyframe(
                     time: moveEndTime,
                     zoom: nextSession.zoom,
-                    centerX: nextCenter.x,
-                    centerY: nextCenter.y,
+                    center: NormalizedPoint(x: nextCenter.x, y: nextCenter.y),
                     easing: settings.moveEasing
                 ))
             }
@@ -281,8 +276,7 @@ final class SmartZoomGenerator {
                 keyframes.append(TransformKeyframe(
                     time: zoomOutStartTime,
                     zoom: session.zoom,
-                    centerX: effectiveCenter.x,
-                    centerY: effectiveCenter.y,
+                    center: NormalizedPoint(x: effectiveCenter.x, y: effectiveCenter.y),
                     easing: settings.zoomOutEasing
                 ))
             }
@@ -293,8 +287,7 @@ final class SmartZoomGenerator {
             keyframes.append(TransformKeyframe(
                 time: zoomOutEndTime,
                 zoom: settings.minZoom,
-                centerX: zoomOutCenter.x,
-                centerY: zoomOutCenter.y,
+                center: zoomOutCenter,
                 easing: settings.zoomOutEasing
             ))
 
@@ -309,14 +302,13 @@ final class SmartZoomGenerator {
         keyframes.map { kf in
             guard kf.zoom > 1.0 else { return kf }
             let halfCropRatio = 0.5 / kf.zoom
-            let clampedX = max(halfCropRatio, min(1.0 - halfCropRatio, kf.centerX))
-            let clampedY = max(halfCropRatio, min(1.0 - halfCropRatio, kf.centerY))
+            let clampedX = max(halfCropRatio, min(1.0 - halfCropRatio, kf.center.x))
+            let clampedY = max(halfCropRatio, min(1.0 - halfCropRatio, kf.center.y))
             return TransformKeyframe(
                 id: kf.id,
                 time: kf.time,
                 zoom: kf.zoom,
-                centerX: clampedX,
-                centerY: clampedY,
+                center: NormalizedPoint(x: clampedX, y: clampedY),
                 easing: kf.easing
             )
         }
@@ -348,7 +340,7 @@ final class SmartZoomGenerator {
             name: "Transform (Smart Zoom)",
             isEnabled: true,
             keyframes: [
-                TransformKeyframe(time: 0, zoom: 1.0, centerX: 0.5, centerY: 0.5)
+                TransformKeyframe(time: 0, zoom: 1.0, center: NormalizedPoint(x: 0.5, y: 0.5))
             ]
         )
     }

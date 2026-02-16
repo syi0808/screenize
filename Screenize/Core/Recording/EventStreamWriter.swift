@@ -44,6 +44,10 @@ struct EventStreamWriter {
             encoder: encoder, to: recordingDir, events: recording.keyboardEvents,
             processTimeStartMs: processTimeStartMs, unixStartMs: unixStartMs
         )
+        try writeUIStates(
+            encoder: encoder, to: recordingDir, samples: recording.uiStateSamples,
+            processTimeStartMs: processTimeStartMs, unixStartMs: unixStartMs
+        )
     }
 
     // MARK: - Private
@@ -140,6 +144,37 @@ struct EventStreamWriter {
         }
         try encoder.encode(keystrokes).write(
             to: dir.appendingPathComponent("keystrokes-0.json"), options: .atomic
+        )
+    }
+
+    private static func writeUIStates(
+        encoder: JSONEncoder, to dir: URL, samples: [UIStateSample],
+        processTimeStartMs: Int64, unixStartMs: Int64
+    ) throws {
+        let events: [PolyUIStateEvent] = samples.map { sample in
+            let offsetMs = Int64(sample.timestamp * 1000)
+            return PolyUIStateEvent(
+                processTimeMs: processTimeStartMs + offsetMs,
+                unixTimeMs: unixStartMs + offsetMs,
+                cursorX: Double(sample.cursorPosition.x),
+                cursorY: Double(sample.cursorPosition.y),
+                elementRole: sample.elementInfo?.role,
+                elementSubrole: sample.elementInfo?.subrole,
+                elementTitle: sample.elementInfo?.title,
+                elementAppName: sample.elementInfo?.applicationName,
+                elementFrameX: sample.elementInfo.map { Double($0.frame.origin.x) },
+                elementFrameY: sample.elementInfo.map { Double($0.frame.origin.y) },
+                elementFrameW: sample.elementInfo.map { Double($0.frame.width) },
+                elementFrameH: sample.elementInfo.map { Double($0.frame.height) },
+                elementIsClickable: sample.elementInfo?.isClickable,
+                caretX: sample.caretBounds.map { Double($0.origin.x) },
+                caretY: sample.caretBounds.map { Double($0.origin.y) },
+                caretW: sample.caretBounds.map { Double($0.width) },
+                caretH: sample.caretBounds.map { Double($0.height) }
+            )
+        }
+        try encoder.encode(events).write(
+            to: dir.appendingPathComponent("uistates-0.json"), options: .atomic
         )
     }
 }

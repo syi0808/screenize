@@ -50,11 +50,6 @@ struct TransformState: Equatable {
     /// Pan direction (radians, for motion blur)
     let panDirection: CGFloat
 
-    // MARK: - Computed Properties (backward compatibility)
-
-    var centerX: CGFloat { center.x }
-    var centerY: CGFloat { center.y }
-
     /// Indicates whether zooming is active
     var isZooming: Bool {
         zoom > 1.01  // Consider zooming if zoom exceeds 1%
@@ -77,11 +72,6 @@ struct TransformState: Equatable {
         self.zoomVelocity = zoomVelocity
         self.panVelocity = panVelocity
         self.panDirection = panDirection
-    }
-
-    /// Initialization for backward compatibility
-    init(zoom: CGFloat, centerX: CGFloat, centerY: CGFloat) {
-        self.init(zoom: zoom, center: NormalizedPoint(x: centerX, y: centerY))
     }
 
     /// Initialize from TransformValue

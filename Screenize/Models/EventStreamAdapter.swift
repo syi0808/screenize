@@ -154,4 +154,73 @@ enum EventStreamLoader {
             frameRate: frameRate
         )
     }
+
+    /// Load UI state samples from a v4 package.
+    /// Returns empty array if the stream is missing or unreadable.
+    static func loadUIStateSamples(
+        from packageURL: URL,
+        interop: InteropBlock,
+        metadata: PolyRecordingMetadata? = nil
+    ) -> [UIStateSample] {
+        let decoder = JSONDecoder()
+
+        // Load metadata if not provided
+        let meta: PolyRecordingMetadata
+        if let metadata {
+            meta = metadata
+        } else {
+            let metadataURL = packageURL.appendingPathComponent(interop.recordingMetadataPath)
+            guard let metadataData = try? Data(contentsOf: metadataURL),
+                  let decoded = try? decoder.decode(PolyRecordingMetadata.self, from: metadataData) else {
+                return []
+            }
+            meta = decoded
+        }
+
+        guard let path = interop.streams.uiStates else { return [] }
+        let url = packageURL.appendingPathComponent(path)
+        guard let data = try? Data(contentsOf: url),
+              let events = try? decoder.decode([PolyUIStateEvent].self, from: data) else {
+            return []
+        }
+
+        let sessionStartMs = meta.processTimeStartMs
+
+        return events.map { event in
+            let timelineSec = Double(event.processTimeMs - sessionStartMs) / 1000.0
+
+            let elementInfo: UIElementInfo?
+            if let role = event.elementRole,
+               let frameX = event.elementFrameX,
+               let frameY = event.elementFrameY,
+               let frameW = event.elementFrameW,
+               let frameH = event.elementFrameH {
+                elementInfo = UIElementInfo(
+                    role: role,
+                    subrole: event.elementSubrole,
+                    frame: CGRect(x: frameX, y: frameY, width: frameW, height: frameH),
+                    title: event.elementTitle,
+                    isClickable: event.elementIsClickable ?? false,
+                    applicationName: event.elementAppName
+                )
+            } else {
+                elementInfo = nil
+            }
+
+            let caretBounds: CGRect?
+            if let cx = event.caretX, let cy = event.caretY,
+               let cw = event.caretW, let ch = event.caretH {
+                caretBounds = CGRect(x: cx, y: cy, width: cw, height: ch)
+            } else {
+                caretBounds = nil
+            }
+
+            return UIStateSample(
+                timestamp: timelineSec,
+                cursorPosition: CGPoint(x: event.cursorX, y: event.cursorY),
+                elementInfo: elementInfo,
+                caretBounds: caretBounds
+            )
+        }
+    }
 }

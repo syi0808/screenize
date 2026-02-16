@@ -8,7 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
         let ext = url.pathExtension.lowercased()
-        if ext == ScreenizeProject.packageExtension || ext == "fsproj" {
+        if ext == ScreenizeProject.packageExtension {
             NotificationCenter.default.post(
                 name: .openProjectFile,
                 object: nil,
@@ -161,7 +161,6 @@ struct ContentView: View {
     @AppStorage("hasCompletedPermissionSetup") private var hasCompletedSetup: Bool = false
     @State private var isCreatingProject: Bool = false
     @State private var showKeyboardShortcuts = false
-    @State private var showLegacyProjectAlert = false
 
     /// Determine current shortcut context based on active screen
     private var currentShortcutContext: ShortcutContext {
@@ -256,19 +255,14 @@ struct ContentView: View {
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutHelpView(context: currentShortcutContext)
         }
-        .alert("Unsupported Project Format", isPresented: $showLegacyProjectAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("This project uses the old .fsproj format which is no longer supported. Please create a new recording.")
-        }
     }
 
     private func openVideo(url: URL) async {
         do {
-            // Create .screenize package and move files
+            // Create .screenize package from imported video
             let videoName = url.deletingPathExtension().lastPathComponent
             let parentDirectory = url.deletingLastPathComponent()
-            let packageInfo = try projectManager.createPackage(
+            let packageInfo = try PackageManager.shared.createPackageFromVideo(
                 name: videoName,
                 videoURL: url,
                 in: parentDirectory
@@ -288,10 +282,6 @@ struct ContentView: View {
     }
 
     private func openProject(url: URL) async {
-        if url.pathExtension.lowercased() == "fsproj" {
-            showLegacyProjectAlert = true
-            return
-        }
         do {
             let result = try await projectManager.load(from: url)
             appState.currentProjectURL = result.packageURL
@@ -302,28 +292,38 @@ struct ContentView: View {
     }
 
     private func createProjectFromRecording() async {
-        guard let videoURL = appState.lastRecordingURL,
-              let mouseDataURL = appState.lastMouseDataURL else {
+        guard let videoURL = appState.lastRecordingURL else {
             return
         }
 
         do {
-            // Create .screenize package and move files
             let videoName = videoURL.deletingPathExtension().lastPathComponent
             let parentDirectory = videoURL.deletingLastPathComponent()
-            let packageInfo = try projectManager.createPackage(
+            let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+
+            // Create project using AppState's capture metadata (computes captureMeta from selectedTarget)
+            // First get a temporary PackageInfo to create the project
+            guard let captureMeta = await appState.buildCaptureMeta(videoURL: videoURL) else {
+                return
+            }
+
+            let packageInfo = try PackageManager.shared.createPackageV4(
                 name: videoName,
                 videoURL: videoURL,
-                mouseDataURL: mouseDataURL,
-                in: parentDirectory
+                mouseRecording: appState.lastMouseRecording,
+                captureMeta: captureMeta,
+                in: parentDirectory,
+                recordingStartDate: appState.lastRecordingStartDate ?? Date(),
+                processTimeStartMs: appState.lastProcessTimeStartMs,
+                appVersion: appVersion
             )
 
-            // Create a project using AppState's capture metadata
+            appState.lastMouseRecording = nil
+
             guard let project = await appState.createProject(packageInfo: packageInfo) else {
                 return
             }
 
-            // Save the project into the package
             let packageURL = try await projectManager.save(project, to: packageInfo.packageURL)
 
             appState.currentProjectURL = packageURL
@@ -458,7 +458,7 @@ struct MainWelcomeView: View {
             let ext = url.pathExtension.lowercased()
             let videoExtensions = ["mp4", "mov", "m4v", "mpeg4"]
 
-            if ext == ScreenizeProject.packageExtension || ext == "fsproj" {
+            if ext == ScreenizeProject.packageExtension {
                 DispatchQueue.main.async {
                     onOpenProject?(url)
                 }

@@ -357,27 +357,7 @@ struct MouseRecording: Codable {
         self.createdAt = Date()
     }
 
-    // MARK: - Codable (legacy JSON compatibility)
-
-    private enum CodingKeys: String, CodingKey {
-        case positions, clicks, scrollEvents, keyboardEvents, dragEvents, uiStateSamples
-        case screenBounds, recordingDuration, frameRate, scaleFactor, createdAt
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        positions = try container.decode([MousePosition].self, forKey: .positions)
-        clicks = try container.decode([MouseClickEvent].self, forKey: .clicks)
-        scrollEvents = try container.decodeIfPresent([ScrollEvent].self, forKey: .scrollEvents) ?? []
-        keyboardEvents = try container.decodeIfPresent([KeyboardEvent].self, forKey: .keyboardEvents) ?? []
-        dragEvents = try container.decodeIfPresent([DragEvent].self, forKey: .dragEvents) ?? []
-        uiStateSamples = try container.decodeIfPresent([UIStateSample].self, forKey: .uiStateSamples) ?? []
-        screenBounds = try container.decode(CGRect.self, forKey: .screenBounds)
-        recordingDuration = try container.decode(TimeInterval.self, forKey: .recordingDuration)
-        frameRate = try container.decodeIfPresent(Int.self, forKey: .frameRate) ?? 60
-        scaleFactor = try container.decodeIfPresent(CGFloat.self, forKey: .scaleFactor) ?? 1.0
-        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
-    }
+    // MARK: - Codable
 
     // MARK: - File Operations
 

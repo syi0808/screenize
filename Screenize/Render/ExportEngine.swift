@@ -83,20 +83,15 @@ final class ExportEngine: ObservableObject {
             var mousePositions: [RenderMousePosition] = []
             var clickEvents: [RenderClickEvent] = []
 
-            do {
-                let result = try await MainActor.run {
-                    try MouseDataConverter.loadAndConvertWithInterpolation(
-                        from: project,
-                        frameRate: frameRate
-                    )
-                }
-                mousePositions = result.positions
-                clickEvents = result.clicks
-                print("Export: Loaded mouse data - \(mousePositions.count) interpolated positions, \(clickEvents.count) clicks")
-            } catch {
-                print("Export: Failed to load mouse data: \(error.localizedDescription)")
-                // Continue without mouse data
+            let mouseResult = await MainActor.run {
+                MouseDataConverter.loadAndConvertWithInterpolation(
+                    from: project,
+                    frameRate: frameRate
+                )
             }
+            mousePositions = mouseResult.positions
+            clickEvents = mouseResult.clicks
+            print("Export: Loaded mouse data - \(mousePositions.count) interpolated positions, \(clickEvents.count) clicks")
 
             // 3. Determine output size
             let outputSize = project.renderSettings.outputResolution.size(sourceSize: naturalSize)

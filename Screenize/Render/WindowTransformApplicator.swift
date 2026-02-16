@@ -77,8 +77,8 @@ final class WindowTransformApplicator {
         let screenCenterY = outputSize.height / 2
 
         // Point inside the scaled window targeted by the center values
-        let windowPointX = transform.centerX * scaledWidth
-        let windowPointY = transform.centerY * scaledHeight
+        let windowPointX = transform.center.x * scaledWidth
+        let windowPointY = transform.center.y * scaledHeight
 
         // Window origin = screen center minus the window point
         // This aligns the window point with the screen center
@@ -149,8 +149,8 @@ final class WindowTransformApplicator {
         let screenCenterX = outputSize.width / 2
         let screenCenterY = outputSize.height / 2
 
-        let windowPointX = transform.centerX * scaledSize.width
-        let windowPointY = transform.centerY * scaledSize.height
+        let windowPointX = transform.center.x * scaledSize.width
+        let windowPointY = transform.center.y * scaledSize.height
 
         return CGPoint(
             x: screenCenterX - windowPointX,

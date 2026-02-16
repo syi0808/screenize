@@ -25,20 +25,6 @@ struct TransformKeyframe: TimedKeyframe, Equatable {
     var center: NormalizedPoint      // 0.0–1.0 (normalized, top-left origin)
     var easing: EasingCurve          // Interpolation mode to the next keyframe
 
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use center.x instead")
-    var centerX: CGFloat {
-        get { center.x }
-        set { center = NormalizedPoint(x: newValue, y: center.y) }
-    }
-
-    @available(*, deprecated, message: "Use center.y instead")
-    var centerY: CGFloat {
-        get { center.y }
-        set { center = NormalizedPoint(x: center.x, y: newValue) }
-    }
-
     // MARK: - Initialization
 
     init(
@@ -55,24 +41,6 @@ struct TransformKeyframe: TimedKeyframe, Equatable {
         self.easing = easing
     }
 
-    /// Legacy initializer
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        zoom: CGFloat = 1.0,
-        centerX: CGFloat = 0.5,
-        centerY: CGFloat = 0.5,
-        easing: EasingCurve = .springDefault
-    ) {
-        self.init(
-            id: id,
-            time: time,
-            zoom: zoom,
-            center: NormalizedPoint(x: centerX, y: centerY),
-            easing: easing
-        )
-    }
-
     /// Identity keyframe (no zoom, centered)
     static func identity(at time: TimeInterval) -> Self {
         Self(time: time, zoom: 1.0, center: .center)
@@ -87,27 +55,6 @@ struct TransformKeyframe: TimedKeyframe, Equatable {
 struct TransformValue: Codable, Interpolatable, Equatable {
     let zoom: CGFloat
     let center: NormalizedPoint
-
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use center.x instead")
-    var centerX: CGFloat { center.x }
-
-    @available(*, deprecated, message: "Use center.y instead")
-    var centerY: CGFloat { center.y }
-
-    // MARK: - Initialization
-
-    init(zoom: CGFloat, center: NormalizedPoint) {
-        self.zoom = zoom
-        self.center = center
-    }
-
-    /// Legacy initializer
-    init(zoom: CGFloat, centerX: CGFloat, centerY: CGFloat) {
-        self.zoom = zoom
-        self.center = NormalizedPoint(x: centerX, y: centerY)
-    }
 
     func interpolated(to target: Self, amount: CGFloat) -> Self {
         Self(
@@ -197,32 +144,6 @@ struct CursorStyleKeyframe: TimedKeyframe, Equatable {
     var movementDirection: CGFloat?  // Movement direction (radians, for motion blur)
     var easing: EasingCurve
 
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use position?.x instead")
-    var x: CGFloat? {
-        get { position?.x }
-        set {
-            if let newValue = newValue {
-                position = NormalizedPoint(x: newValue, y: position?.y ?? 0.5)
-            } else {
-                position = nil
-            }
-        }
-    }
-
-    @available(*, deprecated, message: "Use position?.y instead")
-    var y: CGFloat? {
-        get { position?.y }
-        set {
-            if let newValue = newValue {
-                position = NormalizedPoint(x: position?.x ?? 0.5, y: newValue)
-            } else {
-                position = nil
-            }
-        }
-    }
-
     // MARK: - Initialization
 
     init(
@@ -245,32 +166,6 @@ struct CursorStyleKeyframe: TimedKeyframe, Equatable {
         self.velocity = velocity
         self.movementDirection = movementDirection
         self.easing = easing
-    }
-
-    /// Legacy initializer (explicit x and y)
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        x: CGFloat,
-        y: CGFloat,
-        style: CursorStyle = .arrow,
-        visible: Bool = true,
-        scale: CGFloat = 2.5,
-        velocity: CGFloat? = nil,
-        movementDirection: CGFloat? = nil,
-        easing: EasingCurve = .springSnappy
-    ) {
-        self.init(
-            id: id,
-            time: time,
-            position: NormalizedPoint(x: x, y: y),
-            style: style,
-            visible: visible,
-            scale: scale,
-            velocity: velocity,
-            movementDirection: movementDirection,
-            easing: easing
-        )
     }
 }
 
