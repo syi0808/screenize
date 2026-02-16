@@ -38,7 +38,8 @@ struct ProjectCreator {
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
-            renderSettings: RenderSettings()
+            renderSettings: RenderSettings(),
+            interop: packageInfo.interop
         )
     }
 

@@ -196,6 +196,16 @@ final class PackageManager {
         // Resolve relative paths to absolute URLs using the package root
         project.media.resolveURLs(from: packageURL)
 
+        // Recover interop for v4 projects saved without it
+        if project.interop == nil {
+            let metadataURL = packageURL.appendingPathComponent("recording/metadata.json")
+            if fileManager.fileExists(atPath: metadataURL.path) {
+                project.interop = InteropBlock.forRecording(
+                    videoRelativePath: project.media.videoRelativePath
+                )
+            }
+        }
+
         // Validate video file exists
         guard project.media.videoExists else {
             throw PackageManagerError.videoFileNotFound(project.media.videoURL)

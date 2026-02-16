@@ -20,7 +20,6 @@ final class AppState: ObservableObject {
     @Published var recordingDuration: TimeInterval = 0
     @Published var hasRecording: Bool = false
     @Published var lastRecordingURL: URL?
-    @Published var lastMouseDataURL: URL?
     // v4 recording metadata (captured before coordinator is released)
     var lastMouseRecording: MouseRecording?
     var lastRecordingStartDate: Date?
@@ -221,7 +220,6 @@ final class AppState: ObservableObject {
 
         if let videoURL = await coordinator.stopRecording() {
             lastRecordingURL = videoURL
-            lastMouseDataURL = MouseDataRecorder.mouseDataURL(for: videoURL)
             lastMouseRecording = coordinator.lastMouseRecording
             hasRecording = true
         } else {
@@ -352,7 +350,6 @@ final class AppState: ObservableObject {
         showSourcePicker = false
         hasRecording = false
         lastRecordingURL = nil
-        lastMouseDataURL = nil
     }
 
     // MARK: - Project Creation
@@ -438,7 +435,8 @@ final class AppState: ObservableObject {
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
-            renderSettings: renderSettings
+            renderSettings: renderSettings,
+            interop: packageInfo.interop
         )
     }
 
