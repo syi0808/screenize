@@ -53,10 +53,6 @@ struct InspectorView: View {
 
                 if let id = selectedSegmentID, let trackType = selectedSegmentTrackType {
                     LabeledContent("Track") { Text(trackName(trackType)) }
-                    LabeledContent("ID") {
-                        Text(id.uuidString.prefix(8))
-                            .font(.system(.caption, design: .monospaced))
-                    }
 
                     switch trackType {
                     case .transform:
@@ -119,24 +115,158 @@ struct InspectorView: View {
                     )
                 )
 
-                LabeledContent("Start Zoom") {
-                    Slider(value: Binding(
-                        get: { Double(binding.wrappedValue.startTransform.zoom) },
-                        set: { binding.wrappedValue.startTransform = TransformValue(zoom: CGFloat($0), center: binding.wrappedValue.startTransform.center) }
-                    ), in: 1...5)
-                }
+                // Start Zoom
+                zoomControl(
+                    label: "Start Zoom",
+                    segment: binding,
+                    keyPath: \.startTransform
+                )
 
-                LabeledContent("End Zoom") {
-                    Slider(value: Binding(
-                        get: { Double(binding.wrappedValue.endTransform.zoom) },
-                        set: { binding.wrappedValue.endTransform = TransformValue(zoom: CGFloat($0), center: binding.wrappedValue.endTransform.center) }
-                    ), in: 1...5)
-                }
+                // End Zoom
+                zoomControl(
+                    label: "End Zoom",
+                    segment: binding,
+                    keyPath: \.endTransform
+                )
+
+                Divider()
+
+                // Start Position
+                positionControl(
+                    label: "Start Position",
+                    segment: binding,
+                    keyPath: \.startTransform
+                )
+
+                // End Position
+                positionControl(
+                    label: "End Position",
+                    segment: binding,
+                    keyPath: \.endTransform
+                )
             }
         } else {
             Text("Camera segment not found")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private func zoomControl(
+        label: String,
+        segment: Binding<CameraSegment>,
+        keyPath: WritableKeyPath<CameraSegment, TransformValue>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(Int(segment.wrappedValue[keyPath: keyPath].zoom * 100))%")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.secondary)
+            }
+            HStack(spacing: 8) {
+                Slider(value: Binding(
+                    get: { Double(segment.wrappedValue[keyPath: keyPath].zoom) },
+                    set: {
+                        let current = segment.wrappedValue[keyPath: keyPath]
+                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
+                            zoom: CGFloat($0), center: current.center
+                        )
+                    }
+                ), in: 1...5, step: 0.1)
+                TextField("", value: Binding(
+                    get: { Double(segment.wrappedValue[keyPath: keyPath].zoom) },
+                    set: {
+                        let current = segment.wrappedValue[keyPath: keyPath]
+                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
+                            zoom: max(1, min(5, CGFloat($0))), center: current.center
+                        )
+                    }
+                ), format: .number.precision(.fractionLength(1)))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 50)
+            }
+        }
+    }
+
+    private func positionControl(
+        label: String,
+        segment: Binding<CameraSegment>,
+        keyPath: WritableKeyPath<CameraSegment, TransformValue>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+
+            CenterPointPicker(
+                centerX: Binding(
+                    get: { segment.wrappedValue[keyPath: keyPath].center.x },
+                    set: { newX in
+                        let current = segment.wrappedValue[keyPath: keyPath]
+                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
+                            zoom: current.zoom,
+                            center: NormalizedPoint(x: newX, y: current.center.y)
+                        )
+                    }
+                ),
+                centerY: Binding(
+                    get: { segment.wrappedValue[keyPath: keyPath].center.y },
+                    set: { newY in
+                        let current = segment.wrappedValue[keyPath: keyPath]
+                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
+                            zoom: current.zoom,
+                            center: NormalizedPoint(x: current.center.x, y: newY)
+                        )
+                    }
+                ),
+                onChange: onSegmentChange
+            )
+            .frame(height: 100)
+
+            HStack(spacing: 8) {
+                Text("X")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .frame(width: 12)
+                TextField("", value: Binding(
+                    get: { Double(segment.wrappedValue[keyPath: keyPath].center.x) },
+                    set: { newX in
+                        let current = segment.wrappedValue[keyPath: keyPath]
+                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
+                            zoom: current.zoom,
+                            center: NormalizedPoint(
+                                x: max(0, min(1, CGFloat(newX))),
+                                y: current.center.y
+                            )
+                        )
+                        onSegmentChange?()
+                    }
+                ), format: .number.precision(.fractionLength(2)))
+                    .textFieldStyle(.roundedBorder)
+                Text("Y")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .frame(width: 12)
+                TextField("", value: Binding(
+                    get: { Double(segment.wrappedValue[keyPath: keyPath].center.y) },
+                    set: { newY in
+                        let current = segment.wrappedValue[keyPath: keyPath]
+                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
+                            zoom: current.zoom,
+                            center: NormalizedPoint(
+                                x: current.center.x,
+                                y: max(0, min(1, CGFloat(newY)))
+                            )
+                        )
+                        onSegmentChange?()
+                    }
+                ), format: .number.precision(.fractionLength(2)))
+                    .textFieldStyle(.roundedBorder)
+            }
         }
     }
 
@@ -251,7 +381,13 @@ struct InspectorView: View {
         }
     }
 
-    private func cameraSegmentBinding(for id: UUID) -> Binding<CameraSegment>? {
+}
+
+// MARK: - Segment Bindings
+
+extension InspectorView {
+
+    func cameraSegmentBinding(for id: UUID) -> Binding<CameraSegment>? {
         guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .transform }),
               case .camera(let track) = timeline.tracks[trackIndex],
               track.segments.contains(where: { $0.id == id }) else {
@@ -277,7 +413,7 @@ struct InspectorView: View {
         )
     }
 
-    private func cursorSegmentBinding(for id: UUID) -> Binding<CursorSegment>? {
+    func cursorSegmentBinding(for id: UUID) -> Binding<CursorSegment>? {
         guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
               case .cursor(let track) = timeline.tracks[trackIndex],
               track.segments.contains(where: { $0.id == id }) else {
@@ -303,7 +439,7 @@ struct InspectorView: View {
         )
     }
 
-    private func keystrokeSegmentBinding(for id: UUID) -> Binding<KeystrokeSegment>? {
+    func keystrokeSegmentBinding(for id: UUID) -> Binding<KeystrokeSegment>? {
         guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }),
               case .keystroke(let track) = timeline.tracks[trackIndex],
               track.segments.contains(where: { $0.id == id }) else {
@@ -329,7 +465,7 @@ struct InspectorView: View {
         )
     }
 
-    private func trackName(_ trackType: TrackType) -> String {
+    func trackName(_ trackType: TrackType) -> String {
         switch trackType {
         case .transform:
             return "Camera"
