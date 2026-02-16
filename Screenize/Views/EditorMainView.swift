@@ -64,8 +64,8 @@ struct EditorMainView: View {
                     currentTime: $viewModel.currentTime,
                     selectedSegmentID: $viewModel.selectedSegmentID,
                     selectedSegmentTrackType: $viewModel.selectedSegmentTrackType,
-                    onSegmentTimeChange: { id, time in
-                        viewModel.updateSegmentStartTime(id, to: time)
+                    onSegmentTimeRangeChange: { id, startTime, endTime in
+                        viewModel.updateSegmentTimeRange(id, startTime: startTime, endTime: endTime)
                     },
                     onAddSegment: { trackType, time in
                         viewModel.addSegment(to: trackType, at: time)

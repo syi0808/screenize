@@ -63,7 +63,7 @@ struct CursorInspector: View {
     private var header: some View {
         HStack {
             Image(systemName: "cursorarrow")
-                .foregroundColor(KeyframeColor.cursor)
+                .foregroundColor(TrackColor.cursor)
 
             Text("Cursor Keyframe")
                 .font(.headline)
@@ -129,7 +129,7 @@ struct CursorInspector: View {
                         get: { 1 - position.y },
                         set: { keyframe.position = NormalizedPoint(x: keyframe.position?.x ?? position.x, y: 1 - $0) }
                     ),
-                    color: KeyframeColor.cursor,
+                    color: TrackColor.cursor,
                     onChange: onChange
                 )
                 .frame(height: 100)

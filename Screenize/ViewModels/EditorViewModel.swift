@@ -636,49 +636,71 @@ final class EditorViewModel: ObservableObject {
         project.timeline.tracks[trackIndex] = .keystroke(track)
     }
 
-    /// Update segment start time.
-    func updateSegmentStartTime(_ id: UUID, to newTime: TimeInterval) {
-        saveBindingUndoSnapshot()
-        // Find and update the segment start time.
+    /// Update segment start/end time as a single edit operation.
+    @discardableResult
+    func updateSegmentTimeRange(_ id: UUID, startTime: TimeInterval, endTime: TimeInterval) -> Bool {
+        let clampedStart = max(0, min(duration, startTime))
+        let clampedEnd = min(duration, max(clampedStart + 0.001, endTime))
+
         for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
             switch anyTrack {
             case .camera(var track):
-                if let index = track.segments.firstIndex(where: { $0.id == id }) {
-                    let duration = max(0.001, track.segments[index].endTime - track.segments[index].startTime)
-                    track.segments[index].startTime = newTime
-                    track.segments[index].endTime = min(self.duration, newTime + duration)
-                    track.segments.sort { $0.startTime < $1.startTime }
-                    project.timeline.tracks[trackIndex] = .camera(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
+                guard let index = track.segments.firstIndex(where: { $0.id == id }) else {
+                    continue
                 }
+
+                saveUndoSnapshot()
+                var segment = track.segments[index]
+                segment.startTime = clampedStart
+                segment.endTime = clampedEnd
+                guard track.updateSegment(segment) else {
+                    return false
+                }
+
+                project.timeline.tracks[trackIndex] = .camera(track)
+                hasUnsavedChanges = true
+                invalidatePreviewCache()
+                return true
 
             case .cursor(var track):
-                if let index = track.segments.firstIndex(where: { $0.id == id }) {
-                    let duration = max(0.001, track.segments[index].endTime - track.segments[index].startTime)
-                    track.segments[index].startTime = newTime
-                    track.segments[index].endTime = min(self.duration, newTime + duration)
-                    track.segments.sort { $0.startTime < $1.startTime }
-                    project.timeline.tracks[trackIndex] = .cursor(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
+                guard let index = track.segments.firstIndex(where: { $0.id == id }) else {
+                    continue
                 }
 
-            case .keystroke(var track):
-                if let index = track.segments.firstIndex(where: { $0.id == id }) {
-                    let duration = max(0.001, track.segments[index].endTime - track.segments[index].startTime)
-                    track.segments[index].startTime = newTime
-                    track.segments[index].endTime = min(self.duration, newTime + duration)
-                    track.segments.sort { $0.startTime < $1.startTime }
-                    project.timeline.tracks[trackIndex] = .keystroke(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
+                saveUndoSnapshot()
+                var segment = track.segments[index]
+                segment.startTime = clampedStart
+                segment.endTime = clampedEnd
+                guard track.updateSegment(segment) else {
+                    return false
                 }
+
+                project.timeline.tracks[trackIndex] = .cursor(track)
+                hasUnsavedChanges = true
+                invalidatePreviewCache()
+                return true
+
+            case .keystroke(var track):
+                guard let index = track.segments.firstIndex(where: { $0.id == id }) else {
+                    continue
+                }
+
+                saveUndoSnapshot()
+                var segment = track.segments[index]
+                segment.startTime = clampedStart
+                segment.endTime = clampedEnd
+                guard track.updateSegment(segment) else {
+                    return false
+                }
+
+                project.timeline.tracks[trackIndex] = .keystroke(track)
+                hasUnsavedChanges = true
+                invalidatePreviewCache()
+                return true
             }
         }
+
+        return false
     }
 
     // MARK: - Selection

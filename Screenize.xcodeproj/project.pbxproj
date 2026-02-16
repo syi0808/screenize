@@ -43,8 +43,6 @@
 		F000002F296A0001 /* WindowEffectApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002F296A0001 /* WindowEffectApplicator.swift */; };
 		F0000030296A0001 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000030296A0001 /* TimeRulerView.swift */; };
 		F0000031296A0001 /* PlayheadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000031296A0001 /* PlayheadView.swift */; };
-		F0000032296A0001 /* KeyframeMarkerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000032296A0001 /* KeyframeMarkerView.swift */; };
-		F0000033296A0001 /* TrackRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000033296A0001 /* TrackRowView.swift */; };
 		F0000034296A0001 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000034296A0001 /* TimelineView.swift */; };
 		F0000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */; };
 		F0000036296A0001 /* TrimHandleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000036296A0001 /* TrimHandleView.swift */; };
@@ -160,8 +158,6 @@
 		F100002F296A0001 /* WindowEffectApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowEffectApplicator.swift; sourceTree = "<group>"; };
 		F1000030296A0001 /* TimeRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
 		F1000031296A0001 /* PlayheadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayheadView.swift; sourceTree = "<group>"; };
-		F1000032296A0001 /* KeyframeMarkerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeMarkerView.swift; sourceTree = "<group>"; };
-		F1000033296A0001 /* TrackRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackRowView.swift; sourceTree = "<group>"; };
 		F1000034296A0001 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizontalScrollViewWithVerticalWheel.swift; sourceTree = "<group>"; };
 		F1000036296A0001 /* TrimHandleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrimHandleView.swift; sourceTree = "<group>"; };
@@ -378,8 +374,6 @@
 			children = (
 				F1000030296A0001 /* TimeRulerView.swift */,
 				F1000031296A0001 /* PlayheadView.swift */,
-				F1000032296A0001 /* KeyframeMarkerView.swift */,
-				F1000033296A0001 /* TrackRowView.swift */,
 				F1000034296A0001 /* TimelineView.swift */,
 				F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */,
 				F1000036296A0001 /* TrimHandleView.swift */,
@@ -655,8 +649,6 @@
 				F0000103296A0001 /* MousePositionInterpolator.swift in Sources */,
 				F0000030296A0001 /* TimeRulerView.swift in Sources */,
 				F0000031296A0001 /* PlayheadView.swift in Sources */,
-				F0000032296A0001 /* KeyframeMarkerView.swift in Sources */,
-				F0000033296A0001 /* TrackRowView.swift in Sources */,
 				F0000034296A0001 /* TimelineView.swift in Sources */,
 				F0000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift in Sources */,
 				F0000036296A0001 /* TrimHandleView.swift in Sources */,

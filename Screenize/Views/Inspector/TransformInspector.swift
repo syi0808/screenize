@@ -51,7 +51,7 @@ struct TransformInspector: View {
     private var header: some View {
         HStack {
             Image(systemName: "arrow.up.left.and.arrow.down.right")
-                .foregroundColor(KeyframeColor.transform)
+                .foregroundColor(TrackColor.transform)
 
             Text("Transform Keyframe")
                 .font(.headline)

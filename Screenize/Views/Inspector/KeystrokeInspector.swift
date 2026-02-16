@@ -48,7 +48,7 @@ struct KeystrokeInspector: View {
     private var header: some View {
         HStack {
             Image(systemName: "keyboard")
-                .foregroundColor(KeyframeColor.keystroke)
+                .foregroundColor(TrackColor.keystroke)
 
             Text("Keystroke Keyframe")
                 .font(.headline)
@@ -184,7 +184,7 @@ struct KeystrokeInspector: View {
                     get: { keyframe.position.y },
                     set: { keyframe.position = NormalizedPoint(x: keyframe.position.x, y: $0); onChange?() }
                 ),
-                color: KeyframeColor.keystroke,
+                color: TrackColor.keystroke,
                 onChange: onChange
             )
             .frame(height: 100)
