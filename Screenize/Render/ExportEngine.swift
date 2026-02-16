@@ -79,19 +79,22 @@ final class ExportEngine: ObservableObject {
             // 2. Load and interpolate mouse data
             await MainActor.run { progress = .loadingMouseData }
 
-            // Load and convert mouse data (including interpolation)
-            var mousePositions: [RenderMousePosition] = []
-            var clickEvents: [RenderClickEvent] = []
+            // Load raw mouse data
+            let rawResult = await MainActor.run {
+                MouseDataConverter.loadAndConvert(from: project)
+            }
+            let rawMousePositions = rawResult.positions
+            let clickEvents = rawResult.clicks
 
-            let mouseResult = await MainActor.run {
+            // Load smoothed mouse data (Catmull-Rom interpolated)
+            let smoothedResult = await MainActor.run {
                 MouseDataConverter.loadAndConvertWithInterpolation(
                     from: project,
                     frameRate: frameRate
                 )
             }
-            mousePositions = mouseResult.positions
-            clickEvents = mouseResult.clicks
-            print("Export: Loaded mouse data - \(mousePositions.count) interpolated positions, \(clickEvents.count) clicks")
+            let smoothedMousePositions = smoothedResult.positions
+            print("Export: Loaded mouse data - \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions, \(clickEvents.count) clicks")
 
             // 3. Determine output size
             let outputSize = project.renderSettings.outputResolution.size(sourceSize: naturalSize)
@@ -99,7 +102,8 @@ final class ExportEngine: ObservableObject {
             // 4. Create the render pipeline (Evaluator + Renderer)
             let pipeline = RenderPipelineFactory.createExportPipeline(
                 project: project,
-                mousePositions: mousePositions,
+                rawMousePositions: rawMousePositions,
+                smoothedMousePositions: smoothedMousePositions,
                 clickEvents: clickEvents,
                 frameRate: frameRate,
                 sourceSize: naturalSize,

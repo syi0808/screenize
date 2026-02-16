@@ -60,11 +60,9 @@
 		F0000060296A0001 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000060296A0001 /* EditorViewModel.swift */; };
 		F0000061296A0001 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000061296A0001 /* UndoStack.swift */; };
 		F0000070296A0001 /* KeyframeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000070296A0001 /* KeyframeGenerator.swift */; };
-		F0000075296A0001 /* CursorInterpolationGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000075296A0001 /* CursorInterpolationGenerator.swift */; };
 		F0000076296A0001 /* ClickCursorGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000076296A0001 /* ClickCursorGenerator.swift */; };
 		F0000077296A0001 /* SmartZoomGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000077296A0001 /* SmartZoomGenerator.swift */; };
 		F0000078296A0001 /* ZoomContextAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000078296A0001 /* ZoomContextAnalyzer.swift */; };
-		F0000079296A0001 /* MouseDataCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000079296A0001 /* MouseDataCleaner.swift */; };
 		F000007A296A0001 /* KeystrokeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100007A296A0001 /* KeystrokeGenerator.swift */; };
 		F000007B296A0001 /* KeystrokeInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100007B296A0001 /* KeystrokeInspector.swift */; };
 		F0000080296A0001 /* EditorEntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000080296A0001 /* EditorEntryPoint.swift */; };
@@ -175,11 +173,9 @@
 		F1000060296A0001 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
 		F1000061296A0001 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		F1000070296A0001 /* KeyframeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeGenerator.swift; sourceTree = "<group>"; };
-		F1000075296A0001 /* CursorInterpolationGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorInterpolationGenerator.swift; sourceTree = "<group>"; };
 		F1000076296A0001 /* ClickCursorGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCursorGenerator.swift; sourceTree = "<group>"; };
 		F1000077296A0001 /* SmartZoomGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartZoomGenerator.swift; sourceTree = "<group>"; };
 		F1000078296A0001 /* ZoomContextAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomContextAnalyzer.swift; sourceTree = "<group>"; };
-		F1000079296A0001 /* MouseDataCleaner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseDataCleaner.swift; sourceTree = "<group>"; };
 		F100007A296A0001 /* KeystrokeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeGenerator.swift; sourceTree = "<group>"; };
 		F100007B296A0001 /* KeystrokeInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeInspector.swift; sourceTree = "<group>"; };
 		F1000080296A0001 /* EditorEntryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorEntryPoint.swift; sourceTree = "<group>"; };
@@ -410,11 +406,9 @@
 			isa = PBXGroup;
 			children = (
 				F1000070296A0001 /* KeyframeGenerator.swift */,
-				F1000075296A0001 /* CursorInterpolationGenerator.swift */,
 				F1000076296A0001 /* ClickCursorGenerator.swift */,
 				F1000077296A0001 /* SmartZoomGenerator.swift */,
 				F1000078296A0001 /* ZoomContextAnalyzer.swift */,
-				F1000079296A0001 /* MouseDataCleaner.swift */,
 				F100007A296A0001 /* KeystrokeGenerator.swift */,
 				F2000200296A0001 /* SmartZoom */,
 			);
@@ -667,11 +661,9 @@
 				F0000060296A0001 /* EditorViewModel.swift in Sources */,
 				F0000061296A0001 /* UndoStack.swift in Sources */,
 				F0000070296A0001 /* KeyframeGenerator.swift in Sources */,
-				F0000075296A0001 /* CursorInterpolationGenerator.swift in Sources */,
 				F0000076296A0001 /* ClickCursorGenerator.swift in Sources */,
 				F0000077296A0001 /* SmartZoomGenerator.swift in Sources */,
 				F0000078296A0001 /* ZoomContextAnalyzer.swift in Sources */,
-				F0000079296A0001 /* MouseDataCleaner.swift in Sources */,
 				F000007A296A0001 /* KeystrokeGenerator.swift in Sources */,
 				F0000200296A0001 /* ActivityCollector.swift in Sources */,
 				F0000201296A0001 /* SessionClusterer.swift in Sources */,

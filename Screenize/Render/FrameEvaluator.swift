@@ -10,8 +10,11 @@ final class FrameEvaluator {
     /// Timeline
     private let timeline: Timeline
 
-    /// Mouse position data (for cursor rendering)
-    private let mousePositions: [RenderMousePosition]
+    /// Raw mouse position data
+    private let rawMousePositions: [RenderMousePosition]
+
+    /// Smoothed mouse position data (Catmull-Rom interpolated)
+    private let smoothedMousePositions: [RenderMousePosition]
 
     /// Click event data (for cursor state)
     private let clickEvents: [RenderClickEvent]
@@ -28,11 +31,18 @@ final class FrameEvaluator {
     /// Flag for window mode (disables center clamping in window mode)
     private let isWindowMode: Bool
 
+    /// Effective mouse positions based on smooth cursor toggle
+    private var mousePositions: [RenderMousePosition] {
+        let useSmoothCursor = timeline.cursorTrackV2?.useSmoothCursor ?? true
+        return useSmoothCursor ? smoothedMousePositions : rawMousePositions
+    }
+
     // MARK: - Initialization
 
     init(
         timeline: Timeline,
-        mousePositions: [RenderMousePosition] = [],
+        rawMousePositions: [RenderMousePosition] = [],
+        smoothedMousePositions: [RenderMousePosition] = [],
         clickEvents: [RenderClickEvent] = [],
         frameRate: Double = 60.0,
         scaleFactor: CGFloat = 1.0,
@@ -40,7 +50,8 @@ final class FrameEvaluator {
         isWindowMode: Bool = false
     ) {
         self.timeline = timeline
-        self.mousePositions = mousePositions
+        self.rawMousePositions = rawMousePositions
+        self.smoothedMousePositions = smoothedMousePositions
         self.clickEvents = clickEvents
         self.frameRate = frameRate
         self.scaleFactor = scaleFactor
@@ -161,7 +172,7 @@ final class FrameEvaluator {
         let clickScaleModifier = computeClickScaleModifier(at: time)
 
         let activeSegment = track.activeSegment(at: time)
-        let position = activeSegment?.position ?? interpolateMousePosition(at: time)
+        let position = interpolateMousePosition(at: time)
 
         return CursorState(
             position: position,

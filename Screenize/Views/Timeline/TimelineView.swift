@@ -200,6 +200,24 @@ struct TimelineView: View {
 
                     Spacer()
 
+                    // Smooth cursor toggle (cursor track only)
+                    if case .cursor(let cursorTrack) = timeline.tracks[index] {
+                        Button {
+                            var updated = cursorTrack
+                            updated.useSmoothCursor.toggle()
+                            timeline.tracks[index] = .cursor(updated)
+                        } label: {
+                            Image(systemName: cursorTrack.useSmoothCursor
+                                ? "waveform.path" : "waveform.path")
+                                .font(.system(size: 10))
+                                .foregroundStyle(cursorTrack.useSmoothCursor
+                                    ? .secondary : .tertiary)
+                        }
+                        .buttonStyle(.plain)
+                        .help(cursorTrack.useSmoothCursor
+                            ? "Smooth cursor (on)" : "Smooth cursor (off)")
+                    }
+
                     Button {
                         var updated = track
                         updated.isEnabled.toggle()

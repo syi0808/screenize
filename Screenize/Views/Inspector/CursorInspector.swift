@@ -25,11 +25,6 @@ struct CursorInspector: View {
 
             Divider()
 
-            // Position
-            positionSection
-
-            Divider()
-
             // Style
             VStack(alignment: .leading, spacing: 8) {
                 Text("Cursor Style")
@@ -88,113 +83,6 @@ struct CursorInspector: View {
                     .foregroundColor(.secondary)
 
                 Spacer()
-            }
-        }
-    }
-
-    private var positionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Position")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                // Position override toggle
-                Toggle("Override", isOn: Binding(
-                    get: { keyframe.position != nil },
-                    set: { enabled in
-                        if enabled {
-                            keyframe.position = NormalizedPoint(x: 0.5, y: 0.5)
-                        } else {
-                            keyframe.position = nil
-                        }
-                        onChange?()
-                    }
-                ))
-                .toggleStyle(.switch)
-                .controlSize(.small)
-            }
-
-            if let position = keyframe.position {
-                // Visual position picker
-                // SwiftUI uses a top-left origin while NormalizedPoint uses bottom-left, so invert Y
-                PositionPicker(
-                    x: Binding(
-                        get: { position.x },
-                        set: { keyframe.position = NormalizedPoint(x: $0, y: keyframe.position?.y ?? position.y) }
-                    ),
-                    y: Binding(
-                        get: { 1 - position.y },
-                        set: { keyframe.position = NormalizedPoint(x: keyframe.position?.x ?? position.x, y: 1 - $0) }
-                    ),
-                    color: TrackColor.cursor,
-                    onChange: onChange
-                )
-                .frame(height: 100)
-
-                // Numeric input
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("X")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                            .frame(width: 16)
-
-                        Slider(
-                            value: Binding(
-                                get: { position.x },
-                                set: { keyframe.position = NormalizedPoint(x: $0, y: position.y); onChange?() }
-                            ),
-                            in: 0...1
-                        )
-
-                        TextField("", value: Binding(
-                            get: { Double(position.x) },
-                            set: { keyframe.position = NormalizedPoint(x: CGFloat($0), y: position.y); onChange?() }
-                        ), format: .number.precision(.fractionLength(2)))
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 50)
-                    }
-
-                    HStack {
-                        Text("Y")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                            .frame(width: 16)
-
-                        Slider(
-                            value: Binding(
-                                get: { position.y },
-                                set: { keyframe.position = NormalizedPoint(x: position.x, y: $0); onChange?() }
-                            ),
-                            in: 0...1
-                        )
-
-                        TextField("", value: Binding(
-                            get: { Double(position.y) },
-                            set: { keyframe.position = NormalizedPoint(x: position.x, y: CGFloat($0)); onChange?() }
-                        ), format: .number.precision(.fractionLength(2)))
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 50)
-                    }
-                }
-            } else {
-            // Indicator when using the original position
-                HStack {
-                    Image(systemName: "location.fill")
-                        .foregroundColor(.secondary)
-                    Text("Using original mouse position")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 20)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
             }
         }
     }

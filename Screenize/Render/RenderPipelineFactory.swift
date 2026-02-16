@@ -10,21 +10,17 @@ struct RenderPipelineFactory {
     // MARK: - FrameEvaluator Creation
 
     /// Create a FrameEvaluator from project data
-    /// - Parameters:
-    ///   - project: Screenize project
-    ///   - mousePositions: Mouse positions for rendering
-    ///   - clickEvents: Click events for rendering
-    ///   - frameRate: Frame rate
-    /// - Returns: A configured FrameEvaluator
     static func createEvaluator(
         project: ScreenizeProject,
-        mousePositions: [RenderMousePosition],
+        rawMousePositions: [RenderMousePosition],
+        smoothedMousePositions: [RenderMousePosition],
         clickEvents: [RenderClickEvent],
         frameRate: Double
     ) -> FrameEvaluator {
         FrameEvaluator(
             timeline: project.timeline,
-            mousePositions: mousePositions,
+            rawMousePositions: rawMousePositions,
+            smoothedMousePositions: smoothedMousePositions,
             clickEvents: clickEvents,
             frameRate: frameRate,
             scaleFactor: project.captureMeta.scaleFactor,
@@ -34,23 +30,18 @@ struct RenderPipelineFactory {
     }
 
     /// Create a FrameEvaluator from an updated timeline
-    /// - Parameters:
-    ///   - timeline: Updated timeline
-    ///   - project: Screenize project (for metadata)
-    ///   - mousePositions: Mouse positions for rendering
-    ///   - clickEvents: Click events for rendering
-    ///   - frameRate: Frame rate
-    /// - Returns: A configured FrameEvaluator
     static func createEvaluator(
         timeline: Timeline,
         project: ScreenizeProject,
-        mousePositions: [RenderMousePosition],
+        rawMousePositions: [RenderMousePosition],
+        smoothedMousePositions: [RenderMousePosition],
         clickEvents: [RenderClickEvent],
         frameRate: Double
     ) -> FrameEvaluator {
         FrameEvaluator(
             timeline: timeline,
-            mousePositions: mousePositions,
+            rawMousePositions: rawMousePositions,
+            smoothedMousePositions: smoothedMousePositions,
             clickEvents: clickEvents,
             frameRate: frameRate,
             scaleFactor: project.captureMeta.scaleFactor,
@@ -62,11 +53,6 @@ struct RenderPipelineFactory {
     // MARK: - Renderer Creation (Preview)
 
     /// Create a preview renderer
-    /// - Parameters:
-    ///   - project: Screenize project
-    ///   - sourceSize: Source video size
-    ///   - scale: Preview scale (default 0.5)
-    /// - Returns: A configured Renderer
     static func createPreviewRenderer(
         project: ScreenizeProject,
         sourceSize: CGSize,
@@ -82,12 +68,6 @@ struct RenderPipelineFactory {
     }
 
     /// Create a preview renderer when render settings change
-    /// - Parameters:
-    ///   - renderSettings: Updated render settings
-    ///   - captureMeta: Capture metadata
-    ///   - sourceSize: Source video size
-    ///   - scale: Preview scale (default 0.5)
-    /// - Returns: A configured Renderer
     static func createPreviewRenderer(
         renderSettings: RenderSettings,
         captureMeta: CaptureMeta,
@@ -95,7 +75,7 @@ struct RenderPipelineFactory {
         scale: CGFloat = 0.5
     ) -> Renderer {
         let isWindowMode = renderSettings.backgroundEnabled
-        
+
         return Renderer.forPreview(
             sourceSize: sourceSize,
             scale: scale,
@@ -108,11 +88,6 @@ struct RenderPipelineFactory {
     // MARK: - Renderer Creation (Export)
 
     /// Create a renderer for export
-    /// - Parameters:
-    ///   - project: Screenize project
-    ///   - sourceSize: Source video size
-    ///   - outputSize: Output size (uses source size if nil)
-    /// - Returns: A configured Renderer
     static func createExportRenderer(
         project: ScreenizeProject,
         sourceSize: CGSize,
@@ -130,17 +105,10 @@ struct RenderPipelineFactory {
     // MARK: - Combined Pipeline Creation
 
     /// Build the preview pipeline (Evaluator + Renderer)
-    /// - Parameters:
-    ///   - project: Screenize project
-    ///   - mousePositions: Mouse positions for rendering
-    ///   - clickEvents: Click events for rendering
-    ///   - frameRate: Frame rate
-    ///   - sourceSize: Source video size
-    ///   - scale: Preview scale
-    /// - Returns: A (FrameEvaluator, Renderer) tuple
     static func createPreviewPipeline(
         project: ScreenizeProject,
-        mousePositions: [RenderMousePosition],
+        rawMousePositions: [RenderMousePosition],
+        smoothedMousePositions: [RenderMousePosition],
         clickEvents: [RenderClickEvent],
         frameRate: Double,
         sourceSize: CGSize,
@@ -148,7 +116,8 @@ struct RenderPipelineFactory {
     ) -> (evaluator: FrameEvaluator, renderer: Renderer) {
         let evaluator = createEvaluator(
             project: project,
-            mousePositions: mousePositions,
+            rawMousePositions: rawMousePositions,
+            smoothedMousePositions: smoothedMousePositions,
             clickEvents: clickEvents,
             frameRate: frameRate
         )
@@ -161,17 +130,10 @@ struct RenderPipelineFactory {
     }
 
     /// Build the export pipeline (Evaluator + Renderer)
-    /// - Parameters:
-    ///   - project: Screenize project
-    ///   - mousePositions: Mouse positions for rendering
-    ///   - clickEvents: Click events for rendering
-    ///   - frameRate: Frame rate
-    ///   - sourceSize: Source video size
-    ///   - outputSize: Output size
-    /// - Returns: A (FrameEvaluator, Renderer) tuple
     static func createExportPipeline(
         project: ScreenizeProject,
-        mousePositions: [RenderMousePosition],
+        rawMousePositions: [RenderMousePosition],
+        smoothedMousePositions: [RenderMousePosition],
         clickEvents: [RenderClickEvent],
         frameRate: Double,
         sourceSize: CGSize,
@@ -179,7 +141,8 @@ struct RenderPipelineFactory {
     ) -> (evaluator: FrameEvaluator, renderer: Renderer) {
         let evaluator = createEvaluator(
             project: project,
-            mousePositions: mousePositions,
+            rawMousePositions: rawMousePositions,
+            smoothedMousePositions: smoothedMousePositions,
             clickEvents: clickEvents,
             frameRate: frameRate
         )

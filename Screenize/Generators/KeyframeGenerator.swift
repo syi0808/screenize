@@ -288,14 +288,6 @@ struct GeneratorSettings: Codable {
 
     var sameObjectFollow = SameObjectFollowSettings()
 
-    // MARK: - Mouse Data Cleaner
-
-    var mouseDataCleaner = MouseDataCleanerSettings()
-
-    // MARK: - Cursor Interpolation
-
-    var cursorInterpolation = CursorInterpolationSettings()
-
     // MARK: - Click Cursor
 
     var clickCursor = ClickCursorSettings()
@@ -497,53 +489,12 @@ struct SameObjectFollowSettings: Codable {
     var moveEasing: EasingCurve = .springSnappy
 }
 
-// MARK: - Cursor Interpolation Settings
-
-/// Cursor interpolation settings
-struct CursorInterpolationSettings: Codable {
-    /// Smoothing factor (Catmull-Rom tension; lower values track the actual path more closely)
-    var smoothingFactor: CGFloat = 0.2
-
-    /// Velocity-based smoothing (disabled to keep the scale consistent)
-    var velocityBasedSmoothing: Bool = false
-
-    /// Minimum movement distance (ignore movements smaller than this, normalized)
-    var minMovementThreshold: CGFloat = 0.002
-
-    /// Maximum velocity (clamp movements faster than this, normalized per second)
-    var maxVelocity: CGFloat = 2.0
-
-    /// Fixed cursor scale (use constant value instead of velocity-based variation)
-    var fixedCursorScale: CGFloat = 2.0
-}
-
 // MARK: - Click Cursor Settings
 
-/// Click cursor generation settings
+/// Cursor style generation settings
 struct ClickCursorSettings: Codable {
-    /// Enabled (disable to avoid artificial cursor paths and honor the real mouse path)
-    var enabled: Bool = false
-
     /// Cursor scale factor
     var cursorScale: CGFloat = 2.0
-
-    /// Arrival time before click (seconds) — how far in advance the cursor should reach the click spot
-    var arrivalTime: TimeInterval = 0.15
-
-    /// Hold time after click (seconds) — how long to stay at that spot post-click
-    var holdTime: TimeInterval = 0.05
-
-    /// Enable motion blur
-    var motionBlurEnabled: Bool = false
-
-    /// Motion blur intensity (0.0 to 2.0)
-    var motionBlurIntensity: CGFloat = 0.5
-
-    /// Motion blur velocity threshold (normalized per second)
-    var motionBlurVelocityThreshold: CGFloat = 0.8
-
-    /// Move easing (smooth spring)
-    var moveEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.5)
 }
 
 // MARK: - Keystroke Generator Settings
@@ -567,53 +518,6 @@ struct KeystrokeGeneratorSettings: Codable {
 
     /// Minimum interval (auto-repeat filtering)
     var minInterval: TimeInterval = 0.05
-}
-
-// MARK: - Mouse Data Cleaner Settings
-
-/// Mouse data cleaner settings
-struct MouseDataCleanerSettings: Codable {
-    /// Enable jitter removal
-    var enableJitterRemoval: Bool = true
-
-    /// Enable idle compression
-    var enableIdleCompression: Bool = true
-
-    /// Enable path simplification (Douglas-Peucker)
-    var enablePathSimplification: Bool = true
-
-    /// Enable adaptive sampling
-    var enableAdaptiveSampling: Bool = true
-
-    // MARK: - Jitter Removal Settings
-
-    /// Jitter removal window size (moving average filter)
-    var jitterWindowSize: Int = 5
-
-    // MARK: - Idle Compression Settings
-
-    /// Idle velocity threshold (pixels/sec)
-    var idleVelocityThreshold: CGFloat = 2.0
-
-    /// Idle compression minimum duration (seconds)
-    var idleMinDuration: TimeInterval = 0.5
-
-    // MARK: - Path Simplification Settings
-
-    /// Douglas-Peucker tolerance (normalized coordinates)
-    var simplificationEpsilon: CGFloat = 0.003
-
-    // MARK: - Adaptive Sampling Settings
-
-    /// Adaptive sampling minimum interval (fast movement, seconds)
-    var adaptiveMinInterval: TimeInterval = 1.0 / 60.0
-
-    /// Adaptive sampling maximum interval (slow movement, seconds)
-    var adaptiveMaxInterval: TimeInterval = 0.2
-
-    /// Adaptive sampling velocity threshold (normalized per second)
-    var adaptiveVelocityThreshold: CGFloat = 0.5
-
 }
 
 // MARK: - Generator Result

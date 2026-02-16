@@ -837,8 +837,7 @@ private extension EditorViewModel {
                         endTime: duration,
                         style: track.defaultStyle,
                         visible: track.defaultVisible,
-                        scale: track.defaultScale,
-                        position: nil
+                        scale: track.defaultScale
                     ),
                 ]
             )
@@ -854,8 +853,7 @@ private extension EditorViewModel {
                     endTime: max(current.time + 0.001, endTime),
                     style: current.style,
                     visible: current.visible,
-                    scale: current.scale,
-                    position: current.position
+                    scale: current.scale
                 )
             )
         }

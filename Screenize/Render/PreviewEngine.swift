@@ -108,8 +108,11 @@ final class PreviewEngine: ObservableObject {
     /// Project reference (for timeline updates)
     private var project: ScreenizeProject?
 
-    /// Mouse position data (reused during timeline updates)
-    private var renderMousePositions: [RenderMousePosition] = []
+    /// Raw mouse position data
+    private var rawMousePositions: [RenderMousePosition] = []
+
+    /// Smoothed mouse position data (Catmull-Rom interpolated)
+    private var smoothedMousePositions: [RenderMousePosition] = []
 
     /// Click event data (reused during timeline updates)
     private var renderClickEvents: [RenderClickEvent] = []
@@ -147,19 +150,24 @@ final class PreviewEngine: ObservableObject {
             trimStart = project.timeline.effectiveTrimStart
             trimEnd = project.timeline.trimEnd
 
-            // Load and convert mouse data (with interpolation)
-            let mouseResult = MouseDataConverter.loadAndConvertWithInterpolation(
+            // Load raw mouse data
+            let rawResult = MouseDataConverter.loadAndConvert(from: project)
+            rawMousePositions = rawResult.positions
+            renderClickEvents = rawResult.clicks
+
+            // Load smoothed mouse data (Catmull-Rom interpolated)
+            let smoothedResult = MouseDataConverter.loadAndConvertWithInterpolation(
                 from: project,
                 frameRate: extractor.frameRate
             )
-            renderMousePositions = mouseResult.positions
-            renderClickEvents = mouseResult.clicks
-            print("Loaded mouse data: \(renderMousePositions.count) positions, \(renderClickEvents.count) clicks")
+            smoothedMousePositions = smoothedResult.positions
+            print("Loaded mouse data: \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions")
 
             // Build the render pipeline (Evaluator + Renderer)
             let pipeline = RenderPipelineFactory.createPreviewPipeline(
                 project: project,
-                mousePositions: renderMousePositions,
+                rawMousePositions: rawMousePositions,
+                smoothedMousePositions: smoothedMousePositions,
                 clickEvents: renderClickEvents,
                 frameRate: frameRate,
                 sourceSize: extractor.videoSize,
@@ -490,7 +498,8 @@ final class PreviewEngine: ObservableObject {
         evaluator = RenderPipelineFactory.createEvaluator(
             timeline: timeline,
             project: project,
-            mousePositions: renderMousePositions,
+            rawMousePositions: rawMousePositions,
+            smoothedMousePositions: smoothedMousePositions,
             clickEvents: renderClickEvents,
             frameRate: frameRate
         )
@@ -516,7 +525,8 @@ final class PreviewEngine: ObservableObject {
         // Recreate the evaluator (isWindowMode may change)
         evaluator = RenderPipelineFactory.createEvaluator(
             project: project,
-            mousePositions: renderMousePositions,
+            rawMousePositions: rawMousePositions,
+            smoothedMousePositions: smoothedMousePositions,
             clickEvents: renderClickEvents,
             frameRate: frameRate
         )

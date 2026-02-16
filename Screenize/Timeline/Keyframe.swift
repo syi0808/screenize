@@ -136,12 +136,9 @@ enum CursorStyle: String, Codable, CaseIterable {
 struct CursorStyleKeyframe: TimedKeyframe, Equatable {
     let id: UUID
     var time: TimeInterval
-    var position: NormalizedPoint?   // nil uses the original mouse data
     var style: CursorStyle
     var visible: Bool
     var scale: CGFloat
-    var velocity: CGFloat?           // Velocity (used for motion blur intensity, normalized per second)
-    var movementDirection: CGFloat?  // Movement direction (radians, for motion blur)
     var easing: EasingCurve
 
     // MARK: - Initialization
@@ -149,22 +146,16 @@ struct CursorStyleKeyframe: TimedKeyframe, Equatable {
     init(
         id: UUID = UUID(),
         time: TimeInterval,
-        position: NormalizedPoint? = nil,
         style: CursorStyle = .arrow,
         visible: Bool = true,
         scale: CGFloat = 2.5,
-        velocity: CGFloat? = nil,
-        movementDirection: CGFloat? = nil,
         easing: EasingCurve = .springSnappy
     ) {
         self.id = id
         self.time = time
-        self.position = position?.clamped()
         self.style = style
         self.visible = visible
         self.scale = max(0.5, scale)
-        self.velocity = velocity
-        self.movementDirection = movementDirection
         self.easing = easing
     }
 }

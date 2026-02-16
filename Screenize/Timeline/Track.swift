@@ -100,7 +100,6 @@ struct CursorSegment: Codable, Identifiable, Equatable {
     var style: CursorStyle
     var visible: Bool
     var scale: CGFloat
-    var position: NormalizedPoint?
     var clickFeedback: ClickFeedbackConfig
     var transitionToNext: SegmentTransition
 
@@ -111,7 +110,6 @@ struct CursorSegment: Codable, Identifiable, Equatable {
         style: CursorStyle = .arrow,
         visible: Bool = true,
         scale: CGFloat = 2.5,
-        position: NormalizedPoint? = nil,
         clickFeedback: ClickFeedbackConfig = .default,
         transitionToNext: SegmentTransition = .cut
     ) {
@@ -121,7 +119,6 @@ struct CursorSegment: Codable, Identifiable, Equatable {
         self.style = style
         self.visible = visible
         self.scale = scale
-        self.position = position
         self.clickFeedback = clickFeedback
         self.transitionToNext = transitionToNext
     }
@@ -502,15 +499,23 @@ struct CursorTrackV2: SegmentTrack, Equatable {
     let id: UUID
     var name: String
     var isEnabled: Bool
+    var useSmoothCursor: Bool
     var segments: [CursorSegment]
 
     var trackType: TrackType { .cursor }
     var segmentCount: Int { segments.count }
 
-    init(id: UUID = UUID(), name: String = "Cursor", isEnabled: Bool = true, segments: [CursorSegment] = []) {
+    init(
+        id: UUID = UUID(),
+        name: String = "Cursor",
+        isEnabled: Bool = true,
+        useSmoothCursor: Bool = true,
+        segments: [CursorSegment] = []
+    ) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
+        self.useSmoothCursor = useSmoothCursor
         self.segments = segments.sorted { $0.startTime < $1.startTime }
     }
 
