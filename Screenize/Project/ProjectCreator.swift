@@ -135,39 +135,33 @@ struct ProjectCreator {
     private static func createDefaultTimeline(duration: TimeInterval) -> Timeline {
         Timeline(
             tracks: [
-                AnyTrack(TransformTrack(
+                AnySegmentTrack.camera(CameraTrack(
                     id: UUID(),
-                    name: "Transform",
+                    name: "Camera",
                     isEnabled: true,
-                    keyframes: [
-                        TransformKeyframe(
-                            time: 0,
-                            zoom: 1.0,
-                            centerX: 0.5,
-                            centerY: 0.5,
-                            easing: .easeInOut
-                        )
+                    segments: [
+                        CameraSegment(
+                            startTime: 0,
+                            endTime: max(0.1, duration),
+                            startTransform: .identity,
+                            endTransform: .identity,
+                            interpolation: .easeInOut
+                        ),
                     ]
                 )),
-                AnyTrack(CursorTrack(
+                AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
-                    styleKeyframes: [
-                        CursorStyleKeyframe(
-                            time: 0,
-                            style: .arrow,
-                            visible: true,
-                            scale: 1.5,
-                            easing: .linear
-                        )
+                    segments: [
+                        CursorSegment(startTime: 0, endTime: max(0.1, duration), style: .arrow, visible: true, scale: 1.5),
                     ]
                 )),
-                AnyTrack(KeystrokeTrack(
+                AnySegmentTrack.keystroke(KeystrokeTrackV2(
                     id: UUID(),
                     name: "Keystroke",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 )),
             ],
             duration: duration

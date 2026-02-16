@@ -84,7 +84,7 @@ struct TransformKeyframe: TimedKeyframe, Equatable {
 }
 
 /// Transform value (for interpolation)
-struct TransformValue: Interpolatable, Equatable {
+struct TransformValue: Codable, Interpolatable, Equatable {
     let zoom: CGFloat
     let center: NormalizedPoint
 

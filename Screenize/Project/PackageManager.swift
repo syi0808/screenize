@@ -214,6 +214,10 @@ final class PackageManager {
         let data = try Data(contentsOf: projectJSONURL)
         var project = try ScreenizeProject.decodeFromJSON(data)
 
+        guard project.version == 5 else {
+            throw PackageManagerError.unsupportedProjectVersion(project.version)
+        }
+
         // Resolve relative paths to absolute URLs using the package root
         project.media.resolveURLs(from: packageURL)
 
@@ -244,6 +248,7 @@ enum PackageManagerError: Error, LocalizedError {
     case projectFileNotFound(URL)
     case videoFileNotFound(URL)
     case packageCreationFailed(String)
+    case unsupportedProjectVersion(Int)
 
     var errorDescription: String? {
         switch self {
@@ -253,6 +258,8 @@ enum PackageManagerError: Error, LocalizedError {
             return "Video file not found: \(url.lastPathComponent)"
         case .packageCreationFailed(let reason):
             return "Failed to create package: \(reason)"
+        case .unsupportedProjectVersion(let version):
+            return "Unsupported project version: \(version). Please create a new project."
         }
     }
 }

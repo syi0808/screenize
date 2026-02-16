@@ -222,17 +222,16 @@ struct EditorMainView: View {
             Divider()
                 .frame(height: 20)
 
-            // Add keyframe
+            // Add segment
             keyframeAddMenu
 
-            // Delete all keyframes
+            // Delete all segments
             Button(role: .destructive) {
                 viewModel.deleteAllKeyframes()
             } label: {
                 Label("Delete All", systemImage: "trash")
             }
-            .disabled(viewModel.project.timeline.transformTrack?.keyframes.isEmpty != false
-                      && viewModel.project.timeline.cursorTrack?.styleKeyframes?.isEmpty != false)
+            .disabled(viewModel.project.timeline.totalSegmentCount == 0)
 
             Spacer()
 
@@ -281,22 +280,22 @@ struct EditorMainView: View {
             Button {
                 viewModel.addKeyframe(to: .transform)
             } label: {
-                Label("Transform Keyframe", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label("Camera Segment", systemImage: "arrow.up.left.and.arrow.down.right")
             }
 
             Button {
                 viewModel.addKeyframe(to: .cursor)
             } label: {
-                Label("Cursor Keyframe", systemImage: "cursorarrow")
+                Label("Cursor Segment", systemImage: "cursorarrow")
             }
 
             Button {
                 viewModel.addKeyframe(to: .keystroke)
             } label: {
-                Label("Keystroke Keyframe", systemImage: "keyboard")
+                Label("Keystroke Segment", systemImage: "keyboard")
             }
         } label: {
-            Label("Add Keyframe", systemImage: "plus.diamond")
+            Label("Add Segment", systemImage: "plus.diamond")
         }
     }
 
@@ -512,14 +511,11 @@ struct GeneratorPanelView: View {
                 let count: Int
                 switch option.type {
                 case .transform:
-                    count = viewModel.project.timeline.transformTrack?
-                        .keyframes.count ?? 0
+                    count = viewModel.project.timeline.cameraTrack?.segments.count ?? 0
                 case .cursor:
-                    count = viewModel.project.timeline.cursorTrack?
-                        .styleKeyframes?.count ?? 0
+                    count = viewModel.project.timeline.cursorTrackV2?.segments.count ?? 0
                 case .keystroke:
-                    count = viewModel.project.timeline.keystrokeTrack?
-                        .keyframes.count ?? 0
+                    count = viewModel.project.timeline.keystrokeTrackV2?.segments.count ?? 0
                 case .audio:
                     return nil
                 }
@@ -552,19 +548,21 @@ struct GeneratorPanelView: View {
             ),
             timeline: Timeline(
                 tracks: [
-                    AnyTrack(TransformTrack(
+                    AnySegmentTrack.camera(CameraTrack(
                         id: UUID(),
-                        name: "Transform",
+                        name: "Camera",
                         isEnabled: true,
-                        keyframes: [
-                            TransformKeyframe(time: 0, zoom: 1.0, centerX: 0.5, centerY: 0.5),
-                            TransformKeyframe(time: 5, zoom: 2.0, centerX: 0.3, centerY: 0.4),
+                        segments: [
+                            CameraSegment(startTime: 0, endTime: 5, startTransform: .identity, endTransform: .identity),
                         ]
                     )),
-                    AnyTrack(CursorTrack(
+                    AnySegmentTrack.cursor(CursorTrackV2(
                         id: UUID(),
                         name: "Cursor",
-                        isEnabled: true
+                        isEnabled: true,
+                        segments: [
+                            CursorSegment(startTime: 0, endTime: 30),
+                        ]
                     )),
                 ],
                 duration: 30

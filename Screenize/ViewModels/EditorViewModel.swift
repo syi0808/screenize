@@ -160,9 +160,14 @@ final class EditorViewModel: ObservableObject {
         self.previewEngine = PreviewEngine(previewScale: 0.5)
         self.exportEngine = ExportEngine()
 
-        // Migrate: add keystroke track if missing (for projects created before this feature)
-        if self.project.timeline.keystrokeTrack == nil {
-            self.project.timeline.tracks.append(.keystroke(KeystrokeTrack()))
+        if self.project.timeline.cameraTrack == nil {
+            self.project.timeline.tracks.insert(.camera(CameraTrack()), at: 0)
+        }
+        if self.project.timeline.cursorTrackV2 == nil {
+            self.project.timeline.tracks.append(.cursor(CursorTrackV2()))
+        }
+        if self.project.timeline.keystrokeTrackV2 == nil {
+            self.project.timeline.tracks.append(.keystroke(KeystrokeTrackV2()))
         }
 
         setupBindings()
@@ -261,8 +266,7 @@ final class EditorViewModel: ObservableObject {
 
     /// Check whether the timeline is empty
     private var isTimelineEmpty: Bool {
-        let transformCount = project.timeline.transformTrack?.keyframes.count ?? 0
-        return transformCount == 0
+        project.timeline.totalSegmentCount == 0
     }
 
     // MARK: - Smart Generation
@@ -353,7 +357,7 @@ final class EditorViewModel: ObservableObject {
 
         } catch {
             print("Smart generation failed: \(error.localizedDescription)")
-            errorMessage = "Failed to generate keyframes: \(error.localizedDescription)"
+            errorMessage = "Failed to generate segments: \(error.localizedDescription)"
         }
 
         isLoading = false
@@ -389,36 +393,36 @@ final class EditorViewModel: ObservableObject {
         hasUnsavedChanges = true
     }
 
-    /// Apply the generated tracks to the timeline (nil = preserve existing)
+    /// Apply generated keyframe tracks after converting them into segment tracks.
     private func updateTimeline(
         transformTrack: TransformTrack? = nil,
         cursorTrack: CursorTrack? = nil,
         keystrokeTrack: KeystrokeTrack? = nil
     ) {
-        // Update the transform track (only if provided)
         if let transformTrack = transformTrack {
+            let convertedTrack = convertToCameraTrack(transformTrack)
             if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) {
-                project.timeline.tracks[index] = .transform(transformTrack)
+                project.timeline.tracks[index] = .camera(convertedTrack)
             } else {
-                project.timeline.tracks.append(.transform(transformTrack))
+                project.timeline.tracks.insert(.camera(convertedTrack), at: 0)
             }
         }
 
-        // Update the cursor track (if present)
         if let cursorTrack = cursorTrack {
+            let convertedTrack = convertToCursorTrack(cursorTrack)
             if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) {
-                project.timeline.tracks[index] = .cursor(cursorTrack)
+                project.timeline.tracks[index] = .cursor(convertedTrack)
             } else {
-                project.timeline.tracks.append(.cursor(cursorTrack))
+                project.timeline.tracks.append(.cursor(convertedTrack))
             }
         }
 
-        // Update the keystroke track (if present)
         if let keystrokeTrack = keystrokeTrack {
+            let convertedTrack = convertToKeystrokeTrack(keystrokeTrack)
             if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }) {
-                project.timeline.tracks[index] = .keystroke(keystrokeTrack)
+                project.timeline.tracks[index] = .keystroke(convertedTrack)
             } else {
-                project.timeline.tracks.append(.keystroke(keystrokeTrack))
+                project.timeline.tracks.append(.keystroke(convertedTrack))
             }
         }
     }
@@ -476,21 +480,21 @@ final class EditorViewModel: ObservableObject {
 
     // MARK: - Keyframe Management
 
-    /// Add a keyframe at the current time
+    /// Add a segment at the current time.
     func addKeyframe(to trackType: TrackType) {
         addKeyframe(to: trackType, at: currentTime)
     }
 
-    /// Add a keyframe at a specified time
+    /// Add a segment at a specified time.
     func addKeyframe(to trackType: TrackType, at time: TimeInterval) {
         saveUndoSnapshot()
         switch trackType {
         case .transform:
-            addTransformKeyframe(at: time)
+            addTransformSegment(at: time)
         case .cursor:
-            addCursorKeyframe(at: time)
+            addCursorSegment(at: time)
         case .keystroke:
-            addKeystrokeKeyframe(at: time)
+            addKeystrokeSegment(at: time)
         case .audio:
             break  // TODO: implement audio tracks in the future
         }
@@ -499,32 +503,31 @@ final class EditorViewModel: ObservableObject {
         invalidatePreviewCache()
     }
 
-    private func addTransformKeyframe(at time: TimeInterval) {
+    private func addTransformSegment(at time: TimeInterval) {
         guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) else {
             return
         }
 
-        guard case .transform(var track) = project.timeline.tracks[trackIndex] else {
+        guard case .camera(var track) = project.timeline.tracks[trackIndex] else {
             return
         }
 
-        // Create a keyframe based on the current state
-        let newKeyframe = TransformKeyframe(
-            time: time,
-            zoom: 1.0,
-            centerX: 0.5,
-            centerY: 0.5
+        let endTime = min(duration, time + 1.0)
+        let newSegment = CameraSegment(
+            startTime: time,
+            endTime: max(time + 0.05, endTime),
+            startTransform: .identity,
+            endTransform: .identity
         )
 
-        track.keyframes.append(newKeyframe)
-        track.keyframes.sort { $0.time < $1.time }
+        _ = track.addSegment(newSegment)
 
-        project.timeline.tracks[trackIndex] = .transform(track)
-        selectedKeyframeID = newKeyframe.id
+        project.timeline.tracks[trackIndex] = .camera(track)
+        selectedKeyframeID = newSegment.id
         selectedTrackType = .transform
     }
 
-    private func addCursorKeyframe(at time: TimeInterval) {
+    private func addCursorSegment(at time: TimeInterval) {
         guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) else {
             return
         }
@@ -533,32 +536,22 @@ final class EditorViewModel: ObservableObject {
             return
         }
 
-        let newKeyframe = CursorStyleKeyframe(
-            time: time,
+        let newSegment = CursorSegment(
+            startTime: time,
+            endTime: min(duration, time + 1.0),
             style: .arrow,
             visible: true,
-            scale: 1.0
+            scale: 2.5
         )
 
-        var keyframes = track.styleKeyframes ?? []
-        keyframes.append(newKeyframe)
-        keyframes.sort { $0.time < $1.time }
-        track = CursorTrack(
-            id: track.id,
-            name: track.name,
-            isEnabled: track.isEnabled,
-            defaultStyle: track.defaultStyle,
-            defaultScale: track.defaultScale,
-            defaultVisible: track.defaultVisible,
-            styleKeyframes: keyframes
-        )
+        _ = track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .cursor(track)
-        selectedKeyframeID = newKeyframe.id
+        selectedKeyframeID = newSegment.id
         selectedTrackType = .cursor
     }
 
-    private func addKeystrokeKeyframe(at time: TimeInterval) {
+    private func addKeystrokeSegment(at time: TimeInterval) {
         guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }) else {
             return
         }
@@ -567,16 +560,16 @@ final class EditorViewModel: ObservableObject {
             return
         }
 
-        let newKeyframe = KeystrokeKeyframe(
-            time: time,
+        let newSegment = KeystrokeSegment(
+            startTime: time,
+            endTime: min(duration, time + 1.5),
             displayText: "⌘"
         )
 
-        track.keyframes.append(newKeyframe)
-        track.keyframes.sort { $0.time < $1.time }
+        track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .keystroke(track)
-        selectedKeyframeID = newKeyframe.id
+        selectedKeyframeID = newSegment.id
         selectedTrackType = .keystroke
         hasUnsavedChanges = true
         invalidatePreviewCache()
@@ -609,12 +602,12 @@ final class EditorViewModel: ObservableObject {
             return
         }
 
-        guard case .transform(var track) = project.timeline.tracks[trackIndex] else {
+        guard case .camera(var track) = project.timeline.tracks[trackIndex] else {
             return
         }
 
-        track.keyframes.removeAll { $0.id == id }
-        project.timeline.tracks[trackIndex] = .transform(track)
+        track.removeSegment(id: id)
+        project.timeline.tracks[trackIndex] = .camera(track)
     }
 
     private func deleteCursorKeyframe(_ id: UUID) {
@@ -626,17 +619,7 @@ final class EditorViewModel: ObservableObject {
             return
         }
 
-        var keyframes = track.styleKeyframes ?? []
-        keyframes.removeAll { $0.id == id }
-        track = CursorTrack(
-            id: track.id,
-            name: track.name,
-            isEnabled: track.isEnabled,
-            defaultStyle: track.defaultStyle,
-            defaultScale: track.defaultScale,
-            defaultVisible: track.defaultVisible,
-            styleKeyframes: keyframes
-        )
+        track.removeSegment(id: id)
         project.timeline.tracks[trackIndex] = .cursor(track)
     }
 
@@ -649,7 +632,7 @@ final class EditorViewModel: ObservableObject {
             return
         }
 
-        track.keyframes.removeAll { $0.id == id }
+        track.removeSegment(id: id)
         project.timeline.tracks[trackIndex] = .keystroke(track)
     }
 
@@ -659,30 +642,24 @@ final class EditorViewModel: ObservableObject {
         // Find and update the keyframe time
         for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
             switch anyTrack {
-            case .transform(var track):
-                if let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex].time = newTime
-                    track.keyframes.sort { $0.time < $1.time }
-                    project.timeline.tracks[trackIndex] = .transform(track)
+            case .camera(var track):
+                if let index = track.segments.firstIndex(where: { $0.id == id }) {
+                    let duration = max(0.001, track.segments[index].endTime - track.segments[index].startTime)
+                    track.segments[index].startTime = newTime
+                    track.segments[index].endTime = min(self.duration, newTime + duration)
+                    track.segments.sort { $0.startTime < $1.startTime }
+                    project.timeline.tracks[trackIndex] = .camera(track)
                     hasUnsavedChanges = true
                     invalidatePreviewCache()
                     return
                 }
 
             case .cursor(var track):
-                if var keyframes = track.styleKeyframes,
-                   let keyframeIndex = keyframes.firstIndex(where: { $0.id == id }) {
-                    keyframes[keyframeIndex].time = newTime
-                    keyframes.sort { $0.time < $1.time }
-                    track = CursorTrack(
-                        id: track.id,
-                        name: track.name,
-                        isEnabled: track.isEnabled,
-                        defaultStyle: track.defaultStyle,
-                        defaultScale: track.defaultScale,
-                        defaultVisible: track.defaultVisible,
-                        styleKeyframes: keyframes
-                    )
+                if let index = track.segments.firstIndex(where: { $0.id == id }) {
+                    let duration = max(0.001, track.segments[index].endTime - track.segments[index].startTime)
+                    track.segments[index].startTime = newTime
+                    track.segments[index].endTime = min(self.duration, newTime + duration)
+                    track.segments.sort { $0.startTime < $1.startTime }
                     project.timeline.tracks[trackIndex] = .cursor(track)
                     hasUnsavedChanges = true
                     invalidatePreviewCache()
@@ -690,9 +667,11 @@ final class EditorViewModel: ObservableObject {
                 }
 
             case .keystroke(var track):
-                if let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex].time = newTime
-                    track.keyframes.sort { $0.time < $1.time }
+                if let index = track.segments.firstIndex(where: { $0.id == id }) {
+                    let duration = max(0.001, track.segments[index].endTime - track.segments[index].startTime)
+                    track.segments[index].startTime = newTime
+                    track.segments[index].endTime = min(self.duration, newTime + duration)
+                    track.segments.sort { $0.startTime < $1.startTime }
                     project.timeline.tracks[trackIndex] = .keystroke(track)
                     hasUnsavedChanges = true
                     invalidatePreviewCache()
@@ -715,22 +694,14 @@ final class EditorViewModel: ObservableObject {
         saveUndoSnapshot()
         for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
             switch anyTrack {
-            case .transform(var track):
-                track.keyframes.removeAll()
-                project.timeline.tracks[trackIndex] = .transform(track)
+            case .camera(var track):
+                track.segments.removeAll()
+                project.timeline.tracks[trackIndex] = .camera(track)
             case .cursor(var track):
-                track = CursorTrack(
-                    id: track.id,
-                    name: track.name,
-                    isEnabled: track.isEnabled,
-                    defaultStyle: track.defaultStyle,
-                    defaultScale: track.defaultScale,
-                    defaultVisible: track.defaultVisible,
-                    styleKeyframes: nil
-                )
+                track.segments.removeAll()
                 project.timeline.tracks[trackIndex] = .cursor(track)
             case .keystroke(var track):
-                track.keyframes.removeAll()
+                track.segments.removeAll()
                 project.timeline.tracks[trackIndex] = .keystroke(track)
             }
         }
@@ -758,26 +729,25 @@ final class EditorViewModel: ObservableObject {
 
         switch trackType {
         case .transform:
-            if let track = project.timeline.transformTrack,
-               let keyframe = track.keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
+            if let track = project.timeline.cameraTrack,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
             } else {
                 time = nil
             }
 
         case .cursor:
-            if let track = project.timeline.cursorTrack,
-               let keyframes = track.styleKeyframes,
-               let keyframe = keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
+            if let track = project.timeline.cursorTrackV2,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
             } else {
                 time = nil
             }
 
         case .keystroke:
-            if let track = project.timeline.keystrokeTrack,
-               let keyframe = track.keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
+            if let track = project.timeline.keystrokeTrackV2,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
             } else {
                 time = nil
             }
@@ -809,6 +779,89 @@ final class EditorViewModel: ObservableObject {
     func notifyKeyframeChanged() {
         hasUnsavedChanges = true
         invalidatePreviewCache()
+    }
+}
+
+private extension EditorViewModel {
+    func convertToCameraTrack(_ track: TransformTrack) -> CameraTrack {
+        let sorted = track.keyframes.sorted { $0.time < $1.time }
+        guard !sorted.isEmpty else {
+            return CameraTrack(id: track.id, name: track.name, isEnabled: track.isEnabled, segments: [])
+        }
+
+        var segments: [CameraSegment] = []
+        for index in 0..<sorted.count {
+            let current = sorted[index]
+            let nextTime = index + 1 < sorted.count ? sorted[index + 1].time : duration
+            let endTime = max(current.time + 0.001, nextTime)
+            segments.append(
+                CameraSegment(
+                    startTime: current.time,
+                    endTime: min(duration, endTime),
+                    startTransform: current.value,
+                    endTransform: index + 1 < sorted.count ? sorted[index + 1].value : current.value,
+                    interpolation: current.easing
+                )
+            )
+        }
+
+        return CameraTrack(id: track.id, name: track.name, isEnabled: track.isEnabled, segments: segments)
+    }
+
+    func convertToCursorTrack(_ track: CursorTrack) -> CursorTrackV2 {
+        let sorted = (track.styleKeyframes ?? []).sorted { $0.time < $1.time }
+
+        guard !sorted.isEmpty else {
+            return CursorTrackV2(
+                id: track.id,
+                name: track.name,
+                isEnabled: track.isEnabled,
+                segments: [
+                    CursorSegment(
+                        startTime: 0,
+                        endTime: duration,
+                        style: track.defaultStyle,
+                        visible: track.defaultVisible,
+                        scale: track.defaultScale,
+                        position: nil
+                    ),
+                ]
+            )
+        }
+
+        var segments: [CursorSegment] = []
+        for index in 0..<sorted.count {
+            let current = sorted[index]
+            let endTime = index + 1 < sorted.count ? sorted[index + 1].time : duration
+            segments.append(
+                CursorSegment(
+                    startTime: current.time,
+                    endTime: max(current.time + 0.001, endTime),
+                    style: current.style,
+                    visible: current.visible,
+                    scale: current.scale,
+                    position: current.position
+                )
+            )
+        }
+
+        return CursorTrackV2(id: track.id, name: track.name, isEnabled: track.isEnabled, segments: segments)
+    }
+
+    func convertToKeystrokeTrack(_ track: KeystrokeTrack) -> KeystrokeTrackV2 {
+        let segments = track.keyframes.map { keyframe in
+            KeystrokeSegment(
+                id: keyframe.id,
+                startTime: keyframe.time,
+                endTime: keyframe.endTime,
+                displayText: keyframe.displayText,
+                position: keyframe.position,
+                fadeInDuration: keyframe.fadeInDuration,
+                fadeOutDuration: keyframe.fadeOutDuration
+            )
+        }
+
+        return KeystrokeTrackV2(id: track.id, name: track.name, isEnabled: track.isEnabled, segments: segments)
     }
 }
 

@@ -403,26 +403,23 @@ final class AppState: ObservableObject {
         // Generate default timeline
         let timeline = Timeline(
             tracks: [
-                AnyTrack(TransformTrack(
+                AnySegmentTrack.camera(CameraTrack(
                     id: UUID(),
-                    name: "Transform",
+                    name: "Camera",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 )),
-                AnyTrack(CursorTrack(
+                AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
-                    defaultStyle: .arrow,
-                    defaultScale: 1.5,
-                    defaultVisible: true,
-                    styleKeyframes: nil
+                    segments: []
                 )),
-                AnyTrack(KeystrokeTrack(
+                AnySegmentTrack.keystroke(KeystrokeTrackV2(
                     id: UUID(),
                     name: "Keystroke",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 ))
             ],
             duration: videoMetadata.duration

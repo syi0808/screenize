@@ -5,7 +5,7 @@ import CoreGraphics
 /// Contains recorded media and timeline editing data
 struct ScreenizeProject: Codable, Identifiable {
     let id: UUID
-    var version: Int = 2
+    var version: Int = 5
     var name: String
     var createdAt: Date
     var modifiedAt: Date
@@ -38,7 +38,7 @@ struct ScreenizeProject: Codable, Identifiable {
         interop: InteropBlock? = nil
     ) {
         self.id = id
-        self.version = 4
+        self.version = 5
         self.name = name
         self.createdAt = Date()
         self.modifiedAt = Date()
