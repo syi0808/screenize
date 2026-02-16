@@ -5,8 +5,8 @@ import SwiftUI
 struct EditorSnapshot {
     let timeline: Timeline
     let renderSettings: RenderSettings
-    let selectedKeyframeID: UUID?
-    let selectedTrackType: TrackType?
+    let selectedSegmentID: UUID?
+    let selectedSegmentTrackType: TrackType?
 }
 
 /// Stack-based undo/redo manager for value-type state

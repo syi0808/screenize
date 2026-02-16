@@ -6,12 +6,12 @@ struct TimelineView: View {
     @Binding var timeline: Timeline
     let duration: TimeInterval
     @Binding var currentTime: TimeInterval
-    @Binding var selectedKeyframeID: UUID?
-    @Binding var selectedTrackType: TrackType?
+    @Binding var selectedSegmentID: UUID?
+    @Binding var selectedSegmentTrackType: TrackType?
 
-    var onKeyframeChange: ((UUID, TimeInterval) -> Void)?
-    var onAddKeyframe: ((TrackType, TimeInterval) -> Void)?
-    var onKeyframeSelect: ((TrackType, UUID) -> Void)?
+    var onSegmentTimeChange: ((UUID, TimeInterval) -> Void)?
+    var onAddSegment: ((TrackType, TimeInterval) -> Void)?
+    var onSegmentSelect: ((TrackType, UUID) -> Void)?
     var onSeek: ((TimeInterval) async -> Void)?
 
     @Binding var trimStart: TimeInterval
@@ -177,11 +177,11 @@ struct TimelineView: View {
                 .contentShape(Rectangle())
                 .onTapGesture(count: 2) { location in
                     let time = max(0, min(duration, Double(location.x) / Double(pixelsPerSecond)))
-                    onAddKeyframe?(track.trackType, time)
+                    onAddSegment?(track.trackType, time)
                 }
                 .onTapGesture {
-                    selectedKeyframeID = nil
-                    selectedTrackType = nil
+                    selectedSegmentID = nil
+                    selectedSegmentTrackType = nil
                 }
 
             segmentBlocks(for: track)
@@ -214,10 +214,10 @@ struct TimelineView: View {
         let color = KeyframeColor.color(for: trackType)
 
         return RoundedRectangle(cornerRadius: 4)
-            .fill(color.opacity(selectedKeyframeID == id ? 0.9 : 0.6))
+            .fill(color.opacity(selectedSegmentID == id ? 0.9 : 0.6))
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(selectedKeyframeID == id ? Color.white : Color.clear, lineWidth: 1)
+                    .stroke(selectedSegmentID == id ? Color.white : Color.clear, lineWidth: 1)
             )
             .frame(width: width, height: 22)
             .position(x: x + width / 2, y: trackHeight / 2)
@@ -227,18 +227,18 @@ struct TimelineView: View {
                         let deltaTime = Double(value.translation.width / pixelsPerSecond)
                         let segmentDuration = end - start
                         let newStart = max(0, min(duration - segmentDuration, start + deltaTime))
-                        onKeyframeChange?(id, newStart)
+                        onSegmentTimeChange?(id, newStart)
                     }
                     .onEnded { _ in
-                        onKeyframeSelect?(trackType, id)
-                        selectedKeyframeID = id
-                        selectedTrackType = trackType
+                        onSegmentSelect?(trackType, id)
+                        selectedSegmentID = id
+                        selectedSegmentTrackType = trackType
                     }
             )
             .onTapGesture {
-                onKeyframeSelect?(trackType, id)
-                selectedKeyframeID = id
-                selectedTrackType = trackType
+                onSegmentSelect?(trackType, id)
+                selectedSegmentID = id
+                selectedSegmentTrackType = trackType
             }
             .opacity(isSegmentInTrimRange(start: start, end: end) ? 1.0 : 0.3)
     }

@@ -62,16 +62,16 @@ struct EditorMainView: View {
                     timeline: viewModel.timelineBinding,
                     duration: viewModel.duration,
                     currentTime: $viewModel.currentTime,
-                    selectedKeyframeID: $viewModel.selectedKeyframeID,
-                    selectedTrackType: $viewModel.selectedTrackType,
-                    onKeyframeChange: { id, time in
-                        viewModel.updateKeyframeTime(id, to: time)
+                    selectedSegmentID: $viewModel.selectedSegmentID,
+                    selectedSegmentTrackType: $viewModel.selectedSegmentTrackType,
+                    onSegmentTimeChange: { id, time in
+                        viewModel.updateSegmentStartTime(id, to: time)
                     },
-                    onAddKeyframe: { trackType, time in
-                        viewModel.addKeyframe(to: trackType, at: time)
+                    onAddSegment: { trackType, time in
+                        viewModel.addSegment(to: trackType, at: time)
                     },
-                    onKeyframeSelect: { trackType, id in
-                        viewModel.selectKeyframe(id, trackType: trackType)
+                    onSegmentSelect: { trackType, id in
+                        viewModel.selectSegment(id, trackType: trackType)
                     },
                     onSeek: { time in
                         await viewModel.seek(to: time)
@@ -88,15 +88,15 @@ struct EditorMainView: View {
             // Right: inspector
             InspectorView(
                 timeline: viewModel.timelineBinding,
-                selectedKeyframeID: $viewModel.selectedKeyframeID,
-                selectedTrackType: $viewModel.selectedTrackType,
+                selectedSegmentID: $viewModel.selectedSegmentID,
+                selectedSegmentTrackType: $viewModel.selectedSegmentTrackType,
                 renderSettings: viewModel.renderSettingsBinding,
                 isWindowMode: viewModel.isWindowMode,
-                onKeyframeChange: {
-                    viewModel.notifyKeyframeChanged()
+                onSegmentChange: {
+                    viewModel.notifySegmentChanged()
                 },
-                onDeleteKeyframe: { id, trackType in
-                    viewModel.deleteKeyframe(id, from: trackType)
+                onDeleteSegment: { id, trackType in
+                    viewModel.deleteSegment(id, from: trackType)
                 }
             )
         }
@@ -227,7 +227,7 @@ struct EditorMainView: View {
 
             // Delete all segments
             Button(role: .destructive) {
-                viewModel.deleteAllKeyframes()
+                viewModel.deleteAllSegments()
             } label: {
                 Label("Delete All", systemImage: "trash")
             }
@@ -278,19 +278,19 @@ struct EditorMainView: View {
     private var keyframeAddMenu: some View {
         Menu {
             Button {
-                viewModel.addKeyframe(to: .transform)
+                viewModel.addSegment(to: .transform)
             } label: {
                 Label("Camera Segment", systemImage: "arrow.up.left.and.arrow.down.right")
             }
 
             Button {
-                viewModel.addKeyframe(to: .cursor)
+                viewModel.addSegment(to: .cursor)
             } label: {
                 Label("Cursor Segment", systemImage: "cursorarrow")
             }
 
             Button {
-                viewModel.addKeyframe(to: .keystroke)
+                viewModel.addSegment(to: .keystroke)
             } label: {
                 Label("Keystroke Segment", systemImage: "keyboard")
             }
@@ -329,10 +329,10 @@ struct EditorMainView: View {
                 return event
             }
 
-            // Delete the selected keyframe
-            if let id = viewModel.selectedKeyframeID,
-               let trackType = viewModel.selectedTrackType {
-                viewModel.deleteKeyframe(id, from: trackType)
+            // Delete the selected segment
+            if let id = viewModel.selectedSegmentID,
+               let trackType = viewModel.selectedSegmentTrackType {
+                viewModel.deleteSegment(id, from: trackType)
                 return nil // consume the event
             }
 
@@ -409,7 +409,7 @@ struct GeneratorPanelView: View {
 
     private var buttonLabel: String {
         if isGenerating { return "Generating..." }
-        if allSelected { return "Generate All Keyframes" }
+        if allSelected { return "Generate All Segments" }
         return "Generate Selected (\(selectedTypes.count))"
     }
 

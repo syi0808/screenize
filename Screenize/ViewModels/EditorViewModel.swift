@@ -18,11 +18,11 @@ final class EditorViewModel: ObservableObject {
     /// Playback state
     @Published var isPlaying: Bool = false
 
-    /// Selected keyframe ID
-    @Published var selectedKeyframeID: UUID?
+    /// Selected segment ID
+    @Published var selectedSegmentID: UUID?
 
-    /// Selected track type
-    @Published var selectedTrackType: TrackType?
+    /// Selected segment track type
+    @Published var selectedSegmentTrackType: TrackType?
 
     /// Loading state
     @Published var isLoading: Bool = false
@@ -199,8 +199,8 @@ final class EditorViewModel: ObservableObject {
         EditorSnapshot(
             timeline: project.timeline,
             renderSettings: project.renderSettings,
-            selectedKeyframeID: selectedKeyframeID,
-            selectedTrackType: selectedTrackType
+            selectedSegmentID: selectedSegmentID,
+            selectedSegmentTrackType: selectedSegmentTrackType
         )
     }
 
@@ -240,8 +240,8 @@ final class EditorViewModel: ObservableObject {
     private func applySnapshot(_ snapshot: EditorSnapshot) {
         project.timeline = snapshot.timeline
         project.renderSettings = snapshot.renderSettings
-        selectedKeyframeID = snapshot.selectedKeyframeID
-        selectedTrackType = snapshot.selectedTrackType
+        selectedSegmentID = snapshot.selectedSegmentID
+        selectedSegmentTrackType = snapshot.selectedSegmentTrackType
         hasUnsavedChanges = true
         invalidatePreviewCache()
         updateRenderSettings()
@@ -481,12 +481,12 @@ final class EditorViewModel: ObservableObject {
     // MARK: - Keyframe Management
 
     /// Add a segment at the current time.
-    func addKeyframe(to trackType: TrackType) {
-        addKeyframe(to: trackType, at: currentTime)
+    func addSegment(to trackType: TrackType) {
+        addSegment(to: trackType, at: currentTime)
     }
 
     /// Add a segment at a specified time.
-    func addKeyframe(to trackType: TrackType, at time: TimeInterval) {
+    func addSegment(to trackType: TrackType, at time: TimeInterval) {
         saveUndoSnapshot()
         switch trackType {
         case .transform:
@@ -523,8 +523,8 @@ final class EditorViewModel: ObservableObject {
         _ = track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .camera(track)
-        selectedKeyframeID = newSegment.id
-        selectedTrackType = .transform
+        selectedSegmentID = newSegment.id
+        selectedSegmentTrackType = .transform
     }
 
     private func addCursorSegment(at time: TimeInterval) {
@@ -547,8 +547,8 @@ final class EditorViewModel: ObservableObject {
         _ = track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .cursor(track)
-        selectedKeyframeID = newSegment.id
-        selectedTrackType = .cursor
+        selectedSegmentID = newSegment.id
+        selectedSegmentTrackType = .cursor
     }
 
     private func addKeystrokeSegment(at time: TimeInterval) {
@@ -569,35 +569,35 @@ final class EditorViewModel: ObservableObject {
         track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .keystroke(track)
-        selectedKeyframeID = newSegment.id
-        selectedTrackType = .keystroke
+        selectedSegmentID = newSegment.id
+        selectedSegmentTrackType = .keystroke
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
 
-    /// Delete a keyframe
-    func deleteKeyframe(_ id: UUID, from trackType: TrackType) {
+    /// Delete a segment.
+    func deleteSegment(_ id: UUID, from trackType: TrackType) {
         saveUndoSnapshot()
         switch trackType {
         case .transform:
-            deleteTransformKeyframe(id)
+            deleteTransformSegment(id)
         case .cursor:
-            deleteCursorKeyframe(id)
+            deleteCursorSegment(id)
         case .keystroke:
-            deleteKeystrokeKeyframe(id)
+            deleteKeystrokeSegment(id)
         case .audio:
             break  // TODO: implement audio tracks in the future
         }
 
-        if selectedKeyframeID == id {
-            selectedKeyframeID = nil
+        if selectedSegmentID == id {
+            selectedSegmentID = nil
         }
 
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
 
-    private func deleteTransformKeyframe(_ id: UUID) {
+    private func deleteTransformSegment(_ id: UUID) {
         guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) else {
             return
         }
@@ -610,7 +610,7 @@ final class EditorViewModel: ObservableObject {
         project.timeline.tracks[trackIndex] = .camera(track)
     }
 
-    private func deleteCursorKeyframe(_ id: UUID) {
+    private func deleteCursorSegment(_ id: UUID) {
         guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) else {
             return
         }
@@ -623,7 +623,7 @@ final class EditorViewModel: ObservableObject {
         project.timeline.tracks[trackIndex] = .cursor(track)
     }
 
-    private func deleteKeystrokeKeyframe(_ id: UUID) {
+    private func deleteKeystrokeSegment(_ id: UUID) {
         guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }) else {
             return
         }
@@ -636,10 +636,10 @@ final class EditorViewModel: ObservableObject {
         project.timeline.tracks[trackIndex] = .keystroke(track)
     }
 
-    /// Update a keyframe time
-    func updateKeyframeTime(_ id: UUID, to newTime: TimeInterval) {
+    /// Update segment start time.
+    func updateSegmentStartTime(_ id: UUID, to newTime: TimeInterval) {
         saveBindingUndoSnapshot()
-        // Find and update the keyframe time
+        // Find and update the segment start time.
         for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
             switch anyTrack {
             case .camera(var track):
@@ -683,14 +683,14 @@ final class EditorViewModel: ObservableObject {
 
     // MARK: - Selection
 
-    /// Select a keyframe
-    func selectKeyframe(_ id: UUID, trackType: TrackType) {
-        selectedKeyframeID = id
-        selectedTrackType = trackType
+    /// Select a segment.
+    func selectSegment(_ id: UUID, trackType: TrackType) {
+        selectedSegmentID = id
+        selectedSegmentTrackType = trackType
     }
 
-    /// Delete all keyframes
-    func deleteAllKeyframes() {
+    /// Delete all segments.
+    func deleteAllSegments() {
         saveUndoSnapshot()
         for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
             switch anyTrack {
@@ -706,25 +706,26 @@ final class EditorViewModel: ObservableObject {
             }
         }
 
-        selectedKeyframeID = nil
-        selectedTrackType = nil
+        selectedSegmentID = nil
+        selectedSegmentTrackType = nil
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
 
     /// Clear the selection
     func clearSelection() {
-        selectedKeyframeID = nil
+        selectedSegmentID = nil
+        selectedSegmentTrackType = nil
     }
 
-    /// Jump to the selected keyframe
-    func goToSelectedKeyframe() async {
-        guard let id = selectedKeyframeID,
-              let trackType = selectedTrackType else {
+    /// Jump to the selected segment.
+    func goToSelectedSegment() async {
+        guard let id = selectedSegmentID,
+              let trackType = selectedSegmentTrackType else {
             return
         }
 
-        // Locate the keyframe time
+        // Locate the segment start time
         let time: TimeInterval?
 
         switch trackType {
@@ -773,13 +774,14 @@ final class EditorViewModel: ObservableObject {
         previewEngine.updateRenderSettings(project.renderSettings)
     }
 
-    // MARK: - Keyframe Change Notification
+    // MARK: - Segment Change Notification
 
-    /// Notify that a keyframe changed (called from the inspector)
-    func notifyKeyframeChanged() {
+    /// Notify that a segment changed (called from the inspector)
+    func notifySegmentChanged() {
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
+
 }
 
 private extension EditorViewModel {
