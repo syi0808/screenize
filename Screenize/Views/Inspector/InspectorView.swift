@@ -478,3 +478,123 @@ extension InspectorView {
         }
     }
 }
+
+// MARK: - Center Point Picker
+
+struct CenterPointPicker: View {
+
+    @Binding var centerX: CGFloat
+    @Binding var centerY: CGFloat
+
+    var onChange: (() -> Void)?
+
+    @State private var isDragging = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            let size = geometry.size
+
+            ZStack {
+        // Background (indicates the viewport ratio)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                    )
+
+        // Grid
+                gridLines(in: size)
+
+        // Crosshairs
+                crosshair(in: size)
+
+        // Display the center point
+                centerPoint(in: size)
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        isDragging = true
+                        updateCenter(from: value.location, in: size)
+                    }
+                    .onEnded { _ in
+                        isDragging = false
+                    }
+            )
+        }
+    }
+
+    private func gridLines(in size: CGSize) -> some View {
+        Canvas { context, _ in
+            let lineColor = Color.secondary.opacity(0.2)
+
+            // 3x3 grid
+            for i in 1..<3 {
+                // Vertical lines
+                let x = size.width * CGFloat(i) / 3
+                let vPath = Path { path in
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x, y: size.height))
+                }
+                context.stroke(vPath, with: .color(lineColor), lineWidth: 0.5)
+
+                // Horizontal lines
+                let y = size.height * CGFloat(i) / 3
+                let hPath = Path { path in
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: size.width, y: y))
+                }
+                context.stroke(hPath, with: .color(lineColor), lineWidth: 0.5)
+            }
+        }
+    }
+
+    private func crosshair(in size: CGSize) -> some View {
+        let x = centerX * size.width
+        // Flip Y axis: convert from CoreImage bottom-left to SwiftUI top-left
+        let y = (1 - centerY) * size.height
+
+        return ZStack {
+            // Vertical line
+            Rectangle()
+                .fill(Color.accentColor.opacity(0.3))
+                .frame(width: 1)
+                .offset(x: x - size.width / 2)
+
+            // Horizontal line
+            Rectangle()
+                .fill(Color.accentColor.opacity(0.3))
+                .frame(height: 1)
+                .offset(y: y - size.height / 2)
+        }
+    }
+
+    private func centerPoint(in size: CGSize) -> some View {
+        let x = centerX * size.width
+        // Flip Y axis: convert from CoreImage bottom-left to SwiftUI top-left
+        let y = (1 - centerY) * size.height
+
+        return Circle()
+            .fill(Color.accentColor)
+            .frame(width: isDragging ? 16 : 12, height: isDragging ? 16 : 12)
+            .overlay(
+                Circle()
+                    .stroke(Color.white, lineWidth: 2)
+            )
+            .shadow(color: .black.opacity(0.3), radius: 2)
+            .position(x: x, y: y)
+            .animation(.easeInOut(duration: 0.15), value: isDragging)
+    }
+
+    private func updateCenter(from location: CGPoint, in size: CGSize) {
+        let newX = max(0, min(1, location.x / size.width))
+        // Flip Y axis: convert from SwiftUI top-left to CoreImage bottom-left
+        let newY = max(0, min(1, 1 - (location.y / size.height)))
+
+        centerX = newX
+        centerY = newY
+        onChange?()
+    }
+}

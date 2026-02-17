@@ -63,8 +63,7 @@ final class RecordingCoordinator: ObservableObject {
     @available(macOS 15.0, *)
     func startRecording(
         target: CaptureTarget,
-        backgroundStyle: BackgroundStyle,
-        zoomSettings: ZoomSettings
+        backgroundStyle: BackgroundStyle
     ) async throws {
         guard currentSession == nil else {
             throw RecordingError.alreadyRecording

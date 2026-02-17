@@ -58,8 +58,6 @@ final class AppState: ObservableObject {
 
     // Note: BackgroundStyle doesn't support @AppStorage directly
     var backgroundStyle: BackgroundStyle = .solid(.gray)
-    @AppStorage("autoZoomEnabled") var autoZoomEnabled: Bool = true
-    @AppStorage("zoomLevel") var zoomLevel: Double = 2.0
 
     // MARK: - Managers
 
@@ -186,11 +184,7 @@ final class AppState: ObservableObject {
         do {
             try await coordinator.startRecording(
                 target: target,
-                backgroundStyle: backgroundStyle,
-                zoomSettings: ZoomSettings(
-                    isEnabled: autoZoomEnabled,
-                    zoomLevel: zoomLevel
-                )
+                backgroundStyle: backgroundStyle
             )
 
             isRecording = true
