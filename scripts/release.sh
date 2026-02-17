@@ -92,6 +92,53 @@ fi
 
 print_step "Build completed: $APP_PATH"
 
+# Verify code signature
+print_step "Verifying code signature..."
+
+codesign --verify --deep --strict --verbose=4 "$APP_PATH" 2>&1
+CODESIGN_STATUS=$?
+
+if [ $CODESIGN_STATUS -ne 0 ]; then
+    print_error "Code signature verification failed (codesign exit code: $CODESIGN_STATUS)"
+    print_error "The app is signed with an invalid or untrusted certificate."
+    exit 1
+fi
+
+print_step "Code signature verified"
+
+# Check Gatekeeper assessment
+print_step "Checking Gatekeeper assessment..."
+
+SPCTL_OUTPUT=$(spctl -a -vv --type execute "$APP_PATH" 2>&1)
+SPCTL_STATUS=$?
+echo "$SPCTL_OUTPUT"
+
+if [ $SPCTL_STATUS -ne 0 ]; then
+    print_warning "Gatekeeper assessment failed (spctl exit code: $SPCTL_STATUS)"
+    print_warning "This is expected if the app is not notarized."
+    print_warning "Users will see a Gatekeeper warning on first launch."
+else
+    print_step "Gatekeeper assessment passed"
+fi
+
+# Verify signing identity is Developer ID (not just development cert)
+SIGNING_IDENTITY=$(codesign -dvv "$APP_PATH" 2>&1 | grep "Authority=" | head -1)
+echo "Signing identity: $SIGNING_IDENTITY"
+
+if echo "$SIGNING_IDENTITY" | grep -q "Developer ID Application"; then
+    print_step "Signed with Developer ID certificate"
+elif echo "$SIGNING_IDENTITY" | grep -q "Apple Development"; then
+    print_warning "App is signed with a development certificate, not a distribution certificate."
+    print_warning "For production distribution, use a 'Developer ID Application' certificate."
+elif echo "$SIGNING_IDENTITY" | grep -q "3rd Party Mac Developer"; then
+    print_warning "App is signed with a Mac App Store certificate, not suitable for direct distribution."
+    print_warning "For production distribution, use a 'Developer ID Application' certificate."
+else
+    print_error "App is signed with an unrecognized certificate: $SIGNING_IDENTITY"
+    print_error "Use a 'Developer ID Application' certificate for distribution."
+    exit 1
+fi
+
 # Notarization (optional)
 # Requires Apple Developer Program membership
 # Uncomment below to use
