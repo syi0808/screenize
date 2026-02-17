@@ -109,8 +109,10 @@ print_step "Code signature verified"
 # Check Gatekeeper assessment
 print_step "Checking Gatekeeper assessment..."
 
+set +e
 SPCTL_OUTPUT=$(spctl -a -vv --type execute "$APP_PATH" 2>&1)
 SPCTL_STATUS=$?
+set -e
 echo "$SPCTL_OUTPUT"
 
 if [ $SPCTL_STATUS -ne 0 ]; then
