@@ -54,11 +54,14 @@ class SmartGeneratorV2 {
         )
 
         // 6. Simulate camera path
+        var simSettings = settings.simulation
+        simSettings.eventTimeline = timeline
+        simSettings.screenBounds = screenBounds
         let path = simulator.simulate(
             shotPlans: shotPlans,
             transitions: transitions,
             mouseData: mouseData,
-            settings: settings.simulation,
+            settings: simSettings,
             duration: duration
         )
 
@@ -166,6 +169,12 @@ struct TransitionSettings {
 struct SimulationSettings {
     /// Minimum zoom (fully zoomed out).
     var minZoom: CGFloat = 1.0
+
+    /// Event timeline for cursor-following controllers.
+    var eventTimeline: EventTimeline?
+
+    /// Screen bounds for normalizing caret coordinates.
+    var screenBounds: CGSize = .zero
 }
 
 // MARK: - Cursor Emission Settings

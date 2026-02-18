@@ -122,7 +122,9 @@
 		B0000002296A0001 /* StaticHoldController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100002296A0001 /* StaticHoldController.swift */; };
 		B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100001296A0001 /* StaticHoldControllerTests.swift */; };
 		B0000003296A0001 /* CameraSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100003296A0001 /* CameraSimulator.swift */; };
+		B0000004296A0001 /* CursorFollowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100004296A0001 /* CursorFollowController.swift */; };
 		B1000002296A0001 /* CameraSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100002296A0001 /* CameraSimulatorTests.swift */; };
+		B1000003296A0001 /* CursorFollowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100003296A0001 /* CursorFollowControllerTests.swift */; };
 		B2000001296A0001 /* CameraTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100001296A0001 /* CameraTrackEmitter.swift */; };
 		B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100001296A0001 /* CameraTrackEmitterTests.swift */; };
 		B2000002296A0001 /* CursorTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100002296A0001 /* CursorTrackEmitter.swift */; };
@@ -249,7 +251,9 @@
 		B0100002296A0001 /* StaticHoldController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldController.swift; sourceTree = "<group>"; };
 		B1100001296A0001 /* StaticHoldControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldControllerTests.swift; sourceTree = "<group>"; };
 		B0100003296A0001 /* CameraSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulator.swift; sourceTree = "<group>"; };
+		B0100004296A0001 /* CursorFollowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorFollowController.swift; sourceTree = "<group>"; };
 		B1100002296A0001 /* CameraSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulatorTests.swift; sourceTree = "<group>"; };
+		B1100003296A0001 /* CursorFollowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorFollowControllerTests.swift; sourceTree = "<group>"; };
 		B2100001296A0001 /* CameraTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitter.swift; sourceTree = "<group>"; };
 		B3100001296A0001 /* CameraTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitterTests.swift; sourceTree = "<group>"; };
 		B2100002296A0001 /* CursorTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitter.swift; sourceTree = "<group>"; };
@@ -354,6 +358,7 @@
 			isa = PBXGroup;
 			children = (
 				B1100001296A0001 /* StaticHoldControllerTests.swift */,
+				B1100003296A0001 /* CursorFollowControllerTests.swift */,
 				B1100002296A0001 /* CameraSimulatorTests.swift */,
 			);
 			path = Simulation;
@@ -574,6 +579,7 @@
 			children = (
 				B0100001296A0001 /* CameraController.swift */,
 				B0100002296A0001 /* StaticHoldController.swift */,
+				B0100004296A0001 /* CursorFollowController.swift */,
 				B0100003296A0001 /* CameraSimulator.swift */,
 			);
 			path = Simulation;
@@ -904,6 +910,7 @@
 				AE000003296A0001 /* TransitionPlanner.swift in Sources */,
 				B0000001296A0001 /* CameraController.swift in Sources */,
 				B0000002296A0001 /* StaticHoldController.swift in Sources */,
+				B0000004296A0001 /* CursorFollowController.swift in Sources */,
 				B0000003296A0001 /* CameraSimulator.swift in Sources */,
 				B2000001296A0001 /* CameraTrackEmitter.swift in Sources */,
 				B2000002296A0001 /* CursorTrackEmitter.swift in Sources */,
@@ -922,6 +929,7 @@
 				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
 				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,
 				B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */,
+				B1000003296A0001 /* CursorFollowControllerTests.swift in Sources */,
 				B1000002296A0001 /* CameraSimulatorTests.swift in Sources */,
 				B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */,
 				B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */,

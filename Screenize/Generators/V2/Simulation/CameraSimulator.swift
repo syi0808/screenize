@@ -10,6 +10,7 @@ class CameraSimulator {
     // MARK: - Properties
 
     private let holdController = StaticHoldController()
+    private let followController = CursorFollowController()
 
     // MARK: - Public API
 
@@ -73,9 +74,12 @@ class CameraSimulator {
     // MARK: - Controller Selection
 
     /// Select the appropriate camera controller for a shot plan.
-    /// Currently always returns StaticHoldController; future versions may
-    /// return CursorFollowController based on scene intent.
     private func selectController(for shotPlan: ShotPlan) -> CameraController {
-        holdController
+        switch shotPlan.scene.primaryIntent {
+        case .typing, .dragging:
+            return followController
+        default:
+            return holdController
+        }
     }
 }
