@@ -9,9 +9,10 @@ enum ShotType {
 }
 
 /// How zoom was determined for diagnostic tracking.
-enum ZoomSource {
+enum ZoomSource: Equatable {
     case element
     case activityBBox
+    case singleEvent
     case intentMidpoint
 }
 

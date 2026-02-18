@@ -532,8 +532,8 @@ final class ShotPlannerTests: XCTestCase {
         XCTAssertEqual(plans[0].idealZoom, expectedMidpoint, accuracy: 0.01)
     }
 
-    func test_plan_singleEvent_fallsToMidpoint() {
-        // Single event = zero-area bbox → falls to midpoint
+    func test_plan_singleEvent_usesIntentLowerBound() {
+        // Single event → use intent range lower bound with singleEvent source
         let events = [
             makeMouseMoveEvent(time: 2.5, position: NormalizedPoint(x: 0.5, y: 0.5)),
         ]
@@ -543,9 +543,39 @@ final class ShotPlannerTests: XCTestCase {
             scenes: [scene], screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        let expectedMidpoint = (defaultSettings.navigatingZoomRange.lowerBound
-            + defaultSettings.navigatingZoomRange.upperBound) / 2
-        XCTAssertEqual(plans[0].idealZoom, expectedMidpoint, accuracy: 0.01)
+        XCTAssertEqual(plans[0].idealZoom, defaultSettings.navigatingZoomRange.lowerBound, accuracy: 0.01)
+        XCTAssertEqual(plans[0].zoomSource, .singleEvent)
+    }
+
+    func test_plan_singleClick_returnsIntentZoom() {
+        let events: [UnifiedEvent] = [
+            makeClickEvent(time: 2.5, position: NormalizedPoint(x: 0.6, y: 0.4)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .clicking)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        // Clicking has fixed zoom range: clickingZoom...clickingZoom
+        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoom, accuracy: 0.01)
+        XCTAssertEqual(plans[0].zoomSource, .singleEvent)
+    }
+
+    func test_plan_singleClick_centerOnClickPosition() {
+        let events: [UnifiedEvent] = [
+            makeClickEvent(time: 2.5, position: NormalizedPoint(x: 0.6, y: 0.4)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .clicking)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        XCTAssertEqual(center.x, 0.6, accuracy: 0.05,
+                       "Single click center should be at click position")
+        XCTAssertEqual(center.y, 0.4, accuracy: 0.05)
     }
 
     func test_plan_bboxZoomClampedToIntentRange() {

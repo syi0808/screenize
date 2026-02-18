@@ -186,7 +186,12 @@ struct ShotPlanner {
             }
         }
 
-        // 3. Fallback: midpoint of the intent range
+        // 3. Single event: use intent range lower bound directly
+        if positions.count == 1 {
+            return (clamp(zoomRange.lowerBound, to: zoomRange, settings: settings), .singleEvent)
+        }
+
+        // 4. Fallback: midpoint of the intent range
         let defaultZoom = (zoomRange.lowerBound + zoomRange.upperBound) / 2
         return (clamp(defaultZoom, to: zoomRange, settings: settings), .intentMidpoint)
     }
@@ -310,7 +315,7 @@ struct ShotPlanner {
         return clampCenter(center, zoom: zoom)
     }
 
-    /// Clicking/dragging/etc: weighted average of event positions with recency bias.
+    /// Clicking/dragging/etc: geometric centroid of event positions.
     private static func computeActivityCenter(
         scene: CameraScene,
         zoom: CGFloat,
@@ -323,7 +328,7 @@ struct ShotPlanner {
             for: scene.primaryIntent, events: sceneEvents
         )
         let dataPoints: [NormalizedPoint]
-        if relevant.count >= 2 {
+        if !relevant.isEmpty {
             dataPoints = relevant
         } else {
             let regions = scene.focusRegions

@@ -136,6 +136,7 @@ class SmartGeneratorV2 {
             switch plan.zoomSource {
             case .element: src = "src=element"
             case .activityBBox: src = "src=bbox"
+            case .singleEvent: src = "src=single"
             case .intentMidpoint: src = "src=midpoint"
             }
             let sceneEvents = timeline.events(in: plan.scene.startTime...plan.scene.endTime)
