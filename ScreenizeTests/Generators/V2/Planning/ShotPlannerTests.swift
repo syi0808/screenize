@@ -245,7 +245,7 @@ final class ShotPlannerTests: XCTestCase {
     // MARK: - Event-Based Center
 
     func test_plan_center_usesEventPositions() {
-        // Events at (0.2, 0.3) and (0.8, 0.7) → center biased toward latter (recency)
+        // Events at (0.2, 0.3) and (0.8, 0.7) → center is geometric midpoint (no recency bias)
         let events = [
             makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.2, y: 0.3)),
             makeMouseMoveEvent(time: 3.0, position: NormalizedPoint(x: 0.8, y: 0.7)),
@@ -256,10 +256,10 @@ final class ShotPlannerTests: XCTestCase {
             scenes: [scene], screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        // With recency bias (weight 1.0, 1.5), center should be closer to (0.8, 0.7)
+        // Simple average: x=(0.2+0.8)/2=0.5, y=(0.3+0.7)/2=0.5
         let center = plans[0].idealCenter
-        XCTAssertGreaterThan(center.x, 0.5, "Center X should be biased toward later event at 0.8")
-        XCTAssertGreaterThan(center.y, 0.5, "Center Y should be biased toward later event at 0.7")
+        XCTAssertEqual(center.x, 0.5, accuracy: 0.03, "Center should be midpoint of events")
+        XCTAssertEqual(center.y, 0.5, accuracy: 0.03, "Center should be midpoint of events")
     }
 
     func test_plan_center_noEvents_fallsToFocusRegion() {
@@ -721,6 +721,67 @@ final class ShotPlannerTests: XCTestCase {
                                     "Zoom should use drag bbox, not mouse bbox")
     }
 
+    // MARK: - Centroid (No Recency Bias for Activity Center)
+
+    func test_plan_clickingThreePositions_geometricCenter() {
+        // Three symmetric clicks → center should be geometric centroid (0.5, 0.5)
+        let events: [UnifiedEvent] = [
+            makeClickEvent(time: 1.0, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeClickEvent(time: 2.0, position: NormalizedPoint(x: 0.5, y: 0.7)),
+            makeClickEvent(time: 3.0, position: NormalizedPoint(x: 0.7, y: 0.3)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .clicking)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Simple average: x=(0.3+0.5+0.7)/3=0.5, y=(0.3+0.7+0.3)/3≈0.433
+        XCTAssertEqual(center.x, 0.5, accuracy: 0.05,
+                       "Clicking center should be geometric centroid, not recency-biased")
+        XCTAssertEqual(center.y, 0.433, accuracy: 0.05,
+                       "Clicking center should be geometric centroid, not recency-biased")
+    }
+
+    func test_plan_navigatingCenter_equalWeight() {
+        // Two clicks → center should be midpoint, not biased to second
+        let events: [UnifiedEvent] = [
+            makeClickEvent(time: 1.0, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeClickEvent(time: 3.0, position: NormalizedPoint(x: 0.7, y: 0.7)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .navigating)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Simple average: (0.3+0.7)/2=0.5
+        XCTAssertEqual(center.x, 0.5, accuracy: 0.03,
+                       "Navigating center should be midpoint, not recency-biased")
+        XCTAssertEqual(center.y, 0.5, accuracy: 0.03,
+                       "Navigating center should be midpoint, not recency-biased")
+    }
+
+    func test_plan_draggingCenter_equalWeight() {
+        let events: [UnifiedEvent] = [
+            makeDragStartEvent(time: 1.0, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeDragEndEvent(time: 2.0, position: NormalizedPoint(x: 0.7, y: 0.7)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .dragging(.selection))
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Simple average: (0.3+0.7)/2=0.5
+        XCTAssertEqual(center.x, 0.5, accuracy: 0.03,
+                       "Dragging center should be midpoint of drag positions")
+        XCTAssertEqual(center.y, 0.5, accuracy: 0.03)
+    }
+
     // MARK: - Fallback Behavior
 
     func test_plan_clickingCenter_fallsBackWhenNoClicks() {
@@ -736,9 +797,9 @@ final class ShotPlannerTests: XCTestCase {
             eventTimeline: timeline, settings: defaultSettings
         )
         let center = plans[0].idealCenter
-        // Should fall back to all events (mouse moves) and compute weighted average
-        XCTAssertGreaterThan(center.x, 0.4, "Fallback should still produce reasonable center")
-        XCTAssertGreaterThan(center.y, 0.4, "Fallback should still produce reasonable center")
+        // Should fall back to all events (mouse moves) and compute simple average
+        XCTAssertEqual(center.x, 0.5, accuracy: 0.03, "Fallback center should be midpoint")
+        XCTAssertEqual(center.y, 0.5, accuracy: 0.03, "Fallback center should be midpoint")
     }
 
     // MARK: - Helpers

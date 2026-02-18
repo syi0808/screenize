@@ -335,22 +335,12 @@ struct ShotPlanner {
             }
         }
 
-        // Weighted average with recency bias
-        var weightedX: CGFloat = 0
-        var weightedY: CGFloat = 0
-        var totalWeight: CGFloat = 0
+        // Geometric centroid (equal weight for all positions)
+        let count = CGFloat(dataPoints.count)
+        let centerX = dataPoints.map(\.x).reduce(0, +) / count
+        let centerY = dataPoints.map(\.y).reduce(0, +) / count
 
-        for (index, pos) in dataPoints.enumerated() {
-            let weight: CGFloat = 1.0 + CGFloat(index) * 0.5
-            weightedX += pos.x * weight
-            weightedY += pos.y * weight
-            totalWeight += weight
-        }
-
-        let center = NormalizedPoint(
-            x: weightedX / totalWeight,
-            y: weightedY / totalWeight
-        )
+        let center = NormalizedPoint(x: centerX, y: centerY)
         return clampCenter(center, zoom: zoom)
     }
 
