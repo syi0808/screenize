@@ -112,6 +112,11 @@
 		AA000005296A0001 /* TransitionPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000005296A0001 /* TransitionPlan.swift */; };
 		AA000006296A0001 /* SimulatedPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000006296A0001 /* SimulatedPath.swift */; };
 		AA000007296A0001 /* SmartGeneratorV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000007296A0001 /* SmartGeneratorV2.swift */; };
+		AD000010296A0001 /* EventTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100010296A0001 /* EventTimeline.swift */; };
+		AD000011296A0001 /* IntentClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100011296A0001 /* IntentClassifier.swift */; };
+		AD000021296A0001 /* MockMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100021296A0001 /* MockMouseDataSource.swift */; };
+		AD000022296A0001 /* EventTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100022296A0001 /* EventTimelineTests.swift */; };
+		AD000023296A0001 /* IntentClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100023296A0001 /* IntentClassifierTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -221,6 +226,12 @@
 		AB000005296A0001 /* TransitionPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlan.swift; sourceTree = "<group>"; };
 		AB000006296A0001 /* SimulatedPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatedPath.swift; sourceTree = "<group>"; };
 		AB000007296A0001 /* SmartGeneratorV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGeneratorV2.swift; sourceTree = "<group>"; };
+		AD100010296A0001 /* EventTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeline.swift; sourceTree = "<group>"; };
+		AD100011296A0001 /* IntentClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifier.swift; sourceTree = "<group>"; };
+		AD100020296A0001 /* ScreenizeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScreenizeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD100021296A0001 /* MockMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMouseDataSource.swift; sourceTree = "<group>"; };
+		AD100022296A0001 /* EventTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimelineTests.swift; sourceTree = "<group>"; };
+		AD100023296A0001 /* IntentClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifierTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -232,9 +243,85 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AD400021296A0001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
+/* Begin PBXContainerItemProxy section */
+		AD800020296A0001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F3000000296A0001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0C00000296A0001;
+			remoteInfo = Screenize;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		AD700020296A0001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F0C00000296A0001 /* Screenize */;
+			targetProxy = AD800020296A0001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXGroup section */
+		AD200010296A0001 /* Analysis */ = {
+			isa = PBXGroup;
+			children = (
+				AD100010296A0001 /* EventTimeline.swift */,
+				AD100011296A0001 /* IntentClassifier.swift */,
+			);
+			path = Analysis;
+			sourceTree = "<group>";
+		};
+		AD200020296A0001 /* ScreenizeTests */ = {
+			isa = PBXGroup;
+			children = (
+				AD200021296A0001 /* Helpers */,
+				AD200022296A0001 /* Generators */,
+			);
+			path = ScreenizeTests;
+			sourceTree = "<group>";
+		};
+		AD200021296A0001 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				AD100021296A0001 /* MockMouseDataSource.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		AD200022296A0001 /* Generators */ = {
+			isa = PBXGroup;
+			children = (
+				AD200023296A0001 /* V2 */,
+			);
+			path = Generators;
+			sourceTree = "<group>";
+		};
+		AD200023296A0001 /* V2 */ = {
+			isa = PBXGroup;
+			children = (
+				AD200024296A0001 /* Analysis */,
+			);
+			path = V2;
+			sourceTree = "<group>";
+		};
+		AD200024296A0001 /* Analysis */ = {
+			isa = PBXGroup;
+			children = (
+				AD100022296A0001 /* EventTimelineTests.swift */,
+				AD100023296A0001 /* IntentClassifierTests.swift */,
+			);
+			path = Analysis;
+			sourceTree = "<group>";
+		};
 		1A210DB0FB901E8551815099 /* Analysis */ = {
 			isa = PBXGroup;
 			children = (
@@ -247,6 +334,7 @@
 			isa = PBXGroup;
 			children = (
 				F2000001296A0001 /* Screenize */,
+				AD200020296A0001 /* ScreenizeTests */,
 				F2000002296A0001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -276,6 +364,7 @@
 			isa = PBXGroup;
 			children = (
 				F0A00000296A0001 /* Screenize.app */,
+				AD100020296A0001 /* ScreenizeTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -409,6 +498,7 @@
 			isa = PBXGroup;
 			children = (
 				AC000002296A0001 /* Types */,
+				AD200010296A0001 /* Analysis */,
 				AB000007296A0001 /* SmartGeneratorV2.swift */,
 			);
 			path = V2;
@@ -562,6 +652,23 @@
 			productReference = F0A00000296A0001 /* Screenize.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AD300020296A0001 /* ScreenizeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD600020296A0001 /* Build configuration list for PBXNativeTarget "ScreenizeTests" */;
+			buildPhases = (
+				AD400020296A0001 /* Sources */,
+				AD400021296A0001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AD700020296A0001 /* PBXTargetDependency */,
+			);
+			name = ScreenizeTests;
+			productName = ScreenizeTests;
+			productReference = AD100020296A0001 /* ScreenizeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -574,6 +681,10 @@
 				TargetAttributes = {
 					F0C00000296A0001 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					AD300020296A0001 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = F0C00000296A0001;
 					};
 				};
 			};
@@ -595,6 +706,7 @@
 			projectRoot = "";
 			targets = (
 				F0C00000296A0001 /* Screenize */,
+				AD300020296A0001 /* ScreenizeTests */,
 			);
 		};
 /* End PBXProject section */
@@ -718,6 +830,18 @@
 				F0A00003296A0001 /* EventStreamAdapter.swift in Sources */,
 				F0A00004296A0001 /* InteropBlock.swift in Sources */,
 				F0A00005296A0001 /* EventStreamWriter.swift in Sources */,
+				AD000010296A0001 /* EventTimeline.swift in Sources */,
+				AD000011296A0001 /* IntentClassifier.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AD400020296A0001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AD000021296A0001 /* MockMouseDataSource.swift in Sources */,
+				AD000022296A0001 /* EventTimelineTests.swift in Sources */,
+				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -896,6 +1020,42 @@
 			};
 			name = Release;
 		};
+		AD500020296A0001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PDRAQZHYD3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenize.ScreenizeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Screenize.app/Contents/MacOS/Screenize";
+			};
+			name = Debug;
+		};
+		AD500021296A0001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PDRAQZHYD3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenize.ScreenizeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Screenize.app/Contents/MacOS/Screenize";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -913,6 +1073,15 @@
 			buildConfigurations = (
 				F4000000296A0001 /* Debug */,
 				F4000001296A0001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AD600020296A0001 /* Build configuration list for PBXNativeTarget "ScreenizeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD500020296A0001 /* Debug */,
+				AD500021296A0001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
