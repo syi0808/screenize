@@ -5,7 +5,7 @@ import CoreGraphics
 struct SceneSegmenter {
 
     /// Minimum scene duration; shorter scenes are absorbed into neighbors.
-    static let minSceneDuration: TimeInterval = 1.0
+    static let minSceneDuration: TimeInterval = 0.3
 
     // MARK: - Public API
 

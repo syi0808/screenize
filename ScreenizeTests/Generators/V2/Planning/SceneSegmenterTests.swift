@@ -92,15 +92,45 @@ final class SceneSegmenterTests: XCTestCase {
     func test_segment_shortSceneAbsorbedIntoNeighbor() {
         let spans = [
             makeSpan(start: 0, end: 5, intent: .typing(context: .codeEditor)),
-            makeSpan(start: 5, end: 5.5, intent: .clicking), // < 1s
+            makeSpan(start: 5, end: 5.2, intent: .clicking), // 0.2s < minSceneDuration (0.3)
+            makeSpan(start: 5.2, end: 10, intent: .typing(context: .codeEditor))
+        ]
+        let timeline = EventTimeline(events: [], duration: 10.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 10.0
+        )
+        // The 0.2s clicking scene should be absorbed
+        // Result could be 1 or 2 typing scenes, but no clicking scene
+        let clickScenes = scenes.filter { $0.primaryIntent == .clicking }
+        XCTAssertEqual(clickScenes.count, 0)
+    }
+
+    func test_segment_clickSceneOf500ms_notAbsorbed() {
+        let spans = [
+            makeSpan(start: 0, end: 5, intent: .typing(context: .codeEditor)),
+            makeSpan(start: 5, end: 5.5, intent: .clicking), // 0.5s >= minSceneDuration (0.3)
             makeSpan(start: 5.5, end: 10, intent: .typing(context: .codeEditor))
         ]
         let timeline = EventTimeline(events: [], duration: 10.0)
         let scenes = SceneSegmenter.segment(
             intentSpans: spans, eventTimeline: timeline, duration: 10.0
         )
-        // The 0.5s clicking scene should be absorbed
-        // Result could be 1 or 2 typing scenes, but no clicking scene
+        // The 0.5s clicking scene should survive (>= 0.3s)
+        let clickScenes = scenes.filter { $0.primaryIntent == .clicking }
+        XCTAssertEqual(clickScenes.count, 1)
+    }
+
+    func test_segment_veryShortScene100ms_absorbed() {
+        let spans = [
+            makeSpan(start: 0, end: 5, intent: .typing(context: .codeEditor)),
+            makeSpan(start: 5, end: 5.1, intent: .clicking), // 0.1s < minSceneDuration (0.3)
+            makeSpan(start: 5.1, end: 10, intent: .typing(context: .codeEditor))
+        ]
+        let timeline = EventTimeline(events: [], duration: 10.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 10.0
+        )
+        // The 0.1s clicking scene should be absorbed
         let clickScenes = scenes.filter { $0.primaryIntent == .clicking }
         XCTAssertEqual(clickScenes.count, 0)
     }
