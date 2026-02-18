@@ -9,10 +9,16 @@ import CoreGraphics
 struct CursorFollowController: CameraController {
 
     /// Minimum time between consecutive pans to prevent jitter.
-    private let minMoveInterval: TimeInterval = 0.5
+    private let minMoveInterval: TimeInterval = 0.3
 
-    /// Duration of each pan animation.
-    private let panDuration: TimeInterval = 0.3
+    /// Minimum pan animation duration.
+    private let minPanDuration: TimeInterval = 0.15
+
+    /// Maximum pan animation duration.
+    private let maxPanDuration: TimeInterval = 0.5
+
+    /// Distance multiplier to compute pan duration: duration = distance * panDurationScale.
+    private let panDurationScale: CGFloat = 1.5
 
     /// Margin inside viewport edge before triggering a pan (fraction of viewport).
     private let viewportMargin: CGFloat = 0.05
@@ -75,9 +81,16 @@ struct CursorFollowController: CameraController {
                 continue
             }
 
+            // Compute distance-based pan duration
+            let distance = trackedPosition.distance(to: currentCenter)
+            let computedPanDuration = min(
+                maxPanDuration,
+                max(minPanDuration, Double(distance * panDurationScale))
+            )
+
             // Generate pan: hold at current position, then animate to new center
             let panStart = event.time
-            let panEnd = min(panStart + panDuration, scene.endTime)
+            let panEnd = min(panStart + computedPanDuration, scene.endTime)
 
             // Hold keyframe just before pan
             samples.append(TimedTransform(

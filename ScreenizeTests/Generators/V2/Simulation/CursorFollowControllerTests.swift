@@ -204,6 +204,76 @@ final class CursorFollowControllerTests: XCTestCase {
         XCTAssertGreaterThan(lastCenter.x, 0.5, "Should have followed mouse to the right")
     }
 
+    // MARK: - Distance-Based Pan Duration
+
+    func test_simulate_shortDistance_shortPanDuration() {
+        let controller = CursorFollowController()
+        // At zoom 2.0 center (0.5, 0.5): viewport [0.25, 0.75], margin=0.025
+        // Caret at (0.5, 0.73) is just outside → distance 0.23
+        let events = [
+            makeUIStateEvent(time: 1.5, caretCenter: NormalizedPoint(x: 0.5, y: 0.73)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(
+            scene: scene, zoom: 2.0,
+            center: NormalizedPoint(x: 0.5, y: 0.5)
+        )
+        let settings = makeSettings(
+            events: events,
+            screenBounds: CGSize(width: 1920, height: 1080)
+        )
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // Find the pan (hold → new position)
+        guard samples.count >= 3 else {
+            XCTFail("Expected pan samples")
+            return
+        }
+        // Pan duration = time between hold keyframe and pan end
+        let panStart = samples[1].time
+        let panEnd = samples[2].time
+        let panDuration = panEnd - panStart
+        // distance ≈ 0.23, duration = 0.23 * 1.5 = 0.345
+        XCTAssertLessThanOrEqual(panDuration, 0.35,
+            "Short distance pan should be quick (≤ 0.35s), got \(panDuration)")
+    }
+
+    func test_simulate_longDistance_longerPanDuration() {
+        let controller = CursorFollowController()
+        // Caret jumps far (from center to edge)
+        let events = [
+            makeUIStateEvent(time: 1.5, caretCenter: NormalizedPoint(x: 0.1, y: 0.1)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(
+            scene: scene, zoom: 2.0,
+            center: NormalizedPoint(x: 0.7, y: 0.7)
+        )
+        let settings = makeSettings(
+            events: events,
+            screenBounds: CGSize(width: 1920, height: 1080)
+        )
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        guard samples.count >= 3 else {
+            XCTFail("Expected pan samples")
+            return
+        }
+        let panStart = samples[1].time
+        let panEnd = samples[2].time
+        let panDuration = panEnd - panStart
+        XCTAssertGreaterThanOrEqual(panDuration, 0.3,
+            "Long distance pan should be slower (≥ 0.3s), got \(panDuration)")
+    }
+
     // MARK: - Helpers
 
     private func makeScene(
