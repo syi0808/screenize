@@ -159,8 +159,8 @@ class SmartGeneratorV2 {
             switch trans.style {
             case .directPan(let dur):
                 style = String(format: "directPan(%.2fs)", dur)
-            case .zoomOutAndIn(let outDur, let inDur):
-                style = String(format: "zoomOutAndIn(%.2f+%.2fs)", outDur, inDur)
+            case let .zoomOutAndIn(outDur, inDur, midZoom):
+                style = String(format: "zoomOutAndIn(%.2f+%.2fs midZ=%.2f)", outDur, inDur, midZoom)
             case .cut:
                 style = "cut"
             }
@@ -270,13 +270,24 @@ struct ShotSettings {
 
 // MARK: - Transition Settings
 
-/// Inter-scene transition style settings.
+/// Inter-scene transition style settings using viewport-relative distances.
+///
+/// Transition selection uses viewport-relative distance (how many viewport-widths away the target is):
+/// - `viewportDistance < directPanThreshold`: smooth direct pan (target is within viewport)
+/// - `viewportDistance < gentlePanThreshold`: longer direct pan (target near viewport edge)
+/// - `viewportDistance >= gentlePanThreshold`: zoom out proportionally, pan, zoom in
 struct TransitionSettings {
-    /// Max center distance for a short direct pan.
-    var shortPanMaxDistance: CGFloat = 0.15
+    /// Max viewport-relative distance for a short direct pan (target within viewport).
+    /// 0.6 means target center is within 60% of viewport half-width from current center.
+    var directPanThreshold: CGFloat = 0.6
 
-    /// Max center distance for a medium direct pan.
-    var mediumPanMaxDistance: CGFloat = 0.4
+    /// Max viewport-relative distance for a medium direct pan (target near viewport edge).
+    /// 1.2 means target center is up to 1.2x the viewport half-width away.
+    var gentlePanThreshold: CGFloat = 1.2
+
+    /// Viewport-relative distance at which full zoom-out (to 1.0) is used.
+    /// Between gentlePanThreshold and this value, intermediate zoom is proportional.
+    var fullZoomOutThreshold: CGFloat = 3.0
 
     /// Duration range for short direct pans.
     var shortPanDurationRange: ClosedRange<TimeInterval> = 0.4...0.6
@@ -284,11 +295,8 @@ struct TransitionSettings {
     /// Duration range for medium direct pans.
     var mediumPanDurationRange: ClosedRange<TimeInterval> = 0.6...0.9
 
-    /// Zoom-out phase duration for zoomOutAndIn transitions.
-    var zoomOutDuration: TimeInterval = 0.5
-
-    /// Zoom-in phase duration for zoomOutAndIn transitions.
-    var zoomInDuration: TimeInterval = 0.5
+    /// Duration range for zoom-out/in phases (scales with distance).
+    var zoomOutDurationRange: ClosedRange<TimeInterval> = 0.35...0.5
 
     /// Easing for direct pan transitions (critically damped — no overshoot).
     var panEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.6)

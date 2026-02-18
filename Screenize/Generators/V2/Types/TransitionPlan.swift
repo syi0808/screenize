@@ -3,7 +3,13 @@ import Foundation
 /// Visual transition style between scenes.
 enum TransitionStyle {
     case directPan(duration: TimeInterval)
-    case zoomOutAndIn(outDuration: TimeInterval, inDuration: TimeInterval)
+    /// Two-phase transition: zoom out to intermediate level, pan, zoom in.
+    /// `intermediateZoom` controls how far to zoom out (1.0 = full overview, higher = less zoom-out).
+    case zoomOutAndIn(
+        outDuration: TimeInterval,
+        inDuration: TimeInterval,
+        intermediateZoom: CGFloat = 1.0
+    )
     case cut
 }
 

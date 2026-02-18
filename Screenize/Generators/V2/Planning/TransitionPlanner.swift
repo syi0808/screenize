@@ -44,35 +44,53 @@ struct TransitionPlanner {
         }
 
         let rawDistance = from.idealCenter.distance(to: to.idealCenter)
-        // Scale distance by zoom so that at higher zoom, transitions feel proportionally farther
         let maxZoom = max(from.idealZoom, to.idealZoom)
-        let distance = rawDistance * maxZoom
+
+        // Viewport-relative distance: how many viewport-widths away is the target?
+        // At zoom Z, viewport covers 1/Z of the screen in each axis.
+        // viewportDistance ~1.0 means the target center is at the viewport edge.
+        let viewportHalf = 0.5 / maxZoom
+        let dx = abs(from.idealCenter.x - to.idealCenter.x)
+        let dy = abs(from.idealCenter.y - to.idealCenter.y)
+        let viewportDistance = max(dx / viewportHalf, dy / viewportHalf)
 
         let style: TransitionStyle
         let easing: EasingCurve
 
-        if distance < settings.shortPanMaxDistance {
-            // Short direct pan
-            let t = distance / settings.shortPanMaxDistance
+        if viewportDistance < settings.directPanThreshold {
+            // Target is well within current viewport — smooth direct pan
+            let t = viewportDistance / settings.directPanThreshold
             let duration = interpolate(
                 range: settings.shortPanDurationRange, t: t
             )
             style = .directPan(duration: duration)
             easing = settings.panEasing
-        } else if distance < settings.mediumPanMaxDistance {
-            // Medium direct pan
-            let t = (distance - settings.shortPanMaxDistance)
-                / (settings.mediumPanMaxDistance - settings.shortPanMaxDistance)
+        } else if viewportDistance < settings.gentlePanThreshold {
+            // Target is near viewport edge or slightly outside — direct pan with longer duration
+            let t = (viewportDistance - settings.directPanThreshold)
+                / (settings.gentlePanThreshold - settings.directPanThreshold)
             let duration = interpolate(
                 range: settings.mediumPanDurationRange, t: t
             )
             style = .directPan(duration: duration)
             easing = settings.panEasing
         } else {
-            // Far → zoom out and in
+            // Target is well outside viewport — zoom out proportionally, pan, zoom in
+            let t = (viewportDistance - settings.gentlePanThreshold)
+                / (settings.fullZoomOutThreshold - settings.gentlePanThreshold)
+            let clamped = max(0, min(1, t))
+
+            // Proportional intermediate zoom: lerp between minZoom(fromZoom, toZoom) and 1.0
+            let minSceneZoom = min(from.idealZoom, to.idealZoom)
+            let intermediateZoom = max(1.0, minSceneZoom * (1.0 - clamped * 0.6))
+
+            let duration = interpolate(
+                range: settings.zoomOutDurationRange, t: clamped
+            )
             style = .zoomOutAndIn(
-                outDuration: settings.zoomOutDuration,
-                inDuration: settings.zoomInDuration
+                outDuration: duration,
+                inDuration: duration,
+                intermediateZoom: intermediateZoom
             )
             easing = settings.zoomOutEasing
         }
@@ -80,13 +98,16 @@ struct TransitionPlanner {
         #if DEBUG
         let styleLabel: String
         switch style {
-        case .directPan(let dur): styleLabel = String(format: "directPan(%.2fs)", dur)
-        case .zoomOutAndIn(let o, let i): styleLabel = String(format: "zoomOut+In(%.2f+%.2fs)", o, i)
-        case .cut: styleLabel = "cut"
+        case .directPan(let dur):
+            styleLabel = String(format: "directPan(%.2fs)", dur)
+        case let .zoomOutAndIn(o, i, midZoom):
+            styleLabel = String(format: "zoomOut+In(%.2f+%.2fs midZ=%.2f)", o, i, midZoom)
+        case .cut:
+            styleLabel = "cut"
         }
         print(String(
-            format: "[V2-Transition] raw=%.3f zoom=%.2f eff=%.3f → %@",
-            rawDistance, maxZoom, distance, styleLabel
+            format: "[V2-Transition] raw=%.3f maxZ=%.2f vpDist=%.3f → %@",
+            rawDistance, maxZoom, viewportDistance, styleLabel
         ))
         #endif
 

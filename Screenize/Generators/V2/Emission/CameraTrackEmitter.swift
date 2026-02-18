@@ -97,7 +97,7 @@ struct CameraTrackEmitter {
                 + trims[info.toIndex].leftTrim
 
             var midTime: TimeInterval?
-            if case let .zoomOutAndIn(outDur, inDur) =
+            if case let .zoomOutAndIn(outDur, inDur, _) =
                 info.segment.transitionPlan.style {
                 let actualDur = transEnd - transStart
                 midTime = transStart + actualDur * (outDur / (outDur + inDur))
@@ -135,7 +135,7 @@ struct CameraTrackEmitter {
         switch style {
         case let .directPan(duration):
             return duration
-        case let .zoomOutAndIn(outDuration, inDuration):
+        case let .zoomOutAndIn(outDuration, inDuration, _):
             return outDuration + inDuration
         case .cut:
             return 0.01
@@ -293,7 +293,7 @@ struct CameraTrackEmitter {
                 easing: plan.easing
             )]
 
-        case .zoomOutAndIn:
+        case let .zoomOutAndIn(_, _, intermediateZoom):
             let midTime = timing.midTime
                 ?? (timing.startTime + timing.endTime) / 2
 
@@ -303,7 +303,9 @@ struct CameraTrackEmitter {
                 y: (transSeg.startTransform.center.y
                     + transSeg.endTransform.center.y) / 2
             )
-            let midTransform = TransformValue(zoom: 1.0, center: midCenter)
+            let midTransform = TransformValue(
+                zoom: intermediateZoom, center: midCenter
+            )
 
             let zoomOut = makeSegment(
                 start: timing.startTime, end: midTime,
