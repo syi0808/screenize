@@ -88,6 +88,15 @@ struct CursorFollowController: CameraController {
                 max(minPanDuration, Double(distance * panDurationScale))
             )
 
+            #if DEBUG
+            print(String(
+                format: "[V2-CursorFollow] t=%.2f pan dist=%.3f dur=%.2fs pos=(%.2f,%.2f)→(%.2f,%.2f)",
+                event.time, distance, computedPanDuration,
+                currentCenter.x, currentCenter.y,
+                trackedPosition.x, trackedPosition.y
+            ))
+            #endif
+
             // Generate pan: hold at current position, then animate to new center
             let panStart = event.time
             let panEnd = min(panStart + computedPanDuration, scene.endTime)

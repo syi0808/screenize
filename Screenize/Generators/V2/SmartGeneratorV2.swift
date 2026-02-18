@@ -69,6 +69,7 @@ class SmartGeneratorV2 {
         Self.dumpDiagnostics(
             timeline: timeline, intentSpans: intentSpans,
             scenes: scenes, shotPlans: shotPlans,
+            transitions: transitions,
             cameraTrack: CameraTrackEmitter.emit(path, duration: duration)
         )
         #endif
@@ -100,6 +101,7 @@ class SmartGeneratorV2 {
         intentSpans: [IntentSpan],
         scenes: [CameraScene],
         shotPlans: [ShotPlan],
+        transitions: [TransitionPlan],
         cameraTrack: CameraTrack
     ) {
         print("[V2-Pipeline] === Diagnostics ===")
@@ -148,6 +150,23 @@ class SmartGeneratorV2 {
             print("[V2-Pipeline]       \(breakdown)")
         }
 
+        // Transition summary
+        print("[V2-Pipeline] Transitions: \(transitions.count)")
+        for (i, trans) in transitions.enumerated() {
+            let fromT = String(format: "%.1f", trans.fromScene.endTime)
+            let toT = String(format: "%.1f", trans.toScene.startTime)
+            let style: String
+            switch trans.style {
+            case .directPan(let dur):
+                style = String(format: "directPan(%.2fs)", dur)
+            case .zoomOutAndIn(let outDur, let inDur):
+                style = String(format: "zoomOutAndIn(%.2f+%.2fs)", outDur, inDur)
+            case .cut:
+                style = "cut"
+            }
+            print("[V2-Pipeline]   [\(i)] t=\(fromT)→\(toT) \(style) easing=\(trans.easing)")
+        }
+
         // Camera track summary
         print("[V2-Pipeline] CameraTrack: \(cameraTrack.segments.count) segments")
         for (i, seg) in cameraTrack.segments.enumerated() {
@@ -158,7 +177,8 @@ class SmartGeneratorV2 {
                 seg.startTransform.center.x, seg.startTransform.center.y,
                 seg.endTransform.center.x, seg.endTransform.center.y
             )
-            print("[V2-Pipeline]   [\(i)] \(t) \(zoomStr) \(posStr)")
+            let easingStr = "\(seg.interpolation)"
+            print("[V2-Pipeline]   [\(i)] \(t) \(zoomStr) \(posStr) easing=\(easingStr)")
         }
         print("[V2-Pipeline] === End Diagnostics ===")
     }

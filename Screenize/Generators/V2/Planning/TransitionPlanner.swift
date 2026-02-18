@@ -77,6 +77,19 @@ struct TransitionPlanner {
             easing = settings.zoomOutEasing
         }
 
+        #if DEBUG
+        let styleLabel: String
+        switch style {
+        case .directPan(let dur): styleLabel = String(format: "directPan(%.2fs)", dur)
+        case .zoomOutAndIn(let o, let i): styleLabel = String(format: "zoomOut+In(%.2f+%.2fs)", o, i)
+        case .cut: styleLabel = "cut"
+        }
+        print(String(
+            format: "[V2-Transition] raw=%.3f zoom=%.2f eff=%.3f → %@",
+            rawDistance, maxZoom, distance, styleLabel
+        ))
+        #endif
+
         return TransitionPlan(
             fromScene: from.scene,
             toScene: to.scene,
