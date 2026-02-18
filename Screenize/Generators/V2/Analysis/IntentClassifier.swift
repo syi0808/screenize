@@ -23,6 +23,10 @@ struct IntentClassifier {
     /// Idle threshold (no actionable events for this duration).
     static let idleThreshold: TimeInterval = 5.0
 
+    /// Max gap that extends the previous span (action continuation).
+    /// Gaps larger than this insert an idle span instead.
+    static let continuationGapThreshold: TimeInterval = 0.3
+
     /// Maximum gap between scroll events to merge into one span.
     static let scrollMergeGap: TimeInterval = 1.0
 
@@ -361,13 +365,8 @@ struct IntentClassifier {
             let gapEnd = span.startTime
 
             if gapEnd - gapStart > 0.01 {
-                if gapEnd - gapStart >= idleThreshold {
-                    result.append(makeIdleSpan(
-                        start: gapStart, end: gapEnd,
-                        focusPosition: span.focusPosition
-                    ))
-                } else if !result.isEmpty {
-                    // Short gap: extend previous span's end
+                if gapEnd - gapStart <= continuationGapThreshold && !result.isEmpty {
+                    // Tiny gap: extend previous span (same action continuation)
                     let lastIdx = result.count - 1
                     result[lastIdx] = IntentSpan(
                         startTime: result[lastIdx].startTime,
@@ -378,7 +377,7 @@ struct IntentClassifier {
                         focusElement: result[lastIdx].focusElement
                     )
                 } else {
-                    // Leading gap with no previous span
+                    // Gap > continuationGapThreshold: insert idle span
                     result.append(makeIdleSpan(
                         start: gapStart, end: gapEnd,
                         focusPosition: span.focusPosition

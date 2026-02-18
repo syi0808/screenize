@@ -352,4 +352,86 @@ final class IntentClassifierTests: XCTestCase {
         XCTAssertEqual(typingSpans.count, 2)
         XCTAssertEqual(clickingSpans.count, 1)
     }
+
+    // MARK: - Gap Filling
+
+    func test_classify_mediumGap_insertsIdleSpan() {
+        // Two clicks 1.5s apart — should have an idle span between them
+        let clicks = [
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.2)),
+            makeClick(at: 2.6, position: NormalizedPoint(x: 0.8, y: 0.8)),
+        ]
+        let mouseData = MockMouseDataSource(duration: 5.0, clicks: clicks)
+        let spans = classify(mouseData)
+
+        let idleSpans = spans.filter { $0.intent == .idle }
+        // 1.5s gap between click spans should produce an idle span (not extend previous)
+        let idleBetweenClicks = idleSpans.filter { $0.startTime >= 1.0 && $0.endTime <= 2.7 }
+        XCTAssertGreaterThanOrEqual(
+            idleBetweenClicks.count, 1,
+            "Gap of ~1.5s between clicks should insert idle span, not extend previous span. " +
+            "All spans: \(spans.map { "[\(String(format: "%.2f", $0.startTime))-\(String(format: "%.2f", $0.endTime))] \($0.intent)" })"
+        )
+    }
+
+    func test_classify_gapFillingDoesNotExtendSpanBeyond300ms() {
+        // Click at 1.0s, then another at 3.5s — 2.4s gap
+        // First click span ends around 1.1s (pointSpanDuration=0.1)
+        // The first span should NOT be extended to 3.5s
+        let clicks = [
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.2)),
+            makeClick(at: 3.5, position: NormalizedPoint(x: 0.8, y: 0.8)),
+        ]
+        let mouseData = MockMouseDataSource(duration: 5.0, clicks: clicks)
+        let spans = classify(mouseData)
+
+        let clickingSpans = spans.filter { $0.intent == .clicking }
+        XCTAssertGreaterThanOrEqual(clickingSpans.count, 1)
+        // First clicking span should NOT extend beyond 1.5s (0.1 + 0.3 max continuation)
+        let firstClick = clickingSpans[0]
+        XCTAssertLessThan(
+            firstClick.endTime, 1.5,
+            "First click span should not be extended across a 2.4s gap. Span end: \(firstClick.endTime)"
+        )
+    }
+
+    func test_classify_realisticSequence_producesMultipleIntentSpans() {
+        // Realistic sequence: click, type, click, type with ~1s gaps
+        let clicks = [
+            makeClick(at: 0.5, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeClick(at: 5.0, position: NormalizedPoint(x: 0.7, y: 0.7)),
+        ]
+        let keys = [
+            makeKeyDown(at: 2.0), makeKeyDown(at: 2.2), makeKeyDown(at: 2.4),
+            makeKeyDown(at: 6.5), makeKeyDown(at: 6.7), makeKeyDown(at: 6.9),
+        ]
+        let mouseData = MockMouseDataSource(duration: 10.0, clicks: clicks, keyboardEvents: keys)
+        let spans = classify(mouseData)
+
+        let actionSpans = spans.filter { $0.intent != .idle }
+        XCTAssertGreaterThanOrEqual(
+            actionSpans.count, 4,
+            "click, type, click, type should produce at least 4 action spans. " +
+            "Got: \(spans.map { "[\(String(format: "%.2f", $0.startTime))-\(String(format: "%.2f", $0.endTime))] \($0.intent)" })"
+        )
+    }
+
+    func test_classify_shortGapUnder300ms_extendsPreviousSpan() {
+        // Two clicks 0.2s apart at same position — gap < 0.3s should NOT insert idle
+        // (continuation of same action)
+        let clicks = [
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.5, y: 0.5)),
+            makeClick(at: 1.3, position: NormalizedPoint(x: 0.5, y: 0.5)),
+        ]
+        let mouseData = MockMouseDataSource(duration: 5.0, clicks: clicks)
+        let spans = classify(mouseData)
+
+        // The gap between the two clicks is tiny (~0.2s: first ends at 1.1, second starts at 1.3)
+        // No idle span should be inserted in this range
+        let idleBetweenClicks = spans.filter { $0.intent == .idle && $0.startTime > 1.0 && $0.endTime < 1.3 }
+        XCTAssertEqual(
+            idleBetweenClicks.count, 0,
+            "Very short gap (<0.3s) should not insert idle span"
+        )
+    }
 }
