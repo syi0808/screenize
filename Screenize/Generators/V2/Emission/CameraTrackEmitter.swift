@@ -185,14 +185,25 @@ struct CameraTrackEmitter {
             )]
         }
 
+        let subCount = filtered.count - 1
         var segments: [CameraSegment] = []
-        for i in 0..<(filtered.count - 1) {
+        for i in 0..<subCount {
+            let easing: EasingCurve
+            if subCount == 1 {
+                easing = .easeInOut
+            } else if i == 0 {
+                easing = .easeOut
+            } else if i == subCount - 1 {
+                easing = .easeIn
+            } else {
+                easing = .linear
+            }
             segments.append(makeSegment(
                 start: filtered[i].time,
                 end: filtered[i + 1].time,
                 startTransform: filtered[i].transform,
                 endTransform: filtered[i + 1].transform,
-                easing: .easeInOut
+                easing: easing
             ))
         }
         return segments
@@ -298,13 +309,13 @@ struct CameraTrackEmitter {
                 start: timing.startTime, end: midTime,
                 startTransform: transSeg.startTransform,
                 endTransform: midTransform,
-                easing: .easeOut
+                easing: plan.zoomOutEasing
             )
             let zoomIn = makeSegment(
                 start: midTime, end: timing.endTime,
                 startTransform: midTransform,
                 endTransform: transSeg.endTransform,
-                easing: .spring(dampingRatio: 1.0, response: 0.6)
+                easing: plan.zoomInEasing
             )
             return [zoomOut, zoomIn]
 

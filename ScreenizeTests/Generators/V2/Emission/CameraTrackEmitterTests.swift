@@ -377,6 +377,156 @@ final class CameraTrackEmitterTests: XCTestCase {
         XCTAssertEqual(track.segments[0].endTime, 5, accuracy: 0.01)
     }
 
+    // MARK: - Easing Propagation: zoomOutAndIn Uses Plan Easings
+
+    func test_emit_zoomOutAndIn_usesTransitionPlanEasings() {
+        let t1 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.3))
+        let t2 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.7, y: 0.7))
+        let scene1 = CameraScene(startTime: 0, endTime: 3, primaryIntent: .clicking)
+        let scene2 = CameraScene(startTime: 3, endTime: 6, primaryIntent: .clicking)
+        let sceneSegs = [
+            makeStaticSceneSeg(scene: scene1, transform: t1),
+            makeStaticSceneSeg(scene: scene2, transform: t2)
+        ]
+        let customOutEasing: EasingCurve = .easeIn
+        let customInEasing: EasingCurve = .spring(dampingRatio: 0.7, response: 0.4)
+        let plan = TransitionPlan(
+            fromScene: scene1, toScene: scene2,
+            style: .zoomOutAndIn(outDuration: 0.5, inDuration: 0.5),
+            easing: .easeOut,
+            zoomOutEasing: customOutEasing,
+            zoomInEasing: customInEasing
+        )
+        let transSeg = SimulatedTransitionSegment(
+            fromScene: scene1, toScene: scene2,
+            transitionPlan: plan,
+            startTransform: t1, endTransform: t2
+        )
+        let path = SimulatedPath(sceneSegments: sceneSegs, transitionSegments: [transSeg])
+        let track = CameraTrackEmitter.emit(path, duration: 6.0)
+
+        let sorted = track.segments.sorted { $0.startTime < $1.startTime }
+        // scene1 + zoomOut + zoomIn + scene2 = 4
+        XCTAssertEqual(sorted.count, 4)
+
+        let zoomOutSeg = sorted[1]
+        let zoomInSeg = sorted[2]
+        // Zoom-out phase should use the plan's zoomOutEasing
+        XCTAssertEqual(zoomOutSeg.interpolation, customOutEasing,
+                       "Zoom-out should use plan.zoomOutEasing, not hardcoded .easeOut")
+        // Zoom-in phase should use the plan's zoomInEasing
+        XCTAssertEqual(zoomInSeg.interpolation, customInEasing,
+                       "Zoom-in should use plan.zoomInEasing, not hardcoded spring")
+    }
+
+    func test_emit_zoomOutAndIn_defaultEasings_matchTransitionPlanDefaults() {
+        // When using default TransitionPlan easings, segments should carry those defaults
+        let t1 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.2, y: 0.2))
+        let t2 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.8, y: 0.8))
+        let scene1 = CameraScene(startTime: 0, endTime: 3, primaryIntent: .clicking)
+        let scene2 = CameraScene(startTime: 3, endTime: 6, primaryIntent: .clicking)
+        let sceneSegs = [
+            makeStaticSceneSeg(scene: scene1, transform: t1),
+            makeStaticSceneSeg(scene: scene2, transform: t2)
+        ]
+        // Use default zoomOutEasing/zoomInEasing (from TransitionPlan defaults)
+        let plan = TransitionPlan(
+            fromScene: scene1, toScene: scene2,
+            style: .zoomOutAndIn(outDuration: 0.5, inDuration: 0.5),
+            easing: .easeOut
+        )
+        let transSeg = SimulatedTransitionSegment(
+            fromScene: scene1, toScene: scene2,
+            transitionPlan: plan,
+            startTransform: t1, endTransform: t2
+        )
+        let path = SimulatedPath(sceneSegments: sceneSegs, transitionSegments: [transSeg])
+        let track = CameraTrackEmitter.emit(path, duration: 6.0)
+
+        let sorted = track.segments.sorted { $0.startTime < $1.startTime }
+        XCTAssertEqual(sorted.count, 4)
+        // Default zoomOutEasing = .easeOut
+        XCTAssertEqual(sorted[1].interpolation, .easeOut)
+        // Default zoomInEasing = .spring(dampingRatio: 1.0, response: 0.6)
+        XCTAssertEqual(sorted[2].interpolation, .spring(dampingRatio: 1.0, response: 0.6))
+    }
+
+    // MARK: - Easing Propagation: Multi-Sample Scene Pattern
+
+    func test_emit_multiSampleScene_usesEaseOutLinearEaseInPattern() {
+        // Scene with 4 samples → 3 sub-segments → easeOut, linear, easeIn
+        let scene = CameraScene(startTime: 0, endTime: 6, primaryIntent: .typing(context: .codeEditor))
+        let shotPlan = ShotPlan(
+            scene: scene, shotType: .medium(zoom: 2.0),
+            idealZoom: 2.0, idealCenter: NormalizedPoint(x: 0.3, y: 0.3)
+        )
+        let seg = SimulatedSceneSegment(
+            scene: scene, shotPlan: shotPlan,
+            samples: [
+                TimedTransform(time: 0, transform: TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.3))),
+                TimedTransform(time: 2, transform: TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.4, y: 0.4))),
+                TimedTransform(time: 4, transform: TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.5, y: 0.5))),
+                TimedTransform(time: 6, transform: TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.6, y: 0.6)))
+            ]
+        )
+        let path = SimulatedPath(sceneSegments: [seg], transitionSegments: [])
+        let track = CameraTrackEmitter.emit(path, duration: 6.0)
+
+        XCTAssertEqual(track.segments.count, 3,
+                       "4 samples → 3 sub-segments")
+        let sorted = track.segments.sorted { $0.startTime < $1.startTime }
+        XCTAssertEqual(sorted[0].interpolation, .easeOut,
+                       "First sub-segment should use easeOut")
+        XCTAssertEqual(sorted[1].interpolation, .linear,
+                       "Middle sub-segment should use linear")
+        XCTAssertEqual(sorted[2].interpolation, .easeIn,
+                       "Last sub-segment should use easeIn")
+    }
+
+    func test_emit_twoSampleMovingScene_usesEaseInOut() {
+        // Scene with 2 different-transform samples → 1 sub-segment → easeInOut
+        let scene = CameraScene(startTime: 0, endTime: 4, primaryIntent: .typing(context: .codeEditor))
+        let shotPlan = ShotPlan(
+            scene: scene, shotType: .medium(zoom: 2.0),
+            idealZoom: 2.0, idealCenter: NormalizedPoint(x: 0.3, y: 0.3)
+        )
+        let seg = SimulatedSceneSegment(
+            scene: scene, shotPlan: shotPlan,
+            samples: [
+                TimedTransform(time: 0, transform: TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.3))),
+                TimedTransform(time: 2, transform: TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.5, y: 0.5))),
+                TimedTransform(time: 4, transform: TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.7, y: 0.7)))
+            ]
+        )
+        let path = SimulatedPath(sceneSegments: [seg], transitionSegments: [])
+        let track = CameraTrackEmitter.emit(path, duration: 4.0)
+
+        // 3 samples → 2 sub-segments → easeOut, easeIn
+        XCTAssertEqual(track.segments.count, 2)
+        let sorted = track.segments.sorted { $0.startTime < $1.startTime }
+        XCTAssertEqual(sorted[0].interpolation, .easeOut,
+                       "First of 2 sub-segments should use easeOut")
+        XCTAssertEqual(sorted[1].interpolation, .easeIn,
+                       "Last of 2 sub-segments should use easeIn")
+    }
+
+    func test_emit_singleSampleScene_usesLinear() {
+        let transform = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.4, y: 0.6))
+        let scene = CameraScene(startTime: 0, endTime: 5, primaryIntent: .clicking)
+        let shotPlan = ShotPlan(
+            scene: scene, shotType: .medium(zoom: 2.0),
+            idealZoom: 2.0, idealCenter: transform.center
+        )
+        let seg = SimulatedSceneSegment(
+            scene: scene, shotPlan: shotPlan,
+            samples: [TimedTransform(time: 0, transform: transform)]
+        )
+        let path = SimulatedPath(sceneSegments: [seg], transitionSegments: [])
+        let track = CameraTrackEmitter.emit(path, duration: 5.0)
+        XCTAssertEqual(track.segments.count, 1)
+        XCTAssertEqual(track.segments[0].interpolation, .linear)
+    }
+
     // MARK: - Helpers
 
     private func makeContiguousTwoSceneTrack(

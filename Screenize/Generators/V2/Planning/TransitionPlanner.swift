@@ -81,7 +81,9 @@ struct TransitionPlanner {
             fromScene: from.scene,
             toScene: to.scene,
             style: style,
-            easing: easing
+            easing: easing,
+            zoomOutEasing: settings.zoomOutEasing,
+            zoomInEasing: settings.zoomInEasing
         )
     }
 
