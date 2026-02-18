@@ -14,4 +14,14 @@ struct ShotPlan {
     let shotType: ShotType
     let idealZoom: CGFloat
     let idealCenter: NormalizedPoint
+
+    /// Create a copy that inherits zoom/center from another plan.
+    func inheriting(from source: ShotPlan) -> ShotPlan {
+        ShotPlan(
+            scene: scene,
+            shotType: source.shotType,
+            idealZoom: source.idealZoom,
+            idealCenter: source.idealCenter
+        )
+    }
 }

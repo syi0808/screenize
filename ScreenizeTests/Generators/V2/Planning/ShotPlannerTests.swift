@@ -299,6 +299,122 @@ final class ShotPlannerTests: XCTestCase {
         XCTAssertEqual(center.y, 0.6, accuracy: 0.15)
     }
 
+    // MARK: - Idle Scene Inheritance
+
+    func test_plan_idleBetweenActions_inheritsFromPrevious() {
+        // Clicking → Idle → Typing → idle inherits clicking's zoom/center
+        let events = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.3, y: 0.4)),
+            makeMouseMoveEvent(time: 1.5, position: NormalizedPoint(x: 0.35, y: 0.45)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 10.0)
+        let scenes = [
+            makeScene(start: 0, end: 3, intent: .clicking),
+            makeScene(start: 3, end: 5, intent: .idle),
+            makeScene(start: 5, end: 10, intent: .typing(context: .codeEditor)),
+        ]
+        let plans = ShotPlanner.plan(
+            scenes: scenes, screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        // Idle (index 1) should inherit from clicking (index 0)
+        XCTAssertEqual(plans[1].idealZoom, plans[0].idealZoom, accuracy: 0.01,
+                       "Idle should inherit zoom from previous non-idle")
+        XCTAssertEqual(plans[1].idealCenter.x, plans[0].idealCenter.x, accuracy: 0.01,
+                       "Idle should inherit center X from previous non-idle")
+        XCTAssertEqual(plans[1].idealCenter.y, plans[0].idealCenter.y, accuracy: 0.01,
+                       "Idle should inherit center Y from previous non-idle")
+    }
+
+    func test_plan_idleAtStart_inheritsFromNextNonIdle() {
+        // Idle → Clicking → idle at start inherits from clicking
+        let events = [
+            makeMouseMoveEvent(time: 3.5, position: NormalizedPoint(x: 0.6, y: 0.7)),
+            makeMouseMoveEvent(time: 4.0, position: NormalizedPoint(x: 0.65, y: 0.72)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 8.0)
+        let scenes = [
+            makeScene(start: 0, end: 3, intent: .idle),
+            makeScene(start: 3, end: 8, intent: .clicking),
+        ]
+        let plans = ShotPlanner.plan(
+            scenes: scenes, screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        // Idle (index 0) should inherit from clicking (index 1)
+        XCTAssertEqual(plans[0].idealZoom, plans[1].idealZoom, accuracy: 0.01,
+                       "Leading idle should inherit zoom from next non-idle")
+        XCTAssertEqual(plans[0].idealCenter.x, plans[1].idealCenter.x, accuracy: 0.01,
+                       "Leading idle should inherit center X from next non-idle")
+        XCTAssertEqual(plans[0].idealCenter.y, plans[1].idealCenter.y, accuracy: 0.01,
+                       "Leading idle should inherit center Y from next non-idle")
+    }
+
+    func test_plan_multipleConsecutiveIdles_allInherit() {
+        // Clicking → Idle → Idle → Idle → all idles inherit from clicking
+        let events = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.4, y: 0.5)),
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.42, y: 0.52)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 12.0)
+        let scenes = [
+            makeScene(start: 0, end: 3, intent: .clicking),
+            makeScene(start: 3, end: 5, intent: .idle),
+            makeScene(start: 5, end: 8, intent: .idle),
+            makeScene(start: 8, end: 12, intent: .idle),
+        ]
+        let plans = ShotPlanner.plan(
+            scenes: scenes, screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        for i in 1...3 {
+            XCTAssertEqual(plans[i].idealZoom, plans[0].idealZoom, accuracy: 0.01,
+                           "Idle \(i) should inherit zoom from clicking")
+        }
+    }
+
+    func test_plan_allIdleScenes_stayAtZoomOne() {
+        // All idle → no non-idle neighbor → stays at 1.0
+        let scenes = [
+            makeScene(start: 0, end: 3, intent: .idle),
+            makeScene(start: 3, end: 6, intent: .idle),
+            makeScene(start: 6, end: 10, intent: .idle),
+        ]
+        let plans = ShotPlanner.plan(
+            scenes: scenes, screenBounds: screenBounds,
+            eventTimeline: emptyTimeline, settings: defaultSettings
+        )
+        for plan in plans {
+            XCTAssertEqual(plan.idealZoom, defaultSettings.idleZoom, accuracy: 0.01,
+                           "All-idle recording should keep zoom at 1.0")
+        }
+    }
+
+    func test_plan_nonIdleScenesUnchanged() {
+        // Non-idle scenes should not be affected by idle inheritance
+        let events = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeMouseMoveEvent(time: 1.5, position: NormalizedPoint(x: 0.35, y: 0.35)),
+            makeMouseMoveEvent(time: 5.5, position: NormalizedPoint(x: 0.7, y: 0.7)),
+            makeMouseMoveEvent(time: 6.5, position: NormalizedPoint(x: 0.72, y: 0.72)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 10.0)
+        let scenes = [
+            makeScene(start: 0, end: 3, intent: .clicking),
+            makeScene(start: 3, end: 5, intent: .idle),
+            makeScene(start: 5, end: 10, intent: .navigating),
+        ]
+        let plansWithIdle = ShotPlanner.plan(
+            scenes: scenes, screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        // Clicking and navigating should have their own zoom values
+        XCTAssertEqual(plansWithIdle[0].idealZoom, defaultSettings.clickingZoom, accuracy: 0.01)
+        let navZoom = plansWithIdle[2].idealZoom
+        XCTAssertGreaterThanOrEqual(navZoom, defaultSettings.navigatingZoomRange.lowerBound)
+        XCTAssertLessThanOrEqual(navZoom, defaultSettings.navigatingZoomRange.upperBound)
+    }
+
     // MARK: - Activity Bounding Box Zoom
 
     func test_plan_activityBBox_smallSpread_highZoom() {

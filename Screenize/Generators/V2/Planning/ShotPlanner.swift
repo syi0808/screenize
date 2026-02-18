@@ -13,10 +13,12 @@ struct ShotPlanner {
         eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> [ShotPlan] {
-        scenes.map { scene in
+        var plans = scenes.map { scene in
             planScene(scene, screenBounds: screenBounds,
                       eventTimeline: eventTimeline, settings: settings)
         }
+        resolveIdleScenes(&plans)
+        return plans
     }
 
     // MARK: - Per-Scene Planning
@@ -45,6 +47,40 @@ struct ShotPlanner {
             idealZoom: zoom,
             idealCenter: center
         )
+    }
+
+    // MARK: - Idle Scene Resolution
+
+    /// Idle scenes inherit zoom/center from nearest non-idle neighbor.
+    /// Forward pass: inherit from previous non-idle.
+    /// Backward pass: leading idles inherit from next non-idle.
+    private static func resolveIdleScenes(_ plans: inout [ShotPlan]) {
+        guard plans.count > 1 else { return }
+
+        // Forward pass: idle inherits from previous non-idle
+        var lastNonIdleIndex: Int?
+        for i in 0..<plans.count {
+            if plans[i].scene.primaryIntent != .idle {
+                lastNonIdleIndex = i
+            } else if let prev = lastNonIdleIndex {
+                plans[i] = plans[i].inheriting(from: plans[prev])
+            }
+        }
+
+        // Backward pass: leading idles inherit from next non-idle
+        var nextNonIdleIndex: Int?
+        for i in stride(from: plans.count - 1, through: 0, by: -1) {
+            if plans[i].scene.primaryIntent != .idle {
+                nextNonIdleIndex = i
+            } else if lastNonIdleIndex == nil || i < (plans.firstIndex {
+                $0.scene.primaryIntent != .idle
+            } ?? plans.count) {
+                // Only apply backward pass for idles that weren't handled by forward pass
+                if let next = nextNonIdleIndex {
+                    plans[i] = plans[i].inheriting(from: plans[next])
+                }
+            }
+        }
     }
 
     // MARK: - Zoom Range by Intent
