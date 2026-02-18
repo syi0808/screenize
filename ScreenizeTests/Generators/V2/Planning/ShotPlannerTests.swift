@@ -565,6 +565,182 @@ final class ShotPlannerTests: XCTestCase {
         XCTAssertLessThanOrEqual(plans[0].idealZoom, defaultSettings.scrollingZoomRange.upperBound)
     }
 
+    // MARK: - Intent-Specific Event Filtering (Center)
+
+    func test_plan_clickingCenter_prefersClickPositions() {
+        // Mouse moves at far-away positions, clicks near (0.7, 0.6)
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.1, y: 0.1)),
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.1, y: 0.2)),
+            makeMouseMoveEvent(time: 1.5, position: NormalizedPoint(x: 0.15, y: 0.15)),
+            makeMouseMoveEvent(time: 2.0, position: NormalizedPoint(x: 0.1, y: 0.1)),
+            makeMouseMoveEvent(time: 2.5, position: NormalizedPoint(x: 0.12, y: 0.18)),
+            makeClickEvent(time: 3.0, position: NormalizedPoint(x: 0.7, y: 0.6)),
+            makeClickEvent(time: 4.0, position: NormalizedPoint(x: 0.72, y: 0.58)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .clicking)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Center should be near click positions (0.7, 0.6), NOT mouse average (~0.1, ~0.15)
+        XCTAssertGreaterThan(center.x, 0.5,
+                             "Clicking center X should be near clicks (0.7), not mouse moves (0.1)")
+        XCTAssertGreaterThan(center.y, 0.4,
+                             "Clicking center Y should be near clicks (0.6), not mouse moves (0.15)")
+    }
+
+    func test_plan_navigatingCenter_prefersClickPositions() {
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.1, y: 0.9)),
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.15, y: 0.85)),
+            makeClickEvent(time: 2.0, position: NormalizedPoint(x: 0.4, y: 0.5)),
+            makeMouseMoveEvent(time: 2.5, position: NormalizedPoint(x: 0.1, y: 0.9)),
+            makeClickEvent(time: 3.5, position: NormalizedPoint(x: 0.6, y: 0.5)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .navigating)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Center should be between clicks (~0.5, ~0.5), not biased by mouse moves at (0.1, 0.9)
+        XCTAssertGreaterThan(center.x, 0.3, "Navigating center should be near click cluster")
+        XCTAssertLessThan(center.y, 0.7, "Navigating center should not be pulled to mouse at y=0.9")
+    }
+
+    func test_plan_draggingCenter_prefersDragPositions() {
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.1, y: 0.1)),
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.15, y: 0.1)),
+            makeDragStartEvent(time: 2.0, position: NormalizedPoint(x: 0.6, y: 0.5)),
+            makeMouseMoveEvent(time: 2.5, position: NormalizedPoint(x: 0.1, y: 0.1)),
+            makeDragEndEvent(time: 3.0, position: NormalizedPoint(x: 0.8, y: 0.7)),
+            makeMouseMoveEvent(time: 3.5, position: NormalizedPoint(x: 0.1, y: 0.1)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .dragging(.selection))
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Center should be near drag area (~0.7, ~0.6), not mouse at (0.1, 0.1)
+        XCTAssertGreaterThan(center.x, 0.4, "Dragging center should be near drag area")
+        XCTAssertGreaterThan(center.y, 0.3, "Dragging center should be near drag area")
+    }
+
+    func test_plan_scrollingCenter_usesMousePositions() {
+        // Scrolling: mouse position IS where the user is scrolling
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.6, y: 0.5)),
+            makeScrollEvent(time: 1.0, position: NormalizedPoint(x: 0.6, y: 0.5)),
+            makeMouseMoveEvent(time: 1.5, position: NormalizedPoint(x: 0.62, y: 0.52)),
+            makeScrollEvent(time: 2.0, position: NormalizedPoint(x: 0.62, y: 0.52)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .scrolling)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Mouse positions are relevant for scrolling — center near (0.6, 0.5)
+        XCTAssertEqual(center.x, 0.61, accuracy: 0.1)
+        XCTAssertEqual(center.y, 0.51, accuracy: 0.1)
+    }
+
+    // MARK: - Intent-Specific Event Filtering (Zoom)
+
+    func test_plan_clickingZoom_bboxFromClicks() {
+        // Clicks clustered in small area (0.1x0.1), mouse moves spread 0.8x0.8
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.1, y: 0.1)),
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.9, y: 0.9)),
+            makeMouseMoveEvent(time: 1.5, position: NormalizedPoint(x: 0.1, y: 0.9)),
+            makeMouseMoveEvent(time: 2.0, position: NormalizedPoint(x: 0.9, y: 0.1)),
+            makeClickEvent(time: 3.0, position: NormalizedPoint(x: 0.5, y: 0.5)),
+            makeClickEvent(time: 4.0, position: NormalizedPoint(x: 0.55, y: 0.55)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .clicking)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        // Click bbox is tiny (~0.05 + padding) → zoom should be at clicking max (2.0)
+        // Mouse bbox is huge (0.8) → zoom would be ~0.875 (below minZoom) → clamped to 1.0
+        // With filtering, zoom should be 2.0 (clicking fixed zoom)
+        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoom, accuracy: 0.01,
+                       "Clicking zoom should use click bbox, not mouse bbox")
+    }
+
+    func test_plan_navigatingZoom_bboxFromClicks() {
+        // Clicks at moderate spread, mouse moves spread everywhere
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.05, y: 0.05)),
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.95, y: 0.95)),
+            makeClickEvent(time: 2.0, position: NormalizedPoint(x: 0.4, y: 0.4)),
+            makeClickEvent(time: 3.0, position: NormalizedPoint(x: 0.6, y: 0.6)),
+            makeMouseMoveEvent(time: 3.5, position: NormalizedPoint(x: 0.05, y: 0.95)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .navigating)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let zoom = plans[0].idealZoom
+        // Click bbox spread ~0.2 + padding → zoom should be moderate-high
+        // Mouse bbox ~0.9 → zoom would be very low
+        XCTAssertGreaterThanOrEqual(zoom, defaultSettings.navigatingZoomRange.lowerBound,
+                                    "Zoom should be in navigating range from click bbox")
+    }
+
+    func test_plan_draggingZoom_bboxFromDragArea() {
+        // Drag in small area, mouse spreads everywhere
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.05, y: 0.05)),
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.95, y: 0.95)),
+            makeDragStartEvent(time: 2.0, position: NormalizedPoint(x: 0.4, y: 0.4)),
+            makeDragEndEvent(time: 3.0, position: NormalizedPoint(x: 0.5, y: 0.5)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .dragging(.selection))
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let zoom = plans[0].idealZoom
+        // Drag bbox ~0.1 + padding → high zoom
+        // Mouse bbox ~0.9 → very low zoom
+        XCTAssertGreaterThanOrEqual(zoom, defaultSettings.draggingZoomRange.lowerBound,
+                                    "Zoom should use drag bbox, not mouse bbox")
+    }
+
+    // MARK: - Fallback Behavior
+
+    func test_plan_clickingCenter_fallsBackWhenNoClicks() {
+        // Edge case: clicking scene with only mouse move events
+        let events: [UnifiedEvent] = [
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.3, y: 0.4)),
+            makeMouseMoveEvent(time: 3.0, position: NormalizedPoint(x: 0.7, y: 0.6)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .clicking)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let center = plans[0].idealCenter
+        // Should fall back to all events (mouse moves) and compute weighted average
+        XCTAssertGreaterThan(center.x, 0.4, "Fallback should still produce reasonable center")
+        XCTAssertGreaterThan(center.y, 0.4, "Fallback should still produce reasonable center")
+    }
+
     // MARK: - Helpers
 
     private func makeMouseMoveEvent(
@@ -574,6 +750,67 @@ final class ShotPlannerTests: XCTestCase {
         UnifiedEvent(
             time: time,
             kind: .mouseMove,
+            position: position,
+            metadata: EventMetadata()
+        )
+    }
+
+    private func makeClickEvent(
+        time: TimeInterval,
+        position: NormalizedPoint
+    ) -> UnifiedEvent {
+        let clickData = ClickEventData(
+            time: time, position: position, clickType: .leftDown
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .click(clickData),
+            position: position,
+            metadata: EventMetadata()
+        )
+    }
+
+    private func makeDragStartEvent(
+        time: TimeInterval,
+        position: NormalizedPoint
+    ) -> UnifiedEvent {
+        let dragData = DragEventData(
+            startTime: time, endTime: time + 1,
+            startPosition: position, endPosition: position,
+            dragType: .selection
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .dragStart(dragData),
+            position: position,
+            metadata: EventMetadata()
+        )
+    }
+
+    private func makeDragEndEvent(
+        time: TimeInterval,
+        position: NormalizedPoint
+    ) -> UnifiedEvent {
+        let dragData = DragEventData(
+            startTime: time - 1, endTime: time,
+            startPosition: position, endPosition: position,
+            dragType: .selection
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .dragEnd(dragData),
+            position: position,
+            metadata: EventMetadata()
+        )
+    }
+
+    private func makeScrollEvent(
+        time: TimeInterval,
+        position: NormalizedPoint
+    ) -> UnifiedEvent {
+        UnifiedEvent(
+            time: time,
+            kind: .scroll(direction: .down, magnitude: 10),
             position: position,
             metadata: EventMetadata()
         )

@@ -138,9 +138,13 @@ class SmartGeneratorV2 {
             case .activityBBox: src = "src=bbox"
             case .intentMidpoint: src = "src=midpoint"
             }
-            let events = timeline.events(in: plan.scene.startTime...plan.scene.endTime).count
+            let sceneEvents = timeline.events(in: plan.scene.startTime...plan.scene.endTime)
             let inherited = plan.inherited ? " inherited" : ""
-            print("[V2-Pipeline]   [\(i)] \(intent) \(t) \(zoom) \(center) \(src) events=\(events)\(inherited)")
+            print("[V2-Pipeline]   [\(i)] \(intent) \(t) \(zoom) \(center) \(src) events=\(sceneEvents.count)\(inherited)")
+
+            // Event type breakdown
+            let breakdown = eventBreakdown(sceneEvents)
+            print("[V2-Pipeline]       \(breakdown)")
         }
 
         // Camera track summary
@@ -175,6 +179,21 @@ class SmartGeneratorV2 {
         case .switching: return "switching"
         case .idle: return "idle"
         }
+    }
+
+    private static func eventBreakdown(_ events: [UnifiedEvent]) -> String {
+        var moves = 0, clicks = 0, keys = 0, drags = 0, scrolls = 0, ui = 0
+        for event in events {
+            switch event.kind {
+            case .mouseMove: moves += 1
+            case .click: clicks += 1
+            case .keyDown, .keyUp: keys += 1
+            case .dragStart, .dragEnd: drags += 1
+            case .scroll: scrolls += 1
+            case .uiStateChange: ui += 1
+            }
+        }
+        return "moves:\(moves) clicks:\(clicks) keys:\(keys) drags:\(drags) scrolls:\(scrolls) ui:\(ui)"
     }
     #endif
 }

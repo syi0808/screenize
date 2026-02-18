@@ -85,6 +85,36 @@ struct ShotPlanner {
         }
     }
 
+    // MARK: - Intent-Specific Event Filtering
+
+    /// Extract positions relevant to the scene's intent, filtering out noise from mouse moves.
+    /// Falls back to all event positions if no intent-specific events are found.
+    private static func relevantPositions(
+        for intent: UserIntent,
+        events: [UnifiedEvent]
+    ) -> [NormalizedPoint] {
+        let filtered: [NormalizedPoint]
+        switch intent {
+        case .clicking, .navigating:
+            let clicks = events.compactMap { event -> NormalizedPoint? in
+                if case .click = event.kind { return event.position }
+                return nil
+            }
+            filtered = clicks
+        case .dragging:
+            let drags = events.compactMap { event -> NormalizedPoint? in
+                switch event.kind {
+                case .dragStart, .dragEnd: return event.position
+                default: return nil
+                }
+            }
+            filtered = drags
+        default:
+            filtered = []
+        }
+        return filtered.isEmpty ? events.map(\.position) : filtered
+    }
+
     // MARK: - Zoom Range by Intent
 
     private static func zoomRange(
@@ -142,9 +172,9 @@ struct ShotPlanner {
             }
         }
 
-        // 2. Activity bounding box from event positions
+        // 2. Activity bounding box from intent-relevant event positions
         let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
-        let positions = sceneEvents.map(\.position)
+        let positions = relevantPositions(for: scene.primaryIntent, events: sceneEvents)
         if positions.count >= 2 {
             let bbox = computeBoundingBox(
                 positions: positions, padding: settings.workAreaPadding
@@ -229,7 +259,7 @@ struct ShotPlanner {
         }
     }
 
-    /// Typing: use last mouse position from timeline, constrained to keep element visible.
+    /// Typing: use caret bounds or last mouse position, constrained to keep element visible.
     private static func computeTypingCenter(
         scene: CameraScene,
         zoom: CGFloat,
@@ -237,10 +267,16 @@ struct ShotPlanner {
         eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> NormalizedPoint {
-        // Prefer last mouse position from EventTimeline
         let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
         var center: NormalizedPoint
-        if let lastEvent = sceneEvents.last {
+
+        // Prefer caret position from UIStateSample metadata
+        if let lastWithCaret = sceneEvents.last(where: {
+            $0.metadata.caretBounds != nil
+        }), let caretBounds = lastWithCaret.metadata.caretBounds {
+            let normalized = normalizeFrame(caretBounds, screenBounds: screenBounds)
+            center = NormalizedPoint(x: normalized.midX, y: normalized.midY)
+        } else if let lastEvent = sceneEvents.last {
             center = lastEvent.position
         } else {
             // Fallback to focus region cursor position
@@ -281,11 +317,14 @@ struct ShotPlanner {
         eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> NormalizedPoint {
-        // Use event positions if available; else fall back to focus regions
+        // Use intent-relevant event positions; fall back to focus regions
         let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        let relevant = relevantPositions(
+            for: scene.primaryIntent, events: sceneEvents
+        )
         let dataPoints: [NormalizedPoint]
-        if sceneEvents.count >= 2 {
-            dataPoints = sceneEvents.map(\.position)
+        if relevant.count >= 2 {
+            dataPoints = relevant
         } else {
             let regions = scene.focusRegions
             guard !regions.isEmpty else {
