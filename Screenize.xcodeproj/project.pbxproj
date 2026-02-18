@@ -105,6 +105,13 @@
 		F0A00003296A0001 /* EventStreamAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00003296A0001 /* EventStreamAdapter.swift */; };
 		F0A00004296A0001 /* InteropBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00004296A0001 /* InteropBlock.swift */; };
 		F0A00005296A0001 /* EventStreamWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00005296A0001 /* EventStreamWriter.swift */; };
+		AA000001296A0001 /* UnifiedEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000001296A0001 /* UnifiedEvent.swift */; };
+		AA000002296A0001 /* UserIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000002296A0001 /* UserIntent.swift */; };
+		AA000003296A0001 /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000003296A0001 /* Scene.swift */; };
+		AA000004296A0001 /* ShotPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000004296A0001 /* ShotPlan.swift */; };
+		AA000005296A0001 /* TransitionPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000005296A0001 /* TransitionPlan.swift */; };
+		AA000006296A0001 /* SimulatedPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000006296A0001 /* SimulatedPath.swift */; };
+		AA000007296A0001 /* SmartGeneratorV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000007296A0001 /* SmartGeneratorV2.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -207,6 +214,13 @@
 		F1A00003296A0001 /* EventStreamAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamAdapter.swift; sourceTree = "<group>"; };
 		F1A00004296A0001 /* InteropBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteropBlock.swift; sourceTree = "<group>"; };
 		F1A00005296A0001 /* EventStreamWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamWriter.swift; sourceTree = "<group>"; };
+		AB000001296A0001 /* UnifiedEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedEvent.swift; sourceTree = "<group>"; };
+		AB000002296A0001 /* UserIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIntent.swift; sourceTree = "<group>"; };
+		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
+		AB000004296A0001 /* ShotPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlan.swift; sourceTree = "<group>"; };
+		AB000005296A0001 /* TransitionPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlan.swift; sourceTree = "<group>"; };
+		AB000006296A0001 /* SimulatedPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatedPath.swift; sourceTree = "<group>"; };
+		AB000007296A0001 /* SmartGeneratorV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGeneratorV2.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -386,8 +400,31 @@
 				F1000077296A0001 /* SmartZoomGenerator.swift */,
 				F100007A296A0001 /* KeystrokeGenerator.swift */,
 				F2000200296A0001 /* SmartZoom */,
+				AC000001296A0001 /* V2 */,
 			);
 			path = Generators;
+			sourceTree = "<group>";
+		};
+		AC000001296A0001 /* V2 */ = {
+			isa = PBXGroup;
+			children = (
+				AC000002296A0001 /* Types */,
+				AB000007296A0001 /* SmartGeneratorV2.swift */,
+			);
+			path = V2;
+			sourceTree = "<group>";
+		};
+		AC000002296A0001 /* Types */ = {
+			isa = PBXGroup;
+			children = (
+				AB000001296A0001 /* UnifiedEvent.swift */,
+				AB000002296A0001 /* UserIntent.swift */,
+				AB000003296A0001 /* Scene.swift */,
+				AB000004296A0001 /* ShotPlan.swift */,
+				AB000005296A0001 /* TransitionPlan.swift */,
+				AB000006296A0001 /* SimulatedPath.swift */,
+			);
+			path = Types;
 			sourceTree = "<group>";
 		};
 		F20000A0296A0001 /* App */ = {
@@ -631,6 +668,13 @@
 				F0000076296A0001 /* ClickCursorGenerator.swift in Sources */,
 				F0000077296A0001 /* SmartZoomGenerator.swift in Sources */,
 				F000007A296A0001 /* KeystrokeGenerator.swift in Sources */,
+				AA000001296A0001 /* UnifiedEvent.swift in Sources */,
+				AA000002296A0001 /* UserIntent.swift in Sources */,
+				AA000003296A0001 /* Scene.swift in Sources */,
+				AA000004296A0001 /* ShotPlan.swift in Sources */,
+				AA000005296A0001 /* TransitionPlan.swift in Sources */,
+				AA000006296A0001 /* SimulatedPath.swift in Sources */,
+				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
 				F0000200296A0001 /* ActivityCollector.swift in Sources */,
 				F0000201296A0001 /* SessionClusterer.swift in Sources */,
 				F0000202296A0001 /* ZoomLevelCalculator.swift in Sources */,
