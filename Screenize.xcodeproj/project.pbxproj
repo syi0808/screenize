@@ -127,6 +127,8 @@
 		B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100001296A0001 /* StaticHoldControllerTests.swift */; };
 		B0000003296A0001 /* CameraSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100003296A0001 /* CameraSimulator.swift */; };
 		B1000002296A0001 /* CameraSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100002296A0001 /* CameraSimulatorTests.swift */; };
+		B2000001296A0001 /* CameraTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100001296A0001 /* CameraTrackEmitter.swift */; };
+		B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100001296A0001 /* CameraTrackEmitterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -252,6 +254,8 @@
 		B1100001296A0001 /* StaticHoldControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldControllerTests.swift; sourceTree = "<group>"; };
 		B0100003296A0001 /* CameraSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulator.swift; sourceTree = "<group>"; };
 		B1100002296A0001 /* CameraSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulatorTests.swift; sourceTree = "<group>"; };
+		B2100001296A0001 /* CameraTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitter.swift; sourceTree = "<group>"; };
+		B3100001296A0001 /* CameraTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitterTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -331,8 +335,17 @@
 				AD200024296A0001 /* Analysis */,
 				AF200001296A0001 /* Planning */,
 				B1200001296A0001 /* Simulation */,
+				B3200001296A0001 /* Emission */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		B3200001296A0001 /* Emission */ = {
+			isa = PBXGroup;
+			children = (
+				B3100001296A0001 /* CameraTrackEmitterTests.swift */,
+			);
+			path = Emission;
 			sourceTree = "<group>";
 		};
 		B1200001296A0001 /* Simulation */ = {
@@ -542,9 +555,18 @@
 				AD200010296A0001 /* Analysis */,
 				AE200001296A0001 /* Planning */,
 				B0200001296A0001 /* Simulation */,
+				B2200001296A0001 /* Emission */,
 				AB000007296A0001 /* SmartGeneratorV2.swift */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		B2200001296A0001 /* Emission */ = {
+			isa = PBXGroup;
+			children = (
+				B2100001296A0001 /* CameraTrackEmitter.swift */,
+			);
+			path = Emission;
 			sourceTree = "<group>";
 		};
 		B0200001296A0001 /* Simulation */ = {
@@ -899,6 +921,7 @@
 				B0000001296A0001 /* CameraController.swift in Sources */,
 				B0000002296A0001 /* StaticHoldController.swift in Sources */,
 				B0000003296A0001 /* CameraSimulator.swift in Sources */,
+				B2000001296A0001 /* CameraTrackEmitter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -914,6 +937,7 @@
 				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,
 				B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */,
 				B1000002296A0001 /* CameraSimulatorTests.swift in Sources */,
+				B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
