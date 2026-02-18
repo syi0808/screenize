@@ -236,9 +236,10 @@ final class IntentClassifierTests: XCTestCase {
     // MARK: - Switching Detection
 
     func test_classify_appBundleIDChange_producesSwitchingSpan() {
+        // Use distant positions so clicks don't group as navigating (distance > 0.3)
         let clicks = [
-            makeClick(at: 1.0, appBundleID: "com.app.one"),
-            makeClick(at: 3.0, appBundleID: "com.app.two"),
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.1, y: 0.1), appBundleID: "com.app.one"),
+            makeClick(at: 3.0, position: NormalizedPoint(x: 0.9, y: 0.9), appBundleID: "com.app.two"),
         ]
         let mouseData = MockMouseDataSource(clicks: clicks)
         let spans = classify(mouseData)
