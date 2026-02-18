@@ -57,11 +57,10 @@ struct CursorFollowController: CameraController {
         for event in sceneEvents {
             // Extract tracked position: prefer caret, fall back to mouse
             let trackedPosition: NormalizedPoint
-            if let caretBounds = event.metadata.caretBounds {
-                // Caret bounds may be in normalized or pixel space
-                let normalizedCaret = normalizeBoundsIfNeeded(
-                    caretBounds, screenBounds: settings.screenBounds
-                )
+            if let caretBounds = event.metadata.caretBounds,
+               let normalizedCaret = normalizeBoundsIfNeeded(
+                   caretBounds, screenBounds: settings.screenBounds
+               ) {
                 trackedPosition = NormalizedPoint(
                     x: normalizedCaret.midX, y: normalizedCaret.midY
                 )
@@ -133,20 +132,27 @@ struct CursorFollowController: CameraController {
     }
 
     /// Normalize caret bounds from pixel space to 0-1 if needed.
+    /// Returns nil if the result is out of valid range (e.g. global screen coordinates).
     private func normalizeBoundsIfNeeded(
         _ bounds: CGRect, screenBounds: CGSize
-    ) -> CGRect {
+    ) -> CGRect? {
         // Already normalized (values in 0-1 range)
         if bounds.maxX <= 1.1 && bounds.maxY <= 1.1 &&
             bounds.minX >= -0.1 && bounds.minY >= -0.1 {
             return bounds
         }
-        guard screenBounds.width > 0, screenBounds.height > 0 else { return bounds }
-        return CGRect(
+        guard screenBounds.width > 0, screenBounds.height > 0 else { return nil }
+        let normalized = CGRect(
             x: bounds.origin.x / screenBounds.width,
             y: bounds.origin.y / screenBounds.height,
             width: bounds.width / screenBounds.width,
             height: bounds.height / screenBounds.height
         )
+        // Validate: origin must be within [0,1] range
+        guard normalized.origin.x >= -0.1 && normalized.origin.x <= 1.1 &&
+              normalized.origin.y >= -0.1 && normalized.origin.y <= 1.1 else {
+            return nil
+        }
+        return normalized
     }
 }

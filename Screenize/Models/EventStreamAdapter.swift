@@ -185,20 +185,34 @@ enum EventStreamLoader {
         }
 
         let sessionStartMs = meta.processTimeStartMs
+        let displayWidth = Double(meta.display.widthPx)
+        let displayHeight = Double(meta.display.heightPx)
+        let scaleFactor = meta.display.scaleFactor
 
         return events.map { event in
             let timelineSec = Double(event.processTimeMs - sessionStartMs) / 1000.0
 
+            // Normalize cursor position: logical points → normalized (bottom-left origin)
+            let cursorXNorm = event.cursorX * scaleFactor / displayWidth
+            let cursorYNorm = 1.0 - (event.cursorY * scaleFactor / displayHeight)
+
+            // Element frame: may be in global screen coordinates (can exceed display bounds).
+            // Attempt to build frame, but discard if out of display range.
             let elementInfo: UIElementInfo?
             if let role = event.elementRole,
                let frameX = event.elementFrameX,
                let frameY = event.elementFrameY,
                let frameW = event.elementFrameW,
                let frameH = event.elementFrameH {
+                // Estimate display-local position using cursor as reference:
+                // cursorX/Y is display-local logical; elementFrame is global logical.
+                // Offset = elementFrameOrigin - (cursorLogical - cursorRelativeToElement)
+                // Since we can't reliably compute this, store raw and let downstream validate.
+                let rawFrame = CGRect(x: frameX, y: frameY, width: frameW, height: frameH)
                 elementInfo = UIElementInfo(
                     role: role,
                     subrole: event.elementSubrole,
-                    frame: CGRect(x: frameX, y: frameY, width: frameW, height: frameH),
+                    frame: rawFrame,
                     title: event.elementTitle,
                     isClickable: event.elementIsClickable ?? false,
                     applicationName: event.elementAppName
@@ -207,6 +221,7 @@ enum EventStreamLoader {
                 elementInfo = nil
             }
 
+            // Caret bounds: also in global screen coordinates — store raw, validate downstream
             let caretBounds: CGRect?
             if let cx = event.caretX, let cy = event.caretY,
                let cw = event.caretW, let ch = event.caretH {
@@ -217,7 +232,7 @@ enum EventStreamLoader {
 
             return UIStateSample(
                 timestamp: timelineSec,
-                cursorPosition: CGPoint(x: event.cursorX, y: event.cursorY),
+                cursorPosition: CGPoint(x: cursorXNorm, y: cursorYNorm),
                 elementInfo: elementInfo,
                 caretBounds: caretBounds
             )

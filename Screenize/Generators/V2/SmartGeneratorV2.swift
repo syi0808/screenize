@@ -279,10 +279,10 @@ struct TransitionSettings {
     var mediumPanMaxDistance: CGFloat = 0.4
 
     /// Duration range for short direct pans.
-    var shortPanDurationRange: ClosedRange<TimeInterval> = 0.3...0.5
+    var shortPanDurationRange: ClosedRange<TimeInterval> = 0.4...0.6
 
     /// Duration range for medium direct pans.
-    var mediumPanDurationRange: ClosedRange<TimeInterval> = 0.5...0.8
+    var mediumPanDurationRange: ClosedRange<TimeInterval> = 0.6...0.9
 
     /// Zoom-out phase duration for zoomOutAndIn transitions.
     var zoomOutDuration: TimeInterval = 0.5
@@ -290,14 +290,14 @@ struct TransitionSettings {
     /// Zoom-in phase duration for zoomOutAndIn transitions.
     var zoomInDuration: TimeInterval = 0.5
 
-    /// Easing for direct pan transitions.
-    var panEasing: EasingCurve = .spring(dampingRatio: 0.85, response: 0.5)
+    /// Easing for direct pan transitions (critically damped — no overshoot).
+    var panEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.6)
 
     /// Easing for the zoom-out phase.
     var zoomOutEasing: EasingCurve = .easeOut
 
-    /// Easing for the zoom-in phase.
-    var zoomInEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.6)
+    /// Easing for the zoom-in phase (slight underdamp for snap feel).
+    var zoomInEasing: EasingCurve = .spring(dampingRatio: 0.92, response: 0.55)
 }
 
 // MARK: - Simulation Settings

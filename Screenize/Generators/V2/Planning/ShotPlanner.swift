@@ -53,11 +53,13 @@ struct ShotPlanner {
     // MARK: - Idle Scene Resolution
 
     /// Idle scenes inherit center from nearest non-idle neighbor with zoom decayed toward 1.0.
-    /// Forward pass: inherit from previous non-idle.
-    /// Backward pass: leading idles inherit from next non-idle.
+    /// Leading idles (before first non-idle) stay at zoom 1.0 as an establishing shot.
+    /// Trailing idles inherit from previous non-idle with decay.
     private static func resolveIdleScenes(_ plans: inout [ShotPlan], settings: ShotSettings) {
         guard plans.count > 1 else { return }
         let decay = settings.idleZoomDecay
+
+        let firstNonIdleIndex = plans.firstIndex { $0.scene.primaryIntent != .idle }
 
         // Forward pass: idle inherits from previous non-idle
         var lastNonIdleIndex: Int?
@@ -69,18 +71,23 @@ struct ShotPlanner {
             }
         }
 
-        // Backward pass: leading idles inherit from next non-idle
-        var nextNonIdleIndex: Int?
-        for i in stride(from: plans.count - 1, through: 0, by: -1) {
-            if plans[i].scene.primaryIntent != .idle {
-                nextNonIdleIndex = i
-            } else if lastNonIdleIndex == nil || i < (plans.firstIndex {
-                $0.scene.primaryIntent != .idle
-            } ?? plans.count) {
-                // Only apply backward pass for idles that weren't handled by forward pass
-                if let next = nextNonIdleIndex {
-                    plans[i] = plans[i].inheriting(from: plans[next], decayFactor: decay)
+        // Backward pass: only for trailing idles after last non-idle that had no forward source.
+        // Leading idles (before first non-idle) stay at zoom 1.0 center (0.5, 0.5)
+        // as an establishing shot — do NOT inherit from next non-idle.
+        if let firstNI = firstNonIdleIndex {
+            var nextNonIdleIndex: Int?
+            for i in stride(from: plans.count - 1, through: 0, by: -1) {
+                if plans[i].scene.primaryIntent != .idle {
+                    nextNonIdleIndex = i
+                } else if i >= firstNI, lastNonIdleIndex == nil {
+                    // Trailing idles with no forward source
+                    if let next = nextNonIdleIndex {
+                        plans[i] = plans[i].inheriting(
+                            from: plans[next], decayFactor: decay
+                        )
+                    }
                 }
+                // Leading idles (i < firstNI): deliberately left unchanged at zoom 1.0
             }
         }
     }
@@ -158,10 +165,9 @@ struct ShotPlanner {
         if let elementRegion = scene.focusRegions.first(where: { region in
             if case .activeElement = region.source { return true }
             return false
-        }) {
-            let normalizedFrame = normalizeFrame(
-                elementRegion.region, screenBounds: screenBounds
-            )
+        }), let normalizedFrame = normalizeFrame(
+            elementRegion.region, screenBounds: screenBounds
+        ) {
             let areaSize = max(
                 normalizedFrame.width + settings.workAreaPadding * 2,
                 normalizedFrame.height + settings.workAreaPadding * 2
@@ -211,21 +217,28 @@ struct ShotPlanner {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
-    /// Normalize a pixel-space frame to 0-1 space. If frame is already in 0-1, return as-is.
+    /// Normalize a pixel-space frame to 0-1 space. Returns nil if the result is out of valid range
+    /// (e.g. global screen coordinates that can't be mapped to display-local space).
     private static func normalizeFrame(
         _ frame: CGRect, screenBounds: CGSize
-    ) -> CGRect {
+    ) -> CGRect? {
         // Detect if the frame is already normalized (values in 0-1 range)
         if frame.maxX <= 1.1 && frame.maxY <= 1.1 && frame.minX >= -0.1 && frame.minY >= -0.1 {
             return frame
         }
-        guard screenBounds.width > 0, screenBounds.height > 0 else { return frame }
-        return CGRect(
+        guard screenBounds.width > 0, screenBounds.height > 0 else { return nil }
+        let normalized = CGRect(
             x: frame.origin.x / screenBounds.width,
             y: frame.origin.y / screenBounds.height,
             width: frame.width / screenBounds.width,
             height: frame.height / screenBounds.height
         )
+        // Validate: origin must be within [0,1] range to be a valid display-local frame
+        guard normalized.origin.x >= -0.1 && normalized.origin.x <= 1.1 &&
+              normalized.origin.y >= -0.1 && normalized.origin.y <= 1.1 else {
+            return nil
+        }
+        return normalized
     }
 
     private static func clamp(
@@ -278,8 +291,8 @@ struct ShotPlanner {
         // Prefer caret position from UIStateSample metadata
         if let lastWithCaret = sceneEvents.last(where: {
             $0.metadata.caretBounds != nil
-        }), let caretBounds = lastWithCaret.metadata.caretBounds {
-            let normalized = normalizeFrame(caretBounds, screenBounds: screenBounds)
+        }), let caretBounds = lastWithCaret.metadata.caretBounds,
+           let normalized = normalizeFrame(caretBounds, screenBounds: screenBounds) {
             center = NormalizedPoint(x: normalized.midX, y: normalized.midY)
         } else if let lastEvent = sceneEvents.last {
             center = lastEvent.position
@@ -300,10 +313,9 @@ struct ShotPlanner {
         if let elementRegion = scene.focusRegions.first(where: { region in
             if case .activeElement = region.source { return true }
             return false
-        }) {
-            let normalizedBounds = normalizeFrame(
-                elementRegion.region, screenBounds: screenBounds
-            )
+        }), let normalizedBounds = normalizeFrame(
+            elementRegion.region, screenBounds: screenBounds
+        ) {
             center = constrainCenterToShowElement(
                 desiredCenter: center,
                 elementBounds: normalizedBounds,
