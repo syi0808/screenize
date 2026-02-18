@@ -129,6 +129,10 @@
 		B1000002296A0001 /* CameraSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100002296A0001 /* CameraSimulatorTests.swift */; };
 		B2000001296A0001 /* CameraTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100001296A0001 /* CameraTrackEmitter.swift */; };
 		B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100001296A0001 /* CameraTrackEmitterTests.swift */; };
+		B2000002296A0001 /* CursorTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100002296A0001 /* CursorTrackEmitter.swift */; };
+		B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100002296A0001 /* CursorTrackEmitterTests.swift */; };
+		B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100003296A0001 /* KeystrokeTrackEmitter.swift */; };
+		B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -256,6 +260,10 @@
 		B1100002296A0001 /* CameraSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulatorTests.swift; sourceTree = "<group>"; };
 		B2100001296A0001 /* CameraTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitter.swift; sourceTree = "<group>"; };
 		B3100001296A0001 /* CameraTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitterTests.swift; sourceTree = "<group>"; };
+		B2100002296A0001 /* CursorTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitter.swift; sourceTree = "<group>"; };
+		B3100002296A0001 /* CursorTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitterTests.swift; sourceTree = "<group>"; };
+		B2100003296A0001 /* KeystrokeTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitter.swift; sourceTree = "<group>"; };
+		B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitterTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -344,6 +352,8 @@
 			isa = PBXGroup;
 			children = (
 				B3100001296A0001 /* CameraTrackEmitterTests.swift */,
+				B3100002296A0001 /* CursorTrackEmitterTests.swift */,
+				B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */,
 			);
 			path = Emission;
 			sourceTree = "<group>";
@@ -565,6 +575,8 @@
 			isa = PBXGroup;
 			children = (
 				B2100001296A0001 /* CameraTrackEmitter.swift */,
+				B2100002296A0001 /* CursorTrackEmitter.swift */,
+				B2100003296A0001 /* KeystrokeTrackEmitter.swift */,
 			);
 			path = Emission;
 			sourceTree = "<group>";
@@ -922,6 +934,8 @@
 				B0000002296A0001 /* StaticHoldController.swift in Sources */,
 				B0000003296A0001 /* CameraSimulator.swift in Sources */,
 				B2000001296A0001 /* CameraTrackEmitter.swift in Sources */,
+				B2000002296A0001 /* CursorTrackEmitter.swift in Sources */,
+				B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -938,6 +952,8 @@
 				B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */,
 				B1000002296A0001 /* CameraSimulatorTests.swift in Sources */,
 				B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */,
+				B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */,
+				B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
