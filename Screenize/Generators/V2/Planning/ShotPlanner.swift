@@ -34,7 +34,8 @@ struct ShotPlanner {
             settings: settings
         )
         let center = computeCenter(
-            scene: scene, zoom: zoom, screenBounds: screenBounds, settings: settings
+            scene: scene, zoom: zoom, screenBounds: screenBounds,
+            eventTimeline: eventTimeline, settings: settings
         )
         let shotType = classifyShotType(zoom: zoom)
 
@@ -169,6 +170,7 @@ struct ShotPlanner {
         scene: CameraScene,
         zoom: CGFloat,
         screenBounds: CGSize,
+        eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> NormalizedPoint {
         switch scene.primaryIntent {
@@ -177,33 +179,43 @@ struct ShotPlanner {
 
         case .typing:
             return computeTypingCenter(
-                scene: scene, zoom: zoom, screenBounds: screenBounds, settings: settings
+                scene: scene, zoom: zoom, screenBounds: screenBounds,
+                eventTimeline: eventTimeline, settings: settings
             )
 
         default:
             return computeActivityCenter(
-                scene: scene, zoom: zoom, settings: settings
+                scene: scene, zoom: zoom,
+                eventTimeline: eventTimeline, settings: settings
             )
         }
     }
 
-    /// Typing: use last focus region position, constrained to keep element visible.
+    /// Typing: use last mouse position from timeline, constrained to keep element visible.
     private static func computeTypingCenter(
         scene: CameraScene,
         zoom: CGFloat,
         screenBounds: CGSize,
+        eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> NormalizedPoint {
-        // Use the last cursor position from focus regions
-        let cursorRegions = scene.focusRegions.filter {
-            if case .cursorPosition = $0.source { return true }
-            return false
+        // Prefer last mouse position from EventTimeline
+        let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        var center: NormalizedPoint
+        if let lastEvent = sceneEvents.last {
+            center = lastEvent.position
+        } else {
+            // Fallback to focus region cursor position
+            let cursorRegions = scene.focusRegions.filter {
+                if case .cursorPosition = $0.source { return true }
+                return false
+            }
+            let lastCursor = cursorRegions.last
+            center = NormalizedPoint(
+                x: lastCursor?.region.midX ?? 0.5,
+                y: lastCursor?.region.midY ?? 0.5
+            )
         }
-        let lastCursor = cursorRegions.last
-        var center = NormalizedPoint(
-            x: lastCursor?.region.midX ?? 0.5,
-            y: lastCursor?.region.midY ?? 0.5
-        )
 
         // Constrain to show element if available
         if let elementRegion = scene.focusRegions.first(where: { region in
@@ -224,26 +236,37 @@ struct ShotPlanner {
         return clampCenter(center, zoom: zoom)
     }
 
-    /// Clicking/dragging/etc: weighted average of focus region positions.
+    /// Clicking/dragging/etc: weighted average of event positions with recency bias.
     private static func computeActivityCenter(
         scene: CameraScene,
         zoom: CGFloat,
+        eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> NormalizedPoint {
-        let regions = scene.focusRegions
-        guard !regions.isEmpty else {
-            return clampCenter(NormalizedPoint(x: 0.5, y: 0.5), zoom: zoom)
+        // Use event positions if available; else fall back to focus regions
+        let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        let dataPoints: [NormalizedPoint]
+        if sceneEvents.count >= 2 {
+            dataPoints = sceneEvents.map(\.position)
+        } else {
+            let regions = scene.focusRegions
+            guard !regions.isEmpty else {
+                return clampCenter(NormalizedPoint(x: 0.5, y: 0.5), zoom: zoom)
+            }
+            dataPoints = regions.map {
+                NormalizedPoint(x: $0.region.midX, y: $0.region.midY)
+            }
         }
 
-        // Weighted average (later regions weighted higher)
+        // Weighted average with recency bias
         var weightedX: CGFloat = 0
         var weightedY: CGFloat = 0
         var totalWeight: CGFloat = 0
 
-        for (index, region) in regions.enumerated() {
+        for (index, pos) in dataPoints.enumerated() {
             let weight: CGFloat = 1.0 + CGFloat(index) * 0.5
-            weightedX += region.region.midX * weight
-            weightedY += region.region.midY * weight
+            weightedX += pos.x * weight
+            weightedY += pos.y * weight
             totalWeight += weight
         }
 

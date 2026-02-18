@@ -242,6 +242,63 @@ final class ShotPlannerTests: XCTestCase {
         XCTAssertLessThanOrEqual(zoom, defaultSettings.maxZoom)
     }
 
+    // MARK: - Event-Based Center
+
+    func test_plan_center_usesEventPositions() {
+        // Events at (0.2, 0.3) and (0.8, 0.7) → center biased toward latter (recency)
+        let events = [
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.2, y: 0.3)),
+            makeMouseMoveEvent(time: 3.0, position: NormalizedPoint(x: 0.8, y: 0.7)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .clicking)
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        // With recency bias (weight 1.0, 1.5), center should be closer to (0.8, 0.7)
+        let center = plans[0].idealCenter
+        XCTAssertGreaterThan(center.x, 0.5, "Center X should be biased toward later event at 0.8")
+        XCTAssertGreaterThan(center.y, 0.5, "Center Y should be biased toward later event at 0.7")
+    }
+
+    func test_plan_center_noEvents_fallsToFocusRegion() {
+        // Empty timeline → uses FocusRegion-based center (existing behavior)
+        let scene = makeScene(
+            intent: .clicking,
+            focusRegions: [
+                FocusRegion(
+                    time: 0, region: CGRect(x: 0.29, y: 0.69, width: 0.02, height: 0.02),
+                    confidence: 0.9, source: .cursorPosition
+                )
+            ]
+        )
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: emptyTimeline, settings: defaultSettings
+        )
+        XCTAssertEqual(plans[0].idealCenter.x, 0.3, accuracy: 0.1)
+        XCTAssertEqual(plans[0].idealCenter.y, 0.7, accuracy: 0.1)
+    }
+
+    func test_plan_center_typing_usesLastEventPosition() {
+        // Typing: last mouse position from timeline should determine center
+        let events = [
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeMouseMoveEvent(time: 4.0, position: NormalizedPoint(x: 0.7, y: 0.6)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 5.0)
+        let scene = makeScene(intent: .typing(context: .codeEditor))
+        let plans = ShotPlanner.plan(
+            scenes: [scene], screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        // Typing center should be near last event position
+        let center = plans[0].idealCenter
+        XCTAssertEqual(center.x, 0.7, accuracy: 0.15)
+        XCTAssertEqual(center.y, 0.6, accuracy: 0.15)
+    }
+
     // MARK: - Activity Bounding Box Zoom
 
     func test_plan_activityBBox_smallSpread_highZoom() {
