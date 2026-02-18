@@ -1,6 +1,32 @@
 import Foundation
 import CoreGraphics
 
+// MARK: - Activity Event
+
+/// Activity events (aggregate all activities)
+struct ActivityEvent: Comparable, Equatable {
+    let time: TimeInterval
+    let position: NormalizedPoint
+    let type: ActivityType
+    let elementInfo: UIElementInfo?
+    let appBundleID: String?
+
+    enum ActivityType: Equatable {
+        case click
+        case typing
+        case dragStart
+        case dragEnd
+    }
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.time < rhs.time
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.time == rhs.time && lhs.position == rhs.position && lhs.type == rhs.type
+    }
+}
+
 // MARK: - Work Session
 
 /// Work session (a cluster of continuous activity)
@@ -128,7 +154,7 @@ struct SessionClusterer {
             // Filter for elements with a text input role
             let textElements = typingActivities.compactMap { activity -> UIElementInfo? in
                 guard let info = activity.elementInfo,
-                      ActivityCollector.textInputRoles.contains(info.role) else {
+                      UIElementInfo.textInputRoles.contains(info.role) else {
                     return nil
                 }
                 return info

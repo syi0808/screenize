@@ -22,24 +22,23 @@ struct EventTimeline {
     static func build(
         from mouseData: MouseDataSource,
         uiStateSamples: [UIStateSample] = []
-    ) -> EventTimeline {
+    ) -> Self {
         var unified: [UnifiedEvent] = []
 
         // Mouse positions — downsampled to ~10 Hz
         var lastPositionTime: TimeInterval = -.greatestFiniteMagnitude
-        for pos in mouseData.positions {
-            if pos.time - lastPositionTime >= mouseMoveDownsampleInterval {
-                unified.append(UnifiedEvent(
-                    time: pos.time,
-                    kind: .mouseMove,
-                    position: pos.position,
-                    metadata: EventMetadata(
-                        appBundleID: pos.appBundleID,
-                        elementInfo: pos.elementInfo
-                    )
-                ))
-                lastPositionTime = pos.time
-            }
+        for pos in mouseData.positions
+            where pos.time - lastPositionTime >= mouseMoveDownsampleInterval {
+            unified.append(UnifiedEvent(
+                time: pos.time,
+                kind: .mouseMove,
+                position: pos.position,
+                metadata: EventMetadata(
+                    appBundleID: pos.appBundleID,
+                    elementInfo: pos.elementInfo
+                )
+            ))
+            lastPositionTime = pos.time
         }
 
         // Clicks — all types included
@@ -104,7 +103,7 @@ struct EventTimeline {
 
         unified.sort { $0.time < $1.time }
 
-        return EventTimeline(events: unified, duration: mouseData.duration)
+        return Self(events: unified, duration: mouseData.duration)
     }
 
     // MARK: - Querying

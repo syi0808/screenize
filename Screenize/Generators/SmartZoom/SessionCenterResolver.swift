@@ -23,7 +23,7 @@ struct SessionCenterResolver {
         let typingActivities = session.activities.filter { $0.type == .typing }
         let hasTextElement = typingActivities.contains { activity in
             guard let info = activity.elementInfo else { return false }
-            return ActivityCollector.textInputRoles.contains(info.role)
+            return UIElementInfo.textInputRoles.contains(info.role)
         }
 
         if hasTextElement && !typingActivities.isEmpty {

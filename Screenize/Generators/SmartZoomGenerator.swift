@@ -38,8 +38,15 @@ final class SmartZoomGenerator {
             easing: .linear
         ))
 
-        // Collect and sort activity events (include elementInfo for typing from uiStateSamples)
-        let activities = ActivityCollector.collectActivities(from: mouseData, uiStateSamples: uiStateSamples)
+        // Build unified event timeline and classify intents
+        let eventTimeline = EventTimeline.build(from: mouseData, uiStateSamples: uiStateSamples)
+        let intentSpans = IntentClassifier.classify(events: eventTimeline, uiStateSamples: uiStateSamples)
+        let activities = Self.adaptToActivityEvents(
+            intentSpans: intentSpans,
+            eventTimeline: eventTimeline,
+            mouseData: mouseData,
+            uiStateSamples: uiStateSamples
+        )
 
         guard !activities.isEmpty else {
             return createEmptyTrack()
@@ -288,6 +295,100 @@ final class SmartZoomGenerator {
 
             return TransitionResult(keyframes: keyframes, lastSessionEndTime: zoomOutEndTime)
         }
+    }
+
+    // MARK: - Intent-to-Activity Adapter
+
+    /// Convert IntentSpans back to ActivityEvents for SessionClusterer compatibility.
+    /// This is a temporary bridge until Step 3 replaces SessionClusterer with scene-based logic.
+    private static func adaptToActivityEvents(
+        intentSpans: [IntentSpan],
+        eventTimeline: EventTimeline,
+        mouseData: MouseDataSource,
+        uiStateSamples: [UIStateSample]
+    ) -> [ActivityEvent] {
+        var activities: [ActivityEvent] = []
+
+        for span in intentSpans {
+            switch span.intent {
+            case .typing:
+                // Resolve focus position: check if a click targeted the same element
+                let typingPosition: NormalizedPoint
+                if let focusElement = span.focusElement,
+                   let matchingClick = mouseData.clicks.last(where: { click in
+                       guard click.clickType == .leftDown,
+                             click.time < span.startTime,
+                             let clickElement = click.elementInfo else { return false }
+                       return clickElement.frame == focusElement.frame
+                   }) {
+                    typingPosition = matchingClick.position
+                } else {
+                    typingPosition = span.focusPosition
+                }
+
+                // Typing start
+                activities.append(ActivityEvent(
+                    time: span.startTime,
+                    position: typingPosition,
+                    type: .typing,
+                    elementInfo: span.focusElement,
+                    appBundleID: nil
+                ))
+
+                // Typing end (only for meaningful duration)
+                if span.endTime > span.startTime + 0.5 {
+                    activities.append(ActivityEvent(
+                        time: span.endTime,
+                        position: typingPosition,
+                        type: .typing,
+                        elementInfo: span.focusElement,
+                        appBundleID: nil
+                    ))
+                }
+
+            case .clicking, .navigating:
+                // Emit a click ActivityEvent for each leftDown click in the span
+                let spanEvents = eventTimeline.events(in: span.startTime...span.endTime)
+                for event in spanEvents {
+                    if case .click(let data) = event.kind, data.clickType == .leftDown {
+                        activities.append(ActivityEvent(
+                            time: event.time,
+                            position: event.position,
+                            type: .click,
+                            elementInfo: event.metadata.elementInfo,
+                            appBundleID: event.metadata.appBundleID
+                        ))
+                    }
+                }
+
+            case .dragging:
+                // Emit drag start/end for each drag event in the span
+                let spanEvents = eventTimeline.events(in: span.startTime...span.endTime)
+                for event in spanEvents {
+                    if case .dragStart(let data) = event.kind {
+                        activities.append(ActivityEvent(
+                            time: data.startTime,
+                            position: data.startPosition,
+                            type: .dragStart,
+                            elementInfo: nil,
+                            appBundleID: nil
+                        ))
+                        activities.append(ActivityEvent(
+                            time: data.endTime,
+                            position: data.endPosition,
+                            type: .dragEnd,
+                            elementInfo: nil,
+                            appBundleID: nil
+                        ))
+                    }
+                }
+
+            case .idle, .scrolling, .switching, .reading:
+                break
+            }
+        }
+
+        return activities.sorted()
     }
 
     // MARK: - Helpers
