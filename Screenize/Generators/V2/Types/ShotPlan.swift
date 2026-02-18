@@ -24,12 +24,22 @@ struct ShotPlan {
     var zoomSource: ZoomSource = .intentMidpoint
     var inherited: Bool = false
 
-    /// Create a copy that inherits zoom/center from another plan.
-    func inheriting(from source: ShotPlan) -> ShotPlan {
+    /// Create a copy that inherits center from another plan with zoom decayed toward 1.0.
+    /// - Parameter decayFactor: 0 = full zoom-out to 1.0, 1 = keep neighbor zoom.
+    func inheriting(from source: ShotPlan, decayFactor: CGFloat = 0.5) -> ShotPlan {
+        let decayedZoom = 1.0 + (source.idealZoom - 1.0) * decayFactor
+        let shotType: ShotType
+        if decayedZoom > 2.0 {
+            shotType = .closeUp(zoom: decayedZoom)
+        } else if decayedZoom > 1.0 {
+            shotType = .medium(zoom: decayedZoom)
+        } else {
+            shotType = .wide
+        }
         var plan = ShotPlan(
             scene: scene,
-            shotType: source.shotType,
-            idealZoom: source.idealZoom,
+            shotType: shotType,
+            idealZoom: decayedZoom,
             idealCenter: source.idealCenter,
             zoomSource: source.zoomSource
         )

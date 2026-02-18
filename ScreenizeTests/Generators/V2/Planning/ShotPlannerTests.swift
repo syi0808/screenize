@@ -301,8 +301,8 @@ final class ShotPlannerTests: XCTestCase {
 
     // MARK: - Idle Scene Inheritance
 
-    func test_plan_idleBetweenActions_inheritsFromPrevious() {
-        // Clicking → Idle → Typing → idle inherits clicking's zoom/center
+    func test_plan_idleBetweenActions_decaysZoomTowardOne() {
+        // Clicking → Idle → Typing → idle decays zoom toward 1.0
         let events = [
             makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.3, y: 0.4)),
             makeMouseMoveEvent(time: 1.5, position: NormalizedPoint(x: 0.35, y: 0.45)),
@@ -317,17 +317,20 @@ final class ShotPlannerTests: XCTestCase {
             scenes: scenes, screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        // Idle (index 1) should inherit from clicking (index 0)
-        XCTAssertEqual(plans[1].idealZoom, plans[0].idealZoom, accuracy: 0.01,
-                       "Idle should inherit zoom from previous non-idle")
-        XCTAssertEqual(plans[1].idealCenter.x, plans[0].idealCenter.x, accuracy: 0.01,
-                       "Idle should inherit center X from previous non-idle")
-        XCTAssertEqual(plans[1].idealCenter.y, plans[0].idealCenter.y, accuracy: 0.01,
-                       "Idle should inherit center Y from previous non-idle")
+        let actionZoom = plans[0].idealZoom
+        let idleZoom = plans[1].idealZoom
+        // Idle zoom should be between action zoom and 1.0 (decayed)
+        XCTAssertLessThan(idleZoom, actionZoom,
+                          "Idle zoom should be less than action zoom")
+        XCTAssertGreaterThan(idleZoom, 1.0,
+                             "Idle zoom should be greater than 1.0")
+        // Center should still be inherited from neighbor
+        XCTAssertEqual(plans[1].idealCenter.x, plans[0].idealCenter.x, accuracy: 0.01)
+        XCTAssertEqual(plans[1].idealCenter.y, plans[0].idealCenter.y, accuracy: 0.01)
     }
 
-    func test_plan_idleAtStart_inheritsFromNextNonIdle() {
-        // Idle → Clicking → idle at start inherits from clicking
+    func test_plan_idleAtStart_decaysZoomFromNextNonIdle() {
+        // Idle → Clicking → idle at start decays from clicking
         let events = [
             makeMouseMoveEvent(time: 3.5, position: NormalizedPoint(x: 0.6, y: 0.7)),
             makeMouseMoveEvent(time: 4.0, position: NormalizedPoint(x: 0.65, y: 0.72)),
@@ -341,17 +344,19 @@ final class ShotPlannerTests: XCTestCase {
             scenes: scenes, screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        // Idle (index 0) should inherit from clicking (index 1)
-        XCTAssertEqual(plans[0].idealZoom, plans[1].idealZoom, accuracy: 0.01,
-                       "Leading idle should inherit zoom from next non-idle")
-        XCTAssertEqual(plans[0].idealCenter.x, plans[1].idealCenter.x, accuracy: 0.01,
-                       "Leading idle should inherit center X from next non-idle")
-        XCTAssertEqual(plans[0].idealCenter.y, plans[1].idealCenter.y, accuracy: 0.01,
-                       "Leading idle should inherit center Y from next non-idle")
+        let actionZoom = plans[1].idealZoom
+        let idleZoom = plans[0].idealZoom
+        // Idle zoom decays toward 1.0
+        XCTAssertLessThan(idleZoom, actionZoom,
+                          "Leading idle zoom should be less than action zoom")
+        XCTAssertGreaterThanOrEqual(idleZoom, 1.0,
+                                    "Leading idle zoom should be >= 1.0")
+        // Center still inherited
+        XCTAssertEqual(plans[0].idealCenter.x, plans[1].idealCenter.x, accuracy: 0.01)
     }
 
-    func test_plan_multipleConsecutiveIdles_allInherit() {
-        // Clicking → Idle → Idle → Idle → all idles inherit from clicking
+    func test_plan_multipleConsecutiveIdles_allDecayed() {
+        // Clicking → Idle → Idle → Idle → all idles decayed but same value
         let events = [
             makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.4, y: 0.5)),
             makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.42, y: 0.52)),
@@ -367,10 +372,38 @@ final class ShotPlannerTests: XCTestCase {
             scenes: scenes, screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
+        let actionZoom = plans[0].idealZoom
         for i in 1...3 {
-            XCTAssertEqual(plans[i].idealZoom, plans[0].idealZoom, accuracy: 0.01,
-                           "Idle \(i) should inherit zoom from clicking")
+            XCTAssertLessThan(plans[i].idealZoom, actionZoom,
+                              "Idle \(i) should have decayed zoom")
+            XCTAssertGreaterThanOrEqual(plans[i].idealZoom, 1.0,
+                                        "Idle \(i) zoom should be >= 1.0")
         }
+    }
+
+    func test_plan_idleZoomDifferentFromActionZoom() {
+        // The key test: idle and action scenes MUST have different zoom values
+        let events = [
+            makeMouseMoveEvent(time: 2.0, position: NormalizedPoint(x: 0.3, y: 0.4)),
+            makeMouseMoveEvent(time: 3.0, position: NormalizedPoint(x: 0.35, y: 0.45)),
+        ]
+        let timeline = EventTimeline(events: events, duration: 10.0)
+        let scenes = [
+            makeScene(start: 0, end: 2, intent: .idle),
+            makeScene(start: 2, end: 5, intent: .navigating),
+            makeScene(start: 5, end: 8, intent: .idle),
+            makeScene(start: 8, end: 10, intent: .idle),
+        ]
+        let plans = ShotPlanner.plan(
+            scenes: scenes, screenBounds: screenBounds,
+            eventTimeline: timeline, settings: defaultSettings
+        )
+        let navZoom = plans[1].idealZoom
+        // All idle zooms should differ from navigation zoom
+        XCTAssertNotEqual(plans[0].idealZoom, navZoom, accuracy: 0.05,
+                          "Idle zoom should differ from action zoom")
+        XCTAssertNotEqual(plans[2].idealZoom, navZoom, accuracy: 0.05,
+                          "Idle zoom should differ from action zoom")
     }
 
     func test_plan_allIdleScenes_stayAtZoomOne() {

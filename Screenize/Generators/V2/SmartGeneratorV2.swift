@@ -223,6 +223,9 @@ struct ShotSettings {
     /// Absolute zoom bounds.
     var minZoom: CGFloat = 1.0
     var maxZoom: CGFloat = 2.8
+
+    /// Idle zoom decay factor (0 = full zoom-out to 1.0, 1 = keep neighbor zoom).
+    var idleZoomDecay: CGFloat = 0.5
 }
 
 // MARK: - Transition Settings

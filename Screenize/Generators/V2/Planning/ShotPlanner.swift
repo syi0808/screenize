@@ -17,7 +17,7 @@ struct ShotPlanner {
             planScene(scene, screenBounds: screenBounds,
                       eventTimeline: eventTimeline, settings: settings)
         }
-        resolveIdleScenes(&plans)
+        resolveIdleScenes(&plans, settings: settings)
         return plans
     }
 
@@ -52,11 +52,12 @@ struct ShotPlanner {
 
     // MARK: - Idle Scene Resolution
 
-    /// Idle scenes inherit zoom/center from nearest non-idle neighbor.
+    /// Idle scenes inherit center from nearest non-idle neighbor with zoom decayed toward 1.0.
     /// Forward pass: inherit from previous non-idle.
     /// Backward pass: leading idles inherit from next non-idle.
-    private static func resolveIdleScenes(_ plans: inout [ShotPlan]) {
+    private static func resolveIdleScenes(_ plans: inout [ShotPlan], settings: ShotSettings) {
         guard plans.count > 1 else { return }
+        let decay = settings.idleZoomDecay
 
         // Forward pass: idle inherits from previous non-idle
         var lastNonIdleIndex: Int?
@@ -64,7 +65,7 @@ struct ShotPlanner {
             if plans[i].scene.primaryIntent != .idle {
                 lastNonIdleIndex = i
             } else if let prev = lastNonIdleIndex {
-                plans[i] = plans[i].inheriting(from: plans[prev])
+                plans[i] = plans[i].inheriting(from: plans[prev], decayFactor: decay)
             }
         }
 
@@ -78,7 +79,7 @@ struct ShotPlanner {
             } ?? plans.count) {
                 // Only apply backward pass for idles that weren't handled by forward pass
                 if let next = nextNonIdleIndex {
-                    plans[i] = plans[i].inheriting(from: plans[next])
+                    plans[i] = plans[i].inheriting(from: plans[next], decayFactor: decay)
                 }
             }
         }
