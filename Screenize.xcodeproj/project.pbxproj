@@ -55,9 +55,7 @@
 		F0000060296A0001 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000060296A0001 /* EditorViewModel.swift */; };
 		F0000061296A0001 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000061296A0001 /* UndoStack.swift */; };
 		F0000070296A0001 /* KeyframeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000070296A0001 /* KeyframeGenerator.swift */; };
-		F0000076296A0001 /* ClickCursorGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000076296A0001 /* ClickCursorGenerator.swift */; };
-		F0000077296A0001 /* SmartZoomGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000077296A0001 /* SmartZoomGenerator.swift */; };
-		F000007A296A0001 /* KeystrokeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100007A296A0001 /* KeystrokeGenerator.swift */; };
+
 		F0000080296A0001 /* EditorEntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000080296A0001 /* EditorEntryPoint.swift */; };
 		F0000081296A0001 /* ScreenizeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000081296A0001 /* ScreenizeApp.swift */; };
 		F0000090296A0001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000090296A0001 /* Assets.xcassets */; };
@@ -93,9 +91,7 @@
 		F0000106296A0001 /* ScrollEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000106296A0001 /* ScrollEventHandler.swift */; };
 		F0000107296A0001 /* KeyboardEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000107296A0001 /* KeyboardEventHandler.swift */; };
 		F0000108296A0001 /* DragEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000108296A0001 /* DragEventHandler.swift */; };
-		F0000201296A0001 /* SessionClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000201296A0001 /* SessionClusterer.swift */; };
-		F0000202296A0001 /* ZoomLevelCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000202296A0001 /* ZoomLevelCalculator.swift */; };
-		F0000203296A0001 /* SessionCenterResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000203296A0001 /* SessionCenterResolver.swift */; };
+
 		A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A0296A0001 /* PermissionWizardViewModel.swift */; };
 		A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A1296A0001 /* PermissionSetupWizardView.swift */; };
 		A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A3296A0001 /* PermissionStatusBadge.swift */; };
@@ -187,9 +183,7 @@
 		F1000060296A0001 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
 		F1000061296A0001 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		F1000070296A0001 /* KeyframeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeGenerator.swift; sourceTree = "<group>"; };
-		F1000076296A0001 /* ClickCursorGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCursorGenerator.swift; sourceTree = "<group>"; };
-		F1000077296A0001 /* SmartZoomGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartZoomGenerator.swift; sourceTree = "<group>"; };
-		F100007A296A0001 /* KeystrokeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeGenerator.swift; sourceTree = "<group>"; };
+
 		F1000080296A0001 /* EditorEntryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorEntryPoint.swift; sourceTree = "<group>"; };
 		F1000081296A0001 /* ScreenizeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeApp.swift; sourceTree = "<group>"; };
 		F1000090296A0001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -226,9 +220,7 @@
 		F1000106296A0001 /* ScrollEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEventHandler.swift; sourceTree = "<group>"; };
 		F1000107296A0001 /* KeyboardEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEventHandler.swift; sourceTree = "<group>"; };
 		F1000108296A0001 /* DragEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragEventHandler.swift; sourceTree = "<group>"; };
-		F1000201296A0001 /* SessionClusterer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionClusterer.swift; sourceTree = "<group>"; };
-		F1000202296A0001 /* ZoomLevelCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomLevelCalculator.swift; sourceTree = "<group>"; };
-		F1000203296A0001 /* SessionCenterResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCenterResolver.swift; sourceTree = "<group>"; };
+
 		F1A00001296A0001 /* EventStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStream.swift; sourceTree = "<group>"; };
 		F1A00002296A0001 /* RecordingMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingMetadata.swift; sourceTree = "<group>"; };
 		F1A00003296A0001 /* EventStreamAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamAdapter.swift; sourceTree = "<group>"; };
@@ -549,10 +541,6 @@
 			isa = PBXGroup;
 			children = (
 				F1000070296A0001 /* KeyframeGenerator.swift */,
-				F1000076296A0001 /* ClickCursorGenerator.swift */,
-				F1000077296A0001 /* SmartZoomGenerator.swift */,
-				F100007A296A0001 /* KeystrokeGenerator.swift */,
-				F2000200296A0001 /* SmartZoom */,
 				AC000001296A0001 /* V2 */,
 			);
 			path = Generators;
@@ -715,16 +703,6 @@
 			path = Recording;
 			sourceTree = "<group>";
 		};
-		F2000200296A0001 /* SmartZoom */ = {
-			isa = PBXGroup;
-			children = (
-				F1000201296A0001 /* SessionClusterer.swift */,
-				F1000202296A0001 /* ZoomLevelCalculator.swift */,
-				F1000203296A0001 /* SessionCenterResolver.swift */,
-			);
-			path = SmartZoom;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -873,9 +851,6 @@
 				F0000060296A0001 /* EditorViewModel.swift in Sources */,
 				F0000061296A0001 /* UndoStack.swift in Sources */,
 				F0000070296A0001 /* KeyframeGenerator.swift in Sources */,
-				F0000076296A0001 /* ClickCursorGenerator.swift in Sources */,
-				F0000077296A0001 /* SmartZoomGenerator.swift in Sources */,
-				F000007A296A0001 /* KeystrokeGenerator.swift in Sources */,
 				AA000001296A0001 /* UnifiedEvent.swift in Sources */,
 				AA000002296A0001 /* UserIntent.swift in Sources */,
 				AA000003296A0001 /* Scene.swift in Sources */,
@@ -883,9 +858,6 @@
 				AA000005296A0001 /* TransitionPlan.swift in Sources */,
 				AA000006296A0001 /* SimulatedPath.swift in Sources */,
 				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
-				F0000201296A0001 /* SessionClusterer.swift in Sources */,
-				F0000202296A0001 /* ZoomLevelCalculator.swift in Sources */,
-				F0000203296A0001 /* SessionCenterResolver.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
 				F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */,
 				2A626F302F2A280000510712 /* SparkleController.swift in Sources */,
