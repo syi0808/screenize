@@ -120,6 +120,8 @@
 		AF000001296A0001 /* SceneSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100001296A0001 /* SceneSegmenterTests.swift */; };
 		AE000002296A0001 /* ShotPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100002296A0001 /* ShotPlanner.swift */; };
 		AF000002296A0001 /* ShotPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100002296A0001 /* ShotPlannerTests.swift */; };
+		AE000003296A0001 /* TransitionPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100003296A0001 /* TransitionPlanner.swift */; };
+		AF000003296A0001 /* TransitionPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100003296A0001 /* TransitionPlannerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -238,6 +240,8 @@
 		AF100001296A0001 /* SceneSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenterTests.swift; sourceTree = "<group>"; };
 		AE100002296A0001 /* ShotPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlanner.swift; sourceTree = "<group>"; };
 		AF100002296A0001 /* ShotPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlannerTests.swift; sourceTree = "<group>"; };
+		AE100003296A0001 /* TransitionPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlanner.swift; sourceTree = "<group>"; };
+		AF100003296A0001 /* TransitionPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlannerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -325,6 +329,7 @@
 			children = (
 				AF100001296A0001 /* SceneSegmenterTests.swift */,
 				AF100002296A0001 /* ShotPlannerTests.swift */,
+				AF100003296A0001 /* TransitionPlannerTests.swift */,
 			);
 			path = Planning;
 			sourceTree = "<group>";
@@ -526,6 +531,7 @@
 			children = (
 				AE100001296A0001 /* SceneSegmenter.swift */,
 				AE100002296A0001 /* ShotPlanner.swift */,
+				AE100003296A0001 /* TransitionPlanner.swift */,
 			);
 			path = Planning;
 			sourceTree = "<group>";
@@ -858,6 +864,7 @@
 				AD000011296A0001 /* IntentClassifier.swift in Sources */,
 				AE000001296A0001 /* SceneSegmenter.swift in Sources */,
 				AE000002296A0001 /* ShotPlanner.swift in Sources */,
+				AE000003296A0001 /* TransitionPlanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -870,6 +877,7 @@
 				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
 				AF000001296A0001 /* SceneSegmenterTests.swift in Sources */,
 				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
+				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
