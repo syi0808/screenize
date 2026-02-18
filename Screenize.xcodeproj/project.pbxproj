@@ -125,6 +125,8 @@
 		B0000001296A0001 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100001296A0001 /* CameraController.swift */; };
 		B0000002296A0001 /* StaticHoldController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100002296A0001 /* StaticHoldController.swift */; };
 		B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100001296A0001 /* StaticHoldControllerTests.swift */; };
+		B0000003296A0001 /* CameraSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100003296A0001 /* CameraSimulator.swift */; };
+		B1000002296A0001 /* CameraSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100002296A0001 /* CameraSimulatorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -248,6 +250,8 @@
 		B0100001296A0001 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
 		B0100002296A0001 /* StaticHoldController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldController.swift; sourceTree = "<group>"; };
 		B1100001296A0001 /* StaticHoldControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldControllerTests.swift; sourceTree = "<group>"; };
+		B0100003296A0001 /* CameraSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulator.swift; sourceTree = "<group>"; };
+		B1100002296A0001 /* CameraSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulatorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -335,6 +339,7 @@
 			isa = PBXGroup;
 			children = (
 				B1100001296A0001 /* StaticHoldControllerTests.swift */,
+				B1100002296A0001 /* CameraSimulatorTests.swift */,
 			);
 			path = Simulation;
 			sourceTree = "<group>";
@@ -547,6 +552,7 @@
 			children = (
 				B0100001296A0001 /* CameraController.swift */,
 				B0100002296A0001 /* StaticHoldController.swift */,
+				B0100003296A0001 /* CameraSimulator.swift */,
 			);
 			path = Simulation;
 			sourceTree = "<group>";
@@ -892,6 +898,7 @@
 				AE000003296A0001 /* TransitionPlanner.swift in Sources */,
 				B0000001296A0001 /* CameraController.swift in Sources */,
 				B0000002296A0001 /* StaticHoldController.swift in Sources */,
+				B0000003296A0001 /* CameraSimulator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -906,6 +913,7 @@
 				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
 				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,
 				B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */,
+				B1000002296A0001 /* CameraSimulatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
