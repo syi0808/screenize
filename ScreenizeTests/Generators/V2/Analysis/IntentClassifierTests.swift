@@ -416,6 +416,39 @@ final class IntentClassifierTests: XCTestCase {
         )
     }
 
+    func test_classify_thenSegment_realisticRecording_producesMultipleScenes() {
+        // 15s recording: clicks at 0.5, 4.0, 10.0; typing at 1.5-2.3, 5.0-6.2
+        let clicks = [
+            makeClick(at: 0.5, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeClick(at: 4.0, position: NormalizedPoint(x: 0.7, y: 0.7)),
+            makeClick(at: 10.0, position: NormalizedPoint(x: 0.5, y: 0.5)),
+        ]
+        let keys = [
+            makeKeyDown(at: 1.5), makeKeyDown(at: 1.7), makeKeyDown(at: 1.9),
+            makeKeyDown(at: 2.1), makeKeyDown(at: 2.3),
+            makeKeyDown(at: 5.0), makeKeyDown(at: 5.2), makeKeyDown(at: 5.4),
+            makeKeyDown(at: 5.6), makeKeyDown(at: 5.8), makeKeyDown(at: 6.0),
+            makeKeyDown(at: 6.2),
+        ]
+        let mouseData = MockMouseDataSource(
+            duration: 15.0, clicks: clicks, keyboardEvents: keys
+        )
+        let timeline = EventTimeline.build(from: mouseData)
+        let intentSpans = IntentClassifier.classify(
+            events: timeline, uiStateSamples: []
+        )
+        let scenes = SceneSegmenter.segment(
+            intentSpans: intentSpans, eventTimeline: timeline, duration: 15.0
+        )
+
+        // Should produce at least 3 distinct scenes (click, type, click, type, click)
+        XCTAssertGreaterThanOrEqual(
+            scenes.count, 3,
+            "Realistic recording should produce >= 3 scenes. " +
+            "Got \(scenes.count): \(scenes.map { "[\(String(format: "%.1f", $0.startTime))-\(String(format: "%.1f", $0.endTime))] \($0.primaryIntent)" })"
+        )
+    }
+
     func test_classify_shortGapUnder300ms_extendsPreviousSpan() {
         // Two clicks 0.2s apart at same position — gap < 0.3s should NOT insert idle
         // (continuation of same action)
