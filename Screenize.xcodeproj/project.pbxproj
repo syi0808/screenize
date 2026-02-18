@@ -131,6 +131,7 @@
 		B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100002296A0001 /* CursorTrackEmitterTests.swift */; };
 		B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100003296A0001 /* KeystrokeTrackEmitter.swift */; };
 		B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */; };
+		B5000001296A0001 /* EasingCurveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5100001296A0001 /* EasingCurveTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -260,6 +261,7 @@
 		B3100002296A0001 /* CursorTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitterTests.swift; sourceTree = "<group>"; };
 		B2100003296A0001 /* KeystrokeTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitter.swift; sourceTree = "<group>"; };
 		B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitterTests.swift; sourceTree = "<group>"; };
+		B5100001296A0001 /* EasingCurveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingCurveTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -308,11 +310,20 @@
 			path = Analysis;
 			sourceTree = "<group>";
 		};
+		B5200001296A0001 /* Timeline */ = {
+			isa = PBXGroup;
+			children = (
+				B5100001296A0001 /* EasingCurveTests.swift */,
+			);
+			path = Timeline;
+			sourceTree = "<group>";
+		};
 		AD200020296A0001 /* ScreenizeTests */ = {
 			isa = PBXGroup;
 			children = (
 				AD200021296A0001 /* Helpers */,
 				AD200022296A0001 /* Generators */,
+				B5200001296A0001 /* Timeline */,
 			);
 			path = ScreenizeTests;
 			sourceTree = "<group>";
@@ -934,6 +945,7 @@
 				B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */,
 				B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */,
 				B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */,
+				B5000001296A0001 /* EasingCurveTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
