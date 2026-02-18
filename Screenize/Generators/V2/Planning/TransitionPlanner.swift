@@ -43,7 +43,10 @@ struct TransitionPlanner {
             )
         }
 
-        let distance = from.idealCenter.distance(to: to.idealCenter)
+        let rawDistance = from.idealCenter.distance(to: to.idealCenter)
+        // Scale distance by zoom so that at higher zoom, transitions feel proportionally farther
+        let maxZoom = max(from.idealZoom, to.idealZoom)
+        let distance = rawDistance * maxZoom
 
         let style: TransitionStyle
         let easing: EasingCurve
