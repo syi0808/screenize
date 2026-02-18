@@ -213,6 +213,60 @@ final class SceneSegmenterTests: XCTestCase {
         XCTAssertTrue(hasActiveElement)
     }
 
+    // MARK: - Focus Region Size by Intent
+
+    func test_segment_clickingIntent_largerRegion() {
+        let span = makeSpan(start: 0, end: 5, intent: .clicking,
+                            position: NormalizedPoint(x: 0.5, y: 0.5))
+        let timeline = EventTimeline(events: [], duration: 5.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: [span], eventTimeline: timeline, duration: 5.0
+        )
+        let cursorRegion = scenes[0].focusRegions.first {
+            if case .cursorPosition = $0.source { return true }
+            return false
+        }!
+        // Clicking should have 0.1x0.1 region (10%), not 0.02x0.02 (2%)
+        XCTAssertGreaterThan(cursorRegion.region.width, 0.05,
+                             "Clicking region should be larger than 2%")
+        XCTAssertGreaterThan(cursorRegion.region.height, 0.05,
+                             "Clicking region should be larger than 2%")
+    }
+
+    func test_segment_typingIntent_textLineShape() {
+        let span = makeSpan(start: 0, end: 5,
+                            intent: .typing(context: .codeEditor),
+                            position: NormalizedPoint(x: 0.5, y: 0.5))
+        let timeline = EventTimeline(events: [], duration: 5.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: [span], eventTimeline: timeline, duration: 5.0
+        )
+        let cursorRegion = scenes[0].focusRegions.first {
+            if case .cursorPosition = $0.source { return true }
+            return false
+        }!
+        // Typing should have wider-than-tall shape (text line)
+        XCTAssertGreaterThan(cursorRegion.region.width, cursorRegion.region.height,
+                             "Typing region should be wider than tall")
+        XCTAssertGreaterThan(cursorRegion.region.width, 0.05,
+                             "Typing region should be wider than 5%")
+    }
+
+    func test_segment_navigatingIntent_largerRegion() {
+        let span = makeSpan(start: 0, end: 5, intent: .navigating,
+                            position: NormalizedPoint(x: 0.5, y: 0.5))
+        let timeline = EventTimeline(events: [], duration: 5.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: [span], eventTimeline: timeline, duration: 5.0
+        )
+        let cursorRegion = scenes[0].focusRegions.first {
+            if case .cursorPosition = $0.source { return true }
+            return false
+        }!
+        XCTAssertGreaterThan(cursorRegion.region.width, 0.05,
+                             "Navigating region should be larger than 2%")
+    }
+
     // MARK: - App Context
 
     func test_segment_appContextExtracted() {

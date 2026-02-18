@@ -173,14 +173,15 @@ struct SceneSegmenter {
         var regions: [FocusRegion] = []
 
         for span in spans {
-            // Always add a cursor-position based region
+            // Scale cursor focus region based on intent type
+            let (regionW, regionH) = cursorRegionSize(for: span.intent)
             let cursorRegion = FocusRegion(
                 time: span.startTime,
                 region: CGRect(
-                    x: CGFloat(span.focusPosition.x) - 0.01,
-                    y: CGFloat(span.focusPosition.y) - 0.01,
-                    width: 0.02,
-                    height: 0.02
+                    x: CGFloat(span.focusPosition.x) - regionW / 2,
+                    y: CGFloat(span.focusPosition.y) - regionH / 2,
+                    width: regionW,
+                    height: regionH
                 ),
                 confidence: span.confidence,
                 source: .cursorPosition
@@ -200,6 +201,20 @@ struct SceneSegmenter {
         }
 
         return regions
+    }
+
+    /// Return (width, height) for cursor-based focus region scaled by intent type.
+    private static func cursorRegionSize(for intent: UserIntent) -> (CGFloat, CGFloat) {
+        switch intent {
+        case .clicking, .navigating:
+            return (0.1, 0.1)       // 10% — typical click target area
+        case .typing:
+            return (0.15, 0.05)     // Text line shape (wider than tall)
+        case .dragging:
+            return (0.1, 0.1)       // Drag start/end target area
+        default:
+            return (0.08, 0.08)     // Default for scrolling, reading, etc.
+        }
     }
 
     // MARK: - App Context
