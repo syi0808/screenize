@@ -20,14 +20,14 @@ final class SmartZoomGenerator {
 
     // MARK: - Generate
 
-    /// Generate session-based keyframes
+    /// Generate session-based camera track
     func generate(
         from mouseData: MouseDataSource,
         frameAnalysisArray: [VideoFrameAnalyzer.FrameAnalysis],
         uiStateSamples: [UIStateSample],
         screenBounds: CGSize,
         settings: SmartZoomSettings
-    ) -> TransformTrack {
+    ) -> CameraTrack {
         var keyframes: [TransformKeyframe] = []
 
         // Add an initial keyframe representing the base state
@@ -132,12 +132,7 @@ final class SmartZoomGenerator {
         // Remove duplicates and sort
         keyframes = optimizeKeyframes(keyframes)
 
-        return TransformTrack(
-            id: UUID(),
-            name: "Transform (Smart Zoom)",
-            isEnabled: true,
-            keyframes: keyframes
-        )
+        return convertToSegments(keyframes: keyframes, duration: mouseData.duration)
     }
 
     // MARK: - Zoom In Keyframes
@@ -334,14 +329,37 @@ final class SmartZoomGenerator {
         return result
     }
 
-    private func createEmptyTrack() -> TransformTrack {
-        TransformTrack(
-            id: UUID(),
-            name: "Transform (Smart Zoom)",
-            isEnabled: true,
-            keyframes: [
-                TransformKeyframe(time: 0, zoom: 1.0, center: NormalizedPoint(x: 0.5, y: 0.5))
-            ]
-        )
+    private func createEmptyTrack() -> CameraTrack {
+        let kf = TransformKeyframe(time: 0, zoom: 1.0, center: NormalizedPoint(x: 0.5, y: 0.5))
+        return convertToSegments(keyframes: [kf], duration: 0)
+    }
+
+    /// Convert internal keyframes to CameraTrack segments.
+    private func convertToSegments(
+        keyframes: [TransformKeyframe],
+        duration: TimeInterval
+    ) -> CameraTrack {
+        let sorted = keyframes.sorted { $0.time < $1.time }
+        guard !sorted.isEmpty else {
+            return CameraTrack(name: "Camera (Smart Zoom)", segments: [])
+        }
+
+        var segments: [CameraSegment] = []
+        for index in 0..<sorted.count {
+            let current = sorted[index]
+            let nextTime = index + 1 < sorted.count ? sorted[index + 1].time : duration
+            let endTime = max(current.time + 0.001, nextTime)
+            segments.append(
+                CameraSegment(
+                    startTime: current.time,
+                    endTime: min(duration, endTime),
+                    startTransform: current.value,
+                    endTransform: index + 1 < sorted.count ? sorted[index + 1].value : current.value,
+                    interpolation: current.easing
+                )
+            )
+        }
+
+        return CameraTrack(name: "Camera (Smart Zoom)", segments: segments)
     }
 }

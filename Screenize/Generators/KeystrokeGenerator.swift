@@ -1,20 +1,19 @@
 import Foundation
 
-/// Keystroke overlay keyframe generator
-/// Analyzes recorded keyboard events to auto-generate keystroke overlay keyframes
-final class KeystrokeGenerator: KeyframeGenerator {
-    typealias Output = KeystrokeTrack
+/// Keystroke overlay segment generator
+/// Analyzes recorded keyboard events to auto-generate keystroke overlay segments
+final class KeystrokeGenerator {
 
     let name = "Keystroke"
-    let description = "Generate overlay keyframes from keyboard input events"
+    let description = "Generate overlay segments from keyboard input events"
 
-    func generate(from mouseData: MouseDataSource, settings: GeneratorSettings) -> KeystrokeTrack {
+    func generate(from mouseData: MouseDataSource, settings: GeneratorSettings) -> KeystrokeTrackV2 {
         let keystrokeSettings = settings.keystroke
         guard keystrokeSettings.enabled else {
-            return KeystrokeTrack(name: "Keystroke (Auto)", keyframes: [])
+            return KeystrokeTrackV2(name: "Keystroke (Auto)", segments: [])
         }
 
-        var keyframes: [KeystrokeKeyframe] = []
+        var segments: [KeystrokeSegment] = []
         var events = mouseData.keyboardEvents.filter { $0.eventType == .keyDown }
 
         // Remove the last event if it matches the recording stop hotkey (Cmd+Shift+2, keyCode 19)
@@ -37,25 +36,25 @@ final class KeystrokeGenerator: KeyframeGenerator {
             }
 
             // Auto-repeat filtering (same key within minInterval)
-            if let lastKF = keyframes.last,
-               event.time - lastKF.time < keystrokeSettings.minInterval {
+            if let lastSeg = segments.last,
+               event.time - lastSeg.startTime < keystrokeSettings.minInterval {
                 continue
             }
 
             let modSymbols = Self.modifierSymbols(from: event.modifiers)
             let displayText = modSymbols + keyName
 
-            let keyframe = KeystrokeKeyframe(
-                time: event.time,
+            let segment = KeystrokeSegment(
+                startTime: event.time,
+                endTime: event.time + keystrokeSettings.displayDuration,
                 displayText: displayText,
-                duration: keystrokeSettings.displayDuration,
                 fadeInDuration: keystrokeSettings.fadeInDuration,
                 fadeOutDuration: keystrokeSettings.fadeOutDuration
             )
-            keyframes.append(keyframe)
+            segments.append(segment)
         }
 
-        return KeystrokeTrack(name: "Keystroke (Auto)", isEnabled: true, keyframes: keyframes)
+        return KeystrokeTrackV2(name: "Keystroke (Auto)", isEnabled: true, segments: segments)
     }
 
     // MARK: - Key Display Name

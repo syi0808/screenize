@@ -3,9 +3,7 @@ import CoreGraphics
 
 /// Cursor style generator
 /// Creates a default cursor style track. Cursor position is always derived from mouse data.
-final class ClickCursorGenerator: KeyframeGenerator {
-
-    typealias Output = CursorTrack
+final class ClickCursorGenerator {
 
     // MARK: - Properties
 
@@ -14,54 +12,21 @@ final class ClickCursorGenerator: KeyframeGenerator {
 
     // MARK: - Generate
 
-    func generate(from mouseData: MouseDataSource, settings: GeneratorSettings) -> CursorTrack {
+    func generate(from mouseData: MouseDataSource, settings: GeneratorSettings) -> CursorTrackV2 {
         let cursorSettings = settings.clickCursor
 
-        // Create a single keyframe at time 0 with default style
-        let keyframe = CursorStyleKeyframe(
-            time: 0,
+        let segment = CursorSegment(
+            startTime: 0,
+            endTime: mouseData.duration,
             style: .arrow,
             visible: true,
             scale: cursorSettings.cursorScale
         )
 
-        return CursorTrack(
-            id: UUID(),
+        return CursorTrackV2(
             name: "Cursor",
             isEnabled: true,
-            defaultStyle: .arrow,
-            defaultScale: cursorSettings.cursorScale,
-            defaultVisible: true,
-            styleKeyframes: [keyframe]
-        )
-    }
-}
-
-// MARK: - Statistics Extension
-
-extension ClickCursorGenerator {
-
-    func generateWithStatistics(
-        from mouseData: MouseDataSource,
-        settings: GeneratorSettings
-    ) -> GeneratorResult<CursorTrack> {
-        let startTime = Date()
-
-        let track = generate(from: mouseData, settings: settings)
-
-        let processingTime = Date().timeIntervalSince(startTime)
-
-        let statistics = GeneratorStatistics(
-            analyzedEvents: 0,
-            generatedKeyframes: track.styleKeyframes?.count ?? 0,
-            processingTime: processingTime,
-            additionalInfo: [:]
-        )
-
-        return GeneratorResult(
-            track: track,
-            keyframeCount: track.styleKeyframes?.count ?? 0,
-            statistics: statistics
+            segments: [segment]
         )
     }
 }
