@@ -116,6 +116,8 @@
 		AD000021296A0001 /* MockMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100021296A0001 /* MockMouseDataSource.swift */; };
 		AD000022296A0001 /* EventTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100022296A0001 /* EventTimelineTests.swift */; };
 		AD000023296A0001 /* IntentClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100023296A0001 /* IntentClassifierTests.swift */; };
+		AE000001296A0001 /* SceneSegmenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100001296A0001 /* SceneSegmenter.swift */; };
+		AF000001296A0001 /* SceneSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100001296A0001 /* SceneSegmenterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -230,6 +232,8 @@
 		AD100021296A0001 /* MockMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMouseDataSource.swift; sourceTree = "<group>"; };
 		AD100022296A0001 /* EventTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimelineTests.swift; sourceTree = "<group>"; };
 		AD100023296A0001 /* IntentClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifierTests.swift; sourceTree = "<group>"; };
+		AE100001296A0001 /* SceneSegmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenter.swift; sourceTree = "<group>"; };
+		AF100001296A0001 /* SceneSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenterTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -307,8 +311,17 @@
 			isa = PBXGroup;
 			children = (
 				AD200024296A0001 /* Analysis */,
+				AF200001296A0001 /* Planning */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		AF200001296A0001 /* Planning */ = {
+			isa = PBXGroup;
+			children = (
+				AF100001296A0001 /* SceneSegmenterTests.swift */,
+			);
+			path = Planning;
 			sourceTree = "<group>";
 		};
 		AD200024296A0001 /* Analysis */ = {
@@ -497,9 +510,18 @@
 			children = (
 				AC000002296A0001 /* Types */,
 				AD200010296A0001 /* Analysis */,
+				AE200001296A0001 /* Planning */,
 				AB000007296A0001 /* SmartGeneratorV2.swift */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		AE200001296A0001 /* Planning */ = {
+			isa = PBXGroup;
+			children = (
+				AE100001296A0001 /* SceneSegmenter.swift */,
+			);
+			path = Planning;
 			sourceTree = "<group>";
 		};
 		AC000002296A0001 /* Types */ = {
@@ -828,6 +850,7 @@
 				F0A00005296A0001 /* EventStreamWriter.swift in Sources */,
 				AD000010296A0001 /* EventTimeline.swift in Sources */,
 				AD000011296A0001 /* IntentClassifier.swift in Sources */,
+				AE000001296A0001 /* SceneSegmenter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -838,6 +861,7 @@
 				AD000021296A0001 /* MockMouseDataSource.swift in Sources */,
 				AD000022296A0001 /* EventTimelineTests.swift in Sources */,
 				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
+				AF000001296A0001 /* SceneSegmenterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
