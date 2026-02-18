@@ -122,6 +122,9 @@
 		AF000002296A0001 /* ShotPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100002296A0001 /* ShotPlannerTests.swift */; };
 		AE000003296A0001 /* TransitionPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100003296A0001 /* TransitionPlanner.swift */; };
 		AF000003296A0001 /* TransitionPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100003296A0001 /* TransitionPlannerTests.swift */; };
+		B0000001296A0001 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100001296A0001 /* CameraController.swift */; };
+		B0000002296A0001 /* StaticHoldController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100002296A0001 /* StaticHoldController.swift */; };
+		B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100001296A0001 /* StaticHoldControllerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -242,6 +245,9 @@
 		AF100002296A0001 /* ShotPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlannerTests.swift; sourceTree = "<group>"; };
 		AE100003296A0001 /* TransitionPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlanner.swift; sourceTree = "<group>"; };
 		AF100003296A0001 /* TransitionPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlannerTests.swift; sourceTree = "<group>"; };
+		B0100001296A0001 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
+		B0100002296A0001 /* StaticHoldController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldController.swift; sourceTree = "<group>"; };
+		B1100001296A0001 /* StaticHoldControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldControllerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -320,8 +326,17 @@
 			children = (
 				AD200024296A0001 /* Analysis */,
 				AF200001296A0001 /* Planning */,
+				B1200001296A0001 /* Simulation */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		B1200001296A0001 /* Simulation */ = {
+			isa = PBXGroup;
+			children = (
+				B1100001296A0001 /* StaticHoldControllerTests.swift */,
+			);
+			path = Simulation;
 			sourceTree = "<group>";
 		};
 		AF200001296A0001 /* Planning */ = {
@@ -521,9 +536,19 @@
 				AC000002296A0001 /* Types */,
 				AD200010296A0001 /* Analysis */,
 				AE200001296A0001 /* Planning */,
+				B0200001296A0001 /* Simulation */,
 				AB000007296A0001 /* SmartGeneratorV2.swift */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		B0200001296A0001 /* Simulation */ = {
+			isa = PBXGroup;
+			children = (
+				B0100001296A0001 /* CameraController.swift */,
+				B0100002296A0001 /* StaticHoldController.swift */,
+			);
+			path = Simulation;
 			sourceTree = "<group>";
 		};
 		AE200001296A0001 /* Planning */ = {
@@ -865,6 +890,8 @@
 				AE000001296A0001 /* SceneSegmenter.swift in Sources */,
 				AE000002296A0001 /* ShotPlanner.swift in Sources */,
 				AE000003296A0001 /* TransitionPlanner.swift in Sources */,
+				B0000001296A0001 /* CameraController.swift in Sources */,
+				B0000002296A0001 /* StaticHoldController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -878,6 +905,7 @@
 				AF000001296A0001 /* SceneSegmenterTests.swift in Sources */,
 				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
 				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,
+				B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
