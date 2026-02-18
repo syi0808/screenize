@@ -43,6 +43,7 @@ class SmartGeneratorV2 {
         let shotPlans = ShotPlanner.plan(
             scenes: scenes,
             screenBounds: screenBounds,
+            eventTimeline: timeline,
             settings: settings.shot
         )
 

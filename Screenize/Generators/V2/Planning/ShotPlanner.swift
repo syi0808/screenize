@@ -10,10 +10,12 @@ struct ShotPlanner {
     static func plan(
         scenes: [CameraScene],
         screenBounds: CGSize,
+        eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> [ShotPlan] {
         scenes.map { scene in
-            planScene(scene, screenBounds: screenBounds, settings: settings)
+            planScene(scene, screenBounds: screenBounds,
+                      eventTimeline: eventTimeline, settings: settings)
         }
     }
 
@@ -22,12 +24,14 @@ struct ShotPlanner {
     private static func planScene(
         _ scene: CameraScene,
         screenBounds: CGSize,
+        eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> ShotPlan {
         let zoomRange = zoomRange(for: scene.primaryIntent, settings: settings)
         let zoom = computeZoom(
             scene: scene, zoomRange: zoomRange,
-            screenBounds: screenBounds, settings: settings
+            screenBounds: screenBounds, eventTimeline: eventTimeline,
+            settings: settings
         )
         let center = computeCenter(
             scene: scene, zoom: zoom, screenBounds: screenBounds, settings: settings
@@ -78,9 +82,10 @@ struct ShotPlanner {
         scene: CameraScene,
         zoomRange: ClosedRange<CGFloat>,
         screenBounds: CGSize,
+        eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> CGFloat {
-        // Check for element-based sizing from focus regions
+        // 1. Element-based sizing (highest priority)
         if let elementRegion = scene.focusRegions.first(where: { region in
             if case .activeElement = region.source { return true }
             return false
@@ -98,9 +103,38 @@ struct ShotPlanner {
             }
         }
 
-        // Default: use the midpoint of the range
+        // 2. Activity bounding box from event positions
+        let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        let positions = sceneEvents.map(\.position)
+        if positions.count >= 2 {
+            let bbox = computeBoundingBox(
+                positions: positions, padding: settings.workAreaPadding
+            )
+            let areaSize = max(bbox.width, bbox.height)
+            if areaSize > 0.01 {
+                let computed = settings.targetAreaCoverage / areaSize
+                return clamp(computed, to: zoomRange, settings: settings)
+            }
+        }
+
+        // 3. Fallback: midpoint of the intent range
         let defaultZoom = (zoomRange.lowerBound + zoomRange.upperBound) / 2
         return clamp(defaultZoom, to: zoomRange, settings: settings)
+    }
+
+    /// Compute bounding box from a set of normalized positions with padding.
+    private static func computeBoundingBox(
+        positions: [NormalizedPoint],
+        padding: CGFloat
+    ) -> CGRect {
+        guard !positions.isEmpty else { return .zero }
+        let xs = positions.map(\.x)
+        let ys = positions.map(\.y)
+        let minX = max(0, xs.min()! - padding)
+        let maxX = min(1, xs.max()! + padding)
+        let minY = max(0, ys.min()! - padding)
+        let maxY = min(1, ys.max()! + padding)
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
     /// Normalize a pixel-space frame to 0-1 space. If frame is already in 0-1, return as-is.
