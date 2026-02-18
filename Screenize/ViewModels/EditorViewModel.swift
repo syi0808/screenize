@@ -294,61 +294,51 @@ final class EditorViewModel: ObservableObject {
                 return
             }
 
-            let settings = GeneratorSettings.default
-
-            // 2. Generate camera track (includes expensive video analysis)
-            var cameraTrack: CameraTrack?
-            if selection.contains(.transform) {
-                let frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis]
-                if let cached = project.frameAnalysisCache, !cached.isEmpty {
-                    frameAnalysis = cached
-                } else {
-                    let analyzer = VideoFrameAnalyzer()
-                    frameAnalysis = try await analyzer.analyze(
-                        videoURL: project.media.videoURL,
-                        progressHandler: { progress in
-                            Task { @MainActor in
-                                print("Frame analysis: \(Int(progress.percentage * 100))%")
-                            }
+            // 2. Load frame analysis (cached or fresh)
+            let frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis]
+            if let cached = project.frameAnalysisCache, !cached.isEmpty {
+                frameAnalysis = cached
+            } else {
+                let analyzer = VideoFrameAnalyzer()
+                frameAnalysis = try await analyzer.analyze(
+                    videoURL: project.media.videoURL,
+                    progressHandler: { progress in
+                        Task { @MainActor in
+                            print("Frame analysis: \(Int(progress.percentage * 100))%")
                         }
-                    )
-                    project.frameAnalysisCache = frameAnalysis
-                }
-
-                // Load UI state samples from event streams
-                let uiStateSamples: [UIStateSample]
-                let screenBounds: CGSize
-                if let interop = project.interop, let packageURL = projectURL {
-                    uiStateSamples = EventStreamLoader.loadUIStateSamples(
-                        from: packageURL,
-                        interop: interop
-                    )
-                } else {
-                    uiStateSamples = []
-                }
-                screenBounds = project.media.pixelSize
-
-                cameraTrack = SmartZoomGenerator().generate(
-                    from: mouseDataSource,
-                    frameAnalysisArray: frameAnalysis,
-                    uiStateSamples: uiStateSamples,
-                    screenBounds: screenBounds,
-                    settings: settings.smartZoom
+                    }
                 )
+                project.frameAnalysisCache = frameAnalysis
             }
 
-            let cursorTrack = selection.contains(.cursor)
-                ? ClickCursorGenerator().generate(from: mouseDataSource, settings: settings) : nil
-            let keystrokeTrack = selection.contains(.keystroke)
-                ? KeystrokeGenerator().generate(from: mouseDataSource, settings: settings) : nil
+            // 3. Load UI state samples from event streams
+            let uiStateSamples: [UIStateSample]
+            if let interop = project.interop, let packageURL = projectURL {
+                uiStateSamples = EventStreamLoader.loadUIStateSamples(
+                    from: packageURL,
+                    interop: interop
+                )
+            } else {
+                uiStateSamples = []
+            }
 
-            updateTimeline(
-                cameraTrack: cameraTrack,
-                cursorTrack: cursorTrack,
-                keystrokeTrack: keystrokeTrack
+            // 4. Run V2 smart generation pipeline
+            let generated = SmartGeneratorV2().generate(
+                from: mouseDataSource,
+                uiStateSamples: uiStateSamples,
+                frameAnalysis: frameAnalysis,
+                screenBounds: project.media.pixelSize,
+                settings: .default
             )
 
-            print("Smart generation completed for \(selection.count) track type(s)")
+            // 5. Apply selected tracks
+            updateTimeline(
+                cameraTrack: selection.contains(.transform) ? generated.cameraTrack : nil,
+                cursorTrack: selection.contains(.cursor) ? generated.cursorTrack : nil,
+                keystrokeTrack: selection.contains(.keystroke) ? generated.keystrokeTrack : nil
+            )
+
+            print("Smart generation V2 completed for \(selection.count) track type(s)")
 
             hasUnsavedChanges = true
             invalidatePreviewCache()

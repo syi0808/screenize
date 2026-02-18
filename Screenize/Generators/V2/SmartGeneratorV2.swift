@@ -2,8 +2,13 @@ import Foundation
 import CoreGraphics
 
 /// V2 smart generation orchestrator.
-/// Skeleton — implementation will be added in Step 3 of the migration.
+///
+/// Pipeline: EventTimeline → IntentClassifier → SceneSegmenter →
+/// ShotPlanner → TransitionPlanner → CameraSimulator →
+/// CameraTrackEmitter + CursorTrackEmitter + KeystrokeTrackEmitter
 class SmartGeneratorV2 {
+
+    private let simulator = CameraSimulator()
 
     /// Generate a complete timeline from recording data.
     func generate(
@@ -13,7 +18,66 @@ class SmartGeneratorV2 {
         screenBounds: CGSize,
         settings: SmartGenerationSettings
     ) -> GeneratedTimeline {
-        fatalError("SmartGeneratorV2 is not yet implemented. Use existing generators.")
+        let duration = mouseData.duration
+
+        // 1. Build event timeline
+        let timeline = EventTimeline.build(
+            from: mouseData,
+            uiStateSamples: uiStateSamples
+        )
+
+        // 2. Classify intents
+        let intentSpans = IntentClassifier.classify(
+            events: timeline,
+            uiStateSamples: uiStateSamples
+        )
+
+        // 3. Segment into scenes
+        let scenes = SceneSegmenter.segment(
+            intentSpans: intentSpans,
+            eventTimeline: timeline,
+            duration: duration
+        )
+
+        // 4. Plan shots
+        let shotPlans = ShotPlanner.plan(
+            scenes: scenes,
+            screenBounds: screenBounds,
+            settings: settings.shot
+        )
+
+        // 5. Plan transitions
+        let transitions = TransitionPlanner.plan(
+            shotPlans: shotPlans,
+            settings: settings.transition
+        )
+
+        // 6. Simulate camera path
+        let path = simulator.simulate(
+            shotPlans: shotPlans,
+            transitions: transitions,
+            mouseData: mouseData,
+            settings: settings.simulation,
+            duration: duration
+        )
+
+        // 7. Emit tracks
+        let cameraTrack = CameraTrackEmitter.emit(path, duration: duration)
+        let cursorTrack = CursorTrackEmitter.emit(
+            duration: duration,
+            settings: settings.cursor
+        )
+        let keystrokeTrack = KeystrokeTrackEmitter.emit(
+            eventTimeline: timeline,
+            duration: duration,
+            settings: settings.keystroke
+        )
+
+        return GeneratedTimeline(
+            cameraTrack: cameraTrack,
+            cursorTrack: cursorTrack,
+            keystrokeTrack: keystrokeTrack
+        )
     }
 }
 
