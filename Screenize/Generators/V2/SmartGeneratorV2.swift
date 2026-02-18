@@ -65,6 +65,14 @@ class SmartGeneratorV2 {
             duration: duration
         )
 
+        #if DEBUG
+        Self.dumpDiagnostics(
+            timeline: timeline, intentSpans: intentSpans,
+            scenes: scenes, shotPlans: shotPlans,
+            cameraTrack: CameraTrackEmitter.emit(path, duration: duration)
+        )
+        #endif
+
         // 7. Emit tracks
         let cameraTrack = CameraTrackEmitter.emit(path, duration: duration)
         let cursorTrack = CursorTrackEmitter.emit(
@@ -83,6 +91,92 @@ class SmartGeneratorV2 {
             keystrokeTrack: keystrokeTrack
         )
     }
+
+    // MARK: - Diagnostics
+
+    #if DEBUG
+    private static func dumpDiagnostics(
+        timeline: EventTimeline,
+        intentSpans: [IntentSpan],
+        scenes: [CameraScene],
+        shotPlans: [ShotPlan],
+        cameraTrack: CameraTrack
+    ) {
+        print("[V2-Pipeline] === Diagnostics ===")
+        print("[V2-Pipeline] EventTimeline: \(timeline.events.count) events, \(String(format: "%.1f", timeline.duration))s")
+
+        // Intent span summary
+        var intentCounts: [String: Int] = [:]
+        for span in intentSpans {
+            let key = intentLabel(span.intent)
+            intentCounts[key, default: 0] += 1
+        }
+        let intentSummary = intentCounts.sorted { $0.key < $1.key }
+            .map { "\($0.key):\($0.value)" }.joined(separator: ", ")
+        print("[V2-Pipeline] IntentSpans: \(intentSpans.count) [\(intentSummary)]")
+
+        // Scene summary
+        var sceneCounts: [String: Int] = [:]
+        for scene in scenes {
+            let key = intentLabel(scene.primaryIntent)
+            sceneCounts[key, default: 0] += 1
+        }
+        let sceneSummary = sceneCounts.sorted { $0.key < $1.key }
+            .map { "\($0.key):\($0.value)" }.joined(separator: ", ")
+        print("[V2-Pipeline] Scenes: \(scenes.count) [\(sceneSummary)]")
+
+        // Shot plans detail
+        print("[V2-Pipeline] ShotPlans:")
+        for (i, plan) in shotPlans.enumerated() {
+            let intent = intentLabel(plan.scene.primaryIntent)
+            let t = String(format: "t=%.1f-%.1f", plan.scene.startTime, plan.scene.endTime)
+            let zoom = String(format: "zoom=%.2f", plan.idealZoom)
+            let center = String(format: "center=(%.2f,%.2f)", plan.idealCenter.x, plan.idealCenter.y)
+            let src: String
+            switch plan.zoomSource {
+            case .element: src = "src=element"
+            case .activityBBox: src = "src=bbox"
+            case .intentMidpoint: src = "src=midpoint"
+            }
+            let events = timeline.events(in: plan.scene.startTime...plan.scene.endTime).count
+            let inherited = plan.inherited ? " inherited" : ""
+            print("[V2-Pipeline]   [\(i)] \(intent) \(t) \(zoom) \(center) \(src) events=\(events)\(inherited)")
+        }
+
+        // Camera track summary
+        print("[V2-Pipeline] CameraTrack: \(cameraTrack.segments.count) segments")
+        for (i, seg) in cameraTrack.segments.enumerated() {
+            let t = String(format: "t=%.2f-%.2f", seg.startTime, seg.endTime)
+            let zoomStr = String(format: "zoom=%.2f→%.2f", seg.startTransform.zoom, seg.endTransform.zoom)
+            let posStr = String(
+                format: "pos=(%.2f,%.2f)→(%.2f,%.2f)",
+                seg.startTransform.center.x, seg.startTransform.center.y,
+                seg.endTransform.center.x, seg.endTransform.center.y
+            )
+            print("[V2-Pipeline]   [\(i)] \(t) \(zoomStr) \(posStr)")
+        }
+        print("[V2-Pipeline] === End Diagnostics ===")
+    }
+
+    private static func intentLabel(_ intent: UserIntent) -> String {
+        switch intent {
+        case .typing(let ctx):
+            switch ctx {
+            case .codeEditor: return "typing(code)"
+            case .textField: return "typing(field)"
+            case .terminal: return "typing(term)"
+            case .richTextEditor: return "typing(rich)"
+            }
+        case .clicking: return "clicking"
+        case .navigating: return "navigating"
+        case .dragging: return "dragging"
+        case .scrolling: return "scrolling"
+        case .reading: return "reading"
+        case .switching: return "switching"
+        case .idle: return "idle"
+        }
+    }
+    #endif
 }
 
 /// Output of the V2 smart generation pipeline.

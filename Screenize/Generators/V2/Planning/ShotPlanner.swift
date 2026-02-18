@@ -30,7 +30,7 @@ struct ShotPlanner {
         settings: ShotSettings
     ) -> ShotPlan {
         let zoomRange = zoomRange(for: scene.primaryIntent, settings: settings)
-        let zoom = computeZoom(
+        let (zoom, zoomSource) = computeZoom(
             scene: scene, zoomRange: zoomRange,
             screenBounds: screenBounds, eventTimeline: eventTimeline,
             settings: settings
@@ -45,7 +45,8 @@ struct ShotPlanner {
             scene: scene,
             shotType: shotType,
             idealZoom: zoom,
-            idealCenter: center
+            idealCenter: center,
+            zoomSource: zoomSource
         )
     }
 
@@ -121,7 +122,7 @@ struct ShotPlanner {
         screenBounds: CGSize,
         eventTimeline: EventTimeline,
         settings: ShotSettings
-    ) -> CGFloat {
+    ) -> (CGFloat, ZoomSource) {
         // 1. Element-based sizing (highest priority)
         if let elementRegion = scene.focusRegions.first(where: { region in
             if case .activeElement = region.source { return true }
@@ -136,7 +137,7 @@ struct ShotPlanner {
             )
             if areaSize > 0.01 {
                 let computed = settings.targetAreaCoverage / areaSize
-                return clamp(computed, to: zoomRange, settings: settings)
+                return (clamp(computed, to: zoomRange, settings: settings), .element)
             }
         }
 
@@ -150,13 +151,13 @@ struct ShotPlanner {
             let areaSize = max(bbox.width, bbox.height)
             if areaSize > 0.01 {
                 let computed = settings.targetAreaCoverage / areaSize
-                return clamp(computed, to: zoomRange, settings: settings)
+                return (clamp(computed, to: zoomRange, settings: settings), .activityBBox)
             }
         }
 
         // 3. Fallback: midpoint of the intent range
         let defaultZoom = (zoomRange.lowerBound + zoomRange.upperBound) / 2
-        return clamp(defaultZoom, to: zoomRange, settings: settings)
+        return (clamp(defaultZoom, to: zoomRange, settings: settings), .intentMidpoint)
     }
 
     /// Compute bounding box from a set of normalized positions with padding.
