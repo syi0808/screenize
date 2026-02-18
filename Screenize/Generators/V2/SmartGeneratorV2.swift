@@ -31,6 +31,10 @@ class SmartGeneratorV2 {
             events: timeline,
             uiStateSamples: uiStateSamples
         )
+        print("[V2-Diag] IntentClassifier: \(intentSpans.count) spans")
+        for span in intentSpans {
+            print("  [\(String(format: "%.2f", span.startTime))-\(String(format: "%.2f", span.endTime))] \(span.intent)")
+        }
 
         // 3. Segment into scenes
         let scenes = SceneSegmenter.segment(
@@ -38,6 +42,7 @@ class SmartGeneratorV2 {
             eventTimeline: timeline,
             duration: duration
         )
+        print("[V2-Diag] SceneSegmenter: \(scenes.count) scenes")
 
         // 4. Plan shots
         let shotPlans = ShotPlanner.plan(
@@ -45,12 +50,14 @@ class SmartGeneratorV2 {
             screenBounds: screenBounds,
             settings: settings.shot
         )
+        print("[V2-Diag] ShotPlanner: \(shotPlans.count) shot plans")
 
         // 5. Plan transitions
         let transitions = TransitionPlanner.plan(
             shotPlans: shotPlans,
             settings: settings.transition
         )
+        print("[V2-Diag] TransitionPlanner: \(transitions.count) transitions")
 
         // 6. Simulate camera path
         let path = simulator.simulate(
@@ -60,9 +67,11 @@ class SmartGeneratorV2 {
             settings: settings.simulation,
             duration: duration
         )
+        print("[V2-Diag] CameraSimulator: \(path.sceneSegments.count) scene segs, \(path.transitionSegments.count) transition segs")
 
         // 7. Emit tracks
         let cameraTrack = CameraTrackEmitter.emit(path, duration: duration)
+        print("[V2-Diag] CameraTrackEmitter: \(cameraTrack.segments.count) camera segments")
         let cursorTrack = CursorTrackEmitter.emit(
             duration: duration,
             settings: settings.cursor
