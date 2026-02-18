@@ -118,6 +118,8 @@
 		AD000023296A0001 /* IntentClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100023296A0001 /* IntentClassifierTests.swift */; };
 		AE000001296A0001 /* SceneSegmenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100001296A0001 /* SceneSegmenter.swift */; };
 		AF000001296A0001 /* SceneSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100001296A0001 /* SceneSegmenterTests.swift */; };
+		AE000002296A0001 /* ShotPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100002296A0001 /* ShotPlanner.swift */; };
+		AF000002296A0001 /* ShotPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100002296A0001 /* ShotPlannerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -234,6 +236,8 @@
 		AD100023296A0001 /* IntentClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifierTests.swift; sourceTree = "<group>"; };
 		AE100001296A0001 /* SceneSegmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenter.swift; sourceTree = "<group>"; };
 		AF100001296A0001 /* SceneSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenterTests.swift; sourceTree = "<group>"; };
+		AE100002296A0001 /* ShotPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlanner.swift; sourceTree = "<group>"; };
+		AF100002296A0001 /* ShotPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlannerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -320,6 +324,7 @@
 			isa = PBXGroup;
 			children = (
 				AF100001296A0001 /* SceneSegmenterTests.swift */,
+				AF100002296A0001 /* ShotPlannerTests.swift */,
 			);
 			path = Planning;
 			sourceTree = "<group>";
@@ -520,6 +525,7 @@
 			isa = PBXGroup;
 			children = (
 				AE100001296A0001 /* SceneSegmenter.swift */,
+				AE100002296A0001 /* ShotPlanner.swift */,
 			);
 			path = Planning;
 			sourceTree = "<group>";
@@ -851,6 +857,7 @@
 				AD000010296A0001 /* EventTimeline.swift in Sources */,
 				AD000011296A0001 /* IntentClassifier.swift in Sources */,
 				AE000001296A0001 /* SceneSegmenter.swift in Sources */,
+				AE000002296A0001 /* ShotPlanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -862,6 +869,7 @@
 				AD000022296A0001 /* EventTimelineTests.swift in Sources */,
 				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
 				AF000001296A0001 /* SceneSegmenterTests.swift in Sources */,
+				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
