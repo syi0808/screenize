@@ -264,8 +264,11 @@ struct SceneSegmenter {
                 }
 
                 if prevLong, let last = result.last {
-                    // Absorb into previous scene
-                    result[result.count - 1] = extendScene(last, to: scene.endTime)
+                    // Absorb into previous scene, preserving absorbed scene's focus regions
+                    result[result.count - 1] = extendScene(
+                        last, to: scene.endTime,
+                        mergingRegions: scene.focusRegions
+                    )
                 } else if nextLong {
                     // Will be absorbed when the next scene is processed:
                     // Mark next scene to start earlier
@@ -274,7 +277,10 @@ struct SceneSegmenter {
                     result.append(scene) // Temporarily add; will merge in cleanup
                 } else if !result.isEmpty {
                     // Absorb into previous regardless
-                    result[result.count - 1] = extendScene(result.last!, to: scene.endTime)
+                    result[result.count - 1] = extendScene(
+                        result.last!, to: scene.endTime,
+                        mergingRegions: scene.focusRegions
+                    )
                 } else {
                     result.append(scene)
                 }
@@ -302,14 +308,16 @@ struct SceneSegmenter {
     }
 
     private static func extendScene(
-        _ scene: CameraScene, to newEnd: TimeInterval
+        _ scene: CameraScene,
+        to newEnd: TimeInterval,
+        mergingRegions additionalRegions: [FocusRegion] = []
     ) -> CameraScene {
         CameraScene(
             id: scene.id,
             startTime: scene.startTime,
             endTime: newEnd,
             primaryIntent: scene.primaryIntent,
-            focusRegions: scene.focusRegions,
+            focusRegions: scene.focusRegions + additionalRegions,
             appContext: scene.appContext
         )
     }

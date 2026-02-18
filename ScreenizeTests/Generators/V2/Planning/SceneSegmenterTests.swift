@@ -289,6 +289,37 @@ final class SceneSegmenterTests: XCTestCase {
         XCTAssertEqual(scenes[0].appContext, "com.apple.Xcode")
     }
 
+    // MARK: - Absorption Preserves Focus Regions
+
+    func test_segment_absorbShortScene_preservesFocusRegionsFromBothScenes() {
+        // Long typing → short clicking (absorbed) → long typing
+        // Both short scene's focus regions should be preserved in the merged result
+        let shortPos = NormalizedPoint(x: 0.7, y: 0.3)
+        let spans = [
+            makeSpan(start: 0, end: 5, intent: .typing(context: .codeEditor),
+                     position: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeSpan(start: 5, end: 5.2, intent: .clicking, position: shortPos),
+            makeSpan(start: 5.2, end: 10, intent: .typing(context: .codeEditor),
+                     position: NormalizedPoint(x: 0.4, y: 0.6)),
+        ]
+        let timeline = EventTimeline(events: [], duration: 10.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 10.0
+        )
+        // The 0.2s clicking scene is absorbed
+        let clickScenes = scenes.filter { $0.primaryIntent == .clicking }
+        XCTAssertEqual(clickScenes.count, 0, "Short clicking scene should be absorbed")
+
+        // The absorbed scene's focus regions should be preserved in the merged scene
+        let allRegions = scenes.flatMap(\.focusRegions)
+        let hasShortSceneRegion = allRegions.contains { region in
+            abs(region.region.midX - shortPos.x) < 0.1
+                && abs(region.region.midY - shortPos.y) < 0.1
+        }
+        XCTAssertTrue(hasShortSceneRegion,
+                       "Absorbed scene's focus region at (0.7, 0.3) should be preserved")
+    }
+
     // MARK: - Time Coverage
 
     func test_segment_scenesSpanFullDuration() {
