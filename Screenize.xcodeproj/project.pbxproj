@@ -133,6 +133,16 @@
 		B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100003296A0001 /* KeystrokeTrackEmitter.swift */; };
 		B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */; };
 		B5000001296A0001 /* EasingCurveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5100001296A0001 /* EasingCurveTests.swift */; };
+		B6000001296A0001 /* PathSmoother.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100001296A0001 /* PathSmoother.swift */; };
+		B6000002296A0001 /* HoldEnforcer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100002296A0001 /* HoldEnforcer.swift */; };
+		B6000003296A0001 /* TransitionRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100003296A0001 /* TransitionRefiner.swift */; };
+		B6000004296A0001 /* SegmentMerger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100004296A0001 /* SegmentMerger.swift */; };
+		B2000004296A0001 /* SegmentOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100004296A0001 /* SegmentOptimizer.swift */; };
+		B7000001296A0001 /* PathSmootherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100001296A0001 /* PathSmootherTests.swift */; };
+		B7000002296A0001 /* HoldEnforcerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100002296A0001 /* HoldEnforcerTests.swift */; };
+		B7000003296A0001 /* TransitionRefinerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100003296A0001 /* TransitionRefinerTests.swift */; };
+		B7000004296A0001 /* SegmentMergerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100004296A0001 /* SegmentMergerTests.swift */; };
+		B3000004296A0001 /* SegmentOptimizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100004296A0001 /* SegmentOptimizerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -264,6 +274,16 @@
 		B2100003296A0001 /* KeystrokeTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitter.swift; sourceTree = "<group>"; };
 		B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitterTests.swift; sourceTree = "<group>"; };
 		B5100001296A0001 /* EasingCurveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingCurveTests.swift; sourceTree = "<group>"; };
+		B6100001296A0001 /* PathSmoother.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathSmoother.swift; sourceTree = "<group>"; };
+		B6100002296A0001 /* HoldEnforcer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldEnforcer.swift; sourceTree = "<group>"; };
+		B6100003296A0001 /* TransitionRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRefiner.swift; sourceTree = "<group>"; };
+		B6100004296A0001 /* SegmentMerger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentMerger.swift; sourceTree = "<group>"; };
+		B2100004296A0001 /* SegmentOptimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentOptimizer.swift; sourceTree = "<group>"; };
+		B7100001296A0001 /* PathSmootherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathSmootherTests.swift; sourceTree = "<group>"; };
+		B7100002296A0001 /* HoldEnforcerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldEnforcerTests.swift; sourceTree = "<group>"; };
+		B7100003296A0001 /* TransitionRefinerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRefinerTests.swift; sourceTree = "<group>"; };
+		B7100004296A0001 /* SegmentMergerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentMergerTests.swift; sourceTree = "<group>"; };
+		B3100004296A0001 /* SegmentOptimizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentOptimizerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -361,9 +381,21 @@
 				AD200024296A0001 /* Analysis */,
 				AF200001296A0001 /* Planning */,
 				B1200001296A0001 /* Simulation */,
+				B7200001296A0001 /* PostProcessing */,
 				B3200001296A0001 /* Emission */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		B7200001296A0001 /* PostProcessing */ = {
+			isa = PBXGroup;
+			children = (
+				B7100001296A0001 /* PathSmootherTests.swift */,
+				B7100002296A0001 /* HoldEnforcerTests.swift */,
+				B7100003296A0001 /* TransitionRefinerTests.swift */,
+				B7100004296A0001 /* SegmentMergerTests.swift */,
+			);
+			path = PostProcessing;
 			sourceTree = "<group>";
 		};
 		B3200001296A0001 /* Emission */ = {
@@ -372,6 +404,7 @@
 				B3100001296A0001 /* CameraTrackEmitterTests.swift */,
 				B3100002296A0001 /* CursorTrackEmitterTests.swift */,
 				B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */,
+				B3100004296A0001 /* SegmentOptimizerTests.swift */,
 			);
 			path = Emission;
 			sourceTree = "<group>";
@@ -580,10 +613,22 @@
 				AD200010296A0001 /* Analysis */,
 				AE200001296A0001 /* Planning */,
 				B0200001296A0001 /* Simulation */,
+				B6200001296A0001 /* PostProcessing */,
 				B2200001296A0001 /* Emission */,
 				AB000007296A0001 /* SmartGeneratorV2.swift */,
 			);
 			path = V2;
+			sourceTree = "<group>";
+		};
+		B6200001296A0001 /* PostProcessing */ = {
+			isa = PBXGroup;
+			children = (
+				B6100001296A0001 /* PathSmoother.swift */,
+				B6100002296A0001 /* HoldEnforcer.swift */,
+				B6100003296A0001 /* TransitionRefiner.swift */,
+				B6100004296A0001 /* SegmentMerger.swift */,
+			);
+			path = PostProcessing;
 			sourceTree = "<group>";
 		};
 		B2200001296A0001 /* Emission */ = {
@@ -592,6 +637,7 @@
 				B2100001296A0001 /* CameraTrackEmitter.swift */,
 				B2100002296A0001 /* CursorTrackEmitter.swift */,
 				B2100003296A0001 /* KeystrokeTrackEmitter.swift */,
+				B2100004296A0001 /* SegmentOptimizer.swift */,
 			);
 			path = Emission;
 			sourceTree = "<group>";
@@ -937,6 +983,11 @@
 				B2000001296A0001 /* CameraTrackEmitter.swift in Sources */,
 				B2000002296A0001 /* CursorTrackEmitter.swift in Sources */,
 				B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */,
+				B6000001296A0001 /* PathSmoother.swift in Sources */,
+				B6000002296A0001 /* HoldEnforcer.swift in Sources */,
+				B6000003296A0001 /* TransitionRefiner.swift in Sources */,
+				B6000004296A0001 /* SegmentMerger.swift in Sources */,
+				B2000004296A0001 /* SegmentOptimizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -958,6 +1009,11 @@
 				B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */,
 				B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */,
 				B5000001296A0001 /* EasingCurveTests.swift in Sources */,
+				B7000001296A0001 /* PathSmootherTests.swift in Sources */,
+				B7000002296A0001 /* HoldEnforcerTests.swift in Sources */,
+				B7000003296A0001 /* TransitionRefinerTests.swift in Sources */,
+				B7000004296A0001 /* SegmentMergerTests.swift in Sources */,
+				B3000004296A0001 /* SegmentOptimizerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
