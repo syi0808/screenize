@@ -283,6 +283,7 @@ struct TimelineView: View {
         }
         .frame(height: trackHeight)
         .opacity(track.isEnabled ? 1.0 : 0.5)
+        .coordinateSpace(name: "trackArea")
     }
 
     @ViewBuilder
@@ -367,10 +368,8 @@ struct TimelineView: View {
                 .fill(color.opacity(isSelected ? 0.9 : 0.6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(
-                            isSelected
-                                ? Color.white
-                                : (isHovered ? Color.white.opacity(0.5) : Color.clear),
+                        .strokeBorder(
+                            Color.white.opacity(isSelected ? 0.5 : (isHovered ? 0.35 : 0.15)),
                             lineWidth: 1
                         )
                 )
@@ -474,7 +473,7 @@ struct TimelineView: View {
             }
         }
         .frame(width: width, height: 22)
-        .position(x: x + width / 2, y: trackHeight / 2)
+        .contentShape(Rectangle())
         .onHover { isHovering in
             hoveredSegmentID = isHovering ? id : nil
         }
@@ -493,6 +492,7 @@ struct TimelineView: View {
             selectedSegmentID = id
             selectedSegmentTrackType = trackType
         }
+        .position(x: x + width / 2, y: trackHeight / 2)
         .opacity(
             timelineIsSegmentInTrimRange(
                 start: displayStart,
@@ -534,7 +534,7 @@ struct TimelineView: View {
         snapTargets: [TimeInterval],
         editBounds: SegmentEditBounds
     ) -> some Gesture {
-        DragGesture(minimumDistance: 0)
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("trackArea"))
             .onChanged { value in
                 if !isInteracting(with: id, mode: .move) {
                     activeSegmentInteraction = SegmentInteraction(
@@ -587,7 +587,7 @@ struct TimelineView: View {
         snapTargets: [TimeInterval],
         editBounds: SegmentEditBounds
     ) -> some Gesture {
-        DragGesture(minimumDistance: 0)
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("trackArea"))
             .onChanged { value in
                 if !isInteracting(with: id, mode: mode) {
                     activeSegmentInteraction = SegmentInteraction(
