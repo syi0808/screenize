@@ -65,17 +65,33 @@ class SmartGeneratorV2 {
             duration: duration
         )
 
+        // 7. Post-process camera path
+        let ppSettings = settings.postProcessing
+        let smoothed = PathSmoother.smooth(path, settings: ppSettings.smoothing)
+        let enforced = HoldEnforcer.enforce(smoothed, settings: ppSettings.hold)
+        let refined = TransitionRefiner.refine(
+            enforced, settings: ppSettings.transitionRefinement
+        )
+        let processedPath = SegmentMerger.merge(
+            refined, settings: ppSettings.merge
+        )
+
+        // 8. Emit tracks
+        let rawCameraTrack = CameraTrackEmitter.emit(
+            processedPath, duration: duration
+        )
+        let cameraTrack = SegmentOptimizer.optimize(
+            rawCameraTrack, settings: ppSettings.optimization
+        )
+
         #if DEBUG
         Self.dumpDiagnostics(
             timeline: timeline, intentSpans: intentSpans,
             scenes: scenes, shotPlans: shotPlans,
             transitions: transitions,
-            cameraTrack: CameraTrackEmitter.emit(path, duration: duration)
+            cameraTrack: cameraTrack
         )
         #endif
-
-        // 7. Emit tracks
-        let cameraTrack = CameraTrackEmitter.emit(path, duration: duration)
         let cursorTrack = CursorTrackEmitter.emit(
             duration: duration,
             settings: settings.cursor
