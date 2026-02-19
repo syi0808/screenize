@@ -18,11 +18,8 @@ final class EditorViewModel: ObservableObject {
     /// Playback state
     @Published var isPlaying: Bool = false
 
-    /// Selected segment ID
-    @Published var selectedSegmentID: UUID?
-
-    /// Selected segment track type
-    @Published var selectedSegmentTrackType: TrackType?
+    /// Segment selection (supports multi-select)
+    @Published var selection = SegmentSelection()
 
     /// Loading state
     @Published var isLoading: Bool = false
@@ -199,8 +196,7 @@ final class EditorViewModel: ObservableObject {
         EditorSnapshot(
             timeline: project.timeline,
             renderSettings: project.renderSettings,
-            selectedSegmentID: selectedSegmentID,
-            selectedSegmentTrackType: selectedSegmentTrackType
+            selection: selection
         )
     }
 
@@ -240,8 +236,7 @@ final class EditorViewModel: ObservableObject {
     private func applySnapshot(_ snapshot: EditorSnapshot) {
         project.timeline = snapshot.timeline
         project.renderSettings = snapshot.renderSettings
-        selectedSegmentID = snapshot.selectedSegmentID
-        selectedSegmentTrackType = snapshot.selectedSegmentTrackType
+        selection = snapshot.selection
         hasUnsavedChanges = true
         invalidatePreviewCache()
         updateRenderSettings()
@@ -501,8 +496,7 @@ final class EditorViewModel: ObservableObject {
         _ = track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .camera(track)
-        selectedSegmentID = newSegment.id
-        selectedSegmentTrackType = .transform
+        selection.select(newSegment.id, trackType: .transform)
     }
 
     private func addCursorSegment(at time: TimeInterval) {
@@ -525,8 +519,7 @@ final class EditorViewModel: ObservableObject {
         _ = track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .cursor(track)
-        selectedSegmentID = newSegment.id
-        selectedSegmentTrackType = .cursor
+        selection.select(newSegment.id, trackType: .cursor)
     }
 
     private func addKeystrokeSegment(at time: TimeInterval) {
@@ -547,8 +540,7 @@ final class EditorViewModel: ObservableObject {
         track.addSegment(newSegment)
 
         project.timeline.tracks[trackIndex] = .keystroke(track)
-        selectedSegmentID = newSegment.id
-        selectedSegmentTrackType = .keystroke
+        selection.select(newSegment.id, trackType: .keystroke)
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
@@ -567,9 +559,7 @@ final class EditorViewModel: ObservableObject {
             break  // TODO: implement audio tracks in the future
         }
 
-        if selectedSegmentID == id {
-            selectedSegmentID = nil
-        }
+        selection.remove(id)
 
         hasUnsavedChanges = true
         invalidatePreviewCache()
@@ -683,10 +673,14 @@ final class EditorViewModel: ObservableObject {
 
     // MARK: - Selection
 
-    /// Select a segment.
+    /// Select a segment (replaces current selection).
     func selectSegment(_ id: UUID, trackType: TrackType) {
-        selectedSegmentID = id
-        selectedSegmentTrackType = trackType
+        selection.select(id, trackType: trackType)
+    }
+
+    /// Toggle a segment in/out of the selection (for Shift+Click).
+    func toggleSegmentSelection(_ id: UUID, trackType: TrackType) {
+        selection.toggle(id, trackType: trackType)
     }
 
     /// Delete all segments.
@@ -706,24 +700,23 @@ final class EditorViewModel: ObservableObject {
             }
         }
 
-        selectedSegmentID = nil
-        selectedSegmentTrackType = nil
+        selection.clear()
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
 
     /// Clear the selection
     func clearSelection() {
-        selectedSegmentID = nil
-        selectedSegmentTrackType = nil
+        selection.clear()
     }
 
-    /// Jump to the selected segment.
+    /// Jump to the selected segment (single selection only).
     func goToSelectedSegment() async {
-        guard let id = selectedSegmentID,
-              let trackType = selectedSegmentTrackType else {
+        guard let selected = selection.single else {
             return
         }
+        let id = selected.id
+        let trackType = selected.trackType
 
         // Locate the segment start time
         let time: TimeInterval?

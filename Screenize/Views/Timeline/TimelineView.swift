@@ -49,12 +49,12 @@ struct TimelineView: View {
     @Binding var timeline: Timeline
     let duration: TimeInterval
     @Binding var currentTime: TimeInterval
-    @Binding var selectedSegmentID: UUID?
-    @Binding var selectedSegmentTrackType: TrackType?
+    @Binding var selection: SegmentSelection
 
     var onSegmentTimeRangeChange: ((UUID, TimeInterval, TimeInterval) -> Bool)?
     var onAddSegment: ((TrackType, TimeInterval) -> Void)?
     var onSegmentSelect: ((TrackType, UUID) -> Void)?
+    var onSegmentToggleSelect: ((TrackType, UUID) -> Void)?
     var onSeek: ((TimeInterval) async -> Void)?
 
     @Binding var trimStart: TimeInterval
@@ -275,8 +275,7 @@ struct TimelineView: View {
                     onAddSegment?(track.trackType, time)
                 }
                 .onTapGesture {
-                    selectedSegmentID = nil
-                    selectedSegmentTrackType = nil
+                    selection.clear()
                 }
 
             segmentBlocks(for: track)
@@ -353,7 +352,7 @@ struct TimelineView: View {
         let x = CGFloat(displayStart) * pixelsPerSecond
         let width = max(6, CGFloat(displayEnd - displayStart) * pixelsPerSecond)
         let color = TrackColor.color(for: trackType)
-        let isSelected = selectedSegmentID == id
+        let isSelected = selection.contains(id)
         let isHovered = hoveredSegmentID == id
         let showHandles = isSelected || isHovered
 
@@ -488,9 +487,11 @@ struct TimelineView: View {
             )
         )
         .onTapGesture {
-            onSegmentSelect?(trackType, id)
-            selectedSegmentID = id
-            selectedSegmentTrackType = trackType
+            if NSEvent.modifierFlags.contains(.shift) {
+                onSegmentToggleSelect?(trackType, id)
+            } else {
+                onSegmentSelect?(trackType, id)
+            }
         }
         .position(x: x + width / 2, y: trackHeight / 2)
         .opacity(
@@ -587,8 +588,6 @@ struct TimelineView: View {
             .onEnded { _ in
                 commitInteraction(for: id)
                 onSegmentSelect?(trackType, id)
-                selectedSegmentID = id
-                selectedSegmentTrackType = trackType
             }
     }
 
@@ -648,8 +647,6 @@ struct TimelineView: View {
             .onEnded { _ in
                 commitInteraction(for: id)
                 onSegmentSelect?(trackType, id)
-                selectedSegmentID = id
-                selectedSegmentTrackType = trackType
             }
     }
 

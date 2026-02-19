@@ -9,8 +9,7 @@ enum InspectorTab: String, CaseIterable {
 struct InspectorView: View {
 
     @Binding var timeline: Timeline
-    @Binding var selectedSegmentID: UUID?
-    @Binding var selectedSegmentTrackType: TrackType?
+    @Binding var selection: SegmentSelection
     @Binding var renderSettings: RenderSettings
     var isWindowMode: Bool
     var onSegmentChange: (() -> Void)?
@@ -51,16 +50,16 @@ struct InspectorView: View {
                 Text("Segment")
                     .font(.headline)
 
-                if let id = selectedSegmentID, let trackType = selectedSegmentTrackType {
-                    LabeledContent("Track") { Text(trackName(trackType)) }
+                if let selected = selection.single {
+                    LabeledContent("Track") { Text(trackName(selected.trackType)) }
 
-                    switch trackType {
+                    switch selected.trackType {
                     case .transform:
-                        cameraSection(segmentID: id)
+                        cameraSection(segmentID: selected.id)
                     case .cursor:
-                        cursorSection(segmentID: id)
+                        cursorSection(segmentID: selected.id)
                     case .keystroke:
-                        keystrokeSection(segmentID: id)
+                        keystrokeSection(segmentID: selected.id)
                     case .audio:
                         EmptyView()
                     }
@@ -68,11 +67,37 @@ struct InspectorView: View {
                     Divider()
 
                     Button(role: .destructive) {
-                        onDeleteSegment?(id, trackType)
+                        onDeleteSegment?(selected.id, selected.trackType)
                     } label: {
                         HStack {
                             Image(systemName: "trash")
                             Text("Delete Segment")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                } else if selection.count > 1 {
+                    VStack(spacing: 12) {
+                        Image(systemName: "rectangle.stack")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.secondary)
+                        Text("\(selection.count) Segments Selected")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 30)
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        let selected = selection.segments
+                        for ident in selected {
+                            onDeleteSegment?(ident.id, ident.trackType)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete \(selection.count) Segments")
                         }
                         .frame(maxWidth: .infinity)
                     }

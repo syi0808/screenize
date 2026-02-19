@@ -62,8 +62,7 @@ struct EditorMainView: View {
                     timeline: viewModel.timelineBinding,
                     duration: viewModel.duration,
                     currentTime: $viewModel.currentTime,
-                    selectedSegmentID: $viewModel.selectedSegmentID,
-                    selectedSegmentTrackType: $viewModel.selectedSegmentTrackType,
+                    selection: $viewModel.selection,
                     onSegmentTimeRangeChange: { id, startTime, endTime in
                         viewModel.updateSegmentTimeRange(id, startTime: startTime, endTime: endTime)
                     },
@@ -72,6 +71,9 @@ struct EditorMainView: View {
                     },
                     onSegmentSelect: { trackType, id in
                         viewModel.selectSegment(id, trackType: trackType)
+                    },
+                    onSegmentToggleSelect: { trackType, id in
+                        viewModel.toggleSegmentSelection(id, trackType: trackType)
                     },
                     onSeek: { time in
                         await viewModel.seek(to: time)
@@ -88,8 +90,7 @@ struct EditorMainView: View {
             // Right: inspector
             InspectorView(
                 timeline: viewModel.timelineBinding,
-                selectedSegmentID: $viewModel.selectedSegmentID,
-                selectedSegmentTrackType: $viewModel.selectedSegmentTrackType,
+                selection: $viewModel.selection,
                 renderSettings: viewModel.renderSettingsBinding,
                 isWindowMode: viewModel.isWindowMode,
                 onSegmentChange: {
@@ -329,10 +330,12 @@ struct EditorMainView: View {
                 return event
             }
 
-            // Delete the selected segment
-            if let id = viewModel.selectedSegmentID,
-               let trackType = viewModel.selectedSegmentTrackType {
-                viewModel.deleteSegment(id, from: trackType)
+            // Delete all selected segments
+            if !viewModel.selection.isEmpty {
+                let selected = viewModel.selection.segments
+                for ident in selected {
+                    viewModel.deleteSegment(ident.id, from: ident.trackType)
+                }
                 return nil // consume the event
             }
 
