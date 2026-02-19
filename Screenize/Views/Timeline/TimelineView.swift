@@ -716,8 +716,11 @@ extension TimelineView {
 
         case .resizeStart:
             var snappedStart = start
+            var closestDistance: Double = .infinity
             for target in snapTargets where abs(target - start) <= threshold {
-                if abs(target - start) < abs(snappedStart - start) {
+                let dist = abs(target - start)
+                if dist < closestDistance {
+                    closestDistance = dist
                     snappedStart = target
                 }
             }
@@ -726,8 +729,11 @@ extension TimelineView {
 
         case .resizeEnd:
             var snappedEnd = end
+            var closestDistance: Double = .infinity
             for target in snapTargets where abs(target - end) <= threshold {
-                if abs(target - end) < abs(snappedEnd - end) {
+                let dist = abs(target - end)
+                if dist < closestDistance {
+                    closestDistance = dist
                     snappedEnd = target
                 }
             }
