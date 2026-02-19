@@ -255,6 +255,52 @@ final class KeystrokeTrackEmitterTests: XCTestCase {
         XCTAssertEqual(track.name, "Keystroke (Smart V2)")
     }
 
+    // MARK: - Recording Stop Hotkey Fallback (Old Recordings)
+
+    func test_emit_removesTrailingStopHotkey_keyCode0_nearEnd() {
+        // Old recordings have keyCode=0 (lost during serialization).
+        // Fallback heuristic: Cmd+Shift with keyCode 0 near recording end.
+        var settings = KeystrokeEmissionSettings()
+        settings.shortcutsOnly = false
+        let duration = 10.0
+        let events = [
+            makeKeyDownEvent(time: 1.0, keyCode: 0, character: "a", modifiers: []),
+            // Cmd+Shift near end (within 0.5s of duration), keyCode 0
+            makeKeyDownEvent(
+                time: 9.8, keyCode: 0, character: "@",
+                modifiers: [.command, .shift]
+            )
+        ]
+        let timeline = makeTimeline(events: events)
+        let track = KeystrokeTrackEmitter.emit(
+            eventTimeline: timeline, duration: duration, settings: settings
+        )
+        // Only the "A" key should remain
+        XCTAssertEqual(track.segments.count, 1)
+        XCTAssertEqual(track.segments[0].displayText, "A")
+    }
+
+    func test_emit_keepsTrailingShortcut_keyCode0_farFromEnd() {
+        // Cmd+Shift shortcut well before recording end should NOT be removed
+        var settings = KeystrokeEmissionSettings()
+        settings.shortcutsOnly = false
+        let duration = 10.0
+        let events = [
+            makeKeyDownEvent(time: 1.0, keyCode: 0, character: "a", modifiers: []),
+            // Cmd+Shift at 5s — far from end, should be kept
+            makeKeyDownEvent(
+                time: 5.0, keyCode: 0, character: "@",
+                modifiers: [.command, .shift]
+            )
+        ]
+        let timeline = makeTimeline(events: events)
+        let track = KeystrokeTrackEmitter.emit(
+            eventTimeline: timeline, duration: duration, settings: settings
+        )
+        XCTAssertEqual(track.segments.count, 2)
+        XCTAssertEqual(track.segments[1].displayText, "⇧⌘@")
+    }
+
     // MARK: - Multiple Modifier Combinations
 
     func test_emit_controlOptionShiftCommand_displayText() {

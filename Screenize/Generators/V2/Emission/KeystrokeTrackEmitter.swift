@@ -30,10 +30,15 @@ struct KeystrokeTrackEmitter {
 
         // Remove trailing recording stop hotkey (Cmd+Shift+2, keyCode 19)
         if let last = keyDownEvents.last,
-           last.data.keyCode == 19,
            last.data.modifiers.contains(.command),
            last.data.modifiers.contains(.shift) {
-            keyDownEvents.removeLast()
+            if last.data.keyCode == 19 {
+                // New recordings: exact keyCode match
+                keyDownEvents.removeLast()
+            } else if last.data.keyCode == 0 && (duration - last.time) < 0.5 {
+                // Old recordings (keyCode lost): Cmd+Shift near recording end
+                keyDownEvents.removeLast()
+            }
         }
 
         var segments: [KeystrokeSegment] = []

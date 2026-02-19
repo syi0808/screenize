@@ -99,7 +99,7 @@ struct EventStreamAdapter: MouseDataSource {
             if event.activeModifiers.contains("command") { modifiers.insert(.command) }
             return KeyboardEventData(
                 time: timelineSec,
-                keyCode: 0,
+                keyCode: event.keyCode ?? 0,
                 eventType: eventType,
                 modifiers: modifiers,
                 character: event.character

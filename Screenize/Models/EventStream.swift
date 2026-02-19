@@ -32,6 +32,7 @@ struct PolyKeystrokeEvent: Codable {
     let type: String
     let processTimeMs: Int64
     let unixTimeMs: Int64
+    let keyCode: UInt16?
     let character: String?
     let isARepeat: Bool
     let activeModifiers: [String]

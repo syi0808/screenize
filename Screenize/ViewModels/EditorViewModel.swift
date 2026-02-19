@@ -681,6 +681,47 @@ final class EditorViewModel: ObservableObject {
         return false
     }
 
+    /// Update multiple segment time ranges as a single undoable operation (for drag-to-swap).
+    @discardableResult
+    func updateMultipleSegmentTimeRanges(_ changes: [(UUID, TimeInterval, TimeInterval)]) -> Bool {
+        guard !changes.isEmpty else { return false }
+        saveUndoSnapshot()
+
+        for (id, startTime, endTime) in changes {
+            let clampedStart = max(0, min(duration, startTime))
+            let clampedEnd = min(duration, max(clampedStart + 0.001, endTime))
+
+            for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
+                switch anyTrack {
+                case .camera(var track):
+                    guard let index = track.segments.firstIndex(where: { $0.id == id }) else { continue }
+                    track.segments[index].startTime = clampedStart
+                    track.segments[index].endTime = clampedEnd
+                    track.segments.sort { $0.startTime < $1.startTime }
+                    project.timeline.tracks[trackIndex] = .camera(track)
+
+                case .cursor(var track):
+                    guard let index = track.segments.firstIndex(where: { $0.id == id }) else { continue }
+                    track.segments[index].startTime = clampedStart
+                    track.segments[index].endTime = clampedEnd
+                    track.segments.sort { $0.startTime < $1.startTime }
+                    project.timeline.tracks[trackIndex] = .cursor(track)
+
+                case .keystroke(var track):
+                    guard let index = track.segments.firstIndex(where: { $0.id == id }) else { continue }
+                    track.segments[index].startTime = clampedStart
+                    track.segments[index].endTime = clampedEnd
+                    track.segments.sort { $0.startTime < $1.startTime }
+                    project.timeline.tracks[trackIndex] = .keystroke(track)
+                }
+            }
+        }
+
+        hasUnsavedChanges = true
+        invalidatePreviewCache()
+        return true
+    }
+
     // MARK: - Selection
 
     /// Select a segment.

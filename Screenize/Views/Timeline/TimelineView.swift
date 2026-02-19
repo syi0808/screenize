@@ -53,6 +53,7 @@ struct TimelineView: View {
     @Binding var selectedSegmentTrackType: TrackType?
 
     var onSegmentTimeRangeChange: ((UUID, TimeInterval, TimeInterval) -> Bool)?
+    var onSegmentBatchTimeRangeChange: (([(UUID, TimeInterval, TimeInterval)]) -> Bool)?
     var onAddSegment: ((TrackType, TimeInterval) -> Void)?
     var onSegmentSelect: ((TrackType, UUID) -> Void)?
     var onSeek: ((TimeInterval) async -> Void)?
@@ -66,6 +67,8 @@ struct TimelineView: View {
     @State private var isDraggingTrimStart = false
     @State private var isDraggingTrimEnd = false
     @State private var activeSegmentInteraction: SegmentInteraction?
+    @State private var dragHomePositions: [UUID: (start: TimeInterval, end: TimeInterval)] = [:]
+    @State private var dragInitialPositions: [UUID: (start: TimeInterval, end: TimeInterval)] = [:]
     @State private var resizeCursorHoverCount = 0
     @State private var hoveredSegmentID: UUID?
 
@@ -300,7 +303,7 @@ struct TimelineView: View {
                     id: segment.id,
                     start: segment.startTime,
                     end: segment.endTime,
-                    snapTargets: snapTargets(from: ranges, excluding: segment.id),
+                    ranges: ranges,
                     editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
                 )
             }
@@ -315,7 +318,7 @@ struct TimelineView: View {
                     id: segment.id,
                     start: segment.startTime,
                     end: segment.endTime,
-                    snapTargets: snapTargets(from: ranges, excluding: segment.id),
+                    ranges: ranges,
                     editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime),
                     cursorStyle: segment.style
                 )
@@ -331,7 +334,7 @@ struct TimelineView: View {
                     id: segment.id,
                     start: segment.startTime,
                     end: segment.endTime,
-                    snapTargets: snapTargets(from: ranges, excluding: segment.id),
+                    ranges: ranges,
                     editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
                 )
             }
@@ -343,10 +346,11 @@ struct TimelineView: View {
         id: UUID,
         start: TimeInterval,
         end: TimeInterval,
-        snapTargets: [TimeInterval],
+        ranges: [SegmentRange],
         editBounds: SegmentEditBounds,
         cursorStyle: CursorStyle? = nil
     ) -> some View {
+        let resizeSnapTargets = snapTargets(from: ranges, excluding: id)
         let displayStart = segmentDisplayStart(for: id, fallback: start)
         let displayEnd = segmentDisplayEnd(for: id, fallback: end)
         let x = CGFloat(displayStart) * pixelsPerSecond
@@ -407,7 +411,7 @@ struct TimelineView: View {
                             for: id, trackType: trackType,
                             start: start, end: end,
                             mode: .resizeStart,
-                            snapTargets: snapTargets,
+                            snapTargets: resizeSnapTargets,
                             editBounds: editBounds
                         )
                     )
@@ -428,7 +432,7 @@ struct TimelineView: View {
                             for: id, trackType: trackType,
                             start: start, end: end,
                             mode: .resizeEnd,
-                            snapTargets: snapTargets,
+                            snapTargets: resizeSnapTargets,
                             editBounds: editBounds
                         )
                     )
@@ -447,7 +451,7 @@ struct TimelineView: View {
                                 for: id, trackType: trackType,
                                 start: start, end: end,
                                 mode: .resizeStart,
-                                snapTargets: snapTargets,
+                                snapTargets: resizeSnapTargets,
                                 editBounds: editBounds
                             )
                         )
@@ -465,7 +469,7 @@ struct TimelineView: View {
                                 for: id, trackType: trackType,
                                 start: start, end: end,
                                 mode: .resizeEnd,
-                                snapTargets: snapTargets,
+                                snapTargets: resizeSnapTargets,
                                 editBounds: editBounds
                             )
                         )
@@ -483,8 +487,7 @@ struct TimelineView: View {
                 trackType: trackType,
                 start: start,
                 end: end,
-                snapTargets: snapTargets,
-                editBounds: editBounds
+                ranges: ranges
             )
         )
         .onTapGesture {
@@ -531,8 +534,7 @@ struct TimelineView: View {
         trackType: TrackType,
         start: TimeInterval,
         end: TimeInterval,
-        snapTargets: [TimeInterval],
-        editBounds: SegmentEditBounds
+        ranges: [SegmentRange]
     ) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named("trackArea"))
             .onChanged { value in
@@ -545,6 +547,13 @@ struct TimelineView: View {
                         previewStart: start,
                         previewEnd: end
                     )
+                    // Initialize home positions for all segments in this track
+                    var homes: [UUID: (start: TimeInterval, end: TimeInterval)] = [:]
+                    for range in ranges {
+                        homes[range.id] = (start: range.start, end: range.end)
+                    }
+                    dragHomePositions = homes
+                    dragInitialPositions = homes
                 }
 
                 guard var interaction = activeSegmentInteraction, interaction.id == id, interaction.mode == .move else {
@@ -553,17 +562,55 @@ struct TimelineView: View {
 
                 let segmentDuration = interaction.initialEnd - interaction.initialStart
                 let deltaTime = Double(value.translation.width / pixelsPerSecond)
-                var proposedStart = interaction.initialStart + deltaTime
-                let maxStart = max(editBounds.minStart, editBounds.maxEnd - segmentDuration)
-                proposedStart = max(editBounds.minStart, min(maxStart, proposedStart))
+                let unclampedStart = interaction.initialStart + deltaTime
+
+                // Swap detection using unclamped position (user's raw intent)
+                let unclampedCenter = unclampedStart + segmentDuration / 2
+
+                for range in ranges where range.id != id {
+                    guard let currentDraggedHome = dragHomePositions[id],
+                          let otherHome = dragHomePositions[range.id] else { continue }
+                    let draggedHomeCenter = currentDraggedHome.start + (currentDraggedHome.end - currentDraggedHome.start) / 2
+                    let otherHomeCenter = otherHome.start + (otherHome.end - otherHome.start) / 2
+                    let otherDuration = otherHome.end - otherHome.start
+
+                    let movingRight = unclampedCenter > otherHomeCenter && draggedHomeCenter <= otherHomeCenter
+                    let movingLeft = unclampedCenter < otherHomeCenter && draggedHomeCenter >= otherHomeCenter
+
+                    if movingRight || movingLeft {
+                        dragHomePositions[range.id] = (start: currentDraggedHome.start, end: currentDraggedHome.start + otherDuration)
+                        dragHomePositions[id] = (start: otherHome.start, end: otherHome.start + segmentDuration)
+                    }
+                }
+
+                // Dynamic editBounds from current home positions (prevents overlap)
+                let dynamicRanges = dragHomePositions
+                    .filter { $0.key != id }
+                    .map { SegmentRange(id: $0.key, start: $0.value.start, end: $0.value.end) }
+                let draggedHome = dragHomePositions[id]
+                let dynBounds = editBounds(
+                    from: dynamicRanges,
+                    excluding: id,
+                    currentStart: draggedHome?.start ?? start,
+                    currentEnd: draggedHome?.end ?? end
+                )
+
+                // Clamp to dynamic bounds + timeline edges
+                var proposedStart = max(dynBounds.minStart, min(dynBounds.maxEnd - segmentDuration, unclampedStart))
+                proposedStart = max(0, min(duration - segmentDuration, proposedStart))
                 var proposedEnd = proposedStart + segmentDuration
+
+                // Snap against current home positions
+                let currentSnapTargets = dragHomePositions
+                    .filter { $0.key != id }
+                    .flatMap { [$0.value.start, $0.value.end] }
 
                 (proposedStart, proposedEnd) = snappedRange(
                     start: proposedStart,
                     end: proposedEnd,
                     mode: .move,
-                    snapTargets: snapTargets,
-                    editBounds: editBounds
+                    snapTargets: currentSnapTargets,
+                    editBounds: dynBounds
                 )
 
                 interaction.previewStart = proposedStart
@@ -571,7 +618,7 @@ struct TimelineView: View {
                 activeSegmentInteraction = interaction
             }
             .onEnded { _ in
-                commitInteraction(for: id)
+                commitMoveInteraction(for: id)
                 onSegmentSelect?(trackType, id)
                 selectedSegmentID = id
                 selectedSegmentTrackType = trackType
@@ -651,17 +698,23 @@ extension TimelineView {
     }
 
     private func segmentDisplayStart(for id: UUID, fallback: TimeInterval) -> TimeInterval {
-        guard let interaction = activeSegmentInteraction, interaction.id == id else {
-            return fallback
+        if let interaction = activeSegmentInteraction, interaction.id == id {
+            return interaction.previewStart
         }
-        return interaction.previewStart
+        if let home = dragHomePositions[id] {
+            return home.start
+        }
+        return fallback
     }
 
     private func segmentDisplayEnd(for id: UUID, fallback: TimeInterval) -> TimeInterval {
-        guard let interaction = activeSegmentInteraction, interaction.id == id else {
-            return fallback
+        if let interaction = activeSegmentInteraction, interaction.id == id {
+            return interaction.previewEnd
         }
-        return interaction.previewEnd
+        if let home = dragHomePositions[id] {
+            return home.end
+        }
+        return fallback
     }
 
     private func snappedRange(
@@ -734,6 +787,29 @@ extension TimelineView {
         }
 
         activeSegmentInteraction = nil
+    }
+
+    private func commitMoveInteraction(for id: UUID) {
+        defer {
+            activeSegmentInteraction = nil
+            dragHomePositions = [:]
+            dragInitialPositions = [:]
+        }
+        guard let interaction = activeSegmentInteraction, interaction.id == id else { return }
+
+        var changes: [(UUID, TimeInterval, TimeInterval)] = [(id, interaction.previewStart, interaction.previewEnd)]
+        for (segmentID, home) in dragHomePositions where segmentID != id {
+            guard let initial = dragInitialPositions[segmentID] else { continue }
+            if abs(home.start - initial.start) > 0.001 || abs(home.end - initial.end) > 0.001 {
+                changes.append((segmentID, home.start, home.end))
+            }
+        }
+
+        if changes.count > 1 {
+            _ = onSegmentBatchTimeRangeChange?(changes) ?? false
+        } else {
+            _ = onSegmentTimeRangeChange?(id, interaction.previewStart, interaction.previewEnd) ?? false
+        }
     }
 
     private func snapTargets(from ranges: [SegmentRange], excluding id: UUID) -> [TimeInterval] {

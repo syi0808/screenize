@@ -138,6 +138,7 @@ struct EventStreamWriter {
                 type: event.type == .keyDown ? "keyDown" : "keyUp",
                 processTimeMs: processTimeStartMs + offsetMs,
                 unixTimeMs: unixStartMs + offsetMs,
+                keyCode: event.keyCode,
                 character: event.character, isARepeat: false,
                 activeModifiers: ActiveModifiersConverter.toStrings(from: event.modifiers)
             )

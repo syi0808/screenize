@@ -67,6 +67,9 @@ struct EditorMainView: View {
                     onSegmentTimeRangeChange: { id, startTime, endTime in
                         viewModel.updateSegmentTimeRange(id, startTime: startTime, endTime: endTime)
                     },
+                    onSegmentBatchTimeRangeChange: { changes in
+                        viewModel.updateMultipleSegmentTimeRanges(changes)
+                    },
                     onAddSegment: { trackType, time in
                         viewModel.addSegment(to: trackType, at: time)
                     },

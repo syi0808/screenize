@@ -70,6 +70,53 @@ final class EventStreamAdapterTests: XCTestCase {
         )
     }
 
+    // MARK: - Keystroke keyCode Passthrough
+
+    func test_keystrokeKeyCode_passedThrough() {
+        let sessionStart: Int64 = 1000000
+        let meta = makeMetadata(sessionStartMs: sessionStart)
+
+        let keystrokes = [
+            PolyKeystrokeEvent(
+                type: "keyDown",
+                processTimeMs: sessionStart + 1000,
+                unixTimeMs: 0,
+                keyCode: 19,
+                character: "2",
+                isARepeat: false,
+                activeModifiers: ["command", "shift"]
+            )
+        ]
+
+        let adapter = makeAdapter(keystrokes: keystrokes, metadata: meta)
+
+        XCTAssertEqual(adapter.keyboardEvents.count, 1)
+        XCTAssertEqual(adapter.keyboardEvents[0].keyCode, 19)
+    }
+
+    func test_keystrokeKeyCode_nilDefaultsToZero() {
+        // Old recordings without keyCode field
+        let sessionStart: Int64 = 1000000
+        let meta = makeMetadata(sessionStartMs: sessionStart)
+
+        let keystrokes = [
+            PolyKeystrokeEvent(
+                type: "keyDown",
+                processTimeMs: sessionStart + 1000,
+                unixTimeMs: 0,
+                keyCode: nil,
+                character: "a",
+                isARepeat: false,
+                activeModifiers: []
+            )
+        ]
+
+        let adapter = makeAdapter(keystrokes: keystrokes, metadata: meta)
+
+        XCTAssertEqual(adapter.keyboardEvents.count, 1)
+        XCTAssertEqual(adapter.keyboardEvents[0].keyCode, 0)
+    }
+
     // MARK: - Drag Inference: Basic Detection
 
     func test_dragInference_largeDisplacement_createsDragEvent() {
