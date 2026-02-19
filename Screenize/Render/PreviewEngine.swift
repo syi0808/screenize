@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 import CoreImage
 import Combine
+import Metal
 
 /// Preview engine
 /// Manages frame rendering and playback for the live preview.
@@ -12,8 +13,8 @@ final class PreviewEngine: ObservableObject {
 
     // MARK: - Published Properties
 
-    /// Current frame image
-    @Published private(set) var currentFrame: CGImage?
+    /// Current frame texture (GPU-resident, displayed via MetalPreviewView)
+    @Published private(set) var currentTexture: MTLTexture?
 
     /// Whether playback is active
     @Published private(set) var isPlaying: Bool = false
@@ -123,7 +124,7 @@ final class PreviewEngine: ObservableObject {
         displayLinkDriver.onFrame = { [weak self] targetVideoTime in
             guard let self = self else { return }
 
-            self.renderCoordinator.requestPlaybackFrame(at: targetVideoTime) { [weak self] frame, actualTime in
+            self.renderCoordinator.requestPlaybackFrame(at: targetVideoTime) { [weak self] texture, actualTime in
                 guard let self = self else { return }
 
                 DispatchQueue.main.async {
@@ -136,8 +137,8 @@ final class PreviewEngine: ObservableObject {
                         return
                     }
 
-                    if let frame = frame {
-                        self.currentFrame = frame
+                    if let texture = texture {
+                        self.currentTexture = texture
                     }
                     self.isSeeking = true
                     self.currentTime = actualTime
@@ -160,11 +161,11 @@ final class PreviewEngine: ObservableObject {
             )
         }
 
-        // ScrubController: deliver frame to main thread
-        scrubController.onFrameReady = { [weak self] frame, _ in
+        // ScrubController: deliver texture to main thread
+        scrubController.onFrameReady = { [weak self] texture, _ in
             guard let self = self else { return }
-            if let frame = frame {
-                self.currentFrame = frame
+            if let texture = texture {
+                self.currentTexture = texture
             }
         }
     }
@@ -436,7 +437,7 @@ final class PreviewEngine: ObservableObject {
         renderCoordinator.cleanup()
         sequentialReader?.stopReading()
         frameExtractor?.cancelAllPendingRequests()
-        currentFrame = nil
+        currentTexture = nil
     }
 }
 
@@ -460,7 +461,7 @@ extension PreviewEngine {
     }
 
     /// Cache statistics
-    var cacheStatistics: PreviewCache.Statistics {
+    var cacheStatistics: PreviewTextureCache.Statistics {
         renderCoordinator.cacheStatistics
     }
 

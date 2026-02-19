@@ -2,10 +2,12 @@ import Foundation
 import CoreGraphics
 import CoreImage
 import AVFoundation
+import Metal
 
 /// Render coordinator
 /// Schedules and executes frame rendering on a dedicated background queue.
 /// Handles both sequential playback (AVAssetReader) and random-access scrubbing (AVAssetImageGenerator).
+/// Outputs GPU-resident MTLTexture for zero-copy display via MetalPreviewView.
 final class RenderCoordinator: @unchecked Sendable {
 
     // MARK: - Properties
@@ -25,14 +27,17 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Renderer
     private var renderer: Renderer?
 
-    /// Frame cache (LRU with dirty ranges)
-    private let cache: PreviewCache
+    /// GPU-resident texture cache (replaces CGImage-based PreviewCache)
+    private var textureCache: PreviewTextureCache?
 
     /// Frame rate
     private var frameRate: Double = 60.0
 
     /// Preview scale
     private let previewScale: CGFloat
+
+    /// Maximum cache size
+    private let maxCacheSize: Int
 
     /// Whether a playback frame render is in progress (for frame dropping)
     private var isRenderingPlaybackFrame: Bool = false
@@ -47,7 +52,7 @@ final class RenderCoordinator: @unchecked Sendable {
 
     init(previewScale: CGFloat = 0.5, cacheSize: Int = 180) {
         self.previewScale = previewScale
-        self.cache = PreviewCache(maxSize: cacheSize)
+        self.maxCacheSize = cacheSize
     }
 
     // MARK: - Setup
@@ -68,7 +73,17 @@ final class RenderCoordinator: @unchecked Sendable {
         self.evaluator = evaluator
         self.renderer = renderer
         self.frameRate = frameRate
-        self.cache.invalidateAll()
+
+        // Create GPU-resident texture cache using the renderer's Metal device
+        if let device = renderer.device {
+            let outputSize = renderer.outputSize
+            self.textureCache = PreviewTextureCache(
+                device: device,
+                width: Int(outputSize.width),
+                height: Int(outputSize.height),
+                maxSize: maxCacheSize
+            )
+        }
     }
 
     // MARK: - Playback Frame Rendering
@@ -77,10 +92,10 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Returns immediately if another playback render is in flight (frame drop).
     /// - Parameters:
     ///   - time: Target video time
-    ///   - completion: Called with the rendered CGImage (on an unspecified thread)
+    ///   - completion: Called with the rendered MTLTexture (on an unspecified thread)
     func requestPlaybackFrame(
         at time: TimeInterval,
-        completion: @escaping (CGImage?, TimeInterval) -> Void
+        completion: @escaping (MTLTexture?, TimeInterval) -> Void
     ) {
         lock.lock()
 
@@ -94,9 +109,9 @@ final class RenderCoordinator: @unchecked Sendable {
         let generation = renderGeneration
 
         // Check cache
-        if let cachedFrame = cache.frame(at: frameIndex) {
+        if let cachedTexture = textureCache?.texture(at: frameIndex) {
             lock.unlock()
-            completion(cachedFrame, time)
+            completion(cachedTexture, time)
             return
         }
 
@@ -104,6 +119,7 @@ final class RenderCoordinator: @unchecked Sendable {
         let evaluator = self.evaluator
         let renderer = self.renderer
         let reader = self.sequentialReader
+        let cache = self.textureCache
 
         lock.unlock()
 
@@ -136,10 +152,16 @@ final class RenderCoordinator: @unchecked Sendable {
             // Evaluate the state at this time
             let state = evaluator.evaluate(at: frame.time)
 
-            // Render
-            guard let rendered = renderer.renderToCGImage(
+            // Acquire a texture from the cache pool
+            guard let targetTexture = cache?.acquireTexture() else {
+                return
+            }
+
+            // Render to GPU-resident texture (synchronous, waits for GPU)
+            guard renderer.renderToTexture(
                 sourceFrame: frame.image,
-                state: state
+                state: state,
+                targetTexture: targetTexture
             ) else { return }
 
             // Check generation again
@@ -152,10 +174,10 @@ final class RenderCoordinator: @unchecked Sendable {
 
             // Store in cache
             let actualFrameIndex = Int(frame.time * self.frameRate)
-            self.cache.store(rendered, at: actualFrameIndex)
+            cache?.store(targetTexture, at: actualFrameIndex)
 
             // Deliver
-            completion(rendered, frame.time)
+            completion(targetTexture, frame.time)
         }
     }
 
@@ -166,22 +188,23 @@ final class RenderCoordinator: @unchecked Sendable {
     /// - Parameters:
     ///   - time: Target video time
     ///   - generation: Generation counter from ScrubController
-    ///   - completion: Called with the rendered CGImage
+    ///   - completion: Called with the rendered MTLTexture
     func requestScrubFrame(
         at time: TimeInterval,
         generation scrubGeneration: Int,
-        completion: @escaping (CGImage?) -> Void
+        completion: @escaping (MTLTexture?) -> Void
     ) {
         lock.lock()
         let frameIndex = Int(time * frameRate)
         let evaluator = self.evaluator
         let renderer = self.renderer
         let extractor = self.frameExtractor
+        let cache = self.textureCache
         lock.unlock()
 
         // Check cache first
-        if let cachedFrame = cache.frame(at: frameIndex) {
-            completion(cachedFrame)
+        if let cachedTexture = cache?.texture(at: frameIndex) {
+            completion(cachedTexture)
             return
         }
 
@@ -202,18 +225,24 @@ final class RenderCoordinator: @unchecked Sendable {
                     // Evaluate state
                     let state = evaluator.evaluate(at: time)
 
-                    // Render
-                    guard let rendered = renderer.renderToCGImage(
+                    // Acquire texture and render
+                    guard let targetTexture = cache?.acquireTexture() else {
+                        completion(nil)
+                        return
+                    }
+
+                    guard renderer.renderToTexture(
                         sourceFrame: sourceFrame,
-                        state: state
+                        state: state,
+                        targetTexture: targetTexture
                     ) else {
                         completion(nil)
                         return
                     }
 
                     // Cache the result
-                    self.cache.store(rendered, at: frameIndex)
-                    completion(rendered)
+                    cache?.store(targetTexture, at: frameIndex)
+                    completion(targetTexture)
 
                 } catch {
                     completion(nil)
@@ -254,6 +283,24 @@ final class RenderCoordinator: @unchecked Sendable {
     func updateRenderer(_ newRenderer: Renderer) {
         lock.lock()
         renderer = newRenderer
+
+        // Recreate texture cache if the output size changed
+        if let device = newRenderer.device {
+            let outputSize = newRenderer.outputSize
+            let currentCache = textureCache
+            let needsRecreate = currentCache == nil
+                || currentCache?.statistics.maxSize != maxCacheSize
+
+            if needsRecreate {
+                textureCache = PreviewTextureCache(
+                    device: device,
+                    width: Int(outputSize.width),
+                    height: Int(outputSize.height),
+                    maxSize: maxCacheSize
+                )
+            }
+        }
+
         lock.unlock()
     }
 
@@ -263,23 +310,29 @@ final class RenderCoordinator: @unchecked Sendable {
     func invalidateCache(from startTime: TimeInterval, to endTime: TimeInterval) {
         let startFrame = Int(startTime * frameRate)
         let endFrame = Int(endTime * frameRate)
-        cache.invalidate(from: startFrame, to: endFrame)
+        textureCache?.invalidate(from: startFrame, to: endFrame)
     }
 
     /// Invalidate the entire cache
     func invalidateAllCache() {
-        cache.invalidateAll()
+        textureCache?.invalidateAll()
     }
 
     /// Check if a frame at the given time is cached
     func isCached(at time: TimeInterval) -> Bool {
         let frameIndex = Int(time * frameRate)
-        return cache.isCached(frameIndex)
+        return textureCache?.isCached(frameIndex) ?? false
     }
 
     /// Current cache statistics
-    var cacheStatistics: PreviewCache.Statistics {
-        cache.statistics
+    var cacheStatistics: PreviewTextureCache.Statistics {
+        textureCache?.statistics ?? PreviewTextureCache.Statistics(
+            cachedFrameCount: 0,
+            maxSize: maxCacheSize,
+            dirtyRangeCount: 0,
+            utilizationPercent: 0,
+            poolSize: 0
+        )
     }
 
     // MARK: - Cleanup
@@ -291,6 +344,6 @@ final class RenderCoordinator: @unchecked Sendable {
 
         frameExtractor?.cancelAllPendingRequests()
         sequentialReader?.stopReading()
-        cache.invalidateAll()
+        textureCache?.invalidateAll()
     }
 }

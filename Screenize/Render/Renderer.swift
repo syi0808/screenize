@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 import CoreImage
 import CoreVideo
+import Metal
 
 /// Unified renderer
 /// Shared rendering logic for both Preview and Export
@@ -166,9 +167,39 @@ final class Renderer {
         return buffer
     }
 
+    // MARK: - MTLTexture Output
+
+    /// Render a frame directly to an MTLTexture (GPU-resident, no CPU readback)
+    /// The CIContext must be Metal-backed (created via CIContext(mtlDevice:))
+    /// Passing nil for commandBuffer makes the call synchronous (waits for GPU completion)
+    /// - Parameters:
+    ///   - sourceFrame: Source video frame
+    ///   - state: Evaluated frame state
+    ///   - targetTexture: Destination MTLTexture (must have .renderTarget usage)
+    /// - Returns: Whether rendering succeeded
+    func renderToTexture(
+        sourceFrame: CIImage,
+        state: EvaluatedFrameState,
+        targetTexture: MTLTexture
+    ) -> Bool {
+        guard let rendered = render(sourceFrame: sourceFrame, state: state) else {
+            return false
+        }
+
+        // Synchronous render: CIContext creates its own command buffer, commits, and waits
+        context.ciContext.render(
+            rendered,
+            to: targetTexture,
+            commandBuffer: nil,
+            bounds: CGRect(origin: .zero, size: context.outputSize),
+            colorSpace: CGColorSpaceCreateDeviceRGB()
+        )
+        return true
+    }
+
     // MARK: - CGImage Output
 
-    /// Render a frame to a CGImage
+    /// Render a frame to a CGImage (used by export pipeline)
     /// - Parameters:
     ///   - sourceFrame: Source video frame
     ///   - state: Evaluated frame state
@@ -186,6 +217,19 @@ final class Renderer {
             from: CGRect(origin: .zero, size: context.outputSize)
         )
     }
+}
+
+// MARK: - Metal Accessors
+
+extension Renderer {
+    /// Metal device from the render context (nil if not Metal-backed)
+    var device: MTLDevice? { context.device }
+
+    /// Metal command queue from the render context
+    var commandQueue: MTLCommandQueue? { context.commandQueue }
+
+    /// Output size from the render context
+    var outputSize: CGSize { context.outputSize }
 }
 
 // MARK: - Batch Rendering

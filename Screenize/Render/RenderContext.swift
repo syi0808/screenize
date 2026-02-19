@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 import CoreImage
 import CoreVideo
+import Metal
 
 /// Rendering context
 /// Shared rendering environment for preview and export
@@ -24,23 +25,44 @@ struct RenderContext {
     /// Preview scale (0.5 = 50% resolution)
     let previewScale: CGFloat
 
+    /// Metal device (available in preview mode for GPU-resident pipeline)
+    let device: MTLDevice?
+
+    /// Metal command queue (available in preview mode)
+    let commandQueue: MTLCommandQueue?
+
     init(
         outputSize: CGSize,
         sourceSize: CGSize,
         ciContext: CIContext? = nil,
         pixelBufferPool: CVPixelBufferPool? = nil,
         isPreview: Bool = false,
-        previewScale: CGFloat = 0.5
+        previewScale: CGFloat = 0.5,
+        device: MTLDevice? = nil,
+        commandQueue: MTLCommandQueue? = nil
     ) {
         self.outputSize = outputSize
         self.sourceSize = sourceSize
-        self.ciContext = ciContext ?? Self.createOptimizedContext()
         self.pixelBufferPool = pixelBufferPool
         self.isPreview = isPreview
         self.previewScale = previewScale
+        self.device = device
+        self.commandQueue = commandQueue
+
+        // Use Metal-backed CIContext when device is available
+        if let ciContext = ciContext {
+            self.ciContext = ciContext
+        } else if let device = device {
+            self.ciContext = CIContext(mtlDevice: device, options: [
+                .cacheIntermediates: true,
+                .priorityRequestLow: false
+            ])
+        } else {
+            self.ciContext = Self.createOptimizedContext()
+        }
     }
 
-    /// Create an optimized CIContext for performance
+    /// Create an optimized CIContext for performance (non-Metal fallback)
     static func createOptimizedContext() -> CIContext {
         CIContext(options: [
             .useSoftwareRenderer: false,
@@ -50,18 +72,23 @@ struct RenderContext {
         ])
     }
 
-    /// Create a context for preview
+    /// Create a context for preview (Metal-backed for GPU-resident pipeline)
     static func forPreview(sourceSize: CGSize, scale: CGFloat = 0.5) -> Self {
         let scaledSize = CGSize(
             width: sourceSize.width * scale,
             height: sourceSize.height * scale
         )
 
+        let device = MTLCreateSystemDefaultDevice()
+        let commandQueue = device?.makeCommandQueue()
+
         return Self(
             outputSize: scaledSize,
             sourceSize: sourceSize,
             isPreview: true,
-            previewScale: scale
+            previewScale: scale,
+            device: device,
+            commandQueue: commandQueue
         )
     }
 

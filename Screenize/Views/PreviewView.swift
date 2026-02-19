@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreGraphics
+import Metal
 
 /// Video preview view
 struct PreviewView: View {
@@ -53,9 +54,9 @@ struct PreviewView: View {
                 // Background
                 Color.black
 
-                // Video frame
-                if let frame = previewEngine.currentFrame {
-                    frameView(frame, in: videoSize)
+                // Video frame (GPU-resident Metal texture)
+                if previewEngine.currentTexture != nil {
+                    MetalPreviewView(texture: previewEngine.currentTexture)
                 } else if previewEngine.isLoading {
                     loadingView
                 } else {
@@ -93,14 +94,6 @@ struct PreviewView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Frame View
-
-    private func frameView(_ frame: CGImage, in size: CGSize) -> some View {
-        Image(frame, scale: 1, label: Text("Preview"))
-            .resizable()
-            .aspectRatio(contentMode: .fit)
     }
 
     // MARK: - Loading View

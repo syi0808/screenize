@@ -1,5 +1,5 @@
 import Foundation
-import CoreGraphics
+import Metal
 
 /// Scrub controller
 /// Coalesces rapid scrub events into single render requests (latest-value-wins pattern)
@@ -9,10 +9,12 @@ final class ScrubController: @unchecked Sendable {
     // MARK: - Types
 
     /// Render request callback
-    typealias RenderRequest = (_ time: TimeInterval, _ generation: Int, _ completion: @escaping (CGImage?) -> Void) -> Void
+    typealias RenderRequest = (
+        _ time: TimeInterval, _ generation: Int, _ completion: @escaping (MTLTexture?) -> Void
+    ) -> Void
 
     /// Frame delivery callback
-    typealias FrameDelivery = (_ frame: CGImage?, _ time: TimeInterval) -> Void
+    typealias FrameDelivery = (_ texture: MTLTexture?, _ time: TimeInterval) -> Void
 
     // MARK: - Properties
 

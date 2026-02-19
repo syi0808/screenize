@@ -92,6 +92,8 @@
 		C9000002296A0001 /* SequentialFrameReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100002296A0001 /* SequentialFrameReader.swift */; };
 		C9000003296A0001 /* ScrubController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100003296A0001 /* ScrubController.swift */; };
 		C9000004296A0001 /* RenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100004296A0001 /* RenderCoordinator.swift */; };
+		CA000001296A0001 /* PreviewTextureCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA100001296A0001 /* PreviewTextureCache.swift */; };
+		CA000002296A0001 /* MetalPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA100002296A0001 /* MetalPreviewView.swift */; };
 		F0000104296A0001 /* EventMonitorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000104296A0001 /* EventMonitorManager.swift */; };
 		F0000105296A0001 /* ClickEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000105296A0001 /* ClickEventHandler.swift */; };
 		F0000106296A0001 /* ScrollEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000106296A0001 /* ScrollEventHandler.swift */; };
@@ -241,6 +243,8 @@
 		C9100002296A0001 /* SequentialFrameReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequentialFrameReader.swift; sourceTree = "<group>"; };
 		C9100003296A0001 /* ScrubController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrubController.swift; sourceTree = "<group>"; };
 		C9100004296A0001 /* RenderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderCoordinator.swift; sourceTree = "<group>"; };
+		CA100001296A0001 /* PreviewTextureCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTextureCache.swift; sourceTree = "<group>"; };
+		CA100002296A0001 /* MetalPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalPreviewView.swift; sourceTree = "<group>"; };
 		F1000104296A0001 /* EventMonitorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventMonitorManager.swift; sourceTree = "<group>"; };
 		F1000105296A0001 /* ClickEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickEventHandler.swift; sourceTree = "<group>"; };
 		F1000106296A0001 /* ScrollEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEventHandler.swift; sourceTree = "<group>"; };
@@ -552,6 +556,7 @@
 				C9100002296A0001 /* SequentialFrameReader.swift */,
 				C9100003296A0001 /* ScrubController.swift */,
 				C9100004296A0001 /* RenderCoordinator.swift */,
+				CA100001296A0001 /* PreviewTextureCache.swift */,
 			);
 			path = Render;
 			sourceTree = "<group>";
@@ -564,6 +569,7 @@
 				F20000F0296A0001 /* Recording */,
 				A12000A0296A0001 /* Onboarding */,
 				F1000050296A0001 /* PreviewView.swift */,
+				CA100002296A0001 /* MetalPreviewView.swift */,
 				F1000051296A0001 /* ExportView.swift */,
 				F1000052296A0001 /* EditorMainView.swift */,
 				F1000053296A0001 /* KeyboardShortcutHelpView.swift */,
@@ -933,6 +939,8 @@
 				C9000002296A0001 /* SequentialFrameReader.swift in Sources */,
 				C9000003296A0001 /* ScrubController.swift in Sources */,
 				C9000004296A0001 /* RenderCoordinator.swift in Sources */,
+				CA000001296A0001 /* PreviewTextureCache.swift in Sources */,
+				CA000002296A0001 /* MetalPreviewView.swift in Sources */,
 				F0000030296A0001 /* TimeRulerView.swift in Sources */,
 				F0000031296A0001 /* PlayheadView.swift in Sources */,
 				F0000034296A0001 /* TimelineView.swift in Sources */,
