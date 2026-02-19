@@ -67,14 +67,22 @@ struct TimelineView: View {
     @State private var isDraggingTrimEnd = false
     @State private var activeSegmentInteraction: SegmentInteraction?
     @State private var resizeCursorHoverCount = 0
+    @State private var hoveredSegmentID: UUID?
 
-    private let minPixelsPerSecond: CGFloat = 10
-    private let maxPixelsPerSecond: CGFloat = 200
+    private let minPixelsPerSecond: CGFloat = 1
+    private let maxPixelsPerSecond: CGFloat = 2000
     private let minSegmentDuration: TimeInterval = 0.05
     private let snapThresholdInPoints: CGFloat = 8
     private let rulerHeight: CGFloat = 24
     private let trackHeight: CGFloat = 40
     private let headerWidth: CGFloat = 120
+
+    private var logZoom: Binding<Double> {
+        Binding(
+            get: { log2(Double(pixelsPerSecond)) },
+            set: { pixelsPerSecond = CGFloat(pow(2, $0)) }
+        )
+    }
 
     private enum SegmentInteractionMode {
         case move
@@ -163,8 +171,11 @@ struct TimelineView: View {
                 }
                 .buttonStyle(.plain)
 
-                Slider(value: $pixelsPerSecond, in: minPixelsPerSecond...maxPixelsPerSecond)
-                    .frame(width: 100)
+                Slider(
+                    value: logZoom,
+                    in: log2(Double(minPixelsPerSecond))...log2(Double(maxPixelsPerSecond))
+                )
+                .frame(width: 100)
 
                 Button { pixelsPerSecond = min(maxPixelsPerSecond, pixelsPerSecond * 1.5) } label: {
                     Image(systemName: "plus.magnifyingglass")
@@ -208,14 +219,15 @@ struct TimelineView: View {
                             timeline.tracks[index] = .cursor(updated)
                         } label: {
                             Image(systemName: cursorTrack.useSmoothCursor
-                                ? "waveform.path" : "waveform.path")
+                                ? "cursorarrow.motionlines" : "cursorarrow")
                                 .font(.system(size: 10))
-                                .foregroundStyle(cursorTrack.useSmoothCursor
-                                    ? .secondary : .tertiary)
+                                .foregroundColor(cursorTrack.useSmoothCursor
+                                    ? .accentColor : .secondary.opacity(0.4))
                         }
                         .buttonStyle(.plain)
                         .help(cursorTrack.useSmoothCursor
-                            ? "Smooth cursor (on)" : "Smooth cursor (off)")
+                            ? "Smooth cursor interpolation (on)"
+                            : "Smooth cursor interpolation (off)")
                     }
 
                     Button {
@@ -303,7 +315,8 @@ struct TimelineView: View {
                     start: segment.startTime,
                     end: segment.endTime,
                     snapTargets: snapTargets(from: ranges, excluding: segment.id),
-                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
+                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime),
+                    cursorStyle: segment.style
                 )
             }
         case .keystroke(let keystrokeTrack):
@@ -330,30 +343,61 @@ struct TimelineView: View {
         start: TimeInterval,
         end: TimeInterval,
         snapTargets: [TimeInterval],
-        editBounds: SegmentEditBounds
+        editBounds: SegmentEditBounds,
+        cursorStyle: CursorStyle? = nil
     ) -> some View {
         let displayStart = segmentDisplayStart(for: id, fallback: start)
         let displayEnd = segmentDisplayEnd(for: id, fallback: end)
         let x = CGFloat(displayStart) * pixelsPerSecond
         let width = max(6, CGFloat(displayEnd - displayStart) * pixelsPerSecond)
         let color = TrackColor.color(for: trackType)
-        let handleWidth: CGFloat = 10
+        let isSelected = selectedSegmentID == id
+        let isHovered = hoveredSegmentID == id
+        let showHandles = isSelected || isHovered
+
+        let adaptiveHandleWidth: CGFloat = {
+            if width < 10 && !isSelected { return 0 }
+            if width < 20 { return max(3, width * 0.15) }
+            if width < 40 { return max(4, min(10, width * 0.2)) }
+            return 10
+        }()
 
         return ZStack {
             RoundedRectangle(cornerRadius: 4)
-                .fill(color.opacity(selectedSegmentID == id ? 0.9 : 0.6))
+                .fill(color.opacity(isSelected ? 0.9 : 0.6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(selectedSegmentID == id ? Color.white : Color.clear, lineWidth: 1)
+                        .stroke(
+                            isSelected
+                                ? Color.white
+                                : (isHovered ? Color.white.opacity(0.5) : Color.clear),
+                            lineWidth: 1
+                        )
                 )
 
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color.white.opacity(selectedSegmentID == id ? 0.22 : 0.1))
-                    .frame(width: handleWidth)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.white.opacity(selectedSegmentID == id ? 0.95 : 0.45), lineWidth: 1)
+            // Cursor style indicator
+            if let style = cursorStyle, width > 20 {
+                HStack(spacing: 2) {
+                    Image(systemName: style.sfSymbolName)
+                        .font(.system(size: 8))
+                        .foregroundColor(.white.opacity(0.8))
+                    if width > 60 {
+                        Text(style.displayName)
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+
+            // Handles: visible only on hover/selection
+            if showHandles && adaptiveHandleWidth > 0 {
+                HStack(spacing: 0) {
+                    segmentHandleView(
+                        width: adaptiveHandleWidth,
+                        isSelected: isSelected,
+                        segmentWidth: width
                     )
                     .contentShape(Rectangle())
                     .onHover { isHovering in
@@ -361,24 +405,20 @@ struct TimelineView: View {
                     }
                     .highPriorityGesture(
                         resizeGesture(
-                            for: id,
-                            trackType: trackType,
-                            start: start,
-                            end: end,
+                            for: id, trackType: trackType,
+                            start: start, end: end,
                             mode: .resizeStart,
                             snapTargets: snapTargets,
                             editBounds: editBounds
                         )
                     )
 
-                Spacer(minLength: 0)
+                    Spacer(minLength: 0)
 
-                Rectangle()
-                    .fill(Color.white.opacity(selectedSegmentID == id ? 0.22 : 0.1))
-                    .frame(width: handleWidth)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.white.opacity(selectedSegmentID == id ? 0.95 : 0.45), lineWidth: 1)
+                    segmentHandleView(
+                        width: adaptiveHandleWidth,
+                        isSelected: isSelected,
+                        segmentWidth: width
                     )
                     .contentShape(Rectangle())
                     .onHover { isHovering in
@@ -386,43 +426,104 @@ struct TimelineView: View {
                     }
                     .highPriorityGesture(
                         resizeGesture(
-                            for: id,
-                            trackType: trackType,
-                            start: start,
-                            end: end,
+                            for: id, trackType: trackType,
+                            start: start, end: end,
                             mode: .resizeEnd,
                             snapTargets: snapTargets,
                             editBounds: editBounds
                         )
                     )
+                }
+            } else {
+                // Invisible resize hit zones when handles are hidden
+                HStack(spacing: 0) {
+                    Color.clear
+                        .frame(width: max(6, min(10, width * 0.25)))
+                        .contentShape(Rectangle())
+                        .onHover { isHovering in
+                            updateResizeCursor(isHovering)
+                        }
+                        .highPriorityGesture(
+                            resizeGesture(
+                                for: id, trackType: trackType,
+                                start: start, end: end,
+                                mode: .resizeStart,
+                                snapTargets: snapTargets,
+                                editBounds: editBounds
+                            )
+                        )
+
+                    Spacer(minLength: 0)
+
+                    Color.clear
+                        .frame(width: max(6, min(10, width * 0.25)))
+                        .contentShape(Rectangle())
+                        .onHover { isHovering in
+                            updateResizeCursor(isHovering)
+                        }
+                        .highPriorityGesture(
+                            resizeGesture(
+                                for: id, trackType: trackType,
+                                start: start, end: end,
+                                mode: .resizeEnd,
+                                snapTargets: snapTargets,
+                                editBounds: editBounds
+                            )
+                        )
+                }
             }
         }
-            .frame(width: width, height: 22)
-            .position(x: x + width / 2, y: trackHeight / 2)
-            .gesture(
-                moveGesture(
-                    for: id,
-                    trackType: trackType,
-                    start: start,
-                    end: end,
-                    snapTargets: snapTargets,
-                    editBounds: editBounds
+        .frame(width: width, height: 22)
+        .position(x: x + width / 2, y: trackHeight / 2)
+        .onHover { isHovering in
+            hoveredSegmentID = isHovering ? id : nil
+        }
+        .gesture(
+            moveGesture(
+                for: id,
+                trackType: trackType,
+                start: start,
+                end: end,
+                snapTargets: snapTargets,
+                editBounds: editBounds
+            )
+        )
+        .onTapGesture {
+            onSegmentSelect?(trackType, id)
+            selectedSegmentID = id
+            selectedSegmentTrackType = trackType
+        }
+        .opacity(
+            timelineIsSegmentInTrimRange(
+                start: displayStart,
+                end: displayEnd,
+                trimStart: trimStart,
+                trimEnd: trimEnd,
+                duration: duration
+            ) ? 1.0 : 0.3
+        )
+    }
+
+    @ViewBuilder
+    private func segmentHandleView(
+        width: CGFloat,
+        isSelected: Bool,
+        segmentWidth: CGFloat
+    ) -> some View {
+        if segmentWidth < 16 {
+            Rectangle()
+                .fill(Color.white.opacity(isSelected ? 0.8 : 0.5))
+                .frame(width: max(2, width))
+        } else {
+            Rectangle()
+                .fill(Color.white.opacity(isSelected ? 0.22 : 0.12))
+                .frame(width: width)
+                .overlay(
+                    Rectangle()
+                        .fill(Color.white.opacity(isSelected ? 0.7 : 0.35))
+                        .frame(width: 1)
                 )
-            )
-            .onTapGesture {
-                onSegmentSelect?(trackType, id)
-                selectedSegmentID = id
-                selectedSegmentTrackType = trackType
-            }
-            .opacity(
-                timelineIsSegmentInTrimRange(
-                    start: displayStart,
-                    end: displayEnd,
-                    trimStart: trimStart,
-                    trimEnd: trimEnd,
-                    duration: duration
-                ) ? 1.0 : 0.3
-            )
+        }
     }
 
     private func moveGesture(
@@ -537,6 +638,12 @@ struct TimelineView: View {
                 selectedSegmentTrackType = trackType
             }
     }
+
+}
+
+// MARK: - Snapping & Interaction Helpers
+
+extension TimelineView {
 
     private func isInteracting(with id: UUID, mode: SegmentInteractionMode) -> Bool {
         guard let interaction = activeSegmentInteraction else { return false }
@@ -739,7 +846,7 @@ struct TimelineView: View {
     private func fitToView() {
         guard duration > 0 else { return }
         let availableWidth = timelineAreaWidth > 0 ? timelineAreaWidth : 600
-        pixelsPerSecond = max(minPixelsPerSecond, min(maxPixelsPerSecond, availableWidth / CGFloat(duration)))
+        pixelsPerSecond = max(minPixelsPerSecond, availableWidth / CGFloat(duration))
     }
 
 }

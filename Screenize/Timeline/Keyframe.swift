@@ -130,6 +130,18 @@ enum CursorStyle: String, Codable, CaseIterable {
         case .contextMenu: return "Context Menu"
         }
     }
+
+    var sfSymbolName: String {
+        switch self {
+        case .arrow: return "cursorarrow"
+        case .pointer: return "hand.point.up.left"
+        case .iBeam: return "character.cursor.ibeam"
+        case .crosshair: return "plus"
+        case .openHand: return "hand.raised"
+        case .closedHand: return "hand.raised.fill"
+        case .contextMenu: return "contextualmenu.and.cursorarrow"
+        }
+    }
 }
 
 /// Cursor style keyframe (for future extension)
