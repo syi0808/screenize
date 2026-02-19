@@ -233,6 +233,7 @@ struct SmartGenerationSettings {
     var simulation = SimulationSettings()
     var cursor = CursorEmissionSettings()
     var keystroke = KeystrokeEmissionSettings()
+    var postProcessing = PostProcessingSettings()
 
     static let `default` = Self()
 }
@@ -339,4 +340,62 @@ struct KeystrokeEmissionSettings {
     var fadeInDuration: TimeInterval = 0.15
     var fadeOutDuration: TimeInterval = 0.3
     var minInterval: TimeInterval = 0.05
+}
+
+// MARK: - Post-Processing Settings
+
+/// Settings for the post-processing pipeline applied between simulation and track emission.
+struct PostProcessingSettings {
+    var smoothing = SmoothingSettings()
+    var hold = HoldSettings()
+    var transitionRefinement = TransitionRefinementSettings()
+    var merge = MergeSettings()
+    var optimization = OptimizationSettings()
+}
+
+/// Jitter smoothing settings for camera path samples.
+/// Disabled by default — intended for future CursorFollowController output.
+struct SmoothingSettings {
+    /// Enable moving-average smoothing. Disabled for StaticHoldController (no jitter).
+    var enabled: Bool = false
+    /// Number of samples in the moving-average window.
+    var windowSize: Int = 5
+    /// Maximum deviation (in normalized units) to consider as jitter.
+    var maxDeviation: CGFloat = 0.02
+}
+
+/// Minimum hold duration enforcement settings.
+struct HoldSettings {
+    /// Minimum hold duration for zoomed-in scenes (zoom > zoomInThreshold).
+    var minZoomInHold: TimeInterval = 0.8
+    /// Minimum hold duration for zoomed-out scenes (zoom <= zoomInThreshold).
+    var minZoomOutHold: TimeInterval = 0.5
+    /// Zoom level above which a scene is considered "zoomed in".
+    var zoomInThreshold: CGFloat = 1.05
+}
+
+/// Transition refinement settings.
+struct TransitionRefinementSettings {
+    /// Snap transition start/end transforms to adjacent scene edge transforms.
+    var enabled: Bool = true
+}
+
+/// Settings for merging short or similar scene segments.
+struct MergeSettings {
+    /// Scenes shorter than this duration are absorbed into neighbors.
+    var minSegmentDuration: TimeInterval = 0.3
+    /// Maximum zoom difference for merging adjacent similar scenes.
+    var maxZoomDiffForMerge: CGFloat = 0.15
+    /// Maximum center difference (per axis) for merging adjacent similar scenes.
+    var maxCenterDiffForMerge: CGFloat = 0.08
+}
+
+/// Settings for final CameraTrack segment optimization.
+struct OptimizationSettings {
+    /// Maximum zoom difference to consider negligible when merging CameraSegments.
+    var negligibleZoomDiff: CGFloat = 0.03
+    /// Maximum center difference (per axis) to consider negligible.
+    var negligibleCenterDiff: CGFloat = 0.015
+    /// Merge consecutive hold segments with negligible differences.
+    var mergeConsecutiveHolds: Bool = true
 }
