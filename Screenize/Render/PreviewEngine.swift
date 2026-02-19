@@ -4,7 +4,9 @@ import CoreImage
 import Combine
 
 /// Preview engine
-/// Manages frame rendering and playback for the live preview
+/// Manages frame rendering and playback for the live preview.
+/// All rendering is delegated to a background RenderCoordinator.
+/// The main thread only receives completed frames for display.
 @MainActor
 final class PreviewEngine: ObservableObject {
 
@@ -19,11 +21,9 @@ final class PreviewEngine: ObservableObject {
     /// Current time (seconds)
     @Published var currentTime: TimeInterval = 0 {
         didSet {
-            // Render the corresponding frame when time changes
-            if !isPlaying {
-                Task {
-                    await renderFrame(at: currentTime)
-                }
+            // During playback, time is driven by DisplayLink — no extra rendering needed
+            if !isPlaying && !isSeeking {
+                scrubController.scrub(to: currentTime)
             }
         }
     }
@@ -42,17 +42,20 @@ final class PreviewEngine: ObservableObject {
 
     // MARK: - Properties
 
-    /// Frame evaluator
-    private var evaluator: FrameEvaluator?
+    /// Render coordinator (background rendering)
+    private let renderCoordinator: RenderCoordinator
 
-    /// Renderer
-    private var renderer: Renderer?
+    /// Display link driver (vsync-driven playback)
+    private let displayLinkDriver: DisplayLinkDriver
 
-    /// Video frame extractor
+    /// Scrub controller (coalesces scrub requests)
+    private let scrubController: ScrubController
+
+    /// Sequential frame reader for playback
+    private var sequentialReader: SequentialFrameReader?
+
+    /// Random-access frame extractor for scrubbing
     private var frameExtractor: VideoFrameExtractor?
-
-    /// Frame cache
-    private let cache: PreviewCache
 
     /// Total duration
     private(set) var duration: TimeInterval = 0
@@ -84,26 +87,11 @@ final class PreviewEngine: ObservableObject {
     /// Preview scale (for performance)
     private let previewScale: CGFloat
 
-    /// Playback task (replaces timer for controlled async loop)
-    private var playbackTask: Task<Void, Never>?
-
     /// Render generation (incremented on seek to invalidate stale renders)
     private var renderGeneration: Int = 0
 
-    /// Prefetch task (decodes frames ahead of playback)
-    private var prefetchTask: Task<Void, Never>?
-
-    /// Last prefetched frame index (reset on seek)
-    private var lastPrefetchedIndex: Int = -1
-
-    /// Wall-clock time when playback started (for real-time sync)
-    private var playbackStartWallTime: ContinuousClock.Instant?
-
-    /// Video time when playback started (for real-time sync)
-    private var playbackStartVideoTime: TimeInterval = 0
-
-    /// Last render time (for performance metrics)
-    private var lastRenderTime: Date?
+    /// Whether a seek operation is in progress (prevents didSet re-entry)
+    private var isSeeking: Bool = false
 
     /// Project reference (for timeline updates)
     private var project: ScreenizeProject?
@@ -121,7 +109,64 @@ final class PreviewEngine: ObservableObject {
 
     init(previewScale: CGFloat = 0.5, cacheSize: Int = 180) {
         self.previewScale = previewScale
-        self.cache = PreviewCache(maxSize: cacheSize)
+        self.renderCoordinator = RenderCoordinator(previewScale: previewScale, cacheSize: cacheSize)
+        self.displayLinkDriver = DisplayLinkDriver()
+        self.scrubController = ScrubController()
+
+        setupCallbacks()
+    }
+
+    // MARK: - Callback Setup
+
+    private func setupCallbacks() {
+        // DisplayLink: called from background thread on every vsync
+        displayLinkDriver.onFrame = { [weak self] targetVideoTime in
+            guard let self = self else { return }
+
+            self.renderCoordinator.requestPlaybackFrame(at: targetVideoTime) { [weak self] frame, actualTime in
+                guard let self = self else { return }
+
+                DispatchQueue.main.async {
+                    // Stop at trim end
+                    if actualTime >= self.effectiveTrimEnd {
+                        self.pause()
+                        self.isSeeking = true
+                        self.currentTime = self.effectiveTrimEnd
+                        self.isSeeking = false
+                        return
+                    }
+
+                    if let frame = frame {
+                        self.currentFrame = frame
+                    }
+                    self.isSeeking = true
+                    self.currentTime = actualTime
+                    self.isSeeking = false
+
+                    // Signal frame delivered so DisplayLink can fire next tick
+                    self.displayLinkDriver.markFrameDelivered()
+                }
+            }
+        }
+
+        // ScrubController: request rendering on the render coordinator
+        scrubController.onRenderRequest = { [weak self] time, generation, completion in
+            guard let self = self else {
+                completion(nil)
+                return
+            }
+            self.renderCoordinator.requestScrubFrame(
+                at: time, generation: generation, completion: completion
+            )
+        }
+
+        // ScrubController: deliver frame to main thread
+        scrubController.onFrameReady = { [weak self] frame, _ in
+            guard let self = self else { return }
+            if let frame = frame {
+                self.currentFrame = frame
+            }
+        }
     }
 
     // MARK: - Setup
@@ -131,16 +176,12 @@ final class PreviewEngine: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        // Store the project reference
         self.project = project
 
         do {
-            // Configure the video frame extractor
-            frameExtractor = try await VideoFrameExtractor(url: project.media.videoURL)
-
-            guard let extractor = frameExtractor else {
-                throw PreviewEngineError.setupFailed
-            }
+            // Configure the random-access frame extractor
+            let extractor = try await VideoFrameExtractor(url: project.media.videoURL)
+            frameExtractor = extractor
 
             // Set base properties
             duration = extractor.duration
@@ -161,7 +202,6 @@ final class PreviewEngine: ObservableObject {
                 frameRate: extractor.frameRate
             )
             smoothedMousePositions = smoothedResult.positions
-            print("Loaded mouse data: \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions")
 
             // Build the render pipeline (Evaluator + Renderer)
             let pipeline = RenderPipelineFactory.createPreviewPipeline(
@@ -173,14 +213,29 @@ final class PreviewEngine: ObservableObject {
                 sourceSize: extractor.videoSize,
                 scale: previewScale
             )
-            evaluator = pipeline.evaluator
-            renderer = pipeline.renderer
 
-            // Reset the cache
-            cache.invalidateAll()
+            // Create sequential frame reader for playback
+            let reader = try await SequentialFrameReader(
+                url: project.media.videoURL,
+                ringBufferSize: 8
+            )
+            try reader.startReading(from: effectiveTrimStart)
+            sequentialReader = reader
 
-            // Render the first frame (starting at trim start)
-            await renderFrame(at: effectiveTrimStart)
+            // Configure the render coordinator
+            renderCoordinator.setup(
+                sequentialReader: reader,
+                frameExtractor: extractor,
+                evaluator: pipeline.evaluator,
+                renderer: pipeline.renderer,
+                frameRate: frameRate
+            )
+
+            // Render the first frame (at trim start)
+            isSeeking = true
+            currentTime = effectiveTrimStart
+            isSeeking = false
+            scrubController.scrub(to: effectiveTrimStart)
 
             isLoading = false
 
@@ -198,29 +253,31 @@ final class PreviewEngine: ObservableObject {
 
         // When starting playback at the trim end, jump to the trim start
         if currentTime >= effectiveTrimEnd {
+            isSeeking = true
             currentTime = effectiveTrimStart
+            isSeeking = false
         }
 
         // If the time is before the trim start, clamp to the trim start
         if currentTime < effectiveTrimStart {
+            isSeeking = true
             currentTime = effectiveTrimStart
+            isSeeking = false
         }
 
-        // Record wall-clock anchor for real-time sync
-        playbackStartWallTime = ContinuousClock.now
-        playbackStartVideoTime = currentTime
+        // Reposition the sequential reader to current time
+        renderCoordinator.seek(to: currentTime)
 
         isPlaying = true
-        startPlaybackLoop()
-        startPrefetching()
+
+        // Start vsync-driven playback
+        displayLinkDriver.start(fromVideoTime: currentTime, frameRate: frameRate)
     }
 
     /// Pause playback
     func pause() {
         isPlaying = false
-        playbackStartWallTime = nil
-        stopPlaybackLoop()
-        stopPrefetching()
+        displayLinkDriver.stop()
     }
 
     /// Toggle playback/pause
@@ -236,19 +293,18 @@ final class PreviewEngine: ObservableObject {
     func seek(to time: TimeInterval) async {
         let clampedTime = max(effectiveTrimStart, min(effectiveTrimEnd, time))
 
-        // Invalidate in-flight renders, cancel pending extractions, reset prefetch
+        isSeeking = true
         renderGeneration += 1
         frameExtractor?.cancelAllPendingRequests()
-        lastPrefetchedIndex = -1
-
+        renderCoordinator.seek(to: clampedTime)
         currentTime = clampedTime
+        isSeeking = false
 
-        if isPlaying {
-            // Re-anchor wall-clock so the playback loop continues from the seek position
-            playbackStartWallTime = ContinuousClock.now
-            playbackStartVideoTime = clampedTime
+        if !isPlaying {
+            scrubController.scrub(to: clampedTime)
         } else {
-            await renderFrame(at: clampedTime)
+            // During playback, update the display link anchor
+            displayLinkDriver.updateAnchor(videoTime: clampedTime)
         }
     }
 
@@ -268,197 +324,15 @@ final class PreviewEngine: ObservableObject {
         await seek(to: effectiveTrimEnd)
     }
 
-    // MARK: - Frame Rendering
-
-    /// Render the frame at a specific time
-    func renderFrame(at time: TimeInterval) async {
-        guard let extractor = frameExtractor,
-              let evaluator = evaluator,
-              let renderer = renderer else {
-            return
-        }
-
-        let frameIndex = Int(time * frameRate)
-        let generation = renderGeneration
-
-        // Check the cache
-        if let cachedFrame = cache.frame(at: frameIndex) {
-            currentFrame = cachedFrame
-            return
-        }
-
-        do {
-            // Extract the frame
-            let sourceFrame = try await extractor.extractFrame(at: time)
-
-            // Abort if a seek invalidated this render
-            guard generation == renderGeneration else { return }
-
-            // Evaluate rendering state
-            let state = evaluator.evaluate(at: time)
-
-            // Perform rendering
-            if let rendered = renderer.renderToCGImage(
-                sourceFrame: sourceFrame, state: state
-            ) {
-                guard generation == renderGeneration else { return }
-                cache.store(rendered, at: frameIndex)
-                currentFrame = rendered
-            }
-
-        } catch {
-            guard generation == renderGeneration else { return }
-            handleRenderError(error, at: time)
-        }
-    }
-
-    /// Record a render error and expose it to the UI
-    private func handleRenderError(_ error: Error, at time: TimeInterval) {
-        renderErrorCount += 1
-        lastRenderError = RenderError(
-            time: time,
-            frameIndex: Int(time * frameRate),
-            message: error.localizedDescription
-        )
-    }
-
-    /// Dismiss the render error banner
-    func clearRenderError() {
-        lastRenderError = nil
-    }
-
-    // MARK: - Playback Loop
-
-    private func startPlaybackLoop() {
-        let frameDuration = 1.0 / frameRate
-
-        playbackTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                guard let self = self,
-                      self.isPlaying,
-                      let wallStart = self.playbackStartWallTime else { break }
-
-                // Compute target video time from wall-clock elapsed time
-                let wallElapsed = ContinuousClock.now - wallStart
-                let elapsedSeconds = Double(wallElapsed.components.seconds)
-                    + Double(wallElapsed.components.attoseconds) / 1e18
-                let newTime = self.playbackStartVideoTime + elapsedSeconds
-
-                // Stop playback at trim end
-                if newTime >= self.effectiveTrimEnd {
-                    self.currentTime = self.effectiveTrimEnd
-                    self.pause()
-                    break
-                }
-
-                self.currentTime = newTime
-
-                // Render frame (one at a time — no task piling)
-                await self.renderFrame(at: newTime)
-
-                // Sleep until the next frame boundary
-                let nextFrameVideoTime = (floor(newTime / frameDuration) + 1.0) * frameDuration
-                let nextFrameWallTime = wallStart + Duration.seconds(
-                    nextFrameVideoTime - self.playbackStartVideoTime
-                )
-                let sleepDuration = nextFrameWallTime - ContinuousClock.now
-                if sleepDuration > .zero {
-                    try? await Task.sleep(for: sleepDuration)
-                }
-            }
-        }
-    }
-
-    private func stopPlaybackLoop() {
-        playbackTask?.cancel()
-        playbackTask = nil
-    }
-
-    // MARK: - Frame Prefetching
-
-    private func startPrefetching() {
-        stopPrefetching()
-
-        prefetchTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                guard let self = self,
-                      let extractor = self.frameExtractor,
-                      let evaluator = self.evaluator,
-                      let renderer = self.renderer else { break }
-
-                let currentIdx = Int(self.currentTime * self.frameRate)
-                let maxFrame = self.totalFrames - 1
-
-                // Prefetch 10–120 frames ahead of current position
-                let prefetchStart = min(maxFrame, currentIdx + 10)
-                let prefetchEnd = min(maxFrame, currentIdx + 120)
-
-                guard prefetchStart <= prefetchEnd,
-                      prefetchStart > self.lastPrefetchedIndex else {
-                    try? await Task.sleep(for: .milliseconds(100))
-                    continue
-                }
-
-                // Collect uncached frames
-                var timesToFetch: [(index: Int, time: TimeInterval)] = []
-                for idx in prefetchStart...prefetchEnd {
-                    if !self.cache.isCached(idx) {
-                        timesToFetch.append((idx, Double(idx) / self.frameRate))
-                    }
-                }
-
-                // Batch extract (up to 30 at a time)
-                let batchSize = 30
-                for batchStart in stride(from: 0, to: timesToFetch.count, by: batchSize) {
-                    guard !Task.isCancelled else { break }
-
-                    let batchEnd = min(batchStart + batchSize, timesToFetch.count)
-                    let batch = Array(timesToFetch[batchStart..<batchEnd])
-                    let times = batch.map { $0.time }
-
-                    do {
-                        let frames = try await extractor.extractFrames(at: times)
-
-                        for (extracted, info) in zip(frames, batch) {
-                            guard !Task.isCancelled else { break }
-                            let state = evaluator.evaluate(at: extracted.0)
-                            if let img = renderer.renderToCGImage(
-                                sourceFrame: extracted.1, state: state
-                            ) {
-                                self.cache.store(img, at: info.index)
-                            }
-                        }
-                    } catch {
-                        break // Skip remaining batches on error
-                    }
-                }
-
-                self.lastPrefetchedIndex = prefetchEnd
-                try? await Task.sleep(for: .milliseconds(200))
-            }
-        }
-    }
-
-    private func stopPrefetching() {
-        prefetchTask?.cancel()
-        prefetchTask = nil
-        lastPrefetchedIndex = -1
-    }
-
     // MARK: - Timeline Update
 
     /// Invalidate the cache when the timeline changes
     func invalidateCache(from startTime: TimeInterval, to endTime: TimeInterval) {
-        let startFrame = Int(startTime * frameRate)
-        let endFrame = Int(endTime * frameRate)
-        cache.invalidate(from: startFrame, to: endFrame)
+        renderCoordinator.invalidateCache(from: startTime, to: endTime)
 
         // If the current frame falls within a dirty range, re-render
-        let currentFrame = Int(currentTime * frameRate)
-        if currentFrame >= startFrame && currentFrame <= endFrame {
-            Task {
-                await renderFrame(at: currentTime)
-            }
+        if currentTime >= startTime && currentTime <= endTime {
+            scrubController.scrub(to: currentTime)
         }
     }
 
@@ -468,10 +342,8 @@ final class PreviewEngine: ObservableObject {
         if let timeline = timeline {
             updateTimeline(timeline)
         } else {
-            cache.invalidateAll()
-            Task {
-                await renderFrame(at: currentTime)
-            }
+            renderCoordinator.invalidateAllCache()
+            scrubController.scrub(to: currentTime)
         }
     }
 
@@ -481,16 +353,16 @@ final class PreviewEngine: ObservableObject {
         self.trimEnd = end
 
         // Adjust if the current time falls outside the trim range
+        isSeeking = true
         if currentTime < effectiveTrimStart {
             currentTime = effectiveTrimStart
         } else if currentTime > effectiveTrimEnd {
             currentTime = effectiveTrimEnd
         }
+        isSeeking = false
 
         // Re-render the current frame
-        Task {
-            await renderFrame(at: currentTime)
-        }
+        scrubController.scrub(to: currentTime)
     }
 
     /// Recreate the evaluator when the timeline updates
@@ -499,7 +371,7 @@ final class PreviewEngine: ObservableObject {
         guard let project = project else { return }
 
         // Create a new evaluator (reuse stored mouse data)
-        evaluator = RenderPipelineFactory.createEvaluator(
+        let newEvaluator = RenderPipelineFactory.createEvaluator(
             timeline: timeline,
             project: project,
             rawMousePositions: rawMousePositions,
@@ -508,13 +380,11 @@ final class PreviewEngine: ObservableObject {
             frameRate: frameRate
         )
 
-        // Invalidate the cache
-        cache.invalidateAll()
+        renderCoordinator.updateEvaluator(newEvaluator)
+        renderCoordinator.invalidateAllCache()
 
         // Re-render the current frame
-        Task {
-            await renderFrame(at: currentTime)
-        }
+        scrubController.scrub(to: currentTime)
     }
 
     /// Rebuild the renderer and evaluator when render settings change
@@ -527,7 +397,7 @@ final class PreviewEngine: ObservableObject {
         self.project?.renderSettings = renderSettings
 
         // Recreate the evaluator (isWindowMode may change)
-        evaluator = RenderPipelineFactory.createEvaluator(
+        let newEvaluator = RenderPipelineFactory.createEvaluator(
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
@@ -536,35 +406,37 @@ final class PreviewEngine: ObservableObject {
         )
 
         // Recreate the renderer
-        renderer = RenderPipelineFactory.createPreviewRenderer(
+        let newRenderer = RenderPipelineFactory.createPreviewRenderer(
             renderSettings: renderSettings,
             captureMeta: project.captureMeta,
             sourceSize: extractor.videoSize,
             scale: previewScale
         )
 
-        // Invalidate the cache
-        cache.invalidateAll()
+        renderCoordinator.updateEvaluator(newEvaluator)
+        renderCoordinator.updateRenderer(newRenderer)
+        renderCoordinator.invalidateAllCache()
 
         // Re-render the current frame
-        Task {
-            await renderFrame(at: currentTime)
-        }
+        scrubController.scrub(to: currentTime)
+    }
+
+    // MARK: - Error Handling
+
+    /// Dismiss the render error banner
+    func clearRenderError() {
+        lastRenderError = nil
     }
 
     // MARK: - Cleanup
 
     func cleanup() {
         pause()
-        stopPrefetching()
+        scrubController.cancel()
+        renderCoordinator.cleanup()
+        sequentialReader?.stopReading()
         frameExtractor?.cancelAllPendingRequests()
-        cache.invalidateAll()
         currentFrame = nil
-    }
-
-    deinit {
-        playbackTask?.cancel()
-        prefetchTask?.cancel()
     }
 }
 
@@ -581,7 +453,7 @@ extension PreviewEngine {
         Int(duration * frameRate)
     }
 
-    /// Playback progress (0–1) within the trim range
+    /// Playback progress (0-1) within the trim range
     var progress: Double {
         guard trimmedDuration > 0 else { return 0 }
         return (currentTime - effectiveTrimStart) / trimmedDuration
@@ -589,7 +461,7 @@ extension PreviewEngine {
 
     /// Cache statistics
     var cacheStatistics: PreviewCache.Statistics {
-        cache.statistics
+        renderCoordinator.cacheStatistics
     }
 
     /// Video aspect ratio

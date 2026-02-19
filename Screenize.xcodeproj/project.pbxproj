@@ -87,6 +87,10 @@
 		F0000101296A0001 /* MouseDataConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000101296A0001 /* MouseDataConverter.swift */; };
 		F0000102296A0001 /* RenderPipelineFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000102296A0001 /* RenderPipelineFactory.swift */; };
 		F0000103296A0001 /* MousePositionInterpolator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000103296A0001 /* MousePositionInterpolator.swift */; };
+		C9000001296A0001 /* DisplayLinkDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100001296A0001 /* DisplayLinkDriver.swift */; };
+		C9000002296A0001 /* SequentialFrameReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100002296A0001 /* SequentialFrameReader.swift */; };
+		C9000003296A0001 /* ScrubController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100003296A0001 /* ScrubController.swift */; };
+		C9000004296A0001 /* RenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100004296A0001 /* RenderCoordinator.swift */; };
 		F0000104296A0001 /* EventMonitorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000104296A0001 /* EventMonitorManager.swift */; };
 		F0000105296A0001 /* ClickEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000105296A0001 /* ClickEventHandler.swift */; };
 		F0000106296A0001 /* ScrollEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000106296A0001 /* ScrollEventHandler.swift */; };
@@ -231,6 +235,10 @@
 		F1000101296A0001 /* MouseDataConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseDataConverter.swift; sourceTree = "<group>"; };
 		F1000102296A0001 /* RenderPipelineFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderPipelineFactory.swift; sourceTree = "<group>"; };
 		F1000103296A0001 /* MousePositionInterpolator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MousePositionInterpolator.swift; sourceTree = "<group>"; };
+		C9100001296A0001 /* DisplayLinkDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLinkDriver.swift; sourceTree = "<group>"; };
+		C9100002296A0001 /* SequentialFrameReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequentialFrameReader.swift; sourceTree = "<group>"; };
+		C9100003296A0001 /* ScrubController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrubController.swift; sourceTree = "<group>"; };
+		C9100004296A0001 /* RenderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderCoordinator.swift; sourceTree = "<group>"; };
 		F1000104296A0001 /* EventMonitorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventMonitorManager.swift; sourceTree = "<group>"; };
 		F1000105296A0001 /* ClickEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickEventHandler.swift; sourceTree = "<group>"; };
 		F1000106296A0001 /* ScrollEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEventHandler.swift; sourceTree = "<group>"; };
@@ -538,6 +546,10 @@
 				F1000101296A0001 /* MouseDataConverter.swift */,
 				F1000102296A0001 /* RenderPipelineFactory.swift */,
 				F1000103296A0001 /* MousePositionInterpolator.swift */,
+				C9100001296A0001 /* DisplayLinkDriver.swift */,
+				C9100002296A0001 /* SequentialFrameReader.swift */,
+				C9100003296A0001 /* ScrubController.swift */,
+				C9100004296A0001 /* RenderCoordinator.swift */,
 			);
 			path = Render;
 			sourceTree = "<group>";
@@ -914,6 +926,10 @@
 				F0000101296A0001 /* MouseDataConverter.swift in Sources */,
 				F0000102296A0001 /* RenderPipelineFactory.swift in Sources */,
 				F0000103296A0001 /* MousePositionInterpolator.swift in Sources */,
+				C9000001296A0001 /* DisplayLinkDriver.swift in Sources */,
+				C9000002296A0001 /* SequentialFrameReader.swift in Sources */,
+				C9000003296A0001 /* ScrubController.swift in Sources */,
+				C9000004296A0001 /* RenderCoordinator.swift in Sources */,
 				F0000030296A0001 /* TimeRulerView.swift in Sources */,
 				F0000031296A0001 /* PlayheadView.swift in Sources */,
 				F0000034296A0001 /* TimelineView.swift in Sources */,
