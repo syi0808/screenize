@@ -78,9 +78,11 @@ final class TransitionPlannerTests: XCTestCase {
         // distance ≈ 1.13 > 0.4
         let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
         XCTAssertEqual(plans.count, 1)
-        if case .zoomOutAndIn(let outDur, let inDur) = plans[0].style {
-            XCTAssertEqual(outDur, defaultSettings.zoomOutDuration, accuracy: 0.01)
-            XCTAssertEqual(inDur, defaultSettings.zoomInDuration, accuracy: 0.01)
+        if case .zoomOutAndIn(let outDur, let inDur, _) = plans[0].style {
+            XCTAssertGreaterThanOrEqual(outDur, defaultSettings.zoomOutDurationRange.lowerBound)
+            XCTAssertLessThanOrEqual(outDur, defaultSettings.zoomOutDurationRange.upperBound)
+            XCTAssertGreaterThanOrEqual(inDur, defaultSettings.zoomOutDurationRange.lowerBound)
+            XCTAssertLessThanOrEqual(inDur, defaultSettings.zoomOutDurationRange.upperBound)
         } else {
             XCTFail("Expected zoomOutAndIn for far scenes")
         }

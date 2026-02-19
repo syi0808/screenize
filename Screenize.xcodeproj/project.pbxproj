@@ -112,6 +112,7 @@
 		AD000021296A0001 /* MockMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100021296A0001 /* MockMouseDataSource.swift */; };
 		AD000022296A0001 /* EventTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100022296A0001 /* EventTimelineTests.swift */; };
 		AD000023296A0001 /* IntentClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100023296A0001 /* IntentClassifierTests.swift */; };
+		C8000001296A0001 /* EventStreamAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8100001296A0001 /* EventStreamAdapterTests.swift */; };
 		AE000001296A0001 /* SceneSegmenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100001296A0001 /* SceneSegmenter.swift */; };
 		AF000001296A0001 /* SceneSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100001296A0001 /* SceneSegmenterTests.swift */; };
 		AE000002296A0001 /* ShotPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100002296A0001 /* ShotPlanner.swift */; };
@@ -242,6 +243,7 @@
 		AD100021296A0001 /* MockMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMouseDataSource.swift; sourceTree = "<group>"; };
 		AD100022296A0001 /* EventTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimelineTests.swift; sourceTree = "<group>"; };
 		AD100023296A0001 /* IntentClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifierTests.swift; sourceTree = "<group>"; };
+		C8100001296A0001 /* EventStreamAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamAdapterTests.swift; sourceTree = "<group>"; };
 		AE100001296A0001 /* SceneSegmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenter.swift; sourceTree = "<group>"; };
 		AF100001296A0001 /* SceneSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenterTests.swift; sourceTree = "<group>"; };
 		AE100002296A0001 /* ShotPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlanner.swift; sourceTree = "<group>"; };
@@ -323,9 +325,18 @@
 			children = (
 				AD200021296A0001 /* Helpers */,
 				AD200022296A0001 /* Generators */,
+				C8200001296A0001 /* Models */,
 				B5200001296A0001 /* Timeline */,
 			);
 			path = ScreenizeTests;
+			sourceTree = "<group>";
+		};
+		C8200001296A0001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C8100001296A0001 /* EventStreamAdapterTests.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		AD200021296A0001 /* Helpers */ = {
@@ -936,6 +947,7 @@
 				AD000021296A0001 /* MockMouseDataSource.swift in Sources */,
 				AD000022296A0001 /* EventTimelineTests.swift in Sources */,
 				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
+				C8000001296A0001 /* EventStreamAdapterTests.swift in Sources */,
 				AF000001296A0001 /* SceneSegmenterTests.swift in Sources */,
 				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
 				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,

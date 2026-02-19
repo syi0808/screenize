@@ -45,9 +45,24 @@ struct EventStreamAdapter: MouseDataSource {
             )
         }
 
-        // Mouse clicks -> ClickEventData
+        // Infer drag events from mouseDown+mouseMoved+mouseUp sequences.
+        // Polyrecorder-v2 doesn't store explicit drag events, so we detect them
+        // by checking mouse displacement between mouseDown and mouseUp.
+        let (inferredDrags, dragClickIndices) = Self.synthesizeDragEvents(
+            clicks: mouseClicks,
+            moves: mouseMoves,
+            displayWidth: displayWidth,
+            displayHeight: displayHeight,
+            sessionStartMs: sessionStartMs
+        )
+        self.dragEventsData = inferredDrags
+
+        // Mouse clicks -> ClickEventData (excluding events reclassified as drags)
         self.mouseClicksData = mouseClicks
-            .compactMap { event in
+            .enumerated()
+            .compactMap { index, event in
+                if dragClickIndices.contains(index) { return nil }
+
                 let timelineSec = Double(event.processTimeMs - sessionStartMs) / 1000.0
                 let xNorm = event.x / displayWidth
                 let yNorm = 1.0 - (event.y / displayHeight)
@@ -90,9 +105,93 @@ struct EventStreamAdapter: MouseDataSource {
                 character: event.character
             )
         }
+    }
 
-        // Drag events: not available in polyrecorder streams (Phase 1)
-        self.dragEventsData = []
+    // MARK: - Drag Inference
+
+    /// Minimum normalized distance to classify a mouseDown/mouseUp pair as a drag.
+    /// ~30px on a 1512px display (0.02 * 1512 ≈ 30).
+    private static let dragDistanceThreshold: CGFloat = 0.02
+
+    /// Synthesize drag events from mouseDown+mouseMoved+mouseUp sequences.
+    /// Returns inferred drags and the indices of click events to remove.
+    private static func synthesizeDragEvents(
+        clicks: [PolyMouseClickEvent],
+        moves: [PolyMouseMoveEvent],
+        displayWidth: Double,
+        displayHeight: Double,
+        sessionStartMs: Int64
+    ) -> ([DragEventData], Set<Int>) {
+        var drags: [DragEventData] = []
+        var indicesToRemove: Set<Int> = []
+
+        // Pair each left mouseDown with the next left mouseUp
+        for (downIdx, downEvent) in clicks.enumerated() {
+            guard downEvent.type == "mouseDown" && downEvent.button == "left" else {
+                continue
+            }
+
+            // Find matching mouseUp (next left mouseUp after this mouseDown)
+            guard let upIdx = clicks.indices.first(where: { idx in
+                idx > downIdx
+                    && clicks[idx].type == "mouseUp"
+                    && clicks[idx].button == "left"
+            }) else { continue }
+
+            let upEvent = clicks[upIdx]
+
+            // Gather mouse moves between down and up times
+            let downTime = downEvent.processTimeMs
+            let upTime = upEvent.processTimeMs
+            let movesInRange = moves.filter {
+                $0.processTimeMs >= downTime && $0.processTimeMs <= upTime
+            }
+
+            guard movesInRange.count >= 2 else { continue }
+
+            // Compute max displacement from the mouseDown position
+            let downXNorm = downEvent.x / displayWidth
+            let downYNorm = 1.0 - (downEvent.y / displayHeight)
+            let downPos = NormalizedPoint(
+                x: CGFloat(downXNorm), y: CGFloat(downYNorm)
+            )
+
+            var maxDisplacement: CGFloat = 0
+            var farthestPos = downPos
+            for move in movesInRange {
+                let mx = CGFloat(move.x / displayWidth)
+                let my = CGFloat(1.0 - (move.y / displayHeight))
+                let pos = NormalizedPoint(x: mx, y: my)
+                let dist = downPos.distance(to: pos)
+                if dist > maxDisplacement {
+                    maxDisplacement = dist
+                    farthestPos = pos
+                }
+            }
+
+            guard maxDisplacement >= dragDistanceThreshold else { continue }
+
+            // Use last mouse move position as the drag end position
+            let lastMove = movesInRange.last!
+            let endX = CGFloat(lastMove.x / displayWidth)
+            let endY = CGFloat(1.0 - (lastMove.y / displayHeight))
+            let endPos = NormalizedPoint(x: endX, y: endY)
+
+            let startTime = Double(downTime - sessionStartMs) / 1000.0
+            let endTime = Double(upTime - sessionStartMs) / 1000.0
+
+            drags.append(DragEventData(
+                startTime: startTime,
+                endTime: endTime,
+                startPosition: downPos,
+                endPosition: endPos,
+                dragType: .selection
+            ))
+            indicesToRemove.insert(downIdx)
+            indicesToRemove.insert(upIdx)
+        }
+
+        return (drags, indicesToRemove)
     }
 }
 

@@ -36,6 +36,10 @@ struct IntentClassifier {
     /// Must be >= SceneSegmenter.minSceneDuration to avoid scene absorption.
     static let pointSpanDuration: TimeInterval = 0.5
 
+    /// Anticipation time for typing scenes: camera arrives this much before the
+    /// first keystroke so the transition completes before typing begins.
+    static let typingAnticipation: TimeInterval = 0.4
+
     // MARK: - Classification
 
     /// Classify an event timeline into intent spans.
@@ -136,6 +140,7 @@ struct IntentClassifier {
         timeline: EventTimeline,
         uiStateSamples: [UIStateSample]
     ) -> IntentSpan {
+        // Use original keystroke time for focus position (before anticipation shift)
         let focusPos = timeline.lastMousePosition(before: start)
             ?? NormalizedPoint(x: 0.5, y: 0.5)
 
@@ -144,8 +149,12 @@ struct IntentClassifier {
 
         let confidence: Float = keyCount > 3 ? 0.9 : (keyCount > 1 ? 0.7 : 0.5)
 
+        // Shift start time backward so the camera transition completes before
+        // actual typing begins, giving a natural anticipation feel.
+        let anticipatedStart = max(0, start - typingAnticipation)
+
         return IntentSpan(
-            startTime: start,
+            startTime: anticipatedStart,
             endTime: end,
             intent: .typing(context: .textField),
             confidence: confidence,

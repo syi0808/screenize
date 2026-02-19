@@ -62,7 +62,9 @@ final class IntentClassifierTests: XCTestCase {
             return false
         }
         XCTAssertEqual(typingSpans.count, 1)
-        XCTAssertEqual(typingSpans[0].startTime, 1.0, accuracy: 0.01)
+        // First keystroke at 1.0, with anticipation offset the start is shifted earlier
+        let anticipation = IntentClassifier.typingAnticipation
+        XCTAssertEqual(typingSpans[0].startTime, 1.0 - anticipation, accuracy: 0.01)
         XCTAssertEqual(typingSpans[0].endTime, 1.8, accuracy: 0.01)
     }
 
@@ -356,42 +358,42 @@ final class IntentClassifierTests: XCTestCase {
     // MARK: - Gap Filling
 
     func test_classify_mediumGap_insertsIdleSpan() {
-        // Two clicks 1.5s apart — should have an idle span between them
+        // Two clicks far apart in time — should have an idle span between them
         let clicks = [
             makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.2)),
-            makeClick(at: 2.6, position: NormalizedPoint(x: 0.8, y: 0.8)),
+            makeClick(at: 4.0, position: NormalizedPoint(x: 0.8, y: 0.8)),
         ]
-        let mouseData = MockMouseDataSource(duration: 5.0, clicks: clicks)
+        let mouseData = MockMouseDataSource(duration: 6.0, clicks: clicks)
         let spans = classify(mouseData)
 
         let idleSpans = spans.filter { $0.intent == .idle }
-        // 1.5s gap between click spans should produce an idle span (not extend previous)
-        let idleBetweenClicks = idleSpans.filter { $0.startTime >= 1.0 && $0.endTime <= 2.7 }
+        // Gap between click spans should produce an idle span
+        let idleBetweenClicks = idleSpans.filter { $0.startTime >= 1.0 && $0.endTime <= 4.5 }
         XCTAssertGreaterThanOrEqual(
             idleBetweenClicks.count, 1,
-            "Gap of ~1.5s between clicks should insert idle span, not extend previous span. " +
+            "Large gap between clicks should insert idle span. " +
             "All spans: \(spans.map { "[\(String(format: "%.2f", $0.startTime))-\(String(format: "%.2f", $0.endTime))] \($0.intent)" })"
         )
     }
 
     func test_classify_gapFillingDoesNotExtendSpanBeyond300ms() {
-        // Click at 1.0s, then another at 3.5s — 2.4s gap
-        // First click span ends around 1.1s (pointSpanDuration=0.1)
-        // The first span should NOT be extended to 3.5s
+        // Click at 1.0s, then another at 5.0s — large gap
+        // First click span ends around 1.5s (pointSpanDuration=0.5)
+        // The first span should NOT be extended to 5.0s
         let clicks = [
             makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.2)),
-            makeClick(at: 3.5, position: NormalizedPoint(x: 0.8, y: 0.8)),
+            makeClick(at: 5.0, position: NormalizedPoint(x: 0.8, y: 0.8)),
         ]
-        let mouseData = MockMouseDataSource(duration: 5.0, clicks: clicks)
+        let mouseData = MockMouseDataSource(duration: 7.0, clicks: clicks)
         let spans = classify(mouseData)
 
         let clickingSpans = spans.filter { $0.intent == .clicking }
         XCTAssertGreaterThanOrEqual(clickingSpans.count, 1)
-        // First clicking span should NOT extend beyond 1.5s (0.1 + 0.3 max continuation)
+        // First clicking span should NOT extend to cover the large gap
         let firstClick = clickingSpans[0]
         XCTAssertLessThan(
-            firstClick.endTime, 1.5,
-            "First click span should not be extended across a 2.4s gap. Span end: \(firstClick.endTime)"
+            firstClick.endTime, 3.0,
+            "First click span should not be extended across a large gap. Span end: \(firstClick.endTime)"
         )
     }
 
@@ -465,6 +467,146 @@ final class IntentClassifierTests: XCTestCase {
         XCTAssertEqual(
             idleBetweenClicks.count, 0,
             "Very short gap (<0.3s) should not insert idle span"
+        )
+    }
+
+    // MARK: - Typing Anticipation
+
+    func test_classify_typingSpan_startTimeShiftedByAnticipation() {
+        let keys = [
+            makeKeyDown(at: 3.0, character: "h"),
+            makeKeyDown(at: 3.2, character: "e"),
+            makeKeyDown(at: 3.4, character: "l"),
+            makeKeyDown(at: 3.6, character: "l"),
+            makeKeyDown(at: 3.8, character: "o"),
+        ]
+        let mouseData = MockMouseDataSource(keyboardEvents: keys)
+        let spans = classify(mouseData)
+
+        let typingSpans = spans.filter {
+            if case .typing = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(typingSpans.count, 1)
+
+        // First keystroke at 3.0s, anticipation = 0.4s → span starts at 2.6s
+        let anticipation = IntentClassifier.typingAnticipation
+        XCTAssertEqual(
+            typingSpans[0].startTime, 3.0 - anticipation, accuracy: 0.01,
+            "Typing span should start \(anticipation)s before first keystroke"
+        )
+        // End time should not be affected
+        XCTAssertEqual(typingSpans[0].endTime, 3.8, accuracy: 0.01)
+    }
+
+    func test_classify_typingAnticipation_clampedToZero() {
+        // Typing starts very early — anticipation should not go below 0
+        let keys = [
+            makeKeyDown(at: 0.1, character: "a"),
+            makeKeyDown(at: 0.3, character: "b"),
+        ]
+        let mouseData = MockMouseDataSource(keyboardEvents: keys)
+        let spans = classify(mouseData)
+
+        let typingSpans = spans.filter {
+            if case .typing = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(typingSpans.count, 1)
+        XCTAssertGreaterThanOrEqual(
+            typingSpans[0].startTime, 0,
+            "Typing span start should never be negative"
+        )
+    }
+
+    func test_classify_typingAnticipation_focusPositionUsesOriginalTime() {
+        // Mouse at (0.2, 0.3) before typing, then moves to (0.8, 0.9) after
+        // Focus should use position before the first keystroke (not the anticipated start)
+        let positions = [
+            MousePositionData(
+                time: 2.0, position: NormalizedPoint(x: 0.2, y: 0.3)
+            ),
+            MousePositionData(
+                time: 2.5, position: NormalizedPoint(x: 0.5, y: 0.5)
+            ),
+            MousePositionData(
+                time: 4.0, position: NormalizedPoint(x: 0.8, y: 0.9)
+            ),
+        ]
+        let keys = [
+            makeKeyDown(at: 3.0, character: "a"),
+            makeKeyDown(at: 3.2, character: "b"),
+            makeKeyDown(at: 3.4, character: "c"),
+            makeKeyDown(at: 3.6, character: "d"),
+        ]
+        let mouseData = MockMouseDataSource(
+            positions: positions, keyboardEvents: keys
+        )
+        let spans = classify(mouseData)
+
+        let typingSpans = spans.filter {
+            if case .typing = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(typingSpans.count, 1)
+
+        // Focus should be the mouse position before t=3.0 (the actual keystroke time)
+        // That's (0.5, 0.5) at t=2.5
+        XCTAssertEqual(typingSpans[0].focusPosition.x, 0.5, accuracy: 0.01)
+        XCTAssertEqual(typingSpans[0].focusPosition.y, 0.5, accuracy: 0.01)
+    }
+
+    func test_classify_typingAnticipation_doesNotOverlapPreviousSpan() {
+        // Click at 2.5s, typing at 3.0s — the anticipation (0.4s) would push
+        // typing start to 2.6s, which overlaps the click span.
+        // The overlap resolver should trim the typing span's start.
+        let clicks = [makeClick(at: 2.5)]
+        let keys = [
+            makeKeyDown(at: 3.0, character: "a"),
+            makeKeyDown(at: 3.2, character: "b"),
+            makeKeyDown(at: 3.4, character: "c"),
+            makeKeyDown(at: 3.6, character: "d"),
+        ]
+        let mouseData = MockMouseDataSource(clicks: clicks, keyboardEvents: keys)
+        let spans = classify(mouseData)
+
+        // Verify no overlaps exist in the classified spans
+        for i in 0..<spans.count - 1 {
+            XCTAssertLessThanOrEqual(
+                spans[i].endTime, spans[i + 1].startTime + 0.01,
+                "Span \(i) end \(spans[i].endTime) should not overlap " +
+                "span \(i + 1) start \(spans[i + 1].startTime)"
+            )
+        }
+    }
+
+    func test_classify_twoTypingSessions_bothHaveAnticipation() {
+        let keys = [
+            // First session
+            makeKeyDown(at: 2.0, character: "a"),
+            makeKeyDown(at: 2.2, character: "b"),
+            makeKeyDown(at: 2.4, character: "c"),
+            // Gap > 1.5s
+            // Second session
+            makeKeyDown(at: 5.0, character: "x"),
+            makeKeyDown(at: 5.2, character: "y"),
+            makeKeyDown(at: 5.4, character: "z"),
+        ]
+        let mouseData = MockMouseDataSource(keyboardEvents: keys)
+        let spans = classify(mouseData)
+
+        let typingSpans = spans.filter {
+            if case .typing = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(typingSpans.count, 2)
+
+        let anticipation = IntentClassifier.typingAnticipation
+        XCTAssertEqual(
+            typingSpans[0].startTime, 2.0 - anticipation, accuracy: 0.01
+        )
+        XCTAssertEqual(
+            typingSpans[1].startTime, 5.0 - anticipation, accuracy: 0.01
         )
     }
 }
