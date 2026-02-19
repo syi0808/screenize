@@ -337,7 +337,25 @@ final class FrameEvaluator {
     // MARK: - Click State
 
     private func checkClickState(at time: TimeInterval) -> (isClicking: Bool, clickType: ClickType?) {
-        for click in clickEvents {
+        guard !clickEvents.isEmpty else { return (false, nil) }
+
+        // Binary search for first click whose endTimestamp >= time
+        var low = 0
+        var high = clickEvents.count
+
+        while low < high {
+            let mid = (low + high) / 2
+            if clickEvents[mid].endTimestamp < time {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+
+        // Scan forward from the found position (clicks are sorted by timestamp)
+        for i in low..<clickEvents.count {
+            let click = clickEvents[i]
+            if click.timestamp > time { break }
             if click.isActive(at: time) {
                 return (true, click.clickType)
             }
@@ -352,10 +370,26 @@ final class FrameEvaluator {
         let pressedScale: CGFloat = 0.8
         let settleDuration: TimeInterval = 0.08
 
+        // Binary search for first click whose effect window reaches time
+        // A click affects time if: timestamp <= time <= endTimestamp + settleDuration
+        var low = 0
+        var high = clickEvents.count
+
+        while low < high {
+            let mid = (low + high) / 2
+            if clickEvents[mid].endTimestamp + settleDuration < time {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+
         var candidates: [CGFloat] = []
 
-        for click in clickEvents {
+        for i in low..<clickEvents.count {
+            let click = clickEvents[i]
             let downTime = click.timestamp
+            if downTime > time { break }
             let upTime = click.endTimestamp
 
             let clickModifier: CGFloat

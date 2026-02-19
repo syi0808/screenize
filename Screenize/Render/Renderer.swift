@@ -161,7 +161,7 @@ final class Renderer {
             image,
             to: buffer,
             bounds: CGRect(origin: .zero, size: context.outputSize),
-            colorSpace: CGColorSpaceCreateDeviceRGB()
+            colorSpace: context.colorSpace
         )
 
         return buffer
@@ -192,7 +192,7 @@ final class Renderer {
             to: targetTexture,
             commandBuffer: nil,
             bounds: CGRect(origin: .zero, size: context.outputSize),
-            colorSpace: CGColorSpaceCreateDeviceRGB()
+            colorSpace: context.colorSpace
         )
         return true
     }

@@ -73,16 +73,18 @@ final class SequentialFrameReader {
     // MARK: - Reader Management
 
     /// Start reading from a specific time
-    /// - Parameter time: Start time in seconds
-    func startReading(from time: TimeInterval = 0) throws {
+    /// - Parameters:
+    ///   - time: Start time in seconds
+    ///   - endTime: End time in seconds (nil = read to end)
+    func startReading(from time: TimeInterval = 0, to endTime: TimeInterval? = nil) throws {
         // Clean up existing reader
         stopReading()
 
         let reader = try AVAssetReader(asset: asset)
 
-        // Set time range from the requested time to the end
+        // Set time range
         let startCMTime = CMTime(seconds: time, preferredTimescale: 600)
-        let endCMTime = CMTime(seconds: duration, preferredTimescale: 600)
+        let endCMTime = CMTime(seconds: endTime ?? duration, preferredTimescale: 600)
         reader.timeRange = CMTimeRange(start: startCMTime, end: endCMTime)
 
         let output = AVAssetReaderTrackOutput(track: videoTrack, outputSettings: outputSettings)

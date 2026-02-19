@@ -5,7 +5,7 @@ import CoreVideo
 import Combine
 
 /// Export engine
-/// Timeline-based final video output
+/// Timeline-based final video output with Metal-accelerated GPU pipeline
 final class ExportEngine: ObservableObject {
 
     // MARK: - Published Properties
@@ -58,14 +58,9 @@ final class ExportEngine: ObservableObject {
         let startTime = Date()
 
         do {
-            // 1. Load video
+            // 1. Load video metadata
             await MainActor.run { progress = .loadingVideo }
             let extractor = try await VideoFrameExtractor(url: project.media.videoURL)
-
-            let asset = AVAsset(url: project.media.videoURL)
-            guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
-                throw ExportEngineError.noVideoTrack
-            }
 
             let naturalSize = extractor.videoSize
             let frameRate = extractor.frameRate
@@ -79,14 +74,12 @@ final class ExportEngine: ObservableObject {
             // 2. Load and interpolate mouse data
             await MainActor.run { progress = .loadingMouseData }
 
-            // Load raw mouse data
             let rawResult = await MainActor.run {
                 MouseDataConverter.loadAndConvert(from: project)
             }
             let rawMousePositions = rawResult.positions
             let clickEvents = rawResult.clicks
 
-            // Load smoothed mouse data (Catmull-Rom interpolated)
             let smoothedResult = await MainActor.run {
                 MouseDataConverter.loadAndConvertWithInterpolation(
                     from: project,
@@ -99,7 +92,7 @@ final class ExportEngine: ObservableObject {
             // 3. Determine output size
             let outputSize = project.renderSettings.outputResolution.size(sourceSize: naturalSize)
 
-            // 4. Create the render pipeline (Evaluator + Renderer)
+            // 4. Create the render pipeline (Metal-backed Evaluator + Renderer)
             let pipeline = RenderPipelineFactory.createExportPipeline(
                 project: project,
                 rawMousePositions: rawMousePositions,
@@ -112,24 +105,11 @@ final class ExportEngine: ObservableObject {
             evaluator = pipeline.evaluator
             renderer = pipeline.renderer
 
-            // 6. Configure the video reader
-            let reader = try AVAssetReader(asset: asset)
+            // 5. Create GPU-resident sequential frame reader
+            let sequentialReader = try await SequentialFrameReader(url: project.media.videoURL)
+            try sequentialReader.startReading(from: trimStart, to: trimEnd)
 
-            // Set the trim range (read only the trimmed segment)
-            reader.timeRange = CMTimeRange(
-                start: CMTime(seconds: trimStart, preferredTimescale: 600),
-                end: CMTime(seconds: trimEnd, preferredTimescale: 600)
-            )
-
-            let readerOutputSettings: [String: Any] = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
-            ]
-            let readerOutput = AVAssetReaderTrackOutput(track: videoTrack, outputSettings: readerOutputSettings)
-            readerOutput.alwaysCopiesSampleData = false
-            reader.add(readerOutput)
-
-            // 7. Configure the video writer
-            // Remove existing file (AVAssetWriter does not overwrite)
+            // 6. Configure the video writer
             if FileManager.default.fileExists(atPath: outputURL.path) {
                 try FileManager.default.removeItem(at: outputURL)
             }
@@ -150,129 +130,118 @@ final class ExportEngine: ObservableObject {
                 sourcePixelBufferAttributes: [
                     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
                     kCVPixelBufferWidthKey as String: Int(outputSize.width),
-                    kCVPixelBufferHeightKey as String: Int(outputSize.height)
+                    kCVPixelBufferHeightKey as String: Int(outputSize.height),
+                    kCVPixelBufferMetalCompatibilityKey as String: true,
+                    kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
                 ]
             )
 
             writer.add(writerInput)
 
-            // 8. Start the reader and writer
-            guard reader.startReading() else {
-                throw ExportEngineError.readerStartFailed
-            }
-
+            // 7. Start the writer
             guard writer.startWriting() else {
                 throw ExportEngineError.writerStartFailed(writer.error)
             }
 
             writer.startSession(atSourceTime: .zero)
 
-            // 9. Frame processing loop
+            // 8. Process frames using requestMediaDataWhenReady for proper backpressure
+            guard let evaluator = evaluator, let renderer = renderer else {
+                throw ExportEngineError.writerFailed
+            }
+
             var frameIndex = 0
-            let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+            let exportQueue = DispatchQueue(label: "com.screenize.export", qos: .userInitiated)
 
-            // Create pixel buffer pool
-            var pixelBufferPool: CVPixelBufferPool?
-            let poolAttrs: [String: Any] = [kCVPixelBufferPoolMinimumBufferCountKey as String: 3]
-            let bufferAttrs: [String: Any] = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-                kCVPixelBufferWidthKey as String: Int(outputSize.width),
-                kCVPixelBufferHeightKey as String: Int(outputSize.height),
-                kCVPixelBufferMetalCompatibilityKey as String: true
-            ]
-            CVPixelBufferPoolCreate(kCFAllocatorDefault, poolAttrs as CFDictionary, bufferAttrs as CFDictionary, &pixelBufferPool)
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                var didResume = false
 
-            // Trim start time (used for output presentation time)
-            let trimStartTime = CMTime(seconds: trimStart, preferredTimescale: 600)
+                writerInput.requestMediaDataWhenReady(on: exportQueue) { [weak self] in
+                    guard let self = self else {
+                        if !didResume {
+                            didResume = true
+                            continuation.resume(throwing: ExportEngineError.writerFailed)
+                        }
+                        return
+                    }
 
-            while let sampleBuffer = readerOutput.copyNextSampleBuffer() {
-                // Check for cancellation
-                if isCancelled {
-                    reader.cancelReading()
-                    writer.cancelWriting()
-                    await MainActor.run { progress = .cancelled }
-                    throw ExportEngineError.cancelled
-                }
+                    // Process frames while writer is ready
+                    while writerInput.isReadyForMoreMediaData {
+                        // Check for cancellation
+                        if self.isCancelled {
+                            sequentialReader.stopReading()
+                            writerInput.markAsFinished()
+                            if !didResume {
+                                didResume = true
+                                continuation.resume(throwing: ExportEngineError.cancelled)
+                            }
+                            return
+                        }
 
-                // Extract the source frame
-                guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-                    frameIndex += 1
-                    continue
-                }
+                        // Read next frame from GPU-resident sequential reader
+                        guard let frame = sequentialReader.nextFrame() else {
+                            // No more frames - finalize
+                            writerInput.markAsFinished()
+                            if !didResume {
+                                didResume = true
+                                continuation.resume()
+                            }
+                            return
+                        }
 
-                let sourceFrame = CIImage(cvPixelBuffer: imageBuffer)
+                        // Evaluate timeline state at this time
+                        let state = evaluator.evaluate(at: frame.time)
 
-                // Presentation time
-                let sampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                let originalTime = CMTimeGetSeconds(sampleTime)
+                        // Render to pixel buffer (Metal-backed GPU pipeline)
+                        guard let pixelBuffer = renderer.renderToPixelBuffer(
+                            sourceFrame: frame.image, state: state
+                        ) else {
+                            frameIndex += 1
+                            continue
+                        }
 
-                // Evaluate the state
-                guard let evaluator = evaluator else { continue }
-                let state = evaluator.evaluate(at: originalTime)
-
-                // Render the frame
-                guard let renderer = renderer,
-                      let rendered = renderer.render(sourceFrame: sourceFrame, state: state) else {
-                    frameIndex += 1
-                    continue
-                }
-
-                // Create a pixel buffer
-                var outputPixelBuffer: CVPixelBuffer?
-                if let pool = pixelBufferPool {
-                    CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &outputPixelBuffer)
-                }
-
-                guard let pixelBuffer = outputPixelBuffer else {
-                    frameIndex += 1
-                    continue
-                }
-
-                // Render the CIImage into the pixel buffer
-                ciContext.render(
-                    rendered,
-                    to: pixelBuffer,
-                    bounds: CGRect(origin: .zero, size: outputSize),
-                    colorSpace: CGColorSpaceCreateDeviceRGB()
-                )
-
-                // Compute the output time (relative to the trim start)
-                let outputPTS = CMTimeSubtract(sampleTime, trimStartTime)
-
-                while !writerInput.isReadyForMoreMediaData {
-                    try await Task.sleep(nanoseconds: 10_000_000) // 10ms
-                }
-
-                adaptor.append(pixelBuffer, withPresentationTime: outputPTS)
-
-                // Update progress (refresh UI every 10 frames to reduce main-thread load)
-                frameIndex += 1
-                if frameIndex % 10 == 0 || frameIndex == totalFrames {
-                    let currentFrame = frameIndex
-                    await MainActor.run {
-                        progress = .processing(frame: currentFrame, total: totalFrames)
-                        statistics = ExportStatistics(
-                            totalFrames: totalFrames,
-                            processedFrames: currentFrame,
-                            startTime: startTime,
-                            currentTime: Date()
+                        // Compute output PTS relative to trim start
+                        let outputPTS = CMTime(
+                            seconds: frame.time - trimStart,
+                            preferredTimescale: 600
                         )
+
+                        adaptor.append(pixelBuffer, withPresentationTime: outputPTS)
+                        frameIndex += 1
+
+                        // Update progress periodically
+                        if frameIndex % 10 == 0 || frameIndex == totalFrames {
+                            let currentFrame = frameIndex
+                            Task { @MainActor [weak self] in
+                                self?.progress = .processing(frame: currentFrame, total: totalFrames)
+                                self?.statistics = ExportStatistics(
+                                    totalFrames: totalFrames,
+                                    processedFrames: currentFrame,
+                                    startTime: startTime,
+                                    currentTime: Date()
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            print("📊 [Export] Completed - \(frameIndex) frames")
+            print("[Export] Completed - \(frameIndex) frames")
 
-            // 10. Finalizing
+            // 9. Finalizing
             await MainActor.run { progress = .encoding }
-            writerInput.markAsFinished()
-
             await MainActor.run { progress = .finalizing }
 
             await writer.finishWriting()
 
             if writer.status == .failed {
                 throw writer.error ?? ExportEngineError.writerFailed
+            }
+
+            // Handle cancellation during finalization
+            if isCancelled {
+                await MainActor.run { progress = .cancelled }
+                throw ExportEngineError.cancelled
             }
 
             // Completed

@@ -25,11 +25,14 @@ struct RenderContext {
     /// Preview scale (0.5 = 50% resolution)
     let previewScale: CGFloat
 
-    /// Metal device (available in preview mode for GPU-resident pipeline)
+    /// Metal device (available for GPU-resident pipeline)
     let device: MTLDevice?
 
-    /// Metal command queue (available in preview mode)
+    /// Metal command queue
     let commandQueue: MTLCommandQueue?
+
+    /// Reusable color space (avoid per-frame allocation)
+    let colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
 
     init(
         outputSize: CGSize,
@@ -92,30 +95,36 @@ struct RenderContext {
         )
     }
 
-    /// Create a context for export
+    /// Create a context for export (Metal-backed for GPU-accelerated rendering)
     static func forExport(sourceSize: CGSize, outputSize: CGSize? = nil) -> Self {
         let finalSize = outputSize ?? sourceSize
+
+        let device = MTLCreateSystemDefaultDevice()
+        let commandQueue = device?.makeCommandQueue()
 
         return Self(
             outputSize: finalSize,
             sourceSize: sourceSize,
             pixelBufferPool: createPixelBufferPool(size: finalSize),
             isPreview: false,
-            previewScale: 1.0
+            previewScale: 1.0,
+            device: device,
+            commandQueue: commandQueue
         )
     }
 
     /// Create a pixel buffer pool
     static func createPixelBufferPool(size: CGSize) -> CVPixelBufferPool? {
         let poolAttributes: [String: Any] = [
-            kCVPixelBufferPoolMinimumBufferCountKey as String: 3
+            kCVPixelBufferPoolMinimumBufferCountKey as String: 6
         ]
 
         let pixelBufferAttributes: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
             kCVPixelBufferWidthKey as String: Int(size.width),
             kCVPixelBufferHeightKey as String: Int(size.height),
-            kCVPixelBufferMetalCompatibilityKey as String: true
+            kCVPixelBufferMetalCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
         ]
 
         var pool: CVPixelBufferPool?
