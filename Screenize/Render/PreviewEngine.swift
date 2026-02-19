@@ -243,7 +243,11 @@ final class PreviewEngine: ObservableObject {
 
         currentTime = clampedTime
 
-        if !isPlaying {
+        if isPlaying {
+            // Re-anchor wall-clock so the playback loop continues from the seek position
+            playbackStartWallTime = ContinuousClock.now
+            playbackStartVideoTime = clampedTime
+        } else {
             await renderFrame(at: clampedTime)
         }
     }
