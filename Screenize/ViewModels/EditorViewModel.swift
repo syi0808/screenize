@@ -21,6 +21,9 @@ final class EditorViewModel: ObservableObject {
     /// Segment selection (supports multi-select)
     @Published var selection = SegmentSelection()
 
+    /// Internal clipboard for segment copy/paste
+    var clipboard: [CopiedSegment] = []
+
     /// Loading state
     @Published var isLoading: Bool = false
 
@@ -201,7 +204,7 @@ final class EditorViewModel: ObservableObject {
     }
 
     /// Save a snapshot before a mutation
-    private func saveUndoSnapshot() {
+    func saveUndoSnapshot() {
         undoStack.push(currentSnapshot())
     }
 

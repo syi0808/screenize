@@ -21,7 +21,7 @@ struct EditorMainView: View {
     @State private var showGeneratorPanel = false
 
     /// Local event monitor for Delete/Backspace key
-    @State private var deleteKeyMonitor: Any?
+    @State private var keyMonitor: Any?
 
     // MARK: - Initialization
 
@@ -158,10 +158,10 @@ struct EditorMainView: View {
             AppState.shared.canRedo = canRedo
         }
         .onAppear {
-            installDeleteKeyMonitor()
+            installKeyMonitor()
         }
         .onDisappear {
-            removeDeleteKeyMonitor()
+            removeKeyMonitor()
             AppState.shared.canUndo = false
             AppState.shared.canRedo = false
         }
@@ -314,15 +314,10 @@ struct EditorMainView: View {
         }
     }
 
-    // MARK: - Delete Key Monitor
+    // MARK: - Key Monitor
 
-    private func installDeleteKeyMonitor() {
-        deleteKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
-            // Delete (backspace) = keyCode 51, Forward Delete = keyCode 117
-            guard event.keyCode == 51 || event.keyCode == 117 else {
-                return event
-            }
-
+    private func installKeyMonitor() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
             // If a text field is focused, let the event pass through for normal editing
             if let firstResponder = NSApp.keyWindow?.firstResponder,
                firstResponder is NSTextView,
@@ -330,23 +325,52 @@ struct EditorMainView: View {
                 return event
             }
 
-            // Delete all selected segments
-            if !viewModel.selection.isEmpty {
-                let selected = viewModel.selection.segments
-                for ident in selected {
-                    viewModel.deleteSegment(ident.id, from: ident.trackType)
+            let hasCommand = event.modifierFlags.contains(.command)
+
+            // Space bar = keyCode 49 → Play/Pause
+            if event.keyCode == 49 && !hasCommand {
+                viewModel.togglePlayback()
+                return nil
+            }
+
+            // Delete (backspace) = keyCode 51, Forward Delete = keyCode 117
+            if event.keyCode == 51 || event.keyCode == 117 {
+                if !viewModel.selection.isEmpty {
+                    let selected = viewModel.selection.segments
+                    for ident in selected {
+                        viewModel.deleteSegment(ident.id, from: ident.trackType)
+                    }
+                    return nil
                 }
-                return nil // consume the event
+                return event
+            }
+
+            // Cmd+C = keyCode 8 → Copy
+            if event.keyCode == 8 && hasCommand {
+                viewModel.copySelectedSegments()
+                return nil
+            }
+
+            // Cmd+V = keyCode 9 → Paste
+            if event.keyCode == 9 && hasCommand {
+                viewModel.pasteSegments()
+                return nil
+            }
+
+            // Cmd+T = keyCode 17 → Duplicate
+            if event.keyCode == 17 && hasCommand {
+                viewModel.duplicateSelectedSegments()
+                return nil
             }
 
             return event
         }
     }
 
-    private func removeDeleteKeyMonitor() {
-        if let monitor = deleteKeyMonitor {
+    private func removeKeyMonitor() {
+        if let monitor = keyMonitor {
             NSEvent.removeMonitor(monitor)
-            deleteKeyMonitor = nil
+            keyMonitor = nil
         }
     }
 
