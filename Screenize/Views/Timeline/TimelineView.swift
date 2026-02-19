@@ -533,7 +533,7 @@ struct TimelineView: View {
         end: TimeInterval,
         ranges: [SegmentRange]
     ) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .named("trackArea"))
+        DragGesture(minimumDistance: 3, coordinateSpace: .named("trackArea"))
             .onChanged { value in
                 if !isInteracting(with: id, mode: .move) {
                     activeSegmentInteraction = SegmentInteraction(
