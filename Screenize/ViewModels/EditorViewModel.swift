@@ -610,6 +610,34 @@ final class EditorViewModel: ObservableObject {
     /// Update segment start/end time as a single edit operation.
     @discardableResult
     func updateSegmentTimeRange(_ id: UUID, startTime: TimeInterval, endTime: TimeInterval) -> Bool {
+        saveUndoSnapshot()
+        let result = updateSegmentTimeRangeNoUndo(id, startTime: startTime, endTime: endTime)
+        if result {
+            hasUnsavedChanges = true
+            invalidatePreviewCache()
+        }
+        return result
+    }
+
+    /// Batch update multiple segments' time ranges in a single undo operation.
+    func batchUpdateSegmentTimeRanges(_ changes: [(UUID, TimeInterval, TimeInterval)]) {
+        saveUndoSnapshot()
+        var anyChanged = false
+        for (id, startTime, endTime) in changes {
+            if updateSegmentTimeRangeNoUndo(id, startTime: startTime, endTime: endTime) {
+                anyChanged = true
+            }
+        }
+        if anyChanged {
+            hasUnsavedChanges = true
+            invalidatePreviewCache()
+        }
+    }
+
+    /// Update a segment's time range without saving an undo snapshot.
+    private func updateSegmentTimeRangeNoUndo(
+        _ id: UUID, startTime: TimeInterval, endTime: TimeInterval
+    ) -> Bool {
         let clampedStart = max(0, min(duration, startTime))
         let clampedEnd = min(duration, max(clampedStart + 0.001, endTime))
 
@@ -619,54 +647,33 @@ final class EditorViewModel: ObservableObject {
                 guard let index = track.segments.firstIndex(where: { $0.id == id }) else {
                     continue
                 }
-
-                saveUndoSnapshot()
                 var segment = track.segments[index]
                 segment.startTime = clampedStart
                 segment.endTime = clampedEnd
-                guard track.updateSegment(segment) else {
-                    return false
-                }
-
+                guard track.updateSegment(segment) else { return false }
                 project.timeline.tracks[trackIndex] = .camera(track)
-                hasUnsavedChanges = true
-                invalidatePreviewCache()
                 return true
 
             case .cursor(var track):
                 guard let index = track.segments.firstIndex(where: { $0.id == id }) else {
                     continue
                 }
-
-                saveUndoSnapshot()
                 var segment = track.segments[index]
                 segment.startTime = clampedStart
                 segment.endTime = clampedEnd
-                guard track.updateSegment(segment) else {
-                    return false
-                }
-
+                guard track.updateSegment(segment) else { return false }
                 project.timeline.tracks[trackIndex] = .cursor(track)
-                hasUnsavedChanges = true
-                invalidatePreviewCache()
                 return true
 
             case .keystroke(var track):
                 guard let index = track.segments.firstIndex(where: { $0.id == id }) else {
                     continue
                 }
-
-                saveUndoSnapshot()
                 var segment = track.segments[index]
                 segment.startTime = clampedStart
                 segment.endTime = clampedEnd
-                guard track.updateSegment(segment) else {
-                    return false
-                }
-
+                guard track.updateSegment(segment) else { return false }
                 project.timeline.tracks[trackIndex] = .keystroke(track)
-                hasUnsavedChanges = true
-                invalidatePreviewCache()
                 return true
             }
         }

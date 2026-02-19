@@ -43,6 +43,9 @@ struct ScreenizeApp: App {
             _ = CGRequestScreenCaptureAccess()
         }
 
+        // Disable automatic window tabbing so Cmd+T is free for Duplicate
+        NSWindow.allowsAutomaticWindowTabbing = false
+
         // Register a global hotkey (Cmd+Shift+2)
         GlobalHotkeyManager.shared.register {
             Task { @MainActor in
@@ -77,6 +80,39 @@ struct ScreenizeApp: App {
                 }
                 .keyboardShortcut("z", modifiers: [.command, .shift])
                 .disabled(!appState.canRedo)
+            }
+
+            CommandGroup(replacing: .pasteboard) {
+                Button("Copy") {
+                    if !NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil) {
+                        NotificationCenter.default.post(name: .editorCopy, object: nil)
+                    }
+                }
+                .keyboardShortcut("c", modifiers: .command)
+
+                Button("Paste") {
+                    if !NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil) {
+                        NotificationCenter.default.post(name: .editorPaste, object: nil)
+                    }
+                }
+                .keyboardShortcut("v", modifiers: .command)
+
+                Button("Cut") {
+                    NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("x", modifiers: .command)
+
+                Button("Select All") {
+                    NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("a", modifiers: .command)
+
+                Divider()
+
+                Button("Duplicate") {
+                    NotificationCenter.default.post(name: .editorDuplicate, object: nil)
+                }
+                .keyboardShortcut("t", modifiers: .command)
             }
 
             CommandGroup(replacing: .help) {

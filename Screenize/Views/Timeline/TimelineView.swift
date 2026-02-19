@@ -3,13 +3,13 @@ import SwiftUI
 import AppKit
 #endif
 
-private struct SegmentRange {
+struct SegmentRange {
     let id: UUID
     let start: TimeInterval
     let end: TimeInterval
 }
 
-private struct SegmentEditBounds {
+struct SegmentEditBounds {
     let minStart: TimeInterval
     let maxEnd: TimeInterval
 }
@@ -52,6 +52,7 @@ struct TimelineView: View {
     @Binding var selection: SegmentSelection
 
     var onSegmentTimeRangeChange: ((UUID, TimeInterval, TimeInterval) -> Bool)?
+    var onBatchSegmentTimeRangeChange: (([(UUID, TimeInterval, TimeInterval)]) -> Void)?
     var onAddSegment: ((TrackType, TimeInterval) -> Void)?
     var onSegmentSelect: ((TrackType, UUID) -> Void)?
     var onSegmentToggleSelect: ((TrackType, UUID) -> Void)?
@@ -61,18 +62,18 @@ struct TimelineView: View {
     @Binding var trimEnd: TimeInterval?
     var onTrimChange: ((TimeInterval, TimeInterval?) -> Void)?
 
-    @State private var pixelsPerSecond: CGFloat = 50
+    @State var pixelsPerSecond: CGFloat = 50
     @State private var timelineAreaWidth: CGFloat = 0
     @State private var isDraggingTrimStart = false
     @State private var isDraggingTrimEnd = false
-    @State private var activeSegmentInteraction: SegmentInteraction?
+    @State var activeSegmentInteraction: SegmentInteraction?
     @State private var resizeCursorHoverCount = 0
     @State private var hoveredSegmentID: UUID?
 
     private let minPixelsPerSecond: CGFloat = 1
     private let maxPixelsPerSecond: CGFloat = 2000
-    private let minSegmentDuration: TimeInterval = 0.05
-    private let snapThresholdInPoints: CGFloat = 8
+    let minSegmentDuration: TimeInterval = 0.05
+    let snapThresholdInPoints: CGFloat = 8
     private let rulerHeight: CGFloat = 24
     private let trackHeight: CGFloat = 40
     private let headerWidth: CGFloat = 120
@@ -84,20 +85,23 @@ struct TimelineView: View {
         )
     }
 
-    private enum SegmentInteractionMode {
+    enum SegmentInteractionMode {
         case move
         case resizeStart
         case resizeEnd
     }
 
-    private struct SegmentInteraction {
+    struct SegmentInteraction {
         let id: UUID
         let mode: SegmentInteractionMode
         let initialStart: TimeInterval
         let initialEnd: TimeInterval
         var previewStart: TimeInterval
         var previewEnd: TimeInterval
+        var companions: [CompanionSegment] = []
     }
+
+    // CompanionSegment is defined in TimelineView+MultiMove.swift
 
     var body: some View {
         VStack(spacing: 0) {
@@ -536,14 +540,18 @@ struct TimelineView: View {
     ) -> some Gesture {
         DragGesture(minimumDistance: 3, coordinateSpace: .named("trackArea"))
             .onChanged { value in
+                let isMultiMove = selection.contains(id) && selection.count > 1
+
                 if !isInteracting(with: id, mode: .move) {
+                    let companions = isMultiMove ? collectCompanions(excluding: id) : []
                     activeSegmentInteraction = SegmentInteraction(
                         id: id,
                         mode: .move,
                         initialStart: start,
                         initialEnd: end,
                         previewStart: start,
-                        previewEnd: end
+                        previewEnd: end,
+                        companions: companions
                     )
                 }
 
@@ -552,42 +560,104 @@ struct TimelineView: View {
                 }
 
                 let segmentDuration = interaction.initialEnd - interaction.initialStart
-                let deltaTime = Double(value.translation.width / pixelsPerSecond)
-                let unclampedStart = interaction.initialStart + deltaTime
-                let unclampedCenter = unclampedStart + segmentDuration / 2
+                let rawDelta = Double(value.translation.width / pixelsPerSecond)
 
-                // Gap detection: find which gap the unclamped center falls into
-                let others = ranges.filter { $0.id != id }.sorted { $0.start < $1.start }
-                var gapStart: TimeInterval = 0
-                var gapEnd: TimeInterval = duration
-                for other in others {
-                    let otherCenter = (other.start + other.end) / 2
-                    if unclampedCenter <= otherCenter {
-                        gapEnd = other.start
-                        break
+                if interaction.companions.isEmpty {
+                    // Single segment move (original logic)
+                    let unclampedStart = interaction.initialStart + rawDelta
+                    let unclampedCenter = unclampedStart + segmentDuration / 2
+
+                    let others = ranges.filter { $0.id != id }.sorted { $0.start < $1.start }
+                    var gapStart: TimeInterval = 0
+                    var gapEnd: TimeInterval = duration
+                    for other in others {
+                        let otherCenter = (other.start + other.end) / 2
+                        if unclampedCenter <= otherCenter {
+                            gapEnd = other.start
+                            break
+                        }
+                        gapStart = other.end
                     }
-                    gapStart = other.end
+
+                    let dynBounds = SegmentEditBounds(minStart: gapStart, maxEnd: gapEnd)
+                    var proposedStart = max(gapStart, min(gapEnd - segmentDuration, unclampedStart))
+                    proposedStart = max(0, min(duration - segmentDuration, proposedStart))
+                    var proposedEnd = proposedStart + segmentDuration
+
+                    let allSnapTargets = snapTargets(from: ranges, excluding: id)
+                    (proposedStart, proposedEnd) = snappedRange(
+                        start: proposedStart, end: proposedEnd,
+                        mode: .move, snapTargets: allSnapTargets, editBounds: dynBounds
+                    )
+
+                    interaction.previewStart = proposedStart
+                    interaction.previewEnd = proposedEnd
+                    activeSegmentInteraction = interaction
+                } else {
+                    // Multi-segment move: constrain delta across all participants
+                    let selectedIDs = Set(
+                        [interaction.id] + interaction.companions.map(\.id)
+                    )
+
+                    // Compute allowable delta for the primary segment
+                    let primaryRange = allowableDeltaRange(
+                        segmentStart: interaction.initialStart,
+                        segmentEnd: interaction.initialEnd,
+                        segmentID: interaction.id,
+                        trackType: trackType,
+                        selectedIDs: selectedIDs
+                    )
+                    var globalMinDelta = primaryRange.min
+                    var globalMaxDelta = primaryRange.max
+
+                    // Compute allowable delta for each companion
+                    for companion in interaction.companions {
+                        let compRange = allowableDeltaRange(
+                            segmentStart: companion.initialStart,
+                            segmentEnd: companion.initialEnd,
+                            segmentID: companion.id,
+                            trackType: companion.trackType,
+                            selectedIDs: selectedIDs
+                        )
+                        globalMinDelta = max(globalMinDelta, compRange.min)
+                        globalMaxDelta = min(globalMaxDelta, compRange.max)
+                    }
+
+                    // Clamp the raw delta to the intersection of all allowable ranges
+                    let constrainedDelta = max(globalMinDelta, min(globalMaxDelta, rawDelta))
+
+                    // Apply snap on primary segment only
+                    var proposedStart = interaction.initialStart + constrainedDelta
+                    var proposedEnd = proposedStart + segmentDuration
+                    let dynBounds = SegmentEditBounds(
+                        minStart: interaction.initialStart + globalMinDelta,
+                        maxEnd: interaction.initialEnd + globalMaxDelta
+                    )
+                    let allSnapTargets = snapTargets(from: ranges, excluding: id)
+                    (proposedStart, proposedEnd) = snappedRange(
+                        start: proposedStart, end: proposedEnd,
+                        mode: .move, snapTargets: allSnapTargets, editBounds: dynBounds
+                    )
+
+                    // Derive final delta from primary
+                    let finalDelta = proposedStart - interaction.initialStart
+
+                    interaction.previewStart = proposedStart
+                    interaction.previewEnd = proposedEnd
+                    for i in interaction.companions.indices {
+                        let comp = interaction.companions[i]
+                        interaction.companions[i].previewStart = comp.initialStart + finalDelta
+                        interaction.companions[i].previewEnd = comp.initialEnd + finalDelta
+                    }
+                    activeSegmentInteraction = interaction
                 }
-
-                // Clamp to gap bounds + timeline edges
-                let dynBounds = SegmentEditBounds(minStart: gapStart, maxEnd: gapEnd)
-                var proposedStart = max(gapStart, min(gapEnd - segmentDuration, unclampedStart))
-                proposedStart = max(0, min(duration - segmentDuration, proposedStart))
-                var proposedEnd = proposedStart + segmentDuration
-
-                let allSnapTargets = snapTargets(from: ranges, excluding: id)
-                (proposedStart, proposedEnd) = snappedRange(
-                    start: proposedStart, end: proposedEnd,
-                    mode: .move, snapTargets: allSnapTargets, editBounds: dynBounds
-                )
-
-                interaction.previewStart = proposedStart
-                interaction.previewEnd = proposedEnd
-                activeSegmentInteraction = interaction
             }
             .onEnded { _ in
+                let hasCompanions = activeSegmentInteraction?.companions.isEmpty == false
                 commitInteraction(for: id)
-                onSegmentSelect?(trackType, id)
+                if !hasCompanions {
+                    onSegmentSelect?(trackType, id)
+                }
             }
     }
 
@@ -662,124 +732,25 @@ extension TimelineView {
     }
 
     private func segmentDisplayStart(for id: UUID, fallback: TimeInterval) -> TimeInterval {
-        guard let interaction = activeSegmentInteraction, interaction.id == id else {
-            return fallback
+        guard let interaction = activeSegmentInteraction else { return fallback }
+        if interaction.id == id { return interaction.previewStart }
+        if let companion = interaction.companions.first(where: { $0.id == id }) {
+            return companion.previewStart
         }
-        return interaction.previewStart
+        return fallback
     }
 
     private func segmentDisplayEnd(for id: UUID, fallback: TimeInterval) -> TimeInterval {
-        guard let interaction = activeSegmentInteraction, interaction.id == id else {
-            return fallback
+        guard let interaction = activeSegmentInteraction else { return fallback }
+        if interaction.id == id { return interaction.previewEnd }
+        if let companion = interaction.companions.first(where: { $0.id == id }) {
+            return companion.previewEnd
         }
-        return interaction.previewEnd
+        return fallback
     }
 
-    private func snappedRange(
-        start: TimeInterval,
-        end: TimeInterval,
-        mode: SegmentInteractionMode,
-        snapTargets: [TimeInterval],
-        editBounds: SegmentEditBounds
-    ) -> (TimeInterval, TimeInterval) {
-        let threshold = Double(snapThresholdInPoints / pixelsPerSecond)
-
-        switch mode {
-        case .move:
-            let segmentDuration = end - start
-            var bestShift: TimeInterval?
-
-            for target in snapTargets {
-                let startShift = target - start
-                if abs(startShift) <= threshold {
-                    bestShift = preferredSnapShift(current: bestShift, candidate: startShift)
-                }
-
-                let endShift = target - end
-                if abs(endShift) <= threshold {
-                    bestShift = preferredSnapShift(current: bestShift, candidate: endShift)
-                }
-            }
-
-            guard let shift = bestShift else {
-                return (start, end)
-            }
-
-            var snappedStart = start + shift
-            let maxStart = max(editBounds.minStart, editBounds.maxEnd - segmentDuration)
-            snappedStart = max(editBounds.minStart, min(maxStart, snappedStart))
-            let snappedEnd = snappedStart + segmentDuration
-            return (snappedStart, snappedEnd)
-
-        case .resizeStart:
-            var snappedStart = start
-            var closestDistance: Double = .infinity
-            for target in snapTargets where abs(target - start) <= threshold {
-                let dist = abs(target - start)
-                if dist < closestDistance {
-                    closestDistance = dist
-                    snappedStart = target
-                }
-            }
-            snappedStart = max(editBounds.minStart, min(end - minSegmentDuration, snappedStart))
-            return (snappedStart, end)
-
-        case .resizeEnd:
-            var snappedEnd = end
-            var closestDistance: Double = .infinity
-            for target in snapTargets where abs(target - end) <= threshold {
-                let dist = abs(target - end)
-                if dist < closestDistance {
-                    closestDistance = dist
-                    snappedEnd = target
-                }
-            }
-            snappedEnd = min(editBounds.maxEnd, max(start + minSegmentDuration, snappedEnd))
-            return (start, snappedEnd)
-        }
-    }
-
-    private func commitInteraction(for id: UUID) {
-        guard let interaction = activeSegmentInteraction, interaction.id == id else {
-            return
-        }
-
-        let didApply = onSegmentTimeRangeChange?(id, interaction.previewStart, interaction.previewEnd) ?? false
-        if !didApply {
-            activeSegmentInteraction = nil
-            return
-        }
-
-        activeSegmentInteraction = nil
-    }
-
-    private func snapTargets(from ranges: [SegmentRange], excluding id: UUID) -> [TimeInterval] {
-        var targets = ranges
-            .filter { $0.id != id }
-            .flatMap { [$0.start, $0.end] }
-        targets.append(currentTime)
-        return targets
-    }
-
-    private func editBounds(
-        from ranges: [SegmentRange],
-        excluding id: UUID,
-        currentStart: TimeInterval,
-        currentEnd: TimeInterval
-    ) -> SegmentEditBounds {
-        let previousEnd = ranges
-            .filter { $0.id != id && $0.end <= currentStart }
-            .map(\.end)
-            .max() ?? 0
-
-        let nextStart = ranges
-            .filter { $0.id != id && $0.start >= currentEnd }
-            .map(\.start)
-            .min() ?? duration
-
-        let safeMaxEnd = max(previousEnd + minSegmentDuration, nextStart)
-        return SegmentEditBounds(minStart: previousEnd, maxEnd: safeMaxEnd)
-    }
+    // snappedRange, commitInteraction, snapTargets, editBounds
+    // are in TimelineView+MultiMove.swift
 
     private func updateResizeCursor(_ isHovering: Bool) {
         #if os(macOS)

@@ -43,6 +43,7 @@
 		F0000030296A0001 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000030296A0001 /* TimeRulerView.swift */; };
 		F0000031296A0001 /* PlayheadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000031296A0001 /* PlayheadView.swift */; };
 		F0000034296A0001 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000034296A0001 /* TimelineView.swift */; };
+		B1000010296A0001 /* TimelineView+MultiMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100010296A0001 /* TimelineView+MultiMove.swift */; };
 		F0000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */; };
 		F0000036296A0001 /* TrimHandleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000036296A0001 /* TrimHandleView.swift */; };
 		F0000044296A0001 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000044296A0001 /* InspectorView.swift */; };
@@ -190,6 +191,7 @@
 		F1000030296A0001 /* TimeRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
 		F1000031296A0001 /* PlayheadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayheadView.swift; sourceTree = "<group>"; };
 		F1000034296A0001 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		B1100010296A0001 /* TimelineView+MultiMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+MultiMove.swift"; sourceTree = "<group>"; };
 		F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizontalScrollViewWithVerticalWheel.swift; sourceTree = "<group>"; };
 		F1000036296A0001 /* TrimHandleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrimHandleView.swift; sourceTree = "<group>"; };
 		F1000044296A0001 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
@@ -585,6 +587,7 @@
 				F1000030296A0001 /* TimeRulerView.swift */,
 				F1000031296A0001 /* PlayheadView.swift */,
 				F1000034296A0001 /* TimelineView.swift */,
+				B1100010296A0001 /* TimelineView+MultiMove.swift */,
 				F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */,
 				F1000036296A0001 /* TrimHandleView.swift */,
 			);
@@ -933,6 +936,7 @@
 				F0000030296A0001 /* TimeRulerView.swift in Sources */,
 				F0000031296A0001 /* PlayheadView.swift in Sources */,
 				F0000034296A0001 /* TimelineView.swift in Sources */,
+				B1000010296A0001 /* TimelineView+MultiMove.swift in Sources */,
 				F0000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift in Sources */,
 				F0000036296A0001 /* TrimHandleView.swift in Sources */,
 				F0000044296A0001 /* InspectorView.swift in Sources */,

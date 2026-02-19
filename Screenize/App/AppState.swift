@@ -490,6 +490,9 @@ final class AppState: ObservableObject {
 extension Notification.Name {
     static let editorUndo = Notification.Name("editorUndo")
     static let editorRedo = Notification.Name("editorRedo")
+    static let editorCopy = Notification.Name("editorCopy")
+    static let editorPaste = Notification.Name("editorPaste")
+    static let editorDuplicate = Notification.Name("editorDuplicate")
 }
 
 // MARK: - Auto Zoom Settings

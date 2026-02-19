@@ -66,6 +66,9 @@ struct EditorMainView: View {
                     onSegmentTimeRangeChange: { id, startTime, endTime in
                         viewModel.updateSegmentTimeRange(id, startTime: startTime, endTime: endTime)
                     },
+                    onBatchSegmentTimeRangeChange: { changes in
+                        viewModel.batchUpdateSegmentTimeRanges(changes)
+                    },
                     onAddSegment: { trackType, time in
                         viewModel.addSegment(to: trackType, at: time)
                     },
@@ -150,6 +153,15 @@ struct EditorMainView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .editorRedo)) { _ in
             viewModel.redo()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .editorCopy)) { _ in
+            viewModel.copySelectedSegments()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .editorPaste)) { _ in
+            viewModel.pasteSegments()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .editorDuplicate)) { _ in
+            viewModel.duplicateSelectedSegments()
         }
         .onReceive(viewModel.undoStack.$canUndo) { canUndo in
             AppState.shared.canUndo = canUndo
@@ -343,24 +355,6 @@ struct EditorMainView: View {
                     return nil
                 }
                 return event
-            }
-
-            // Cmd+C = keyCode 8 → Copy
-            if event.keyCode == 8 && hasCommand {
-                viewModel.copySelectedSegments()
-                return nil
-            }
-
-            // Cmd+V = keyCode 9 → Paste
-            if event.keyCode == 9 && hasCommand {
-                viewModel.pasteSegments()
-                return nil
-            }
-
-            // Cmd+T = keyCode 17 → Duplicate
-            if event.keyCode == 17 && hasCommand {
-                viewModel.duplicateSelectedSegments()
-                return nil
             }
 
             return event
