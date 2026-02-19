@@ -751,9 +751,11 @@ extension TimelineView {
     }
 
     private func snapTargets(from ranges: [SegmentRange], excluding id: UUID) -> [TimeInterval] {
-        ranges
+        var targets = ranges
             .filter { $0.id != id }
             .flatMap { [$0.start, $0.end] }
+        targets.append(currentTime)
+        return targets
     }
 
     private func editBounds(
