@@ -337,6 +337,30 @@ final class PreviewEngine: ObservableObject {
         }
     }
 
+    /// Invalidate a specific time range and update the evaluator
+    /// More efficient than invalidateAllCache when only a portion of the timeline changed
+    func invalidateRange(with timeline: Timeline, from startTime: TimeInterval, to endTime: TimeInterval) {
+        guard let project = project else { return }
+
+        // Recreate the evaluator with the updated timeline
+        let newEvaluator = RenderPipelineFactory.createEvaluator(
+            timeline: timeline,
+            project: project,
+            rawMousePositions: rawMousePositions,
+            smoothedMousePositions: smoothedMousePositions,
+            clickEvents: renderClickEvents,
+            frameRate: frameRate
+        )
+
+        renderCoordinator.updateEvaluator(newEvaluator)
+        renderCoordinator.invalidateCache(from: startTime, to: endTime)
+
+        // Re-render if the current frame falls within the dirty range
+        if currentTime >= startTime && currentTime <= endTime {
+            scrubController.scrub(to: currentTime)
+        }
+    }
+
     /// Invalidate the entire cache
     /// - Parameter timeline: Updated timeline (nil only clears the cache)
     func invalidateAllCache(with timeline: Timeline? = nil) {

@@ -16,6 +16,13 @@ final class EffectCompositor {
     /// Cache for cursor hotspots (actual NSCursor hotSpot values)
     private var cursorHotspotCache: [CursorStyle: CGPoint] = [:]
 
+    /// Cache for keystroke pill images (displayText -> fully opaque pill CIImage)
+    /// Opacity is applied at render time via CIColorMatrix, not baked in
+    private var keystrokePillCache: [String: CIImage] = [:]
+
+    /// Frame size used for the current keystroke pill cache (invalidated on size change)
+    private var keystrokePillCacheFrameSize: CGSize = .zero
+
     /// DEBUG: Counter for first-call logging
     private var debugCursorRenderCount = 0
 
@@ -180,8 +187,57 @@ final class EffectCompositor {
     }
 
     /// Render a single keystroke pill at its position
+    /// Uses pill cache to avoid per-frame CGContext text rendering
     private func renderSingleKeystroke(_ keystroke: ActiveKeystroke, frameSize: CGSize) -> CIImage? {
-        // Font size: 3% of frame height
+        // Invalidate cache if frame size changed (font size depends on frame height)
+        if keystrokePillCacheFrameSize != frameSize {
+            keystrokePillCache.removeAll()
+            keystrokePillCacheFrameSize = frameSize
+        }
+
+        // Get or create the fully-opaque pill image
+        let pillImage: CIImage
+        if let cached = keystrokePillCache[keystroke.displayText] {
+            pillImage = cached
+        } else {
+            guard let rendered = renderPillImage(for: keystroke.displayText, frameSize: frameSize) else {
+                return nil
+            }
+            keystrokePillCache[keystroke.displayText] = rendered
+            pillImage = rendered
+        }
+
+        let pillSize = pillImage.extent.size
+
+        // Apply opacity via CIColorMatrix (multiply all RGBA channels for premultiplied alpha)
+        let opacity = keystroke.opacity
+        var opacityApplied = pillImage
+        if opacity < 1.0 {
+            guard let colorMatrix = CIFilter(name: "CIColorMatrix") else { return nil }
+            colorMatrix.setValue(opacityApplied, forKey: kCIInputImageKey)
+            colorMatrix.setValue(CIVector(x: opacity, y: 0, z: 0, w: 0), forKey: "inputRVector")
+            colorMatrix.setValue(CIVector(x: 0, y: opacity, z: 0, w: 0), forKey: "inputGVector")
+            colorMatrix.setValue(CIVector(x: 0, y: 0, z: opacity, w: 0), forKey: "inputBVector")
+            colorMatrix.setValue(CIVector(x: 0, y: 0, z: 0, w: opacity), forKey: "inputAVector")
+            colorMatrix.setValue(CIVector(x: 0, y: 0, z: 0, w: 0), forKey: "inputBiasVector")
+            guard let output = colorMatrix.outputImage else { return nil }
+            opacityApplied = output
+        }
+
+        // Position: NormalizedPoint uses top-left origin (y=0 top, y=1 bottom)
+        // CoreImage uses bottom-left origin (y=0 bottom, y=height top), so flip Y
+        let posX = keystroke.position.x * frameSize.width - pillSize.width / 2
+        let posY = (1.0 - keystroke.position.y) * frameSize.height - pillSize.height / 2
+        let positioned = opacityApplied.transformed(
+            by: CGAffineTransform(translationX: posX, y: posY)
+        )
+
+        // Crop to frame size
+        return positioned.cropped(to: CGRect(origin: .zero, size: frameSize))
+    }
+
+    /// Render a fully-opaque pill image for the given display text (cacheable)
+    private func renderPillImage(for displayText: String, frameSize: CGSize) -> CIImage? {
         let fontSize: CGFloat = max(24, frameSize.height * 0.03)
         let font = NSFont.systemFont(ofSize: fontSize, weight: .medium)
         let cornerRadius: CGFloat = fontSize * 0.4
@@ -193,7 +249,7 @@ final class EffectCompositor {
             .foregroundColor: NSColor.white
         ]
 
-        let textSize = (keystroke.displayText as NSString).size(withAttributes: attributes)
+        let textSize = (displayText as NSString).size(withAttributes: attributes)
         let pillWidth = textSize.width + paddingH * 2
         let pillHeight = textSize.height + paddingV * 2
 
@@ -202,7 +258,6 @@ final class EffectCompositor {
 
         guard bitmapWidth > 0, bitmapHeight > 0 else { return nil }
 
-        // Create bitmap context
         guard let context = CGContext(
             data: nil,
             width: bitmapWidth,
@@ -217,35 +272,20 @@ final class EffectCompositor {
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = nsContext
 
-        // Rounded rectangle background
+        // Rounded rectangle background at fixed opacity (0.75)
         let pillRect = CGRect(x: 0, y: 0, width: pillWidth, height: pillHeight)
         let path = NSBezierPath(roundedRect: pillRect, xRadius: cornerRadius, yRadius: cornerRadius)
-        NSColor(white: 0.1, alpha: 0.75 * keystroke.opacity).setFill()
+        NSColor(white: 0.1, alpha: 0.75).setFill()
         path.fill()
 
-        // Text
+        // White text at full opacity
         let textRect = CGRect(x: paddingH, y: paddingV, width: textSize.width, height: textSize.height)
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor.white.withAlphaComponent(keystroke.opacity)
-        ]
-        (keystroke.displayText as NSString).draw(in: textRect, withAttributes: textAttributes)
+        (displayText as NSString).draw(in: textRect, withAttributes: attributes)
 
         NSGraphicsContext.restoreGraphicsState()
 
         guard let cgImage = context.makeImage() else { return nil }
-        var ciImage = CIImage(cgImage: cgImage)
-
-        // Position: NormalizedPoint uses top-left origin (y=0 top, y=1 bottom)
-        // CoreImage uses bottom-left origin (y=0 bottom, y=height top), so flip Y
-        let posX = keystroke.position.x * frameSize.width - CGFloat(bitmapWidth) / 2
-        let posY = (1.0 - keystroke.position.y) * frameSize.height - CGFloat(bitmapHeight) / 2
-        ciImage = ciImage.transformed(by: CGAffineTransform(translationX: posX, y: posY))
-
-        // Crop to frame size
-        ciImage = ciImage.cropped(to: CGRect(origin: .zero, size: frameSize))
-
-        return ciImage
+        return CIImage(cgImage: cgImage)
     }
 
     // MARK: - Cache Management
@@ -254,5 +294,17 @@ final class EffectCompositor {
     func clearCursorCache() {
         cursorImageCache.removeAll()
         cursorHotspotCache.removeAll()
+    }
+
+    /// Clear the keystroke pill cache
+    func clearKeystrokePillCache() {
+        keystrokePillCache.removeAll()
+        keystrokePillCacheFrameSize = .zero
+    }
+
+    /// Clear all caches (cursor + keystroke)
+    func clearAllCaches() {
+        clearCursorCache()
+        clearKeystrokePillCache()
     }
 }

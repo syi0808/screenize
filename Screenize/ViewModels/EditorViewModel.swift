@@ -476,7 +476,13 @@ final class EditorViewModel: ObservableObject {
         }
 
         hasUnsavedChanges = true
-        invalidatePreviewCache()
+        // Use the selected segment's time range for targeted invalidation
+        if let selectedID = selection.single?.id,
+           let (start, end) = segmentTimeRange(for: selectedID) {
+            invalidatePreviewCache(from: start, to: end)
+        } else {
+            invalidatePreviewCache()
+        }
     }
 
     private func addTransformSegment(at time: TimeInterval) {
@@ -544,13 +550,15 @@ final class EditorViewModel: ObservableObject {
 
         project.timeline.tracks[trackIndex] = .keystroke(track)
         selection.select(newSegment.id, trackType: .keystroke)
-        hasUnsavedChanges = true
-        invalidatePreviewCache()
     }
 
     /// Delete a segment.
     func deleteSegment(_ id: UUID, from trackType: TrackType) {
         saveUndoSnapshot()
+
+        // Capture time range before deletion for range-based invalidation
+        let timeRange = segmentTimeRange(for: id)
+
         switch trackType {
         case .transform:
             deleteTransformSegment(id)
@@ -565,7 +573,11 @@ final class EditorViewModel: ObservableObject {
         selection.remove(id)
 
         hasUnsavedChanges = true
-        invalidatePreviewCache()
+        if let (start, end) = timeRange {
+            invalidatePreviewCache(from: start, to: end)
+        } else {
+            invalidatePreviewCache()
+        }
     }
 
     private func deleteTransformSegment(_ id: UUID) {
@@ -614,7 +626,7 @@ final class EditorViewModel: ObservableObject {
         let result = updateSegmentTimeRangeNoUndo(id, startTime: startTime, endTime: endTime)
         if result {
             hasUnsavedChanges = true
-            invalidatePreviewCache()
+            invalidatePreviewCache(from: startTime, to: endTime)
         }
         return result
     }
@@ -623,14 +635,18 @@ final class EditorViewModel: ObservableObject {
     func batchUpdateSegmentTimeRanges(_ changes: [(UUID, TimeInterval, TimeInterval)]) {
         saveUndoSnapshot()
         var anyChanged = false
+        var rangeStart = TimeInterval.greatestFiniteMagnitude
+        var rangeEnd = TimeInterval.zero
         for (id, startTime, endTime) in changes {
             if updateSegmentTimeRangeNoUndo(id, startTime: startTime, endTime: endTime) {
                 anyChanged = true
+                rangeStart = min(rangeStart, startTime)
+                rangeEnd = max(rangeEnd, endTime)
             }
         }
         if anyChanged {
             hasUnsavedChanges = true
-            invalidatePreviewCache()
+            invalidatePreviewCache(from: rangeStart, to: rangeEnd)
         }
     }
 
@@ -770,6 +786,33 @@ final class EditorViewModel: ObservableObject {
     /// Invalidate the preview cache (updates the evaluator on timeline changes)
     func invalidatePreviewCache() {
         previewEngine.invalidateAllCache(with: project.timeline)
+    }
+
+    /// Invalidate a specific time range of the preview cache
+    func invalidatePreviewCache(from startTime: TimeInterval, to endTime: TimeInterval) {
+        previewEngine.invalidateRange(with: project.timeline, from: startTime, to: endTime)
+    }
+
+    /// Find the time range of a segment by ID across all tracks
+    /// Returns (startTime, endTime) or nil if the segment is not found
+    private func segmentTimeRange(for id: UUID) -> (TimeInterval, TimeInterval)? {
+        for track in project.timeline.tracks {
+            switch track {
+            case .camera(let cameraTrack):
+                if let segment = cameraTrack.segments.first(where: { $0.id == id }) {
+                    return (segment.startTime, segment.endTime)
+                }
+            case .cursor(let cursorTrack):
+                if let segment = cursorTrack.segments.first(where: { $0.id == id }) {
+                    return (segment.startTime, segment.endTime)
+                }
+            case .keystroke(let keystrokeTrack):
+                if let segment = keystrokeTrack.segments.first(where: { $0.id == id }) {
+                    return (segment.startTime, segment.endTime)
+                }
+            }
+        }
+        return nil
     }
 
     /// Update render settings (for window-style changes)
