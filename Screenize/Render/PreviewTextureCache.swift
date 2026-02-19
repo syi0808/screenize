@@ -48,8 +48,8 @@ final class PreviewTextureCache {
             height: height,
             mipmapped: false
         )
-        descriptor.usage = [.shaderRead, .renderTarget]
-        descriptor.storageMode = .private // GPU-only, most efficient
+        descriptor.usage = [.shaderRead, .renderTarget, .shaderWrite]
+        descriptor.storageMode = .shared // Required by CIContext.render and CIImage(mtlTexture:)
         self.textureDescriptor = descriptor
     }
 
