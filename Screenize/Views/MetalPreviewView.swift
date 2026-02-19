@@ -10,6 +10,9 @@ struct MetalPreviewView: NSViewRepresentable {
     /// Texture to display
     let texture: MTLTexture?
 
+    /// Generation counter (forces SwiftUI to call updateNSView on each new render)
+    var generation: Int = 0
+
     func makeNSView(context: Context) -> MetalDisplayView {
         MetalDisplayView()
     }

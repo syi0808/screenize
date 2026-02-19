@@ -16,6 +16,11 @@ final class PreviewEngine: ObservableObject {
     /// Current frame texture (GPU-resident, displayed via MetalPreviewView)
     @Published private(set) var currentTexture: MTLTexture?
 
+    /// Display generation counter (incremented on every texture delivery)
+    /// Forces SwiftUI to call MetalPreviewView.updateNSView even when the
+    /// same MTLTexture reference is reused from the texture pool
+    @Published private(set) var displayGeneration: Int = 0
+
     /// Whether playback is active
     @Published private(set) var isPlaying: Bool = false
 
@@ -139,6 +144,7 @@ final class PreviewEngine: ObservableObject {
 
                     if let texture = texture {
                         self.currentTexture = texture
+                        self.displayGeneration += 1
                     }
                     self.isSeeking = true
                     self.currentTime = actualTime
@@ -166,6 +172,7 @@ final class PreviewEngine: ObservableObject {
             guard let self = self else { return }
             if let texture = texture {
                 self.currentTexture = texture
+                self.displayGeneration += 1
             }
         }
     }
@@ -415,11 +422,13 @@ final class PreviewEngine: ObservableObject {
     /// Rebuild the renderer and evaluator when render settings change
     /// - Parameter renderSettings: New render settings
     func updateRenderSettings(_ renderSettings: RenderSettings) {
-        guard let project = project,
-              let extractor = frameExtractor else { return }
+        guard let extractor = frameExtractor else { return }
 
-        // Update the project's render settings (reference)
+        // Update the project's render settings BEFORE capturing the local copy
+        // (ScreenizeProject is a struct, so guard let captures a snapshot)
         self.project?.renderSettings = renderSettings
+
+        guard let project = project else { return }
 
         // Recreate the evaluator (isWindowMode may change)
         let newEvaluator = RenderPipelineFactory.createEvaluator(

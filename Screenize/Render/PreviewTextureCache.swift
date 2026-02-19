@@ -155,6 +155,12 @@ final class PreviewTextureCache {
 
     // MARK: - Status
 
+    /// Texture width in pixels
+    var textureWidth: Int { textureDescriptor.width }
+
+    /// Texture height in pixels
+    var textureHeight: Int { textureDescriptor.height }
+
     /// Number of cached frames
     var count: Int {
         lock.lock()

@@ -284,12 +284,14 @@ final class RenderCoordinator: @unchecked Sendable {
         lock.lock()
         renderer = newRenderer
 
-        // Recreate texture cache if the output size changed
+        // Recreate texture cache if the output size or max size changed
         if let device = newRenderer.device {
             let outputSize = newRenderer.outputSize
             let currentCache = textureCache
             let needsRecreate = currentCache == nil
                 || currentCache?.statistics.maxSize != maxCacheSize
+                || currentCache?.textureWidth != Int(outputSize.width)
+                || currentCache?.textureHeight != Int(outputSize.height)
 
             if needsRecreate {
                 textureCache = PreviewTextureCache(

@@ -56,7 +56,10 @@ struct PreviewView: View {
 
                 // Video frame (GPU-resident Metal texture)
                 if previewEngine.currentTexture != nil {
-                    MetalPreviewView(texture: previewEngine.currentTexture)
+                    MetalPreviewView(
+                        texture: previewEngine.currentTexture,
+                        generation: previewEngine.displayGeneration
+                    )
                 } else if previewEngine.isLoading {
                     loadingView
                 } else {
