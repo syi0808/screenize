@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Unified floating panel for the entire capture/recording lifecycle
-/// Transitions between: selecting target → countdown → recording
+/// Transitions between: selecting target → recording
 final class CaptureToolbarPanel: NSPanel {
 
     // MARK: - Properties
@@ -16,7 +16,7 @@ final class CaptureToolbarPanel: NSPanel {
     init(coordinator: CaptureToolbarCoordinator) {
         self.coordinator = coordinator
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 56),
+            contentRect: NSRect(x: 0, y: 0, width: 280, height: 56),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -36,14 +36,14 @@ final class CaptureToolbarPanel: NSPanel {
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.hasShadow = true
+        self.hasShadow = false
         self.isMovableByWindowBackground = true
     }
 
     private func setupContent(coordinator: CaptureToolbarCoordinator) {
         let view = CaptureToolbarView(coordinator: coordinator)
         let hosting = NSHostingView(rootView: view)
-        hosting.frame = NSRect(x: 0, y: 0, width: 380, height: 56)
+        hosting.frame = NSRect(x: 0, y: 0, width: 280, height: 56)
         self.contentView = hosting
         self.hostingView = hosting
     }
@@ -69,9 +69,7 @@ final class CaptureToolbarPanel: NSPanel {
             if event.keyCode == 53 { // Escape
                 Task { @MainActor in
                     guard let coordinator else { return }
-                    if case .countdown = coordinator.toolbarPhase {
-                        coordinator.cancelCountdown()
-                    } else if coordinator.toolbarPhase == .selecting {
+                    if coordinator.toolbarPhase == .selecting {
                         coordinator.cancel()
                     }
                 }
@@ -117,19 +115,17 @@ struct CaptureToolbarView: View {
             switch coordinator.toolbarPhase {
             case .selecting:
                 selectingContent
-            case .countdown(let remaining):
-                countdownContent(remaining: remaining)
             case .recording:
                 recordingContent
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: coordinator.toolbarPhase)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.toolbarPhase)
     }
 
     // MARK: - Selecting Phase
 
     private var selectingContent: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             ToolbarModeButton(
                 icon: "display",
                 label: "Entire Screen",
@@ -146,128 +142,96 @@ struct CaptureToolbarView: View {
                 coordinator.captureMode = .window
             }
 
-            Divider()
-                .frame(height: 28)
+            toolbarDivider
 
-            Button {
-                coordinator.confirmAndRecord()
-            } label: {
-                Text("Record")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(coordinator.hasValidTarget ? Color.red : Color.red.opacity(0.4))
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(!coordinator.hasValidTarget)
-
-            Button {
-                coordinator.cancel()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            closeButton
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(toolbarBackground)
-    }
-
-    // MARK: - Countdown Phase
-
-    private func countdownContent(remaining: Int) -> some View {
-        HStack(spacing: 16) {
-            Text("\(remaining)")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-                .frame(width: 44)
-
-            Button {
-                coordinator.cancelCountdown()
-            } label: {
-                Text("Cancel")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.white.opacity(0.15))
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(toolbarBackground)
     }
 
     // MARK: - Recording Phase
 
     private var recordingContent: some View {
-        HStack(spacing: 12) {
-            // Blinking red dot
+        HStack(spacing: 10) {
             RecordingDot()
 
-            // Duration
             Text(formattedDuration)
-                .font(.system(.body, design: .monospaced))
+                .font(.system(size: 13, weight: .medium).monospacedDigit())
                 .foregroundColor(.white)
 
             if coordinator.isPaused {
                 Text("PAUSED")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.yellow)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.yellow.opacity(0.2))
-                    .cornerRadius(3)
+                    .background(
+                        Capsule()
+                            .fill(Color.yellow.opacity(0.15))
+                    )
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
             // Pause/Resume
-            Button {
-                coordinator.togglePause()
-            } label: {
-                Image(systemName: coordinator.isPaused ? "play.fill" : "pause.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.white)
-            }
-            .buttonStyle(.plain)
-            .help(coordinator.isPaused ? "Resume" : "Pause")
+            ToolbarIconButton(
+                icon: coordinator.isPaused ? "play.fill" : "pause.fill",
+                tooltip: coordinator.isPaused ? "Resume" : "Pause",
+                action: coordinator.togglePause
+            )
 
-            // Stop
+            // Stop — distinctive red square
             Button {
                 coordinator.stopRecording()
             } label: {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.red)
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(Color.red)
+                    .frame(width: 12, height: 12)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help("Stop Recording")
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .frame(minWidth: 220)
         .background(toolbarBackground)
     }
 
-    // MARK: - Shared
+    // MARK: - Shared Components
 
     private var toolbarBackground: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(.ultraThinMaterial)
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.ultraThickMaterial)
             .environment(\.colorScheme, .dark)
-            .shadow(color: .black.opacity(0.3), radius: 10, y: 4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+            .shadow(color: .black.opacity(0.15), radius: 16, y: 6)
+    }
+
+    private var toolbarDivider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.2))
+            .frame(width: 0.5, height: 20)
+    }
+
+    private var closeButton: some View {
+        Button {
+            coordinator.cancel()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.white.opacity(0.5))
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var formattedDuration: String {
@@ -286,13 +250,36 @@ private struct RecordingDot: View {
     var body: some View {
         Circle()
             .fill(Color.red)
-            .frame(width: 10, height: 10)
-            .opacity(isBlinking ? 0.4 : 1.0)
+            .frame(width: 8, height: 8)
+            .opacity(isBlinking ? 0.3 : 1.0)
             .animation(
-                .easeInOut(duration: 0.5).repeatForever(autoreverses: true),
+                .easeInOut(duration: 0.6).repeatForever(autoreverses: true),
                 value: isBlinking
             )
             .onAppear { isBlinking = true }
+    }
+}
+
+// MARK: - Toolbar Icon Button
+
+private struct ToolbarIconButton: View {
+    let icon: String
+    let tooltip: String
+    let action: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.white.opacity(isHovering ? 0.9 : 0.7))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help(tooltip)
     }
 }
 
@@ -310,24 +297,24 @@ private struct ToolbarModeButton: View {
         Button(action: action) {
             VStack(spacing: 2) {
                 Image(systemName: icon)
-                    .font(.system(size: 16))
+                    .font(.system(size: 14, weight: .medium))
                 Text(label)
-                    .font(.system(size: 10))
+                    .font(.system(size: 9, weight: .medium))
             }
-            .foregroundColor(isSelected ? .accentColor : .primary)
-            .frame(width: 90, height: 36)
+            .foregroundColor(isSelected ? .white : .white.opacity(0.5))
+            .frame(width: 88, height: 36)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(
-                        isSelected
-                            ? Color.accentColor.opacity(0.15)
-                            : (isHovering ? Color.primary.opacity(0.05) : Color.clear)
-                    )
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(backgroundColor)
             )
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovering = hovering
-        }
+        .onHover { isHovering = $0 }
+    }
+
+    private var backgroundColor: Color {
+        if isSelected { return Color.white.opacity(0.15) }
+        if isHovering { return Color.white.opacity(0.08) }
+        return Color.clear
     }
 }

@@ -12,8 +12,6 @@ enum CaptureMode: Equatable {
 enum ToolbarPhase: Equatable {
     /// User is selecting a capture target
     case selecting
-    /// Countdown before recording starts
-    case countdown(Int)
     /// Recording in progress
     case recording
 }

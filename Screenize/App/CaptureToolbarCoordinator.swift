@@ -10,7 +10,7 @@ final class CaptureToolbarCoordinator: ObservableObject {
 
     // MARK: - Published State
 
-    @Published var captureMode: CaptureMode = .entireScreen {
+    @Published var captureMode: CaptureMode = .window {
         didSet {
             guard oldValue != captureMode else { return }
             overlayController.updateMode(captureMode)
@@ -43,7 +43,7 @@ final class CaptureToolbarCoordinator: ObservableObject {
     private var toolbarPanel: CaptureToolbarPanel?
     private let overlayController = CaptureOverlayController()
     private weak var appState: AppState?
-    private var countdownTimer: Timer?
+    private var countdownPanel: CountdownPanel?
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Initialization
@@ -89,27 +89,52 @@ final class CaptureToolbarCoordinator: ObservableObject {
         guard let target else { return }
 
         appState.selectedTarget = target
-
-        // Dismiss overlays but keep toolbar panel visible
         overlayController.deactivate()
 
-        // Start countdown in the same panel
-        toolbarPhase = .countdown(3)
-        startCountdownTimer()
+        // Hide toolbar during countdown
+        toolbarPanel?.dismiss()
+
+        // Show standalone countdown panel
+        let panel = CountdownPanel()
+        self.countdownPanel = panel
+        panel.startCountdown(
+            seconds: 3,
+            onComplete: { [weak self] in
+                Task { @MainActor in
+                    self?.countdownPanel = nil
+                    self?.toolbarPhase = .recording
+                    self?.toolbarPanel?.show()
+                    await self?.appState?.startRecording()
+                }
+            },
+            onCancel: { [weak self] in
+                Task { @MainActor in
+                    self?.countdownPanel = nil
+                    self?.toolbarPhase = .selecting
+                    self?.toolbarPanel?.show()
+                    // Reactivate overlays so the user can pick again
+                    guard let self, let appState = self.appState else { return }
+                    self.overlayController.activate(
+                        mode: self.captureMode,
+                        displays: appState.availableDisplays,
+                        windows: appState.availableWindows
+                    )
+                }
+            }
+        )
     }
 
-    /// Cancel countdown and dismiss
+    /// Cancel countdown
     func cancelCountdown() {
-        countdownTimer?.invalidate()
-        countdownTimer = nil
-        cancel()
+        countdownPanel?.cancelCountdown()
+        countdownPanel = nil
     }
 
     /// Cancel the toolbar and return to welcome screen
     func cancel() {
         overlayController.deactivate()
-        countdownTimer?.invalidate()
-        countdownTimer = nil
+        countdownPanel?.cancelCountdown()
+        countdownPanel = nil
         toolbarPanel?.dismiss()
         toolbarPanel = nil
         showMainWindow()
@@ -165,31 +190,6 @@ final class CaptureToolbarCoordinator: ObservableObject {
                 self?.recordingDuration = duration
             }
             .store(in: &cancellables)
-    }
-
-    // MARK: - Countdown
-
-    private func startCountdownTimer() {
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.countdownTick()
-            }
-        }
-    }
-
-    private func countdownTick() {
-        guard case .countdown(let remaining) = toolbarPhase else { return }
-
-        if remaining <= 1 {
-            countdownTimer?.invalidate()
-            countdownTimer = nil
-            toolbarPhase = .recording
-            Task {
-                await appState?.startRecording()
-            }
-        } else {
-            toolbarPhase = .countdown(remaining - 1)
-        }
     }
 
     // MARK: - Window Management

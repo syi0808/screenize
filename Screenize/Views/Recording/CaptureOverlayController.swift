@@ -21,7 +21,7 @@ final class CaptureOverlayController {
     private var recordOverlayPanel: NSPanel?
     private var mouseMonitor: Any?
     private var localMouseMonitor: Any?
-    private var currentMode: CaptureMode = .entireScreen
+    private var currentMode: CaptureMode = .window
 
     private var availableDisplays: [SCDisplay] = []
     private var availableWindows: [SCWindow] = []
@@ -136,11 +136,9 @@ final class CaptureOverlayController {
 
     // MARK: - Record Overlay Button
 
-    private func ensureRecordOverlayPanel() {
-        guard recordOverlayPanel == nil else { return }
-
+    private func createRecordOverlayPanel() -> NSPanel {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 120, height: 80),
+            contentRect: NSRect(x: 0, y: 0, width: 72, height: 72),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -156,15 +154,19 @@ final class CaptureOverlayController {
             self?.onRecordClicked?()
         }
         let hosting = NSHostingView(rootView: buttonView)
-        hosting.frame = NSRect(x: 0, y: 0, width: 120, height: 80)
+        hosting.frame = NSRect(x: 0, y: 0, width: 72, height: 72)
         panel.contentView = hosting
 
-        recordOverlayPanel = panel
+        return panel
     }
 
     private func showRecordOverlay(centeredIn frame: NSRect) {
-        ensureRecordOverlayPanel()
-        guard let panel = recordOverlayPanel else { return }
+        // Recreate panel each time for entrance animation replay
+        recordOverlayPanel?.orderOut(nil)
+        recordOverlayPanel = nil
+
+        let panel = createRecordOverlayPanel()
+        self.recordOverlayPanel = panel
 
         let panelSize = panel.frame.size
         let origin = NSPoint(
@@ -363,35 +365,64 @@ private struct RecordOverlayButtonView: View {
     let action: () -> Void
 
     @State private var isHovering = false
+    @State private var isPressed = false
+    @State private var appeared = false
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            ZStack {
+                // Outer glass ring
                 Circle()
-                    .fill(Color.red)
-                    .frame(width: 44, height: 44)
-                    .overlay(
-                        Image(systemName: "record.circle")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(.white)
+                    .strokeBorder(
+                        Color.white.opacity(isHovering ? 0.4 : 0.25),
+                        lineWidth: 1.5
                     )
-                    .scaleEffect(isHovering ? 1.1 : 1.0)
+                    .frame(width: 56, height: 56)
 
-                Text("Record")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white)
+                // Red gradient fill
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.red, Color.red.opacity(0.75)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 52, height: 52)
+
+                // Inner record dot
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 20, height: 20)
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .environment(\.colorScheme, .dark)
+            .shadow(color: .black.opacity(0.3), radius: 8, y: 3)
+            .shadow(
+                color: isHovering ? Color.red.opacity(0.4) : Color.clear,
+                radius: 12
             )
+            .scaleEffect(isPressed ? 0.95 : (isHovering ? 1.08 : 1.0))
+            .scaleEffect(appeared ? 1.0 : 0.5)
+            .opacity(appeared ? 1.0 : 0)
         }
         .buttonStyle(.plain)
+        .frame(width: 72, height: 72)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovering = hovering
+            }
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    withAnimation(.easeInOut(duration: 0.05)) { isPressed = true }
+                }
+                .onEnded { _ in
+                    withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                }
+        )
+        .onAppear {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                appeared = true
             }
         }
     }
