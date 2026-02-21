@@ -227,6 +227,7 @@ final class AppState: ObservableObject {
             lastRecordingURL = videoURL
             lastMouseRecording = coordinator.lastMouseRecording
             hasRecording = true
+            showEditor = true
         } else {
             errorMessage = "Failed to stop recording"
         }
