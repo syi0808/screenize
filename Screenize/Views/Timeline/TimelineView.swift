@@ -215,25 +215,6 @@ struct TimelineView: View {
 
                     Spacer()
 
-                    // Smooth cursor toggle (cursor track only)
-                    if case .cursor(let cursorTrack) = timeline.tracks[index] {
-                        Button {
-                            var updated = cursorTrack
-                            updated.useSmoothCursor.toggle()
-                            timeline.tracks[index] = .cursor(updated)
-                        } label: {
-                            Image(systemName: cursorTrack.useSmoothCursor
-                                ? "cursorarrow.motionlines" : "cursorarrow")
-                                .font(.system(size: 10))
-                                .foregroundColor(cursorTrack.useSmoothCursor
-                                    ? .accentColor : .secondary.opacity(0.4))
-                        }
-                        .buttonStyle(.plain)
-                        .help(cursorTrack.useSmoothCursor
-                            ? "Smooth cursor interpolation (on)"
-                            : "Smooth cursor interpolation (off)")
-                    }
-
                     Button {
                         var updated = track
                         updated.isEnabled.toggle()
@@ -251,6 +232,7 @@ struct TimelineView: View {
                 Divider()
             }
 
+            Spacer()
         }
         .frame(width: headerWidth)
         .background(Color(nsColor: .controlBackgroundColor))

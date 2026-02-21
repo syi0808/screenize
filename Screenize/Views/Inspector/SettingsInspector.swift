@@ -126,7 +126,31 @@ struct SettingsInspector: View {
                     }
                 }
             }
+
+            // Smooth cursor interpolation
+            Toggle(isOn: smoothCursorBinding) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Smooth Cursor")
+                        .font(.system(size: 12, weight: .medium))
+                    Text("Interpolate cursor movement between data points")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
+            }
         }
+    }
+
+    private var smoothCursorBinding: Binding<Bool> {
+        Binding(
+            get: { timeline.cursorTrackV2?.useSmoothCursor ?? true },
+            set: { newValue in
+                guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
+                      case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+                track.useSmoothCursor = newValue
+                timeline.tracks[trackIndex] = .cursor(track)
+                onChange?()
+            }
+        )
     }
 
     private var cursorScale: CGFloat {

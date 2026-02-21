@@ -23,11 +23,10 @@ struct TrimHandleView: View {
                 .fill(handleColor)
                 .frame(width: 2)
 
-            // Handle grip (top and bottom)
+            // Handle grip (top only)
             VStack {
                 handleGrip
                 Spacer()
-                handleGrip
             }
         }
         .frame(width: handleWidth)
