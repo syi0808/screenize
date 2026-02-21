@@ -1,6 +1,7 @@
 import Foundation
 import CoreGraphics
 import CoreImage
+import SwiftUI
 
 /// Window effect applicator
 /// Applies rounded corners and a drop shadow
@@ -119,12 +120,11 @@ final class WindowEffectApplicator {
 
         // White rounded rectangle (opaque = 1 in the mask)
         context.setFillColor(gray: 1, alpha: 1)
-        let path = CGPath(
+        let path = Path(
             roundedRect: CGRect(origin: .zero, size: size),
-            cornerWidth: cornerRadius,
-            cornerHeight: cornerRadius,
-            transform: nil
-        )
+            cornerRadius: cornerRadius,
+            style: .continuous
+        ).cgPath
         context.addPath(path)
         context.fillPath()
 
