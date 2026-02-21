@@ -124,7 +124,7 @@ struct ScreenizeApp: App {
 
             CommandGroup(replacing: .newItem) {
                 Button("New Recording...") {
-                    appState.showSourcePicker = true
+                    Task { await appState.showCaptureToolbarFlow() }
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
@@ -148,7 +148,7 @@ struct ScreenizeApp: App {
                     }
                 }
                 .keyboardShortcut("2", modifiers: [.command, .shift])
-                .disabled(appState.selectedTarget == nil && !appState.isRecording && !appState.isCountingDown)
+                .disabled(!appState.isRecording && !appState.isCountingDown && !appState.showCaptureToolbar)
             }
         }
     }
@@ -246,7 +246,7 @@ struct ContentView: View {
                 // Initial state → welcome view
                 MainWelcomeView(
                     onStartRecording: {
-                        appState.showSourcePicker = true
+                        Task { await appState.showCaptureToolbarFlow() }
                     },
                     onOpenVideo: { url in
                         Task {

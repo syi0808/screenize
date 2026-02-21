@@ -84,6 +84,10 @@
 		F00000F2296A0001 /* RecordingPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F2296A0001 /* RecordingPreviewView.swift */; };
 		F00000F3296A0001 /* CountdownPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F3296A0001 /* CountdownPanel.swift */; };
 		F00000F4296A0001 /* RecordingFloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F4296A0001 /* RecordingFloatingPanel.swift */; };
+		D1000001296A0001 /* CaptureMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100001296A0001 /* CaptureMode.swift */; };
+		D1000002296A0001 /* CaptureToolbarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100002296A0001 /* CaptureToolbarPanel.swift */; };
+		D1000003296A0001 /* CaptureOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100003296A0001 /* CaptureOverlayController.swift */; };
+		D1000004296A0001 /* CaptureToolbarCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100004296A0001 /* CaptureToolbarCoordinator.swift */; };
 		F0000100296A0001 /* WindowModeRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000100296A0001 /* WindowModeRenderer.swift */; };
 		F0000101296A0001 /* MouseDataConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000101296A0001 /* MouseDataConverter.swift */; };
 		F0000102296A0001 /* RenderPipelineFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000102296A0001 /* RenderPipelineFactory.swift */; };
@@ -235,6 +239,10 @@
 		F10000F2296A0001 /* RecordingPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPreviewView.swift; sourceTree = "<group>"; };
 		F10000F3296A0001 /* CountdownPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownPanel.swift; sourceTree = "<group>"; };
 		F10000F4296A0001 /* RecordingFloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFloatingPanel.swift; sourceTree = "<group>"; };
+		D1100001296A0001 /* CaptureMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureMode.swift; sourceTree = "<group>"; };
+		D1100002296A0001 /* CaptureToolbarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureToolbarPanel.swift; sourceTree = "<group>"; };
+		D1100003296A0001 /* CaptureOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOverlayController.swift; sourceTree = "<group>"; };
+		D1100004296A0001 /* CaptureToolbarCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureToolbarCoordinator.swift; sourceTree = "<group>"; };
 		F1000100296A0001 /* WindowModeRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowModeRenderer.swift; sourceTree = "<group>"; };
 		F1000101296A0001 /* MouseDataConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseDataConverter.swift; sourceTree = "<group>"; };
 		F1000102296A0001 /* RenderPipelineFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderPipelineFactory.swift; sourceTree = "<group>"; };
@@ -706,6 +714,7 @@
 				F10000A0296A0001 /* AppState.swift */,
 				F10000A1296A0001 /* GlobalHotkeyManager.swift */,
 				2A626F2E2F2A280000510712 /* SparkleController.swift */,
+				D1100004296A0001 /* CaptureToolbarCoordinator.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -785,6 +794,7 @@
 				F1A00001296A0001 /* EventStream.swift */,
 				F1A00002296A0001 /* RecordingMetadata.swift */,
 				F1A00003296A0001 /* EventStreamAdapter.swift */,
+				D1100001296A0001 /* CaptureMode.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -797,6 +807,8 @@
 				F10000F2296A0001 /* RecordingPreviewView.swift */,
 				F10000F3296A0001 /* CountdownPanel.swift */,
 				F10000F4296A0001 /* RecordingFloatingPanel.swift */,
+				D1100002296A0001 /* CaptureToolbarPanel.swift */,
+				D1100003296A0001 /* CaptureOverlayController.swift */,
 			);
 			path = Recording;
 			sourceTree = "<group>";
@@ -970,6 +982,10 @@
 				2A626F312F2A280000510712 /* CheckForUpdatesView.swift in Sources */,
 				F00000F3296A0001 /* CountdownPanel.swift in Sources */,
 				F00000F4296A0001 /* RecordingFloatingPanel.swift in Sources */,
+				D1000001296A0001 /* CaptureMode.swift in Sources */,
+				D1000002296A0001 /* CaptureToolbarPanel.swift in Sources */,
+				D1000003296A0001 /* CaptureOverlayController.swift in Sources */,
+				D1000004296A0001 /* CaptureToolbarCoordinator.swift in Sources */,
 				F00000AF296A0001 /* Coordinates.swift in Sources */,
 				F00000B0296A0001 /* CaptureConfiguration.swift in Sources */,
 				F00000B1296A0001 /* PermissionsManager.swift in Sources */,

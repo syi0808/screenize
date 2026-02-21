@@ -59,6 +59,11 @@ final class AppState: ObservableObject {
     // Note: BackgroundStyle doesn't support @AppStorage directly
     var backgroundStyle: BackgroundStyle = .solid(.gray)
 
+    // MARK: - Capture Toolbar
+
+    @Published var showCaptureToolbar: Bool = false
+    private(set) var captureToolbarCoordinator: CaptureToolbarCoordinator?
+
     // MARK: - Managers
 
     private(set) var recordingCoordinator: RecordingCoordinator?
@@ -192,7 +197,10 @@ final class AppState: ObservableObject {
             recordingDuration = 0
             startDurationTimer()
             setupPreviewUpdates()
-            showRecordingFloatingPanel()
+            // Only show standalone panel when capture toolbar is not managing the UI
+            if !showCaptureToolbar {
+                showRecordingFloatingPanel()
+            }
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
             recordingCoordinator = nil
@@ -206,7 +214,10 @@ final class AppState: ObservableObject {
         isRecording = false
         isPaused = false
         stopDurationTimer()
-        hideRecordingFloatingPanel()
+        // Only hide standalone panel when capture toolbar is not managing the UI
+        if !showCaptureToolbar {
+            hideRecordingFloatingPanel()
+        }
 
         // Capture v4 timing metadata before releasing coordinator
         lastRecordingStartDate = coordinator.recordingStartDate
@@ -241,8 +252,10 @@ final class AppState: ObservableObject {
             await stopRecording()
         } else if isCountingDown {
             cancelCountdown()
+        } else if showCaptureToolbar {
+            captureToolbarCoordinator?.cancel()
         } else {
-            await startRecordingWithCountdown()
+            await showCaptureToolbarFlow()
         }
     }
 
@@ -335,7 +348,9 @@ final class AppState: ObservableObject {
     func startNewRecording() {
         currentProject = nil
         currentProjectURL = nil
-        showSourcePicker = true
+        Task {
+            await showCaptureToolbarFlow()
+        }
     }
 
     /// Leave the recording screen and return to the welcome screen
@@ -344,6 +359,23 @@ final class AppState: ObservableObject {
         showSourcePicker = false
         hasRecording = false
         lastRecordingURL = nil
+    }
+
+    // MARK: - Capture Toolbar Flow
+
+    /// Show the capture toolbar for target selection
+    func showCaptureToolbarFlow() async {
+        if captureToolbarCoordinator == nil {
+            captureToolbarCoordinator = CaptureToolbarCoordinator(appState: self)
+        }
+        showCaptureToolbar = true
+        await captureToolbarCoordinator?.showToolbar()
+    }
+
+    /// Called when the capture toolbar is dismissed (cancelled or recording started)
+    func captureToolbarDidDismiss() {
+        showCaptureToolbar = false
+        captureToolbarCoordinator = nil
     }
 
     // MARK: - Project Creation
