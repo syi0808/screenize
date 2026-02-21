@@ -76,7 +76,7 @@ struct TimelineView: View {
     let snapThresholdInPoints: CGFloat = 8
     private let rulerHeight: CGFloat = 24
     private let trackHeight: CGFloat = 40
-    private let headerWidth: CGFloat = 120
+    private let headerWidth: CGFloat = 140
 
     private var logZoom: Binding<Double> {
         Binding(
@@ -251,7 +251,6 @@ struct TimelineView: View {
                 Divider()
             }
 
-            Spacer()
         }
         .frame(width: headerWidth)
         .background(Color(nsColor: .controlBackgroundColor))
@@ -263,7 +262,6 @@ struct TimelineView: View {
                 trackArea(for: track)
                 Divider()
             }
-            Spacer()
         }
     }
 
@@ -830,7 +828,6 @@ extension TimelineView {
                     )
             }
         }
-        .offset(y: rulerHeight)
     }
 
     private func fitToView() {
