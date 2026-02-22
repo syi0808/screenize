@@ -5,12 +5,14 @@ enum CopiedSegment {
     case camera(CameraSegment)
     case cursor(CursorSegment)
     case keystroke(KeystrokeSegment)
+    case audio(AudioSegment)
 
     var trackType: TrackType {
         switch self {
         case .camera: return .transform
         case .cursor: return .cursor
         case .keystroke: return .keystroke
+        case .audio: return .audio
         }
     }
 
@@ -19,6 +21,7 @@ enum CopiedSegment {
         case .camera(let s): return s.startTime
         case .cursor(let s): return s.startTime
         case .keystroke(let s): return s.startTime
+        case .audio(let s): return s.startTime
         }
     }
 
@@ -27,6 +30,7 @@ enum CopiedSegment {
         case .camera(let s): return s.endTime
         case .cursor(let s): return s.endTime
         case .keystroke(let s): return s.endTime
+        case .audio(let s): return s.endTime
         }
     }
 
@@ -67,7 +71,9 @@ extension EditorViewModel {
                     newSelection.add(newID, trackType: .keystroke)
                 }
             case .audio:
-                break
+                if let newID = duplicateAudioSegment(ident.id) {
+                    newSelection.add(newID, trackType: .audio)
+                }
             }
         }
 
@@ -105,6 +111,10 @@ extension EditorViewModel {
                 if let newID = insertKeystrokeSegment(original, startTime: newStart, endTime: newEnd) {
                     newSelection.add(newID, trackType: .keystroke)
                 }
+            case .audio(let original):
+                if let newID = insertAudioSegment(original, startTime: newStart, endTime: newEnd) {
+                    newSelection.add(newID, trackType: .audio)
+                }
             }
         }
 
@@ -135,7 +145,10 @@ extension EditorViewModel {
                 return .keystroke(segment)
             }
         case .audio:
-            break
+            if let track = project.timeline.audioTrack,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                return .audio(segment)
+            }
         }
         return nil
     }
@@ -269,6 +282,44 @@ extension EditorViewModel {
         )
         track.addSegment(pasted)
         project.timeline.tracks[trackIndex] = .keystroke(track)
+        return pasted.id
+    }
+
+    private func duplicateAudioSegment(_ id: UUID) -> UUID? {
+        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .audio }),
+              case .audio(var track) = project.timeline.tracks[trackIndex],
+              let original = track.segments.first(where: { $0.id == id }) else { return nil }
+
+        let segDuration = original.endTime - original.startTime
+        let newStart = original.endTime
+        let newEnd = min(duration, newStart + segDuration)
+        guard newEnd > newStart else { return nil }
+
+        let duplicate = AudioSegment(
+            startTime: newStart,
+            endTime: newEnd,
+            volume: original.volume,
+            isMuted: original.isMuted
+        )
+        guard track.addSegment(duplicate) else { return nil }
+        project.timeline.tracks[trackIndex] = .audio(track)
+        return duplicate.id
+    }
+
+    private func insertAudioSegment(
+        _ original: AudioSegment, startTime: TimeInterval, endTime: TimeInterval
+    ) -> UUID? {
+        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .audio }),
+              case .audio(var track) = project.timeline.tracks[trackIndex] else { return nil }
+
+        let pasted = AudioSegment(
+            startTime: startTime,
+            endTime: endTime,
+            volume: original.volume,
+            isMuted: original.isMuted
+        )
+        guard track.addSegment(pasted) else { return nil }
+        project.timeline.tracks[trackIndex] = .audio(track)
         return pasted.id
     }
 }

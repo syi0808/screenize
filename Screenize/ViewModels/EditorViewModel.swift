@@ -472,7 +472,7 @@ final class EditorViewModel: ObservableObject {
         case .keystroke:
             addKeystrokeSegment(at: time)
         case .audio:
-            break  // TODO: implement audio tracks in the future
+            addAudioSegment(at: time)
         }
 
         hasUnsavedChanges = true
@@ -567,7 +567,7 @@ final class EditorViewModel: ObservableObject {
         case .keystroke:
             deleteKeystrokeSegment(id)
         case .audio:
-            break  // TODO: implement audio tracks in the future
+            deleteAudioSegment(id)
         }
 
         selection.remove(id)
@@ -617,6 +617,39 @@ final class EditorViewModel: ObservableObject {
 
         track.removeSegment(id: id)
         project.timeline.tracks[trackIndex] = .keystroke(track)
+    }
+
+    private func addAudioSegment(at time: TimeInterval) {
+        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .audio }) else {
+            return
+        }
+
+        guard case .audio(var track) = project.timeline.tracks[trackIndex] else {
+            return
+        }
+
+        let newSegment = AudioSegment(
+            startTime: time,
+            endTime: min(duration, time + 5.0)
+        )
+
+        guard track.addSegment(newSegment) else { return }
+
+        project.timeline.tracks[trackIndex] = .audio(track)
+        selection.select(newSegment.id, trackType: .audio)
+    }
+
+    private func deleteAudioSegment(_ id: UUID) {
+        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .audio }) else {
+            return
+        }
+
+        guard case .audio(var track) = project.timeline.tracks[trackIndex] else {
+            return
+        }
+
+        track.removeSegment(id: id)
+        project.timeline.tracks[trackIndex] = .audio(track)
     }
 
     /// Update segment start/end time as a single edit operation.
@@ -787,7 +820,12 @@ final class EditorViewModel: ObservableObject {
             }
 
         case .audio:
-            time = nil  // TODO: support audio tracks later
+            if let track = project.timeline.audioTrack,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
+            } else {
+                time = nil
+            }
         }
 
         if let time = time {
