@@ -35,7 +35,7 @@ final class PreviewEngine: ObservableObject {
     }
 
     /// Whether loading is in progress
-    @Published private(set) var isLoading: Bool = false
+    @Published private(set) var isLoading: Bool = true
 
     /// Error message
     @Published private(set) var errorMessage: String?
@@ -170,12 +170,12 @@ final class PreviewEngine: ObservableObject {
         // ScrubController: deliver texture to main thread
         scrubController.onFrameReady = { [weak self] texture, _ in
             guard let self = self else { return }
-            if self.isLoading {
-                self.isLoading = false
-            }
             if let texture = texture {
                 self.currentTexture = texture
                 self.displayGeneration += 1
+                if self.isLoading {
+                    self.isLoading = false
+                }
             }
         }
     }

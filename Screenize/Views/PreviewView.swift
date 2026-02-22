@@ -62,6 +62,8 @@ struct PreviewView: View {
                     )
                 } else if previewEngine.isLoading {
                     loadingView
+                } else if let errorMessage = previewEngine.errorMessage {
+                    errorView(errorMessage)
                 } else {
                     placeholderView
                 }
@@ -109,6 +111,27 @@ struct PreviewView: View {
             Text("Loading preview...")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Error View
+
+    private func errorView(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48))
+                .foregroundColor(.red.opacity(0.7))
+
+            Text("Preview failed")
+                .font(.caption.bold())
+                .foregroundColor(.secondary)
+
+            Text(message)
+                .font(.caption2)
+                .foregroundColor(.secondary.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .padding(.horizontal, 24)
         }
     }
 

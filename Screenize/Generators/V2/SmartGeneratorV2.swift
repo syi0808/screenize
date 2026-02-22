@@ -80,8 +80,13 @@ class SmartGeneratorV2 {
         let rawCameraTrack = CameraTrackEmitter.emit(
             processedPath, duration: duration
         )
-        let cameraTrack = SegmentOptimizer.optimize(
+        let optimizedTrack = SegmentOptimizer.optimize(
             rawCameraTrack, settings: ppSettings.optimization
+        )
+
+        // 9. Apply post-hoc zoom intensity (decoupled from pipeline)
+        let cameraTrack = Self.applyZoomIntensity(
+            optimizedTrack, intensity: settings.zoomIntensity
         )
 
         #if DEBUG
@@ -107,6 +112,36 @@ class SmartGeneratorV2 {
             cursorTrack: cursorTrack,
             keystrokeTrack: keystrokeTrack
         )
+    }
+
+    // MARK: - Post-Hoc Zoom Scaling
+
+    /// Scale all zoom values in the camera track by an intensity factor.
+    /// Formula: newZoom = 1.0 + (originalZoom - 1.0) * intensity
+    /// This preserves zoom=1.0 (no zoom) while scaling the zoom-above-1 portion.
+    private static func applyZoomIntensity(
+        _ track: CameraTrack, intensity: CGFloat
+    ) -> CameraTrack {
+        guard abs(intensity - 1.0) > 0.001 else { return track }
+        let scaled = track.segments.map { seg -> CameraSegment in
+            var s = seg
+            s.startTransform = scaleTransformZoom(
+                seg.startTransform, intensity: intensity
+            )
+            s.endTransform = scaleTransformZoom(
+                seg.endTransform, intensity: intensity
+            )
+            return s
+        }
+        return CameraTrack(segments: scaled)
+    }
+
+    private static func scaleTransformZoom(
+        _ t: TransformValue, intensity: CGFloat
+    ) -> TransformValue {
+        let newZoom = max(1.0, 1.0 + (t.zoom - 1.0) * intensity)
+        let clamped = ShotPlanner.clampCenter(t.center, zoom: newZoom)
+        return TransformValue(zoom: newZoom, center: clamped)
     }
 
     // MARK: - Diagnostics
@@ -250,6 +285,11 @@ struct SmartGenerationSettings {
     var cursor = CursorEmissionSettings()
     var keystroke = KeystrokeEmissionSettings()
     var postProcessing = PostProcessingSettings()
+
+    /// Post-hoc zoom intensity multiplier applied after pipeline completes.
+    /// Formula: newZoom = 1.0 + (originalZoom - 1.0) * zoomIntensity
+    /// 1.0 = default, <1.0 = less zoom, >1.0 = more zoom.
+    var zoomIntensity: CGFloat = 1.0
 
     static let `default` = Self()
 }

@@ -39,6 +39,9 @@ final class MetalDisplayView: NSView {
     /// CIContext for GPU-to-GPU blit with aspect-fit scaling
     private let ciContext: CIContext
 
+    /// Last texture received (re-rendered on layout changes)
+    private var lastTexture: MTLTexture?
+
     // MARK: - Initialization
 
     override init(frame frameRect: NSRect) {
@@ -74,12 +77,14 @@ final class MetalDisplayView: NSView {
     override func layout() {
         super.layout()
         updateDrawableSize()
+        renderCurrentTexture()
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         if window != nil {
             updateDrawableSize()
+            renderCurrentTexture()
         }
     }
 
@@ -98,7 +103,13 @@ final class MetalDisplayView: NSView {
     /// Display a pre-rendered MTLTexture with aspect-fit scaling
     /// GPU-to-GPU blit: no CPU memory involvement
     func displayTexture(_ texture: MTLTexture?) {
-        guard let texture = texture,
+        lastTexture = texture
+        renderCurrentTexture()
+    }
+
+    /// Render the stored texture to the Metal layer
+    private func renderCurrentTexture() {
+        guard let texture = lastTexture,
               let drawable = metalLayer.nextDrawable(),
               let commandBuffer = commandQueue.makeCommandBuffer() else {
             return
