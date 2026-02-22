@@ -146,8 +146,11 @@ final class RenderCoordinator: @unchecked Sendable {
                 return
             }
 
-            // Read next frame from sequential reader
-            guard let frame = reader.nextFrame() else { return }
+            // Read next frame from sequential reader (nil = EOF)
+            guard let frame = reader.nextFrame() else {
+                completion(nil, time)
+                return
+            }
 
             // Evaluate the state at this time
             let state = evaluator.evaluate(at: frame.time)
