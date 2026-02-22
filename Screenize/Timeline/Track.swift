@@ -588,16 +588,93 @@ struct KeystrokeTrackV2: SegmentTrack, Equatable {
     }
 }
 
+// MARK: - Audio Segment
+
+struct AudioSegment: Codable, Identifiable, Equatable {
+    let id: UUID
+    var startTime: TimeInterval
+    var endTime: TimeInterval
+    /// Per-segment volume multiplier (0.0–1.0)
+    var volume: Float
+    var isMuted: Bool
+
+    init(
+        id: UUID = UUID(),
+        startTime: TimeInterval,
+        endTime: TimeInterval,
+        volume: Float = 1.0,
+        isMuted: Bool = false
+    ) {
+        self.id = id
+        self.startTime = startTime
+        self.endTime = endTime
+        self.volume = volume
+        self.isMuted = isMuted
+    }
+}
+
+// MARK: - Audio Track
+
+struct AudioTrack: SegmentTrack, Equatable {
+    let id: UUID
+    var name: String
+    var isEnabled: Bool
+    var segments: [AudioSegment]
+
+    var trackType: TrackType { .audio }
+    var segmentCount: Int { segments.count }
+
+    init(id: UUID = UUID(), name: String = "Mic Audio", isEnabled: Bool = true, segments: [AudioSegment] = []) {
+        self.id = id
+        self.name = name
+        self.isEnabled = isEnabled
+        self.segments = segments.sorted { $0.startTime < $1.startTime }
+    }
+
+    @discardableResult
+    mutating func addSegment(_ segment: AudioSegment) -> Bool {
+        guard !hasOverlap(segment, excluding: nil) else { return false }
+        segments.append(segment)
+        segments.sort { $0.startTime < $1.startTime }
+        return true
+    }
+
+    mutating func updateSegment(_ segment: AudioSegment) -> Bool {
+        guard let index = segments.firstIndex(where: { $0.id == segment.id }) else { return false }
+        guard !hasOverlap(segment, excluding: segment.id) else { return false }
+        segments[index] = segment
+        segments.sort { $0.startTime < $1.startTime }
+        return true
+    }
+
+    mutating func removeSegment(id: UUID) {
+        segments.removeAll { $0.id == id }
+    }
+
+    func activeSegment(at time: TimeInterval) -> AudioSegment? {
+        segments.first { time >= $0.startTime && time < $0.endTime }
+    }
+
+    private func hasOverlap(_ segment: AudioSegment, excluding excludedID: UUID?) -> Bool {
+        segments.contains { existing in
+            if let excludedID, existing.id == excludedID { return false }
+            return segment.startTime < existing.endTime && segment.endTime > existing.startTime
+        }
+    }
+}
+
 enum AnySegmentTrack: Codable, Identifiable, Equatable {
     case camera(CameraTrack)
     case cursor(CursorTrackV2)
     case keystroke(KeystrokeTrackV2)
+    case audio(AudioTrack)
 
     var id: UUID {
         switch self {
         case .camera(let track): return track.id
         case .cursor(let track): return track.id
         case .keystroke(let track): return track.id
+        case .audio(let track): return track.id
         }
     }
 
@@ -607,6 +684,7 @@ enum AnySegmentTrack: Codable, Identifiable, Equatable {
             case .camera(let track): return track.name
             case .cursor(let track): return track.name
             case .keystroke(let track): return track.name
+            case .audio(let track): return track.name
             }
         }
         set {
@@ -620,6 +698,9 @@ enum AnySegmentTrack: Codable, Identifiable, Equatable {
             case .keystroke(var track):
                 track.name = newValue
                 self = .keystroke(track)
+            case .audio(var track):
+                track.name = newValue
+                self = .audio(track)
             }
         }
     }
@@ -630,6 +711,7 @@ enum AnySegmentTrack: Codable, Identifiable, Equatable {
             case .camera(let track): return track.isEnabled
             case .cursor(let track): return track.isEnabled
             case .keystroke(let track): return track.isEnabled
+            case .audio(let track): return track.isEnabled
             }
         }
         set {
@@ -643,6 +725,9 @@ enum AnySegmentTrack: Codable, Identifiable, Equatable {
             case .keystroke(var track):
                 track.isEnabled = newValue
                 self = .keystroke(track)
+            case .audio(var track):
+                track.isEnabled = newValue
+                self = .audio(track)
             }
         }
     }
@@ -652,6 +737,7 @@ enum AnySegmentTrack: Codable, Identifiable, Equatable {
         case .camera: return .transform
         case .cursor: return .cursor
         case .keystroke: return .keystroke
+        case .audio: return .audio
         }
     }
 
@@ -674,11 +760,8 @@ enum AnySegmentTrack: Codable, Identifiable, Equatable {
             let track = try container.decode(KeystrokeTrackV2.self, forKey: .data)
             self = .keystroke(track)
         case .audio:
-            throw DecodingError.dataCorruptedError(
-                forKey: .type,
-                in: container,
-                debugDescription: "Audio track not yet supported"
-            )
+            let track = try container.decode(AudioTrack.self, forKey: .data)
+            self = .audio(track)
         }
     }
 
@@ -694,6 +777,9 @@ enum AnySegmentTrack: Codable, Identifiable, Equatable {
             try container.encode(track, forKey: .data)
         case .keystroke(let track):
             try container.encode(TrackType.keystroke, forKey: .type)
+            try container.encode(track, forKey: .data)
+        case .audio(let track):
+            try container.encode(TrackType.audio, forKey: .type)
             try container.encode(track, forKey: .data)
         }
     }

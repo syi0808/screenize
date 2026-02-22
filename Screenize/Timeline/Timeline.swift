@@ -116,6 +116,23 @@ struct Timeline: Codable, Equatable {
         }
     }
 
+    var audioTrack: AudioTrack? {
+        get {
+            for case .audio(let track) in tracks {
+                return track
+            }
+            return nil
+        }
+        set {
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: { $0.trackType == .audio }) {
+                tracks[index] = .audio(newValue)
+            } else {
+                tracks.append(.audio(newValue))
+            }
+        }
+    }
+
     // MARK: - Validation
 
     var totalSegmentCount: Int {
@@ -127,6 +144,8 @@ struct Timeline: Codable, Equatable {
                 count += cursorTrack.segmentCount
             case .keystroke(let keystrokeTrack):
                 count += keystrokeTrack.segmentCount
+            case .audio(let audioTrack):
+                count += audioTrack.segmentCount
             }
         }
     }

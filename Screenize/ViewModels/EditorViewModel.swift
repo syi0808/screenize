@@ -691,6 +691,17 @@ final class EditorViewModel: ObservableObject {
                 guard track.updateSegment(segment) else { return false }
                 project.timeline.tracks[trackIndex] = .keystroke(track)
                 return true
+
+            case .audio(var track):
+                guard let index = track.segments.firstIndex(where: { $0.id == id }) else {
+                    continue
+                }
+                var segment = track.segments[index]
+                segment.startTime = clampedStart
+                segment.endTime = clampedEnd
+                guard track.updateSegment(segment) else { return false }
+                project.timeline.tracks[trackIndex] = .audio(track)
+                return true
             }
         }
 
@@ -723,6 +734,9 @@ final class EditorViewModel: ObservableObject {
             case .keystroke(var track):
                 track.segments.removeAll()
                 project.timeline.tracks[trackIndex] = .keystroke(track)
+            case .audio(var track):
+                track.segments.removeAll()
+                project.timeline.tracks[trackIndex] = .audio(track)
             }
         }
 
@@ -808,6 +822,10 @@ final class EditorViewModel: ObservableObject {
                 }
             case .keystroke(let keystrokeTrack):
                 if let segment = keystrokeTrack.segments.first(where: { $0.id == id }) {
+                    return (segment.startTime, segment.endTime)
+                }
+            case .audio(let audioTrack):
+                if let segment = audioTrack.segments.first(where: { $0.id == id }) {
                     return (segment.startTime, segment.endTime)
                 }
             }

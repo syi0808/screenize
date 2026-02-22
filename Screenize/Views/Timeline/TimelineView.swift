@@ -318,6 +318,21 @@ struct TimelineView: View {
                     editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
                 )
             }
+        case .audio(let audioTrack):
+            let ranges = audioTrack.segments.map {
+                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
+            }
+
+            ForEach(audioTrack.segments) { segment in
+                segmentBlock(
+                    trackType: .audio,
+                    id: segment.id,
+                    start: segment.startTime,
+                    end: segment.endTime,
+                    ranges: ranges,
+                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
+                )
+            }
         }
     }
 

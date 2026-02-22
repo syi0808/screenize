@@ -53,6 +53,15 @@ extension TimelineView {
                         previewStart: segment.startTime, previewEnd: segment.endTime
                     ))
                 }
+            case .audio(let audioTrack):
+                for segment in audioTrack.segments
+                where segment.id != primaryID && selection.contains(segment.id) {
+                    companions.append(CompanionSegment(
+                        id: segment.id, trackType: .audio,
+                        initialStart: segment.startTime, initialEnd: segment.endTime,
+                        previewStart: segment.startTime, previewEnd: segment.endTime
+                    ))
+                }
             }
         }
         return companions
