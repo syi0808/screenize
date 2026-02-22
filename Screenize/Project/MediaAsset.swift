@@ -25,6 +25,9 @@ struct MediaAsset: Codable {
     /// Total duration (seconds)
     let duration: TimeInterval
 
+    /// Whether the source video uses variable frame rate
+    let isVariableFrameRate: Bool
+
     // MARK: - Initializers
 
     /// Create from package-relative paths
@@ -34,7 +37,8 @@ struct MediaAsset: Codable {
         packageRootURL: URL,
         pixelSize: CGSize,
         frameRate: Double,
-        duration: TimeInterval
+        duration: TimeInterval,
+        isVariableFrameRate: Bool = false
     ) {
         self.videoRelativePath = videoRelativePath
         self.mouseDataRelativePath = mouseDataRelativePath
@@ -43,6 +47,7 @@ struct MediaAsset: Codable {
         self.pixelSize = pixelSize
         self.frameRate = frameRate
         self.duration = duration
+        self.isVariableFrameRate = isVariableFrameRate
     }
 
     // MARK: - URL Resolution
@@ -79,12 +84,12 @@ struct MediaAsset: Codable {
         return pixelSize.width / pixelSize.height
     }
 
-    /// Total frame count
+    /// Total frame count (approximate for VFR videos)
     var totalFrames: Int {
         Int(duration * frameRate)
     }
 
-    /// Frame duration (seconds)
+    /// Frame duration in seconds (average for VFR videos)
     var frameDuration: TimeInterval {
         guard frameRate > 0 else { return 1.0 / 60.0 }
         return 1.0 / frameRate
@@ -98,6 +103,7 @@ struct MediaAsset: Codable {
         case pixelSize
         case frameRate
         case duration
+        case isVariableFrameRate
     }
 
     func encode(to encoder: Encoder) throws {
@@ -107,6 +113,7 @@ struct MediaAsset: Codable {
         try container.encode(pixelSize, forKey: .pixelSize)
         try container.encode(frameRate, forKey: .frameRate)
         try container.encode(duration, forKey: .duration)
+        try container.encode(isVariableFrameRate, forKey: .isVariableFrameRate)
     }
 
     init(from decoder: Decoder) throws {
@@ -114,6 +121,7 @@ struct MediaAsset: Codable {
         pixelSize = try container.decode(CGSize.self, forKey: .pixelSize)
         frameRate = try container.decode(Double.self, forKey: .frameRate)
         duration = try container.decode(TimeInterval.self, forKey: .duration)
+        isVariableFrameRate = try container.decodeIfPresent(Bool.self, forKey: .isVariableFrameRate) ?? false
         videoRelativePath = try container.decode(String.self, forKey: .videoRelativePath)
         mouseDataRelativePath = try container.decode(String.self, forKey: .mouseDataRelativePath)
         // Placeholder URLs - must be resolved by caller via resolveURLs(from:)

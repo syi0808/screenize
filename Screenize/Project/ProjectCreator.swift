@@ -26,7 +26,8 @@ struct ProjectCreator {
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
-            duration: videoInfo.duration
+            duration: videoInfo.duration,
+            isVariableFrameRate: videoInfo.isVariableFrameRate
         )
 
         // Create a default timeline
@@ -61,7 +62,8 @@ struct ProjectCreator {
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
-            duration: videoInfo.duration
+            duration: videoInfo.duration,
+            isVariableFrameRate: videoInfo.isVariableFrameRate
         )
 
         // Basic capture metadata based on video size
@@ -93,6 +95,7 @@ struct ProjectCreator {
         let size: CGSize
         let frameRate: Double
         let duration: TimeInterval
+        let isVariableFrameRate: Bool
     }
 
     private static func loadVideoInfo(from url: URL) async throws -> VideoInfo {
@@ -108,10 +111,22 @@ struct ProjectCreator {
 
         let frameRate = nominalFrameRate > 0 ? nominalFrameRate : 60.0
 
+        // Detect variable frame rate by comparing minFrameDuration with nominal
+        let minFrameDuration = try await videoTrack.load(.minFrameDuration)
+        let minFrameDurationSec = CMTimeGetSeconds(minFrameDuration)
+        let isVFR: Bool
+        if minFrameDurationSec > 0 && nominalFrameRate > 0 {
+            let minFPS = 1.0 / minFrameDurationSec
+            isVFR = abs(minFPS - nominalFrameRate) / nominalFrameRate > 0.1
+        } else {
+            isVFR = false
+        }
+
         return VideoInfo(
             size: size,
             frameRate: frameRate,
-            duration: duration
+            duration: duration,
+            isVariableFrameRate: isVFR
         )
     }
 
