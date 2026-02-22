@@ -61,7 +61,7 @@ struct InspectorView: View {
                     case .keystroke:
                         keystrokeSection(segmentID: selected.id)
                     case .audio:
-                        EmptyView()
+                        audioSection(segmentID: selected.id)
                     }
 
                     Divider()
@@ -386,6 +386,49 @@ struct InspectorView: View {
         }
     }
 
+    @ViewBuilder
+    private func audioSection(segmentID: UUID) -> some View {
+        if let binding = audioSegmentBinding(for: segmentID) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Audio")
+                    .font(.subheadline.weight(.medium))
+
+                timeRangeFields(
+                    start: Binding(
+                        get: { binding.wrappedValue.startTime },
+                        set: { binding.wrappedValue.startTime = $0 }
+                    ),
+                    end: Binding(
+                        get: { binding.wrappedValue.endTime },
+                        set: { binding.wrappedValue.endTime = $0 }
+                    )
+                )
+
+                LabeledContent("Volume") {
+                    HStack(spacing: 8) {
+                        Slider(value: Binding(
+                            get: { Double(binding.wrappedValue.volume) },
+                            set: { binding.wrappedValue.volume = Float($0) }
+                        ), in: 0...1)
+                        Text("\(Int(binding.wrappedValue.volume * 100))%")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                }
+
+                Toggle("Muted", isOn: Binding(
+                    get: { binding.wrappedValue.isMuted },
+                    set: { binding.wrappedValue.isMuted = $0 }
+                ))
+            }
+        } else {
+            Text("Audio segment not found")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private func timeRangeFields(start: Binding<TimeInterval>, end: Binding<TimeInterval>) -> some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
@@ -484,6 +527,32 @@ extension InspectorView {
                 if case .keystroke(var track) = self.timeline.tracks[trackIndex],
                    track.updateSegment(updated) {
                     self.timeline.tracks[trackIndex] = .keystroke(track)
+                    self.onSegmentChange?()
+                }
+            }
+        )
+    }
+
+    func audioSegmentBinding(for id: UUID) -> Binding<AudioSegment>? {
+        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .audio }),
+              case .audio(let track) = timeline.tracks[trackIndex],
+              track.segments.contains(where: { $0.id == id }) else {
+            return nil
+        }
+
+        return Binding(
+            get: {
+                if case .audio(let track) = self.timeline.tracks[trackIndex],
+                   let segmentIndex = track.segments.firstIndex(where: { $0.id == id }) {
+                    return track.segments[segmentIndex]
+                }
+
+                return AudioSegment(startTime: 0, endTime: 1)
+            },
+            set: { updated in
+                if case .audio(var track) = self.timeline.tracks[trackIndex],
+                   track.updateSegment(updated) {
+                    self.timeline.tracks[trackIndex] = .audio(track)
                     self.onSegmentChange?()
                 }
             }

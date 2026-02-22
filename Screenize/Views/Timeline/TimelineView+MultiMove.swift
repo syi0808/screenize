@@ -111,6 +111,10 @@ extension TimelineView {
                 return trk.segments.map {
                     SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
                 }
+            case .audio(let trk) where trackType == .audio:
+                return trk.segments.map {
+                    SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
+                }
             default:
                 continue
             }
