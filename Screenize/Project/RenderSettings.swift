@@ -42,6 +42,18 @@ struct RenderSettings: Codable {
     /// Motion blur settings
     var motionBlur: MotionBlurSettings = .default
 
+    /// System audio volume (0.0–1.0)
+    var systemAudioVolume: Float = 1.0
+
+    /// Microphone audio volume (0.0–1.0)
+    var microphoneAudioVolume: Float = 1.0
+
+    /// Include system audio in export
+    var includeSystemAudio: Bool = true
+
+    /// Include microphone audio in export
+    var includeMicrophoneAudio: Bool = true
+
     init(
         outputResolution: OutputResolution = .original,
         outputFrameRate: OutputFrameRate = .original,
@@ -71,6 +83,10 @@ struct RenderSettings: Codable {
         case padding
         case windowInset
         case motionBlur
+        case systemAudioVolume
+        case microphoneAudioVolume
+        case includeSystemAudio
+        case includeMicrophoneAudio
     }
 
     init(from decoder: Decoder) throws {
@@ -89,6 +105,10 @@ struct RenderSettings: Codable {
         windowInset = try container.decodeIfPresent(CGFloat.self, forKey: .windowInset) ?? 12.0
         // Older projects might not have the motionBlur field, so use the default
         motionBlur = try container.decodeIfPresent(MotionBlurSettings.self, forKey: .motionBlur) ?? .default
+        systemAudioVolume = try container.decodeIfPresent(Float.self, forKey: .systemAudioVolume) ?? 1.0
+        microphoneAudioVolume = try container.decodeIfPresent(Float.self, forKey: .microphoneAudioVolume) ?? 1.0
+        includeSystemAudio = try container.decodeIfPresent(Bool.self, forKey: .includeSystemAudio) ?? true
+        includeMicrophoneAudio = try container.decodeIfPresent(Bool.self, forKey: .includeMicrophoneAudio) ?? true
     }
 }
 

@@ -33,6 +33,9 @@ final class ExportEngine: ObservableObject {
     /// Renderer
     private var renderer: Renderer?
 
+    /// Audio mixer
+    private let audioMixer = AudioMixer()
+
     // MARK: - Initialization
 
     init() {}
@@ -140,6 +143,27 @@ final class ExportEngine: ObservableObject {
 
             writer.add(writerInput)
 
+            // 6b. Configure audio writer input (if audio sources exist)
+            let systemAudioURL = project.media.videoURL
+            let micAudioURL = project.media.micAudioURL
+            let hasSystemAudio = project.renderSettings.includeSystemAudio
+                ? await Self.hasAudioTrack(url: systemAudioURL)
+                : false
+            let hasMicAudio: Bool
+            if project.renderSettings.includeMicrophoneAudio, let micURL = micAudioURL {
+                hasMicAudio = await Self.hasAudioTrack(url: micURL)
+            } else {
+                hasMicAudio = false
+            }
+
+            var audioWriterInput: AVAssetWriterInput?
+            if hasSystemAudio || hasMicAudio {
+                let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: AudioMixer.outputSettings)
+                audioInput.expectsMediaDataInRealTime = false
+                writer.add(audioInput)
+                audioWriterInput = audioInput
+            }
+
             // 7. Start the writer
             guard writer.startWriting() else {
                 throw ExportEngineError.writerStartFailed(writer.error)
@@ -168,8 +192,43 @@ final class ExportEngine: ObservableObject {
 
             print("[Export] Completed - \(framesWritten) frames")
 
-            // 9. Finalizing
-            await MainActor.run { progress = .encoding }
+            // 9. Write audio
+            if let audioInput = audioWriterInput {
+                await MainActor.run { progress = .encoding }
+
+                let systemVolume = project.renderSettings.systemAudioVolume
+                let micVolume = project.renderSettings.microphoneAudioVolume
+
+                if hasSystemAudio && hasMicAudio, let micURL = micAudioURL {
+                    try await audioMixer.mixAndWrite(
+                        systemAudioURL: systemAudioURL,
+                        micAudioURL: micURL,
+                        writerInput: audioInput,
+                        trimStart: trimStart,
+                        trimEnd: trimEnd,
+                        systemVolume: systemVolume,
+                        micVolume: micVolume
+                    )
+                } else if hasSystemAudio {
+                    try await audioMixer.writePassthrough(
+                        audioURL: systemAudioURL,
+                        writerInput: audioInput,
+                        trimStart: trimStart,
+                        trimEnd: trimEnd,
+                        volume: systemVolume
+                    )
+                } else if hasMicAudio, let micURL = micAudioURL {
+                    try await audioMixer.writePassthrough(
+                        audioURL: micURL,
+                        writerInput: audioInput,
+                        trimStart: trimStart,
+                        trimEnd: trimEnd,
+                        volume: micVolume
+                    )
+                }
+            }
+
+            // 10. Finalizing
             await MainActor.run { progress = .finalizing }
 
             await writer.finishWriting()
@@ -329,6 +388,19 @@ final class ExportEngine: ObservableObject {
         }
 
         return outputFrameIndex
+    }
+
+    // MARK: - Audio Helpers
+
+    /// Check if a URL contains an audio track
+    private static func hasAudioTrack(url: URL) async -> Bool {
+        let asset = AVAsset(url: url)
+        do {
+            let tracks = try await asset.loadTracks(withMediaType: .audio)
+            return !tracks.isEmpty
+        } catch {
+            return false
+        }
     }
 
     // MARK: - Video Settings

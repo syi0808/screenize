@@ -73,6 +73,7 @@
 		F00000C2296A0001 /* RecordingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000C2296A0001 /* RecordingSession.swift */; };
 		F00000C3296A0001 /* VideoWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000C3296A0001 /* VideoWriter.swift */; };
 		D2000001296A0001 /* MicrophoneRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000002296A0001 /* MicrophoneRecorder.swift */; };
+		D2000003296A0001 /* AudioMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000004296A0001 /* AudioMixer.swift */; };
 		F00000CF296A0001 /* CFRRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000CF296A0001 /* CFRRecordingManager.swift */; };
 		F00000D0296A0001 /* AccessibilityInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D0296A0001 /* AccessibilityInspector.swift */; };
 		F00000D1296A0001 /* ClickDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D1296A0001 /* ClickDetector.swift */; };
@@ -193,6 +194,7 @@
 		F1000029296A0001 /* PreviewEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewEngine.swift; sourceTree = "<group>"; };
 		F100002A296A0001 /* ExportProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportProgress.swift; sourceTree = "<group>"; };
 		F100002B296A0001 /* ExportEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportEngine.swift; sourceTree = "<group>"; };
+		D2000004296A0001 /* AudioMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMixer.swift; sourceTree = "<group>"; };
 		F100002C296A0001 /* MotionBlurSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionBlurSettings.swift; sourceTree = "<group>"; };
 		F100002D296A0001 /* BackgroundRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRenderer.swift; sourceTree = "<group>"; };
 		F100002E296A0001 /* WindowTransformApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowTransformApplicator.swift; sourceTree = "<group>"; };
@@ -557,6 +559,7 @@
 				F1000029296A0001 /* PreviewEngine.swift */,
 				F100002A296A0001 /* ExportProgress.swift */,
 				F100002B296A0001 /* ExportEngine.swift */,
+				D2000004296A0001 /* AudioMixer.swift */,
 				F100002C296A0001 /* MotionBlurSettings.swift */,
 				F100002D296A0001 /* BackgroundRenderer.swift */,
 				F100002E296A0001 /* WindowTransformApplicator.swift */,
@@ -1001,6 +1004,7 @@
 				F00000C1296A0001 /* RecordingCoordinator.swift in Sources */,
 				F00000C2296A0001 /* RecordingSession.swift in Sources */,
 				D2000001296A0001 /* MicrophoneRecorder.swift in Sources */,
+				D2000003296A0001 /* AudioMixer.swift in Sources */,
 				F00000CF296A0001 /* CFRRecordingManager.swift in Sources */,
 				F00000C3296A0001 /* VideoWriter.swift in Sources */,
 				F00000D0296A0001 /* AccessibilityInspector.swift in Sources */,
