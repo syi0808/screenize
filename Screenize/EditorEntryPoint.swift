@@ -199,6 +199,7 @@ struct EditorLoaderView: View {
                         videoURL: videoURL,
                         mouseRecording: mouseRecording,
                         captureMeta: captureMeta,
+                        micAudioURL: appState.lastMicAudioURL,
                         in: parentDirectory,
                         recordingStartDate: appState.lastRecordingStartDate ?? Date(),
                         processTimeStartMs: appState.lastProcessTimeStartMs,
@@ -211,6 +212,7 @@ struct EditorLoaderView: View {
                     )
 
                     appState.lastMouseRecording = nil
+                    appState.lastMicAudioURL = nil
                 } else {
                     // Video import without mouse recording
                     packageInfo = try PackageManager.shared.createPackageFromVideo(

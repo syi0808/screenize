@@ -23,6 +23,7 @@ struct ProjectCreator {
         let media = MediaAsset(
             videoRelativePath: packageInfo.videoRelativePath,
             mouseDataRelativePath: packageInfo.mouseDataRelativePath,
+            micAudioRelativePath: packageInfo.micAudioRelativePath,
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
