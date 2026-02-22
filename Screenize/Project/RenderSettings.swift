@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 import AVFoundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Rendering settings
 struct RenderSettings: Codable {
@@ -132,6 +133,16 @@ enum OutputResolution: Codable, Equatable, Hashable {
 
     /// Preset list (used by the picker)
     static let allCases: [Self] = [.original, .uhd4k, .qhd1440, .fhd1080, .hd720]
+
+    /// Validate and create a custom resolution with even, positive dimensions
+    static func validatedCustom(width: Int, height: Int) -> OutputResolution? {
+        guard width >= 2, height >= 2, width <= 7680, height <= 4320 else {
+            return nil
+        }
+        let evenWidth = width.isMultiple(of: 2) ? width : width + 1
+        let evenHeight = height.isMultiple(of: 2) ? height : height + 1
+        return .custom(width: evenWidth, height: evenHeight)
+    }
 }
 
 // MARK: - Output Frame Rate
@@ -164,6 +175,12 @@ enum OutputFrameRate: Codable, Equatable, Hashable {
 
     /// Preset list (used by the picker)
     static let allCases: [Self] = [.original, .fps24, .fps30, .fps60]
+
+    /// Validate a custom frame rate value (1-240 fps)
+    static func validatedCustom(fps: Int) -> OutputFrameRate? {
+        guard fps >= 1, fps <= 240 else { return nil }
+        return .fixed(fps)
+    }
 }
 
 // MARK: - Video Codec
@@ -196,6 +213,20 @@ enum VideoCodec: String, Codable, CaseIterable {
         switch self {
         case .h264, .hevc: return "mp4"
         case .proRes422, .proRes4444: return "mov"
+        }
+    }
+
+    var avFileType: AVFileType {
+        switch self {
+        case .h264, .hevc: return .mp4
+        case .proRes422, .proRes4444: return .mov
+        }
+    }
+
+    var utType: UTType {
+        switch self {
+        case .h264, .hevc: return .mpeg4Movie
+        case .proRes422, .proRes4444: return .quickTimeMovie
         }
     }
 }
