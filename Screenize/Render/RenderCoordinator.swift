@@ -33,6 +33,10 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Frame rate
     private var frameRate: Double = 60.0
 
+    /// Fixed quantization rate for cache keys (matches CMTime timescale).
+    /// Decoupled from source frame rate to support VFR videos.
+    private static let cacheQuantizationRate: Double = 600
+
     /// Preview scale
     private let previewScale: CGFloat
 
@@ -105,11 +109,11 @@ final class RenderCoordinator: @unchecked Sendable {
             return
         }
 
-        let frameIndex = Int(time * frameRate)
+        let cacheKey = Int(time * Self.cacheQuantizationRate)
         let generation = renderGeneration
 
         // Check cache
-        if let cachedTexture = textureCache?.texture(at: frameIndex) {
+        if let cachedTexture = textureCache?.texture(at: cacheKey) {
             lock.unlock()
             completion(cachedTexture, time)
             return
@@ -173,8 +177,8 @@ final class RenderCoordinator: @unchecked Sendable {
             self.lock.unlock()
 
             // Store in cache
-            let actualFrameIndex = Int(frame.time * self.frameRate)
-            cache?.store(targetTexture, at: actualFrameIndex)
+            let actualCacheKey = Int(frame.time * Self.cacheQuantizationRate)
+            cache?.store(targetTexture, at: actualCacheKey)
 
             // Deliver
             completion(targetTexture, frame.time)
@@ -195,7 +199,7 @@ final class RenderCoordinator: @unchecked Sendable {
         completion: @escaping (MTLTexture?) -> Void
     ) {
         lock.lock()
-        let frameIndex = Int(time * frameRate)
+        let cacheKey = Int(time * Self.cacheQuantizationRate)
         let evaluator = self.evaluator
         let renderer = self.renderer
         let extractor = self.frameExtractor
@@ -203,7 +207,7 @@ final class RenderCoordinator: @unchecked Sendable {
         lock.unlock()
 
         // Check cache first
-        if let cachedTexture = cache?.texture(at: frameIndex) {
+        if let cachedTexture = cache?.texture(at: cacheKey) {
             completion(cachedTexture)
             return
         }
@@ -241,7 +245,7 @@ final class RenderCoordinator: @unchecked Sendable {
                     }
 
                     // Cache the result
-                    cache?.store(targetTexture, at: frameIndex)
+                    cache?.store(targetTexture, at: cacheKey)
                     completion(targetTexture)
 
                 } catch {
@@ -310,9 +314,9 @@ final class RenderCoordinator: @unchecked Sendable {
 
     /// Invalidate cached frames within a time range
     func invalidateCache(from startTime: TimeInterval, to endTime: TimeInterval) {
-        let startFrame = Int(startTime * frameRate)
-        let endFrame = Int(endTime * frameRate)
-        textureCache?.invalidate(from: startFrame, to: endFrame)
+        let startKey = Int(startTime * Self.cacheQuantizationRate)
+        let endKey = Int(endTime * Self.cacheQuantizationRate)
+        textureCache?.invalidate(from: startKey, to: endKey)
     }
 
     /// Invalidate the entire cache
@@ -322,8 +326,8 @@ final class RenderCoordinator: @unchecked Sendable {
 
     /// Check if a frame at the given time is cached
     func isCached(at time: TimeInterval) -> Bool {
-        let frameIndex = Int(time * frameRate)
-        return textureCache?.isCached(frameIndex) ?? false
+        let cacheKey = Int(time * Self.cacheQuantizationRate)
+        return textureCache?.isCached(cacheKey) ?? false
     }
 
     /// Current cache statistics
