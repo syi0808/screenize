@@ -31,8 +31,16 @@ struct ProjectCreator {
             isVariableFrameRate: videoInfo.isVariableFrameRate
         )
 
+        // Load mic audio duration if available
+        var micAudioDuration: TimeInterval?
+        if let micRelPath = packageInfo.micAudioRelativePath {
+            let micURL = packageInfo.packageURL.appendingPathComponent(micRelPath)
+            let micAsset = AVAsset(url: micURL)
+            micAudioDuration = try? await CMTimeGetSeconds(micAsset.load(.duration))
+        }
+
         // Create a default timeline
-        let timeline = createDefaultTimeline(duration: videoInfo.duration)
+        let timeline = createDefaultTimeline(duration: videoInfo.duration, micAudioDuration: micAudioDuration)
 
         // Create the project
         return ScreenizeProject(
@@ -149,40 +157,51 @@ struct ProjectCreator {
 
     // MARK: - Default Timeline
 
-    private static func createDefaultTimeline(duration: TimeInterval) -> Timeline {
-        Timeline(
-            tracks: [
-                AnySegmentTrack.camera(CameraTrack(
-                    id: UUID(),
-                    name: "Camera",
-                    isEnabled: true,
-                    segments: [
-                        CameraSegment(
-                            startTime: 0,
-                            endTime: max(0.1, duration),
-                            startTransform: .identity,
-                            endTransform: .identity,
-                            interpolation: .easeInOut
-                        ),
-                    ]
-                )),
-                AnySegmentTrack.cursor(CursorTrackV2(
-                    id: UUID(),
-                    name: "Cursor",
-                    isEnabled: true,
-                    segments: [
-                        CursorSegment(startTime: 0, endTime: max(0.1, duration), style: .arrow, visible: true, scale: 1.5),
-                    ]
-                )),
-                AnySegmentTrack.keystroke(KeystrokeTrackV2(
-                    id: UUID(),
-                    name: "Keystroke",
-                    isEnabled: true,
-                    segments: []
-                )),
-            ],
-            duration: duration
-        )
+    private static func createDefaultTimeline(duration: TimeInterval, micAudioDuration: TimeInterval? = nil) -> Timeline {
+        var tracks: [AnySegmentTrack] = [
+            .camera(CameraTrack(
+                id: UUID(),
+                name: "Camera",
+                isEnabled: true,
+                segments: [
+                    CameraSegment(
+                        startTime: 0,
+                        endTime: max(0.1, duration),
+                        startTransform: .identity,
+                        endTransform: .identity,
+                        interpolation: .easeInOut
+                    ),
+                ]
+            )),
+            .cursor(CursorTrackV2(
+                id: UUID(),
+                name: "Cursor",
+                isEnabled: true,
+                segments: [
+                    CursorSegment(startTime: 0, endTime: max(0.1, duration), style: .arrow, visible: true, scale: 1.5),
+                ]
+            )),
+            .keystroke(KeystrokeTrackV2(
+                id: UUID(),
+                name: "Keystroke",
+                isEnabled: true,
+                segments: []
+            )),
+        ]
+
+        if let audioDuration = micAudioDuration, audioDuration > 0 {
+            let clampedEnd = min(duration, audioDuration)
+            tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "Mic Audio",
+                isEnabled: true,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: max(0.1, clampedEnd))
+                ]
+            )))
+        }
+
+        return Timeline(tracks: tracks, duration: duration)
     }
 }
 
