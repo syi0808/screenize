@@ -324,7 +324,7 @@ struct RecentProjectsView: View {
 
     private var projectList: some View {
         VStack(spacing: 4) {
-            ForEach(projectManager.recentProjects) { info in
+            ForEach(projectManager.recentProjects.prefix(5)) { info in
                 recentProjectRow(info)
             }
         }
