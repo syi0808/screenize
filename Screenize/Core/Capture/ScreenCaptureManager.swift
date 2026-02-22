@@ -280,6 +280,8 @@ private final class StreamOutput: NSObject, SCStreamOutput, @unchecked Sendable 
             // Also forward to the delegate (for preview, etc.)
             delegate?.delegate?.captureManager(delegate!, didOutputVideoSampleBuffer: sampleBuffer)
         case .audio:
+            // Forward system audio to CFR recording manager for writing
+            delegate?.cfrRecordingManager?.receiveAudioSample(sampleBuffer)
             delegate?.delegate?.captureManager(delegate!, didOutputAudioSampleBuffer: sampleBuffer)
         case .microphone:
             // Microphone audio - currently unused

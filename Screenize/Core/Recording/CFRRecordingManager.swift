@@ -13,6 +13,11 @@ final class CFRRecordingManager: @unchecked Sendable {
     /// Target frame rate (fixed at 60fps)
     private let targetFPS: Double = 60.0
 
+    /// Base timestamp for audio rebasing (first audio sample's PTS)
+    /// ScreenCaptureKit audio timestamps use the system media clock (since boot),
+    /// while video uses synthetic timestamps starting from 0. We rebase audio to match.
+    private var audioBaseTime: CMTime?
+
     /// Duration between frames (seconds)
     private var frameInterval: TimeInterval { 1.0 / targetFPS }
 
@@ -89,6 +94,7 @@ final class CFRRecordingManager: @unchecked Sendable {
         frameIndex = 0
         recordingStartTime = Date()
         lastValidPixelBuffer = nil
+        audioBaseTime = nil
 
         // Start the frame writing timer
         startFrameTimer()
@@ -121,6 +127,7 @@ final class CFRRecordingManager: @unchecked Sendable {
             outputURL = nil
             configuration = nil
             recordingStartTime = nil
+            audioBaseTime = nil
 
             onRecordingFinished?(url)
             return url
@@ -147,6 +154,49 @@ final class CFRRecordingManager: @unchecked Sendable {
     /// Resume recording
     func resume() {
         isPaused = false
+    }
+
+    // MARK: - Audio Handling
+
+    /// Receive a system audio sample buffer from ScreenCaptureKit.
+    /// Rebases timestamps so audio aligns with synthetic video timestamps.
+    func receiveAudioSample(_ sampleBuffer: CMSampleBuffer) {
+        guard isRecording, !isPaused else { return }
+
+        let originalPTS = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+
+        // Capture the first audio PTS as our base for rebasing
+        if audioBaseTime == nil {
+            audioBaseTime = originalPTS
+        }
+
+        guard let base = audioBaseTime else { return }
+
+        // Rebase: subtract the base time so audio starts near 0
+        let rebasedPTS = originalPTS - base
+
+        // Skip negative timestamps (can happen if samples arrive out of order)
+        guard rebasedPTS.seconds >= 0 else { return }
+
+        // Create a copy with the rebased timestamp
+        var timingInfo = CMSampleTimingInfo(
+            duration: CMSampleBufferGetDuration(sampleBuffer),
+            presentationTimeStamp: rebasedPTS,
+            decodeTimeStamp: .invalid
+        )
+
+        var rebasedBuffer: CMSampleBuffer?
+        let status = CMSampleBufferCreateCopyWithNewTiming(
+            allocator: kCFAllocatorDefault,
+            sampleBuffer: sampleBuffer,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timingInfo,
+            sampleBufferOut: &rebasedBuffer
+        )
+
+        guard status == noErr, let buffer = rebasedBuffer else { return }
+
+        videoWriter?.appendAudioSampleBuffer(buffer)
     }
 
     // MARK: - Frame Handling
