@@ -21,6 +21,7 @@ final class RecordingCoordinator: ObservableObject {
 
     private var captureManager: ScreenCaptureManager?
     private var mouseDataRecorder: MouseDataRecorder?
+    private var microphoneRecorder: MicrophoneRecorder?
 
     private var durationTimer: Timer?
     private var recordingStartTime: Date?
@@ -32,6 +33,7 @@ final class RecordingCoordinator: ObservableObject {
     private(set) var recordingStartDate: Date?
     private(set) var processTimeStartMs: Int64 = 0
     private(set) var lastMouseRecording: MouseRecording?
+    private(set) var lastMicAudioURL: URL?
 
     private let ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
@@ -106,6 +108,18 @@ final class RecordingCoordinator: ObservableObject {
         mouseDataRecorder = MouseDataRecorder()
         mouseDataRecorder?.startRecording(screenBounds: captureBounds, scaleFactor: captureConfig.scaleFactor)
 
+        // Start microphone recording if enabled
+        if AppState.shared.isMicrophoneEnabled {
+            let micRecorder = MicrophoneRecorder()
+            let micURL = Self.generateMicOutputURL(for: session.outputURL)
+            do {
+                try micRecorder.startRecording(to: micURL)
+                self.microphoneRecorder = micRecorder
+            } catch {
+                print("[RecordingCoordinator] Mic recording failed (non-fatal): \(error)")
+            }
+        }
+
         session.transition(to: .recording)
         isRecording = true
         isPaused = false
@@ -135,6 +149,12 @@ final class RecordingCoordinator: ObservableObject {
         }
         mouseDataRecorder = nil
 
+        // Stop microphone recording
+        if let micURL = await microphoneRecorder?.stopRecording() {
+            lastMicAudioURL = micURL
+        }
+        microphoneRecorder = nil
+
         // Stop SCRecordingOutput recording
         let outputURL = await captureManager?.stopRecording()
 
@@ -155,6 +175,7 @@ final class RecordingCoordinator: ObservableObject {
         _captureIsPaused = true
         stopDurationTimer()
         mouseDataRecorder?.pauseRecording()
+        microphoneRecorder?.pause()
     }
 
     func resumeRecording() {
@@ -163,6 +184,14 @@ final class RecordingCoordinator: ObservableObject {
         _captureIsPaused = false
         startDurationTimer()
         mouseDataRecorder?.resumeRecording()
+        microphoneRecorder?.resume()
+    }
+
+    /// Generate the microphone audio sidecar URL from the video output URL.
+    private static func generateMicOutputURL(for videoURL: URL) -> URL {
+        let dir = videoURL.deletingLastPathComponent()
+        let name = videoURL.deletingPathExtension().lastPathComponent
+        return dir.appendingPathComponent("\(name)_mic.m4a")
     }
 
     private func startDurationTimer() {
