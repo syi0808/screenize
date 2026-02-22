@@ -428,6 +428,7 @@ final class AppState: ObservableObject {
         let media = MediaAsset(
             videoRelativePath: packageInfo.videoRelativePath,
             mouseDataRelativePath: packageInfo.mouseDataRelativePath,
+            micAudioRelativePath: packageInfo.micAudioRelativePath,
             packageRootURL: packageInfo.packageURL,
             pixelSize: CGSize(width: videoMetadata.width, height: videoMetadata.height),
             frameRate: videoMetadata.frameRate,
