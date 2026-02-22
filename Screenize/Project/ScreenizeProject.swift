@@ -88,8 +88,8 @@ struct ScreenizeProject: Codable, Identifiable {
         Int(media.duration * media.frameRate)
     }
 
-    /// backgroundEnabled triggers window mode rendering (applies to both window and display capture)
+    /// Window capture uses window mode rendering (padding, corner radius, shadow, inset)
     var isWindowMode: Bool {
-        renderSettings.backgroundEnabled
+        captureMeta.displayID == nil
     }
 }

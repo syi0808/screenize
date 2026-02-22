@@ -46,7 +46,9 @@ final class Renderer {
 
         self.isWindowMode = isWindowMode
         self.renderSettings = renderSettings
-        self.windowModeRenderer = isWindowMode ? WindowModeRenderer(ciContext: context.ciContext) : nil
+        self.windowModeRenderer = isWindowMode
+            ? WindowModeRenderer(ciContext: context.ciContext, isPreview: context.isPreview)
+            : nil
     }
 
     // MARK: - Main Render

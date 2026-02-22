@@ -63,7 +63,7 @@ struct RenderPipelineFactory {
             scale: scale,
             motionBlurSettings: project.renderSettings.motionBlur,
             isWindowMode: project.isWindowMode,
-            renderSettings: project.isWindowMode ? project.renderSettings : nil
+            renderSettings: project.renderSettings
         )
     }
 
@@ -74,14 +74,14 @@ struct RenderPipelineFactory {
         sourceSize: CGSize,
         scale: CGFloat = 0.5
     ) -> Renderer {
-        let isWindowMode = renderSettings.backgroundEnabled
+        let isWindowMode = captureMeta.displayID == nil
 
         return Renderer.forPreview(
             sourceSize: sourceSize,
             scale: scale,
             motionBlurSettings: renderSettings.motionBlur,
             isWindowMode: isWindowMode,
-            renderSettings: isWindowMode ? renderSettings : nil
+            renderSettings: renderSettings
         )
     }
 
@@ -98,7 +98,7 @@ struct RenderPipelineFactory {
             outputSize: outputSize,
             motionBlurSettings: project.renderSettings.motionBlur,
             isWindowMode: project.isWindowMode,
-            renderSettings: project.isWindowMode ? project.renderSettings : nil
+            renderSettings: project.renderSettings
         )
     }
 
