@@ -41,6 +41,7 @@ final class AudioPreviewPlayer {
         if hasSysAudio {
             let playerItem = AVPlayerItem(asset: systemAsset)
             let player = AVPlayer(playerItem: playerItem)
+            player.automaticallyWaitsToMinimizeStalling = false
             player.volume = renderSettings.includeSystemAudio ? renderSettings.systemAudioVolume : 0
             systemAudioPlayer = player
         }
@@ -59,6 +60,7 @@ final class AudioPreviewPlayer {
             if hasMicAudio {
                 let playerItem = AVPlayerItem(asset: micAsset)
                 let player = AVPlayer(playerItem: playerItem)
+                player.automaticallyWaitsToMinimizeStalling = false
                 player.volume = renderSettings.includeMicrophoneAudio ? renderSettings.microphoneAudioVolume : 0
                 micAudioPlayer = player
             }
