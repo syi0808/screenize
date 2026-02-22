@@ -80,8 +80,13 @@ class SmartGeneratorV2 {
         let rawCameraTrack = CameraTrackEmitter.emit(
             processedPath, duration: duration
         )
-        let cameraTrack = SegmentOptimizer.optimize(
+        let optimizedTrack = SegmentOptimizer.optimize(
             rawCameraTrack, settings: ppSettings.optimization
+        )
+
+        // 9. Apply post-hoc zoom intensity (decoupled from pipeline)
+        let cameraTrack = Self.applyZoomIntensity(
+            optimizedTrack, intensity: settings.zoomIntensity
         )
 
         #if DEBUG
@@ -107,6 +112,36 @@ class SmartGeneratorV2 {
             cursorTrack: cursorTrack,
             keystrokeTrack: keystrokeTrack
         )
+    }
+
+    // MARK: - Post-Hoc Zoom Scaling
+
+    /// Scale all zoom values in the camera track by an intensity factor.
+    /// Formula: newZoom = 1.0 + (originalZoom - 1.0) * intensity
+    /// This preserves zoom=1.0 (no zoom) while scaling the zoom-above-1 portion.
+    private static func applyZoomIntensity(
+        _ track: CameraTrack, intensity: CGFloat
+    ) -> CameraTrack {
+        guard abs(intensity - 1.0) > 0.001 else { return track }
+        let scaled = track.segments.map { seg -> CameraSegment in
+            var s = seg
+            s.startTransform = scaleTransformZoom(
+                seg.startTransform, intensity: intensity
+            )
+            s.endTransform = scaleTransformZoom(
+                seg.endTransform, intensity: intensity
+            )
+            return s
+        }
+        return CameraTrack(segments: scaled)
+    }
+
+    private static func scaleTransformZoom(
+        _ t: TransformValue, intensity: CGFloat
+    ) -> TransformValue {
+        let newZoom = max(1.0, 1.0 + (t.zoom - 1.0) * intensity)
+        let clamped = ShotPlanner.clampCenter(t.center, zoom: newZoom)
+        return TransformValue(zoom: newZoom, center: clamped)
     }
 
     // MARK: - Diagnostics
@@ -250,6 +285,11 @@ struct SmartGenerationSettings {
     var cursor = CursorEmissionSettings()
     var keystroke = KeystrokeEmissionSettings()
     var postProcessing = PostProcessingSettings()
+
+    /// Post-hoc zoom intensity multiplier applied after pipeline completes.
+    /// Formula: newZoom = 1.0 + (originalZoom - 1.0) * zoomIntensity
+    /// 1.0 = default, <1.0 = less zoom, >1.0 = more zoom.
+    var zoomIntensity: CGFloat = 1.0
 
     static let `default` = Self()
 }
@@ -430,39 +470,20 @@ extension SmartGenerationSettings {
         var s = SmartGenerationSettings()
 
         // --- Shot Settings ---
-        s.shot.typingCodeZoomRange = lerpRange3(
-            low: 1.4...1.7, mid: 2.0...2.5, high: 2.6...3.2, d: d
-        )
-        s.shot.typingTextFieldZoomRange = lerpRange3(
-            low: 1.5...1.8, mid: 2.2...2.8, high: 2.8...3.5, d: d
-        )
-        s.shot.typingTerminalZoomRange = lerpRange3(
-            low: 1.2...1.4, mid: 1.6...2.0, high: 2.0...2.6, d: d
-        )
-        s.shot.typingRichTextZoomRange = lerpRange3(
-            low: 1.3...1.5, mid: 1.8...2.2, high: 2.3...2.8, d: d
-        )
-        s.shot.clickingZoom = lerp3(1.4, 2.0, 2.6, d: d)
-        s.shot.navigatingZoomRange = lerpRange3(
-            low: 1.1...1.3, mid: 1.5...1.8, high: 1.9...2.3, d: d
-        )
-        s.shot.draggingZoomRange = lerpRange3(
-            low: 1.0...1.2, mid: 1.3...1.6, high: 1.6...2.0, d: d
-        )
-        s.shot.scrollingZoomRange = lerpRange3(
-            low: 1.0...1.1, mid: 1.3...1.5, high: 1.6...1.9, d: d
-        )
-        s.shot.readingZoomRange = lerpRange3(
-            low: 1.0...1.0, mid: 1.0...1.3, high: 1.3...1.6, d: d
-        )
+        // Zoom ranges stay at DEFAULTS. Zoom amplitude is controlled
+        // entirely via post-hoc zoomIntensity scaling (applied after
+        // the pipeline completes). This preserves animation character
+        // because all pipeline stages (TransitionPlanner, SegmentMerger,
+        // etc.) operate on default zoom values.
         s.shot.targetAreaCoverage = lerp3(0.8, 0.7, 0.55, d: d)
         s.shot.workAreaPadding = lerp3(0.12, 0.08, 0.04, d: d)
-        s.shot.maxZoom = lerp3(2.0, 2.8, 3.5, d: d)
+
+        // --- Zoom Intensity (post-hoc) ---
+        s.zoomIntensity = lerp3(0.5, 1.0, 1.5, d: d)
 
         // --- Transition Settings ---
-        s.transition.directPanThreshold = lerp3(0.8, 0.6, 0.4, d: d)
-        s.transition.gentlePanThreshold = lerp3(1.6, 1.2, 0.8, d: d)
-        s.transition.fullZoomOutThreshold = lerp3(4.0, 3.0, 2.0, d: d)
+        // Thresholds stay at defaults (transition type is decoupled
+        // from dynamics). Only duration ranges vary.
         s.transition.shortPanDurationRange = lerpTimeRange3(
             low: 0.6...0.9, mid: 0.4...0.6, high: 0.2...0.35, d: d
         )
@@ -473,17 +494,9 @@ extension SmartGenerationSettings {
             low: 0.5...0.7, mid: 0.35...0.5, high: 0.2...0.3, d: d
         )
 
-        // Spring easing: calm = critically damped slow, aggressive = slight underdamp fast
-        let panDamping = lerp3(1.0, 1.0, 0.85, d: d)
-        let panResponse = lerp3(0.8, 0.6, 0.4, d: d)
-        s.transition.panEasing = .spring(
-            dampingRatio: panDamping, response: panResponse
-        )
-        let zoomInDamping = lerp3(1.0, 0.92, 0.82, d: d)
-        let zoomInResponse = lerp3(0.7, 0.55, 0.4, d: d)
-        s.transition.zoomInEasing = .spring(
-            dampingRatio: zoomInDamping, response: zoomInResponse
-        )
+        // Easing stays constant — character must be preserved; only
+        // speed (duration) changes with dynamics. Defaults: panEasing
+        // is spring(1.0, 0.6), zoomInEasing is spring(0.92, 0.55).
 
         // --- Hold Settings ---
         s.postProcessing.hold.minZoomInHold = lerpTime3(
@@ -494,14 +507,17 @@ extension SmartGenerationSettings {
         )
 
         // --- Merge Settings ---
+        // Moderate range to prevent extreme pacing changes. Low dynamics
+        // merges more (fewer segments) but not so aggressively that only
+        // large jumps remain.
         s.postProcessing.merge.minSegmentDuration = lerpTime3(
-            0.6, 0.3, 0.15, d: d
+            0.45, 0.3, 0.2, d: d
         )
         s.postProcessing.merge.maxZoomDiffForMerge = lerp3(
-            0.3, 0.15, 0.05, d: d
+            0.2, 0.15, 0.08, d: d
         )
         s.postProcessing.merge.maxCenterDiffForMerge = lerp3(
-            0.15, 0.08, 0.03, d: d
+            0.12, 0.08, 0.04, d: d
         )
 
         // --- Optimization Settings ---
