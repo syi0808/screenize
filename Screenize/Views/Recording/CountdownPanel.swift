@@ -103,6 +103,9 @@ final class CountdownPanel: NSPanel {
                 self?.tick()
             }
         }
+        if let timer = timer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
     }
 
     private func stopTimer() {

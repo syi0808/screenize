@@ -1,100 +1,124 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
-/// Timeline main view
-/// Combines the time ruler, tracks, and playhead display
+struct SegmentRange {
+    let id: UUID
+    let start: TimeInterval
+    let end: TimeInterval
+}
+
+struct SegmentEditBounds {
+    let minStart: TimeInterval
+    let maxEnd: TimeInterval
+}
+
+private func preferredSnapShift(current: TimeInterval?, candidate: TimeInterval) -> TimeInterval {
+    guard let current else { return candidate }
+    return abs(candidate) < abs(current) ? candidate : current
+}
+
+private func timelineTrackIcon(for type: TrackType) -> String {
+    switch type {
+    case .transform:
+        return "arrow.up.left.and.arrow.down.right"
+    case .cursor:
+        return "cursorarrow"
+    case .keystroke:
+        return "keyboard"
+    case .audio:
+        return "waveform"
+    }
+}
+
+private func timelineIsSegmentInTrimRange(
+    start: TimeInterval,
+    end: TimeInterval,
+    trimStart: TimeInterval,
+    trimEnd: TimeInterval?,
+    duration: TimeInterval
+) -> Bool {
+    let effectiveTrimEnd = trimEnd ?? duration
+    return end > trimStart && start < effectiveTrimEnd
+}
+
+/// Segment timeline view.
 struct TimelineView: View {
 
-    // MARK: - Properties
-
-    /// Timeline model
     @Binding var timeline: Timeline
-
-    /// Total duration (seconds)
     let duration: TimeInterval
-
-    /// Current time
     @Binding var currentTime: TimeInterval
+    @Binding var selection: SegmentSelection
 
-    /// Selected keyframe ID
-    @Binding var selectedKeyframeID: UUID?
-
-    /// Selected track type
-    @Binding var selectedTrackType: TrackType?
-
-    /// Keyframe change callback
-    var onKeyframeChange: ((UUID, TimeInterval) -> Void)?
-
-    /// Keyframe addition callback
-    var onAddKeyframe: ((TrackType, TimeInterval) -> Void)?
-
-    /// Keyframe selection callback (track type + ID)
-    var onKeyframeSelect: ((TrackType, UUID) -> Void)?
-
-    /// Time seek callback (keeps PreviewEngine synchronized)
+    var onSegmentTimeRangeChange: ((UUID, TimeInterval, TimeInterval) -> Bool)?
+    var onBatchSegmentTimeRangeChange: (([(UUID, TimeInterval, TimeInterval)]) -> Void)?
+    var onAddSegment: ((TrackType, TimeInterval) -> Void)?
+    var onSegmentSelect: ((TrackType, UUID) -> Void)?
+    var onSegmentToggleSelect: ((TrackType, UUID) -> Void)?
     var onSeek: ((TimeInterval) async -> Void)?
 
-    /// Trim start time
     @Binding var trimStart: TimeInterval
-
-    /// Trim end time (uses duration when nil)
     @Binding var trimEnd: TimeInterval?
-
-    /// Trim change callback
     var onTrimChange: ((TimeInterval, TimeInterval?) -> Void)?
 
-    // MARK: - State
-
-    /// Seconds per pixel (zoom level)
-    @State private var pixelsPerSecond: CGFloat = 50
-
-    /// Scroll offset
-    @State private var scrollOffset: CGFloat = 0
-
-    /// Whether the playhead is being dragged
-    @State private var isPlayheadDragging = false
-
-    /// Timeline area width (excluding the header)
+    @State var pixelsPerSecond: CGFloat = 50
     @State private var timelineAreaWidth: CGFloat = 0
-
-    /// Track if the trim start handle is being dragged
     @State private var isDraggingTrimStart = false
-
-    /// Track if the trim end handle is being dragged
     @State private var isDraggingTrimEnd = false
+    @State var activeSegmentInteraction: SegmentInteraction?
+    @State private var resizeCursorHoverCount = 0
+    @State private var hoveredSegmentID: UUID?
 
-    // MARK: - Constants
-
-    private let minPixelsPerSecond: CGFloat = 10
-    private let maxPixelsPerSecond: CGFloat = 200
+    private let minPixelsPerSecond: CGFloat = 1
+    private let maxPixelsPerSecond: CGFloat = 2000
+    let minSegmentDuration: TimeInterval = 0.05
+    let snapThresholdInPoints: CGFloat = 8
     private let rulerHeight: CGFloat = 24
     private let trackHeight: CGFloat = 40
+    private let headerWidth: CGFloat = 140
 
-    // MARK: - Body
+    private var logZoom: Binding<Double> {
+        Binding(
+            get: { log2(Double(pixelsPerSecond)) },
+            set: { pixelsPerSecond = CGFloat(pow(2, $0)) }
+        )
+    }
+
+    enum SegmentInteractionMode {
+        case move
+        case resizeStart
+        case resizeEnd
+    }
+
+    struct SegmentInteraction {
+        let id: UUID
+        let mode: SegmentInteractionMode
+        let initialStart: TimeInterval
+        let initialEnd: TimeInterval
+        var previewStart: TimeInterval
+        var previewEnd: TimeInterval
+        var companions: [CompanionSegment] = []
+    }
+
+    // CompanionSegment is defined in TimelineView+MultiMove.swift
 
     var body: some View {
         VStack(spacing: 0) {
-            // Zoom controls and time display
             toolbar
-
             Divider()
 
-            // Timeline body
             GeometryReader { geometry in
-                let headerWidth = TrackRowView<TransformTrack>.headerWidth
-                let availableWidth = geometry.size.width - headerWidth - 1 // 1px for Divider
+                let availableWidth = geometry.size.width - headerWidth - 1
                 let contentWidth = max(availableWidth, CGFloat(duration) * pixelsPerSecond)
 
                 HStack(spacing: 0) {
-                    // Left: track header area
                     trackHeaders
-
                     Divider()
 
-                    // Right: scrollable timeline area
                     HorizontalScrollViewWithVerticalWheel {
                         ZStack(alignment: .topLeading) {
                             VStack(spacing: 0) {
-                                // Time ruler
                                 TimeRulerView(
                                     duration: duration,
                                     currentTime: currentTime,
@@ -102,99 +126,67 @@ struct TimelineView: View {
                                     scrollOffset: 0,
                                     onTimeTap: { time in
                                         currentTime = time
-                                        Task {
-                                            await onSeek?(time)
-                                        }
+                                        Task { await onSeek?(time) }
                                     }
                                 )
 
                                 Divider()
 
-                                // Track keyframe area
                                 trackContent
                             }
 
-                            // Trim overlay
                             trimOverlay
 
-                            // Playhead (full height)
-                            PlayheadLine(
-                                currentTime: currentTime,
-                                pixelsPerSecond: pixelsPerSecond,
-                                scrollOffset: 0
-                            )
-                            .offset(y: rulerHeight)
+                            PlayheadLine(currentTime: currentTime, pixelsPerSecond: pixelsPerSecond, scrollOffset: 0)
+                                .offset(y: rulerHeight)
                         }
                         .frame(width: contentWidth)
                     }
-                    .background(GeometryReader { scrollGeometry in
-                        Color.clear
-                            .preference(
-                                key: ScrollOffsetPreferenceKey.self,
-                                value: scrollGeometry.frame(in: .named("timeline")).origin.x
-                            )
-                    })
-                    .coordinateSpace(name: "timeline")
-                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-                        scrollOffset = -offset
+                }
+                .onAppear {
+                    timelineAreaWidth = availableWidth
+                    if duration > 0 {
+                        fitToView()
                     }
                 }
                 .onChange(of: geometry.size.width) { newWidth in
                     timelineAreaWidth = newWidth - headerWidth - 1
                 }
-                .onAppear {
-                    timelineAreaWidth = availableWidth
-                    // Always fit when entering the editor page
-                    if duration > 0 {
-                        fitToView()
-                    }
-                }
             }
         }
         .onChange(of: duration) { newDuration in
-            // Refit when the duration changes (e.g., after loading a new file)
             if newDuration > 0 && timelineAreaWidth > 0 {
                 fitToView()
             }
         }
+        .onDisappear {
+            resetResizeCursorIfNeeded()
+        }
         .background(Color(nsColor: .windowBackgroundColor))
     }
-
-    // MARK: - Toolbar
 
     private var toolbar: some View {
         HStack {
             Spacer()
 
-            // Zoom controls
             HStack(spacing: 8) {
-                Button {
-                    zoomOut()
-                } label: {
+                Button { pixelsPerSecond = max(minPixelsPerSecond, pixelsPerSecond / 1.5) } label: {
                     Image(systemName: "minus.magnifyingglass")
                 }
                 .buttonStyle(.plain)
-                .disabled(pixelsPerSecond <= minPixelsPerSecond)
 
-                // Zoom slider
                 Slider(
-                    value: $pixelsPerSecond,
-                    in: minPixelsPerSecond...maxPixelsPerSecond
+                    value: logZoom,
+                    in: log2(Double(minPixelsPerSecond))...log2(Double(maxPixelsPerSecond))
                 )
                 .frame(width: 100)
 
-                Button {
-                    zoomIn()
-                } label: {
+                Button { pixelsPerSecond = min(maxPixelsPerSecond, pixelsPerSecond * 1.5) } label: {
                     Image(systemName: "plus.magnifyingglass")
                 }
                 .buttonStyle(.plain)
-                .disabled(pixelsPerSecond >= maxPixelsPerSecond)
 
-                // Fit to view
-                Button {
-                    fitToView()
-                } label: {
+                Button { fitToView() } label: {
                     Image(systemName: "arrow.left.and.right.square")
                 }
                 .buttonStyle(.plain)
@@ -205,257 +197,578 @@ struct TimelineView: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: - Track Headers
-
     private var trackHeaders: some View {
         VStack(spacing: 0) {
-            // Spacer for the time ruler height
-            Color.clear
-                .frame(height: rulerHeight)
-
+            Color.clear.frame(height: rulerHeight)
             Divider()
 
-            // Track headers
             ForEach(Array(timeline.tracks.enumerated()), id: \.element.id) { index, track in
-                trackHeaderRow(for: track, at: index)
+                HStack(spacing: 8) {
+                    Image(systemName: timelineTrackIcon(for: track.trackType))
+                        .foregroundColor(TrackColor.color(for: track.trackType))
+                        .frame(width: 16)
+
+                    Text(track.name)
+                        .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
+                        .foregroundColor(track.isEnabled ? .primary : .secondary)
+
+                    Spacer()
+
+                    Button {
+                        var updated = track
+                        updated.isEnabled.toggle()
+                        timeline.tracks[index] = updated
+                    } label: {
+                        Image(systemName: track.isEnabled ? "eye" : "eye.slash")
+                            .font(.system(size: 10))
+                            .foregroundStyle(track.isEnabled ? .secondary : .tertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 8)
+                .frame(height: trackHeight)
+
                 Divider()
             }
 
             Spacer()
         }
-        .frame(width: TrackRowView<TransformTrack>.headerWidth)
+        .frame(width: headerWidth)
         .background(Color(nsColor: .controlBackgroundColor))
     }
 
-    private func trackHeaderRow(for track: AnyTrack, at index: Int) -> some View {
-        HStack(spacing: 8) {
-            // Track icon
-            Image(systemName: trackIcon(for: track.trackType))
-                .foregroundColor(KeyframeColor.color(for: track.trackType))
-                .frame(width: 16)
-
-            // Track name
-            Text(track.name)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(1)
-                .foregroundColor(track.isEnabled ? .primary : .secondary)
-
-            Spacer()
-
-            // Enable/disable toggle
-            Button {
-                var updatedTrack = track
-                updatedTrack.isEnabled.toggle()
-                timeline.tracks[index] = updatedTrack
-            } label: {
-                Image(systemName: track.isEnabled ? "eye" : "eye.slash")
-                    .font(.system(size: 10))
-                    .foregroundStyle(track.isEnabled ? .secondary : .tertiary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 8)
-        .frame(height: trackHeight)
-    }
-
-    // MARK: - Track Content
-
     private var trackContent: some View {
         VStack(spacing: 0) {
-            ForEach(Array(timeline.tracks.enumerated()), id: \.element.id) { index, track in
-                trackKeyframeArea(for: track, at: index)
+            ForEach(Array(timeline.tracks.enumerated()), id: \.element.id) { _, track in
+                trackArea(for: track)
                 Divider()
             }
-
-            Spacer()
         }
-    }
-
-    private func trackKeyframeArea(for track: AnyTrack, at index: Int) -> some View {
-        ZStack(alignment: .leading) {
-            // Background grid
-            TimelineGridView(
-                duration: duration,
-                pixelsPerSecond: pixelsPerSecond,
-                scrollOffset: 0,
-                height: trackHeight
-            )
-            .opacity(track.isEnabled ? 1.0 : 0.5)
-
-            // Double-click to add keyframe (placed in the background)
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture(count: 2) { location in
-                    // Inside NSScrollView, location is relative to the entire content, so scrollOffset is unnecessary
-                    let time = max(0, min(duration, Double(location.x) / Double(pixelsPerSecond)))
-                    onAddKeyframe?(track.trackType, time)
-                }
-                .onTapGesture(count: 1) {
-                    selectedKeyframeID = nil
-                    selectedTrackType = nil
-                }
-
-            // Keyframe markers (placed above everything so they are clickable)
-            keyframeMarkers(for: track)
-                .opacity(track.isEnabled ? 1.0 : 0.5)
-        }
-        .frame(height: trackHeight)
-        .coordinateSpace(name: "trackContent")
     }
 
     @ViewBuilder
-    private func keyframeMarkers(for track: AnyTrack) -> some View {
-        let color = KeyframeColor.color(for: track.trackType)
+    private func trackArea(for track: AnySegmentTrack) -> some View {
+        ZStack(alignment: .leading) {
+            TimelineGridView(duration: duration, pixelsPerSecond: pixelsPerSecond, scrollOffset: 0, height: trackHeight)
 
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) { location in
+                    let time = max(0, min(duration, Double(location.x) / Double(pixelsPerSecond)))
+                    onAddSegment?(track.trackType, time)
+                }
+                .onTapGesture {
+                    selection.clear()
+                }
+
+            segmentBlocks(for: track)
+        }
+        .frame(height: trackHeight)
+        .opacity(track.isEnabled ? 1.0 : 0.5)
+        .coordinateSpace(name: "trackArea")
+    }
+
+    @ViewBuilder
+    private func segmentBlocks(for track: AnySegmentTrack) -> some View {
         switch track {
-        case .transform(let transformTrack):
-            ForEach(transformTrack.keyframes) { keyframe in
-                DraggableKeyframeMarker(
-                    id: keyframe.id,
-                    time: keyframe.time,
-                    isSelected: selectedKeyframeID == keyframe.id,
-                    color: color,
-                    pixelsPerSecond: pixelsPerSecond,
-                    scrollOffset: 0,
-                    duration: duration,
-                    onSelect: {
-                        selectedKeyframeID = keyframe.id
-                        selectedTrackType = .transform
-                        onKeyframeSelect?(.transform, keyframe.id)
-                    },
-                    onTimeChange: { newTime in
-                        onKeyframeChange?(keyframe.id, newTime)
-                    }
-                )
-                .opacity(isTimeInTrimRange(keyframe.time) ? 1.0 : 0.3)
-                .position(x: CGFloat(keyframe.time) * pixelsPerSecond, y: trackHeight / 2)
+        case .camera(let cameraTrack):
+            let ranges = cameraTrack.segments.map {
+                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
             }
 
-        case .ripple(let rippleTrack):
-            ForEach(rippleTrack.keyframes) { keyframe in
-                DraggableKeyframeMarker(
-                    id: keyframe.id,
-                    time: keyframe.time,
-                    isSelected: selectedKeyframeID == keyframe.id,
-                    color: color,
-                    pixelsPerSecond: pixelsPerSecond,
-                    scrollOffset: 0,
-                    duration: duration,
-                    onSelect: {
-                        selectedKeyframeID = keyframe.id
-                        selectedTrackType = .ripple
-                        onKeyframeSelect?(.ripple, keyframe.id)
-                    },
-                    onTimeChange: { newTime in
-                        onKeyframeChange?(keyframe.id, newTime)
-                    }
+            ForEach(cameraTrack.segments) { segment in
+                segmentBlock(
+                    trackType: .transform,
+                    id: segment.id,
+                    start: segment.startTime,
+                    end: segment.endTime,
+                    ranges: ranges,
+                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
                 )
-                .opacity(isTimeInTrimRange(keyframe.time) ? 1.0 : 0.3)
-                .position(x: CGFloat(keyframe.time) * pixelsPerSecond, y: trackHeight / 2)
             }
-
         case .cursor(let cursorTrack):
-            if let keyframes = cursorTrack.styleKeyframes {
-                ForEach(keyframes) { keyframe in
-                    DraggableKeyframeMarker(
-                        id: keyframe.id,
-                        time: keyframe.time,
-                        isSelected: selectedKeyframeID == keyframe.id,
-                        color: color,
-                        pixelsPerSecond: pixelsPerSecond,
-                        scrollOffset: 0,
-                        duration: duration,
-                        onSelect: {
-                            selectedKeyframeID = keyframe.id
-                            selectedTrackType = .cursor
-                            onKeyframeSelect?(.cursor, keyframe.id)
-                        },
-                        onTimeChange: { newTime in
-                            onKeyframeChange?(keyframe.id, newTime)
-                        }
+            let ranges = cursorTrack.segments.map {
+                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
+            }
+
+            ForEach(cursorTrack.segments) { segment in
+                segmentBlock(
+                    trackType: .cursor,
+                    id: segment.id,
+                    start: segment.startTime,
+                    end: segment.endTime,
+                    ranges: ranges,
+                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime),
+                    cursorStyle: segment.style
+                )
+            }
+        case .keystroke(let keystrokeTrack):
+            let ranges = keystrokeTrack.segments.map {
+                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
+            }
+
+            ForEach(keystrokeTrack.segments) { segment in
+                segmentBlock(
+                    trackType: .keystroke,
+                    id: segment.id,
+                    start: segment.startTime,
+                    end: segment.endTime,
+                    ranges: ranges,
+                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
+                )
+            }
+        }
+    }
+
+    private func segmentBlock(
+        trackType: TrackType,
+        id: UUID,
+        start: TimeInterval,
+        end: TimeInterval,
+        ranges: [SegmentRange],
+        editBounds: SegmentEditBounds,
+        cursorStyle: CursorStyle? = nil
+    ) -> some View {
+        let resizeSnapTargets = snapTargets(from: ranges, excluding: id)
+        let displayStart = segmentDisplayStart(for: id, fallback: start)
+        let displayEnd = segmentDisplayEnd(for: id, fallback: end)
+        let x = CGFloat(displayStart) * pixelsPerSecond
+        let width = max(6, CGFloat(displayEnd - displayStart) * pixelsPerSecond)
+        let color = TrackColor.color(for: trackType)
+        let isSelected = selection.contains(id)
+        let isHovered = hoveredSegmentID == id
+        let showHandles = isSelected || isHovered
+
+        let adaptiveHandleWidth: CGFloat = {
+            if width < 10 && !isSelected { return 0 }
+            if width < 20 { return max(3, width * 0.15) }
+            if width < 40 { return max(4, min(10, width * 0.2)) }
+            return 10
+        }()
+
+        return ZStack {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(color.opacity(isSelected ? 0.9 : 0.6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .strokeBorder(
+                            Color.white.opacity(isSelected ? 0.5 : (isHovered ? 0.35 : 0.15)),
+                            lineWidth: 1
+                        )
+                )
+
+            // Cursor style indicator
+            if let style = cursorStyle, width > 20 {
+                HStack(spacing: 2) {
+                    Image(systemName: style.sfSymbolName)
+                        .font(.system(size: 8))
+                        .foregroundColor(.white.opacity(0.8))
+                    if width > 60 {
+                        Text(style.displayName)
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+
+            // Handles: visible only on hover/selection
+            if showHandles && adaptiveHandleWidth > 0 {
+                HStack(spacing: 0) {
+                    segmentHandleView(
+                        width: adaptiveHandleWidth,
+                        isSelected: isSelected,
+                        segmentWidth: width
                     )
-                    .opacity(isTimeInTrimRange(keyframe.time) ? 1.0 : 0.3)
-                    .position(x: CGFloat(keyframe.time) * pixelsPerSecond, y: trackHeight / 2)
+                    .contentShape(Rectangle())
+                    .onHover { isHovering in
+                        updateResizeCursor(isHovering)
+                    }
+                    .highPriorityGesture(
+                        resizeGesture(
+                            for: id, trackType: trackType,
+                            start: start, end: end,
+                            mode: .resizeStart,
+                            snapTargets: resizeSnapTargets,
+                            editBounds: editBounds
+                        )
+                    )
+
+                    Spacer(minLength: 0)
+
+                    segmentHandleView(
+                        width: adaptiveHandleWidth,
+                        isSelected: isSelected,
+                        segmentWidth: width
+                    )
+                    .contentShape(Rectangle())
+                    .onHover { isHovering in
+                        updateResizeCursor(isHovering)
+                    }
+                    .highPriorityGesture(
+                        resizeGesture(
+                            for: id, trackType: trackType,
+                            start: start, end: end,
+                            mode: .resizeEnd,
+                            snapTargets: resizeSnapTargets,
+                            editBounds: editBounds
+                        )
+                    )
+                }
+            } else {
+                // Invisible resize hit zones when handles are hidden
+                HStack(spacing: 0) {
+                    Color.clear
+                        .frame(width: max(6, min(10, width * 0.25)))
+                        .contentShape(Rectangle())
+                        .onHover { isHovering in
+                            updateResizeCursor(isHovering)
+                        }
+                        .highPriorityGesture(
+                            resizeGesture(
+                                for: id, trackType: trackType,
+                                start: start, end: end,
+                                mode: .resizeStart,
+                                snapTargets: resizeSnapTargets,
+                                editBounds: editBounds
+                            )
+                        )
+
+                    Spacer(minLength: 0)
+
+                    Color.clear
+                        .frame(width: max(6, min(10, width * 0.25)))
+                        .contentShape(Rectangle())
+                        .onHover { isHovering in
+                            updateResizeCursor(isHovering)
+                        }
+                        .highPriorityGesture(
+                            resizeGesture(
+                                for: id, trackType: trackType,
+                                start: start, end: end,
+                                mode: .resizeEnd,
+                                snapTargets: resizeSnapTargets,
+                                editBounds: editBounds
+                            )
+                        )
                 }
             }
-
-        case .keystroke(let keystrokeTrack):
-            ForEach(keystrokeTrack.keyframes) { keyframe in
-                DraggableKeyframeMarker(
-                    id: keyframe.id,
-                    time: keyframe.time,
-                    isSelected: selectedKeyframeID == keyframe.id,
-                    color: color,
-                    pixelsPerSecond: pixelsPerSecond,
-                    scrollOffset: 0,
-                    duration: duration,
-                    onSelect: {
-                        selectedKeyframeID = keyframe.id
-                        selectedTrackType = .keystroke
-                        onKeyframeSelect?(.keystroke, keyframe.id)
-                    },
-                    onTimeChange: { newTime in
-                        onKeyframeChange?(keyframe.id, newTime)
-                    }
-                )
-                .opacity(isTimeInTrimRange(keyframe.time) ? 1.0 : 0.3)
-                .position(x: CGFloat(keyframe.time) * pixelsPerSecond, y: trackHeight / 2)
+        }
+        .frame(width: width, height: 22)
+        .contentShape(Rectangle())
+        .onHover { isHovering in
+            hoveredSegmentID = isHovering ? id : nil
+        }
+        .gesture(
+            moveGesture(
+                for: id,
+                trackType: trackType,
+                start: start,
+                end: end,
+                ranges: ranges
+            )
+        )
+        .onTapGesture {
+            if NSEvent.modifierFlags.contains(.shift) {
+                onSegmentToggleSelect?(trackType, id)
+            } else {
+                onSegmentSelect?(trackType, id)
             }
         }
+        .position(x: x + width / 2, y: trackHeight / 2)
+        .opacity(
+            timelineIsSegmentInTrimRange(
+                start: displayStart,
+                end: displayEnd,
+                trimStart: trimStart,
+                trimEnd: trimEnd,
+                duration: duration
+            ) ? 1.0 : 0.3
+        )
     }
 
-    // MARK: - Helpers
-
-    private func trackIcon(for type: TrackType) -> String {
-        switch type {
-        case .transform:
-            return "arrow.up.left.and.arrow.down.right"
-        case .ripple:
-            return "circles.hexagonpath"
-        case .cursor:
-            return "cursorarrow"
-        case .keystroke:
-            return "keyboard"
-        case .audio:
-            return "waveform"
+    @ViewBuilder
+    private func segmentHandleView(
+        width: CGFloat,
+        isSelected: Bool,
+        segmentWidth: CGFloat
+    ) -> some View {
+        if segmentWidth < 16 {
+            Rectangle()
+                .fill(Color.white.opacity(isSelected ? 0.8 : 0.5))
+                .frame(width: max(2, width))
+        } else {
+            Rectangle()
+                .fill(Color.white.opacity(isSelected ? 0.22 : 0.12))
+                .frame(width: width)
+                .overlay(
+                    Rectangle()
+                        .fill(Color.white.opacity(isSelected ? 0.7 : 0.35))
+                        .frame(width: 1)
+                )
         }
     }
 
-    private func zoomIn() {
-        pixelsPerSecond = min(maxPixelsPerSecond, pixelsPerSecond * 1.5)
+    private func moveGesture(
+        for id: UUID,
+        trackType: TrackType,
+        start: TimeInterval,
+        end: TimeInterval,
+        ranges: [SegmentRange]
+    ) -> some Gesture {
+        DragGesture(minimumDistance: 3, coordinateSpace: .named("trackArea"))
+            .onChanged { value in
+                let isMultiMove = selection.contains(id) && selection.count > 1
+
+                if !isInteracting(with: id, mode: .move) {
+                    let companions = isMultiMove ? collectCompanions(excluding: id) : []
+                    activeSegmentInteraction = SegmentInteraction(
+                        id: id,
+                        mode: .move,
+                        initialStart: start,
+                        initialEnd: end,
+                        previewStart: start,
+                        previewEnd: end,
+                        companions: companions
+                    )
+                }
+
+                guard var interaction = activeSegmentInteraction, interaction.id == id, interaction.mode == .move else {
+                    return
+                }
+
+                let segmentDuration = interaction.initialEnd - interaction.initialStart
+                let rawDelta = Double(value.translation.width / pixelsPerSecond)
+
+                if interaction.companions.isEmpty {
+                    // Single segment move (original logic)
+                    let unclampedStart = interaction.initialStart + rawDelta
+                    let unclampedCenter = unclampedStart + segmentDuration / 2
+
+                    let others = ranges.filter { $0.id != id }.sorted { $0.start < $1.start }
+                    var gapStart: TimeInterval = 0
+                    var gapEnd: TimeInterval = duration
+                    for other in others {
+                        let otherCenter = (other.start + other.end) / 2
+                        if unclampedCenter <= otherCenter {
+                            gapEnd = other.start
+                            break
+                        }
+                        gapStart = other.end
+                    }
+
+                    let dynBounds = SegmentEditBounds(minStart: gapStart, maxEnd: gapEnd)
+                    var proposedStart = max(gapStart, min(gapEnd - segmentDuration, unclampedStart))
+                    proposedStart = max(0, min(duration - segmentDuration, proposedStart))
+                    var proposedEnd = proposedStart + segmentDuration
+
+                    let allSnapTargets = snapTargets(from: ranges, excluding: id)
+                    (proposedStart, proposedEnd) = snappedRange(
+                        start: proposedStart, end: proposedEnd,
+                        mode: .move, snapTargets: allSnapTargets, editBounds: dynBounds
+                    )
+
+                    interaction.previewStart = proposedStart
+                    interaction.previewEnd = proposedEnd
+                    activeSegmentInteraction = interaction
+                } else {
+                    // Multi-segment move: constrain delta across all participants
+                    let selectedIDs = Set(
+                        [interaction.id] + interaction.companions.map(\.id)
+                    )
+
+                    // Compute allowable delta for the primary segment
+                    let primaryRange = allowableDeltaRange(
+                        segmentStart: interaction.initialStart,
+                        segmentEnd: interaction.initialEnd,
+                        segmentID: interaction.id,
+                        trackType: trackType,
+                        selectedIDs: selectedIDs
+                    )
+                    var globalMinDelta = primaryRange.min
+                    var globalMaxDelta = primaryRange.max
+
+                    // Compute allowable delta for each companion
+                    for companion in interaction.companions {
+                        let compRange = allowableDeltaRange(
+                            segmentStart: companion.initialStart,
+                            segmentEnd: companion.initialEnd,
+                            segmentID: companion.id,
+                            trackType: companion.trackType,
+                            selectedIDs: selectedIDs
+                        )
+                        globalMinDelta = max(globalMinDelta, compRange.min)
+                        globalMaxDelta = min(globalMaxDelta, compRange.max)
+                    }
+
+                    // Clamp the raw delta to the intersection of all allowable ranges
+                    let constrainedDelta = max(globalMinDelta, min(globalMaxDelta, rawDelta))
+
+                    // Apply snap on primary segment only
+                    var proposedStart = interaction.initialStart + constrainedDelta
+                    var proposedEnd = proposedStart + segmentDuration
+                    let dynBounds = SegmentEditBounds(
+                        minStart: interaction.initialStart + globalMinDelta,
+                        maxEnd: interaction.initialEnd + globalMaxDelta
+                    )
+                    let allSnapTargets = snapTargets(from: ranges, excluding: id)
+                    (proposedStart, proposedEnd) = snappedRange(
+                        start: proposedStart, end: proposedEnd,
+                        mode: .move, snapTargets: allSnapTargets, editBounds: dynBounds
+                    )
+
+                    // Derive final delta from primary
+                    let finalDelta = proposedStart - interaction.initialStart
+
+                    interaction.previewStart = proposedStart
+                    interaction.previewEnd = proposedEnd
+                    for i in interaction.companions.indices {
+                        let comp = interaction.companions[i]
+                        interaction.companions[i].previewStart = comp.initialStart + finalDelta
+                        interaction.companions[i].previewEnd = comp.initialEnd + finalDelta
+                    }
+                    activeSegmentInteraction = interaction
+                }
+            }
+            .onEnded { _ in
+                let hasCompanions = activeSegmentInteraction?.companions.isEmpty == false
+                commitInteraction(for: id)
+                if !hasCompanions {
+                    onSegmentSelect?(trackType, id)
+                }
+            }
     }
 
-    private func zoomOut() {
-        pixelsPerSecond = max(minPixelsPerSecond, pixelsPerSecond / 1.5)
+    private func resizeGesture(
+        for id: UUID,
+        trackType: TrackType,
+        start: TimeInterval,
+        end: TimeInterval,
+        mode: SegmentInteractionMode,
+        snapTargets: [TimeInterval],
+        editBounds: SegmentEditBounds
+    ) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("trackArea"))
+            .onChanged { value in
+                if !isInteracting(with: id, mode: mode) {
+                    activeSegmentInteraction = SegmentInteraction(
+                        id: id,
+                        mode: mode,
+                        initialStart: start,
+                        initialEnd: end,
+                        previewStart: start,
+                        previewEnd: end
+                    )
+                }
+
+                guard var interaction = activeSegmentInteraction, interaction.id == id, interaction.mode == mode else {
+                    return
+                }
+
+                let deltaTime = Double(value.translation.width / pixelsPerSecond)
+                var proposedStart = interaction.initialStart
+                var proposedEnd = interaction.initialEnd
+
+                switch mode {
+                case .resizeStart:
+                    proposedStart = interaction.initialStart + deltaTime
+                    proposedStart = max(editBounds.minStart, min(interaction.initialEnd - minSegmentDuration, proposedStart))
+                case .resizeEnd:
+                    proposedEnd = interaction.initialEnd + deltaTime
+                    proposedEnd = min(editBounds.maxEnd, max(interaction.initialStart + minSegmentDuration, proposedEnd))
+                case .move:
+                    break
+                }
+
+                (proposedStart, proposedEnd) = snappedRange(
+                    start: proposedStart,
+                    end: proposedEnd,
+                    mode: mode,
+                    snapTargets: snapTargets,
+                    editBounds: editBounds
+                )
+
+                interaction.previewStart = proposedStart
+                interaction.previewEnd = proposedEnd
+                activeSegmentInteraction = interaction
+            }
+            .onEnded { _ in
+                commitInteraction(for: id)
+                onSegmentSelect?(trackType, id)
+            }
     }
 
-    private func fitToView() {
-        guard duration > 0 else { return }
-        let availableWidth = timelineAreaWidth > 0 ? timelineAreaWidth : 600
-        pixelsPerSecond = max(minPixelsPerSecond, min(maxPixelsPerSecond, availableWidth / CGFloat(duration)))
+}
+
+// MARK: - Snapping & Interaction Helpers
+
+extension TimelineView {
+
+    private func isInteracting(with id: UUID, mode: SegmentInteractionMode) -> Bool {
+        guard let interaction = activeSegmentInteraction else { return false }
+        return interaction.id == id && interaction.mode == mode
     }
 
-    // MARK: - Trim Overlay
+    private func segmentDisplayStart(for id: UUID, fallback: TimeInterval) -> TimeInterval {
+        guard let interaction = activeSegmentInteraction else { return fallback }
+        if interaction.id == id { return interaction.previewStart }
+        if let companion = interaction.companions.first(where: { $0.id == id }) {
+            return companion.previewStart
+        }
+        return fallback
+    }
 
-    /// Trim overlay (inactive areas + handles)
+    private func segmentDisplayEnd(for id: UUID, fallback: TimeInterval) -> TimeInterval {
+        guard let interaction = activeSegmentInteraction else { return fallback }
+        if interaction.id == id { return interaction.previewEnd }
+        if let companion = interaction.companions.first(where: { $0.id == id }) {
+            return companion.previewEnd
+        }
+        return fallback
+    }
+
+    // snappedRange, commitInteraction, snapTargets, editBounds
+    // are in TimelineView+MultiMove.swift
+
+    private func updateResizeCursor(_ isHovering: Bool) {
+        #if os(macOS)
+        if isHovering {
+            if resizeCursorHoverCount == 0 {
+                NSCursor.resizeLeftRight.push()
+            }
+            resizeCursorHoverCount += 1
+            return
+        }
+
+        resizeCursorHoverCount = max(0, resizeCursorHoverCount - 1)
+        if resizeCursorHoverCount == 0 {
+            NSCursor.pop()
+        }
+        #endif
+    }
+
+    private func resetResizeCursorIfNeeded() {
+        #if os(macOS)
+        while resizeCursorHoverCount > 0 {
+            NSCursor.pop()
+            resizeCursorHoverCount -= 1
+        }
+        #endif
+    }
+
     private var trimOverlay: some View {
-        let effectiveTrimStart = trimStart
         let effectiveTrimEnd = trimEnd ?? duration
-
-        let startX = CGFloat(effectiveTrimStart) * pixelsPerSecond
+        let startX = CGFloat(trimStart) * pixelsPerSecond
         let endX = CGFloat(effectiveTrimEnd) * pixelsPerSecond
 
         return GeometryReader { geometry in
             ZStack(alignment: .leading) {
-                // Inactive area before the trim (left)
-                if effectiveTrimStart > 0 {
-                    Rectangle()
-                        .fill(Color.black.opacity(0.5))
-                        .frame(width: startX)
-                        .allowsHitTesting(false)
+                if trimStart > 0 {
+                    Rectangle().fill(Color.black.opacity(0.5)).frame(width: startX).allowsHitTesting(false)
                 }
 
-                // Inactive area after the trim (right)
                 if effectiveTrimEnd < duration {
                     Rectangle()
                         .fill(Color.black.opacity(0.5))
@@ -464,18 +777,15 @@ struct TimelineView: View {
                         .allowsHitTesting(false)
                 }
 
-                // Start trim handle
                 TrimHandleView(isStart: true, isDragging: $isDraggingTrimStart)
                     .frame(height: geometry.size.height)
-                    .offset(x: startX - 6) // Center the handle
+                    .offset(x: startX - 6)
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
                                 isDraggingTrimStart = true
                                 let newTime = max(0, Double(value.location.x) / Double(pixelsPerSecond))
-                                // Maintain a minimum of 0.1 seconds
-                                let clampedTime = min(newTime, effectiveTrimEnd - 0.1)
-                                trimStart = max(0, clampedTime)
+                                trimStart = min(newTime, effectiveTrimEnd - 0.1)
                             }
                             .onEnded { _ in
                                 isDraggingTrimStart = false
@@ -483,18 +793,15 @@ struct TimelineView: View {
                             }
                     )
 
-                // End trim handle
                 TrimHandleView(isStart: false, isDragging: $isDraggingTrimEnd)
                     .frame(height: geometry.size.height)
-                    .offset(x: endX - 6) // Center the handle
+                    .offset(x: endX - 6)
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
                                 isDraggingTrimEnd = true
                                 let newTime = min(duration, Double(value.location.x) / Double(pixelsPerSecond))
-                                // Maintain a minimum of 0.1 seconds
-                                let clampedTime = max(newTime, effectiveTrimStart + 0.1)
-                                trimEnd = min(duration, clampedTime)
+                                trimEnd = max(newTime, trimStart + 0.1)
                             }
                             .onEnded { _ in
                                 isDraggingTrimEnd = false
@@ -503,95 +810,78 @@ struct TimelineView: View {
                     )
             }
         }
-        .offset(y: rulerHeight) // Position below the ruler
     }
 
-    /// Check whether a given time falls within the trim range
-    private func isTimeInTrimRange(_ time: TimeInterval) -> Bool {
-        let effectiveTrimEnd = trimEnd ?? duration
-        return time >= trimStart && time <= effectiveTrimEnd
+    private func fitToView() {
+        guard duration > 0 else { return }
+        let availableWidth = timelineAreaWidth > 0 ? timelineAreaWidth : 600
+        pixelsPerSecond = max(minPixelsPerSecond, availableWidth / CGFloat(duration))
     }
+
 }
 
-// MARK: - Scroll Offset Preference Key
+// MARK: - Timeline Grid View
 
-private struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+/// Timeline background grid.
+struct TimelineGridView: View {
 
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
+    let duration: TimeInterval
+    let pixelsPerSecond: CGFloat
+    let scrollOffset: CGFloat
+    let height: CGFloat
 
-// MARK: - Preview
-
-#Preview {
-    struct PreviewWrapper: View {
-        @State private var timeline = Timeline(
-            tracks: [
-                AnyTrack(TransformTrack(
-                    id: UUID(),
-                    name: "Transform",
-                    isEnabled: true,
-                    keyframes: [
-                        TransformKeyframe(time: 0, zoom: 1.0, centerX: 0.5, centerY: 0.5),
-                        TransformKeyframe(time: 2, zoom: 2.0, centerX: 0.3, centerY: 0.4),
-                        TransformKeyframe(time: 5, zoom: 1.5, centerX: 0.7, centerY: 0.6),
-                        TransformKeyframe(time: 8, zoom: 1.0, centerX: 0.5, centerY: 0.5),
-                    ]
-                )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: [
-                        RippleKeyframe(time: 1, x: 0.3, y: 0.4),
-                        RippleKeyframe(time: 4, x: 0.7, y: 0.6),
-                    ]
-                )),
-                AnyTrack(CursorTrack(
-                    id: UUID(),
-                    name: "Cursor",
-                    isEnabled: true
-                )),
-            ],
-            duration: 10
-        )
-        @State private var currentTime: TimeInterval = 2.5
-        @State private var selectedKeyframeID: UUID?
-        @State private var selectedTrackType: TrackType? = .transform
-        @State private var trimStart: TimeInterval = 1.0
-        @State private var trimEnd: TimeInterval? = 8.0
-
-        var body: some View {
-            VStack {
-                Text("Selected: \(selectedKeyframeID?.uuidString.prefix(8) ?? "None")")
-                    .font(.caption)
-
-                TimelineView(
-                    timeline: $timeline,
-                    duration: 10,
-                    currentTime: $currentTime,
-                    selectedKeyframeID: $selectedKeyframeID,
-                    selectedTrackType: $selectedTrackType,
-                    onKeyframeChange: { id, time in
-                        print("Keyframe \(id) moved to \(time)")
-                    },
-                    onAddKeyframe: { type, time in
-                        print("Add \(type) keyframe at \(time)")
-                    },
-                    trimStart: $trimStart,
-                    trimEnd: $trimEnd,
-                    onTrimChange: { start, end in
-                        print("Trim changed: \(start) - \(String(describing: end))")
-                    }
-                )
-                .frame(height: 200)
-            }
-            .frame(width: 800)
-            .padding()
+    var body: some View {
+        Canvas { context, size in
+            drawGrid(context: context, size: size)
         }
     }
 
-    return PreviewWrapper()
+    private func drawGrid(context: GraphicsContext, size: CGSize) {
+        let visibleStartTime = scrollOffset / pixelsPerSecond
+        let visibleEndTime = (scrollOffset + size.width) / pixelsPerSecond
+
+        let interval: TimeInterval = pixelsPerSecond < 30 ? 5.0 : 1.0
+        var time = floor(visibleStartTime / interval) * interval
+
+        while time <= visibleEndTime {
+            let x = CGFloat(time) * pixelsPerSecond - scrollOffset
+
+            if x >= 0 && x <= size.width {
+                let linePath = Path { path in
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x, y: height))
+                }
+
+                context.stroke(
+                    linePath,
+                    with: .color(.secondary.opacity(0.1)),
+                    lineWidth: 1
+                )
+            }
+
+            time += interval
+        }
+    }
+}
+
+// MARK: - Track Color
+
+/// Track colors by timeline track type.
+enum TrackColor {
+    static let transform = Color.blue
+    static let cursor = Color.orange
+    static let keystroke = Color.cyan
+
+    static func color(for trackType: TrackType) -> Color {
+        switch trackType {
+        case .transform:
+            return transform
+        case .cursor:
+            return cursor
+        case .keystroke:
+            return keystroke
+        case .audio:
+            return .green
+        }
+    }
 }

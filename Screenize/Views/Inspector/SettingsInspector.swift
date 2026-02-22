@@ -42,27 +42,27 @@ struct SettingsInspector: View {
 
                 // Background style
                 backgroundStyleSection
-
-                Divider()
-
-                // Padding
-                paddingSection
-
-                Divider()
-
-                // Window inset (border removal)
-                windowInsetSection
-
-                Divider()
-
-                // Rounded corners
-                cornerRadiusSection
-
-                Divider()
-
-                // Shadow
-                shadowSection
             }
+
+            Divider()
+
+            // Padding
+            paddingSection
+
+            Divider()
+
+            // Window inset (border removal)
+            windowInsetSection
+
+            Divider()
+
+            // Rounded corners
+            cornerRadiusSection
+
+            Divider()
+
+            // Shadow
+            shadowSection
 
             Spacer()
         }
@@ -126,11 +126,35 @@ struct SettingsInspector: View {
                     }
                 }
             }
+
+            // Smooth cursor interpolation
+            Toggle(isOn: smoothCursorBinding) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Smooth Cursor")
+                        .font(.system(size: 12, weight: .medium))
+                    Text("Interpolate cursor movement between data points")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
+            }
         }
     }
 
+    private var smoothCursorBinding: Binding<Bool> {
+        Binding(
+            get: { timeline.cursorTrackV2?.useSmoothCursor ?? true },
+            set: { newValue in
+                guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
+                      case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+                track.useSmoothCursor = newValue
+                timeline.tracks[trackIndex] = .cursor(track)
+                onChange?()
+            }
+        )
+    }
+
     private var cursorScale: CGFloat {
-        timeline.cursorTrack?.defaultScale ?? 2.5
+        timeline.cursorTrackV2?.segments.first?.scale ?? 2.5
     }
 
     private func updateCursorScale(_ newValue: CGFloat) {
@@ -139,15 +163,11 @@ struct SettingsInspector: View {
             return
         }
 
-        track = CursorTrack(
-            id: track.id,
-            name: track.name,
-            isEnabled: track.isEnabled,
-            defaultStyle: track.defaultStyle,
-            defaultScale: newValue,
-            defaultVisible: track.defaultVisible,
-            styleKeyframes: track.styleKeyframes
-        )
+        track.segments = track.segments.map {
+            var segment = $0
+            segment.scale = newValue
+            return segment
+        }
         timeline.tracks[trackIndex] = .cursor(track)
         onChange?()
     }
@@ -624,11 +644,13 @@ private struct SolidColorButton: View {
         @State private var settings = RenderSettings()
         @State private var timeline = Timeline(
             tracks: [
-                AnyTrack(CursorTrack(
+                AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
-                    defaultScale: 2.5
+                    segments: [
+                        CursorSegment(startTime: 0, endTime: 10, scale: 2.5),
+                    ]
                 ))
             ],
             duration: 10

@@ -21,7 +21,7 @@ struct EditorMainView: View {
     @State private var showGeneratorPanel = false
 
     /// Local event monitor for Delete/Backspace key
-    @State private var deleteKeyMonitor: Any?
+    @State private var keyMonitor: Any?
 
     // MARK: - Initialization
 
@@ -62,16 +62,21 @@ struct EditorMainView: View {
                     timeline: viewModel.timelineBinding,
                     duration: viewModel.duration,
                     currentTime: $viewModel.currentTime,
-                    selectedKeyframeID: $viewModel.selectedKeyframeID,
-                    selectedTrackType: $viewModel.selectedTrackType,
-                    onKeyframeChange: { id, time in
-                        viewModel.updateKeyframeTime(id, to: time)
+                    selection: $viewModel.selection,
+                    onSegmentTimeRangeChange: { id, startTime, endTime in
+                        viewModel.updateSegmentTimeRange(id, startTime: startTime, endTime: endTime)
                     },
-                    onAddKeyframe: { trackType, time in
-                        viewModel.addKeyframe(to: trackType, at: time)
+                    onBatchSegmentTimeRangeChange: { changes in
+                        viewModel.batchUpdateSegmentTimeRanges(changes)
                     },
-                    onKeyframeSelect: { trackType, id in
-                        viewModel.selectKeyframe(id, trackType: trackType)
+                    onAddSegment: { trackType, time in
+                        viewModel.addSegment(to: trackType, at: time)
+                    },
+                    onSegmentSelect: { trackType, id in
+                        viewModel.selectSegment(id, trackType: trackType)
+                    },
+                    onSegmentToggleSelect: { trackType, id in
+                        viewModel.toggleSegmentSelection(id, trackType: trackType)
                     },
                     onSeek: { time in
                         await viewModel.seek(to: time)
@@ -88,15 +93,14 @@ struct EditorMainView: View {
             // Right: inspector
             InspectorView(
                 timeline: viewModel.timelineBinding,
-                selectedKeyframeID: $viewModel.selectedKeyframeID,
-                selectedTrackType: $viewModel.selectedTrackType,
+                selection: $viewModel.selection,
                 renderSettings: viewModel.renderSettingsBinding,
                 isWindowMode: viewModel.isWindowMode,
-                onKeyframeChange: {
-                    viewModel.notifyKeyframeChanged()
+                onSegmentChange: {
+                    viewModel.notifySegmentChanged()
                 },
-                onDeleteKeyframe: { id, trackType in
-                    viewModel.deleteKeyframe(id, from: trackType)
+                onDeleteSegment: { id, trackType in
+                    viewModel.deleteSegment(id, from: trackType)
                 }
             )
         }
@@ -150,6 +154,15 @@ struct EditorMainView: View {
         .onReceive(NotificationCenter.default.publisher(for: .editorRedo)) { _ in
             viewModel.redo()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .editorCopy)) { _ in
+            viewModel.copySelectedSegments()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .editorPaste)) { _ in
+            viewModel.pasteSegments()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .editorDuplicate)) { _ in
+            viewModel.duplicateSelectedSegments()
+        }
         .onReceive(viewModel.undoStack.$canUndo) { canUndo in
             AppState.shared.canUndo = canUndo
         }
@@ -157,10 +170,10 @@ struct EditorMainView: View {
             AppState.shared.canRedo = canRedo
         }
         .onAppear {
-            installDeleteKeyMonitor()
+            installKeyMonitor()
         }
         .onDisappear {
-            removeDeleteKeyMonitor()
+            removeKeyMonitor()
             AppState.shared.canUndo = false
             AppState.shared.canRedo = false
         }
@@ -222,18 +235,16 @@ struct EditorMainView: View {
             Divider()
                 .frame(height: 20)
 
-            // Add keyframe
+            // Add segment
             keyframeAddMenu
 
-            // Delete all keyframes
+            // Delete all segments
             Button(role: .destructive) {
-                viewModel.deleteAllKeyframes()
+                viewModel.deleteAllSegments()
             } label: {
                 Label("Delete All", systemImage: "trash")
             }
-            .disabled(viewModel.project.timeline.transformTrack?.keyframes.isEmpty != false
-                      && viewModel.project.timeline.rippleTrack?.keyframes.isEmpty != false
-                      && viewModel.project.timeline.cursorTrack?.styleKeyframes?.isEmpty != false)
+            .disabled(viewModel.project.timeline.totalSegmentCount == 0)
 
             Spacer()
 
@@ -280,30 +291,24 @@ struct EditorMainView: View {
     private var keyframeAddMenu: some View {
         Menu {
             Button {
-                viewModel.addKeyframe(to: .transform)
+                viewModel.addSegment(to: .transform)
             } label: {
-                Label("Transform Keyframe", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label("Camera Segment", systemImage: "arrow.up.left.and.arrow.down.right")
             }
 
             Button {
-                viewModel.addKeyframe(to: .ripple)
+                viewModel.addSegment(to: .cursor)
             } label: {
-                Label("Ripple Keyframe", systemImage: "circles.hexagonpath")
+                Label("Cursor Segment", systemImage: "cursorarrow")
             }
 
             Button {
-                viewModel.addKeyframe(to: .cursor)
+                viewModel.addSegment(to: .keystroke)
             } label: {
-                Label("Cursor Keyframe", systemImage: "cursorarrow")
-            }
-
-            Button {
-                viewModel.addKeyframe(to: .keystroke)
-            } label: {
-                Label("Keystroke Keyframe", systemImage: "keyboard")
+                Label("Keystroke Segment", systemImage: "keyboard")
             }
         } label: {
-            Label("Add Keyframe", systemImage: "plus.diamond")
+            Label("Add Segment", systemImage: "plus.diamond")
         }
     }
 
@@ -321,15 +326,10 @@ struct EditorMainView: View {
         }
     }
 
-    // MARK: - Delete Key Monitor
+    // MARK: - Key Monitor
 
-    private func installDeleteKeyMonitor() {
-        deleteKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
-            // Delete (backspace) = keyCode 51, Forward Delete = keyCode 117
-            guard event.keyCode == 51 || event.keyCode == 117 else {
-                return event
-            }
-
+    private func installKeyMonitor() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
             // If a text field is focused, let the event pass through for normal editing
             if let firstResponder = NSApp.keyWindow?.firstResponder,
                firstResponder is NSTextView,
@@ -337,21 +337,34 @@ struct EditorMainView: View {
                 return event
             }
 
-            // Delete the selected keyframe
-            if let id = viewModel.selectedKeyframeID,
-               let trackType = viewModel.selectedTrackType {
-                viewModel.deleteKeyframe(id, from: trackType)
-                return nil // consume the event
+            let hasCommand = event.modifierFlags.contains(.command)
+
+            // Space bar = keyCode 49 → Play/Pause
+            if event.keyCode == 49 && !hasCommand {
+                viewModel.togglePlayback()
+                return nil
+            }
+
+            // Delete (backspace) = keyCode 51, Forward Delete = keyCode 117
+            if event.keyCode == 51 || event.keyCode == 117 {
+                if !viewModel.selection.isEmpty {
+                    let selected = viewModel.selection.segments
+                    for ident in selected {
+                        viewModel.deleteSegment(ident.id, from: ident.trackType)
+                    }
+                    return nil
+                }
+                return event
             }
 
             return event
         }
     }
 
-    private func removeDeleteKeyMonitor() {
-        if let monitor = deleteKeyMonitor {
+    private func removeKeyMonitor() {
+        if let monitor = keyMonitor {
             NSEvent.removeMonitor(monitor)
-            deleteKeyMonitor = nil
+            keyMonitor = nil
         }
     }
 
@@ -376,10 +389,11 @@ struct GeneratorPanelView: View {
 
     @ObservedObject var viewModel: EditorViewModel
 
+    @AppStorage("generatorDynamics") private var dynamics: Double = 0.5
     @State private var isGenerating: Bool = false
     @State private var generationResult: String?
     @State private var selectedTypes: Set<TrackType> = [
-        .transform, .ripple, .cursor, .keystroke
+        .transform, .cursor, .keystroke
     ]
 
     private struct GeneratorOption: Identifiable {
@@ -396,12 +410,6 @@ struct GeneratorPanelView: View {
             name: "Smart Zoom",
             description: "Auto-focus and zoom on activity",
             icon: "sparkle.magnifyingglass"
-        ),
-        GeneratorOption(
-            type: .ripple,
-            name: "Click Ripple",
-            description: "Ripple effect at click positions",
-            icon: "circles.hexagonpath"
         ),
         GeneratorOption(
             type: .cursor,
@@ -423,7 +431,7 @@ struct GeneratorPanelView: View {
 
     private var buttonLabel: String {
         if isGenerating { return "Generating..." }
-        if allSelected { return "Generate All Keyframes" }
+        if allSelected { return "Generate All Segments" }
         return "Generate Selected (\(selectedTypes.count))"
     }
 
@@ -454,6 +462,34 @@ struct GeneratorPanelView: View {
                     }
                     .toggleStyle(.checkbox)
                     .disabled(isGenerating)
+                }
+            }
+
+            Divider()
+
+            // Dynamics slider
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Dynamics")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Slider(value: $dynamics, in: 0...1, step: 0.05) {
+                    Text("Dynamics")
+                }
+                .disabled(isGenerating)
+
+                HStack {
+                    Text("Calm")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Default")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Dynamic")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -515,7 +551,10 @@ struct GeneratorPanelView: View {
         isGenerating = true
         generationResult = nil
 
-        await viewModel.runSmartGeneration(for: selectedTypes)
+        await viewModel.runSmartGeneration(
+            for: selectedTypes,
+            dynamics: CGFloat(dynamics)
+        )
 
         if let error = viewModel.errorMessage {
             generationResult = "Failed: \(error)"
@@ -525,17 +564,11 @@ struct GeneratorPanelView: View {
                 let count: Int
                 switch option.type {
                 case .transform:
-                    count = viewModel.project.timeline.transformTrack?
-                        .keyframes.count ?? 0
-                case .ripple:
-                    count = viewModel.project.timeline.rippleTrack?
-                        .keyframes.count ?? 0
+                    count = viewModel.project.timeline.cameraTrack?.segments.count ?? 0
                 case .cursor:
-                    count = viewModel.project.timeline.cursorTrack?
-                        .styleKeyframes?.count ?? 0
+                    count = viewModel.project.timeline.cursorTrackV2?.segments.count ?? 0
                 case .keystroke:
-                    count = viewModel.project.timeline.keystrokeTrack?
-                        .keyframes.count ?? 0
+                    count = viewModel.project.timeline.keystrokeTrackV2?.segments.count ?? 0
                 case .audio:
                     return nil
                 }
@@ -568,25 +601,21 @@ struct GeneratorPanelView: View {
             ),
             timeline: Timeline(
                 tracks: [
-                    AnyTrack(TransformTrack(
+                    AnySegmentTrack.camera(CameraTrack(
                         id: UUID(),
-                        name: "Transform",
+                        name: "Camera",
                         isEnabled: true,
-                        keyframes: [
-                            TransformKeyframe(time: 0, zoom: 1.0, centerX: 0.5, centerY: 0.5),
-                            TransformKeyframe(time: 5, zoom: 2.0, centerX: 0.3, centerY: 0.4),
+                        segments: [
+                            CameraSegment(startTime: 0, endTime: 5, startTransform: .identity, endTransform: .identity),
                         ]
                     )),
-                    AnyTrack(RippleTrack(
-                        id: UUID(),
-                        name: "Ripple",
-                        isEnabled: true,
-                        keyframes: []
-                    )),
-                    AnyTrack(CursorTrack(
+                    AnySegmentTrack.cursor(CursorTrackV2(
                         id: UUID(),
                         name: "Cursor",
-                        isEnabled: true
+                        isEnabled: true,
+                        segments: [
+                            CursorSegment(startTime: 0, endTime: 30),
+                        ]
                     )),
                 ],
                 duration: 30

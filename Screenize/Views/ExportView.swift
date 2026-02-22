@@ -23,7 +23,17 @@ struct ExportSheetView: View {
     @State private var renderSettings: RenderSettings
     @State private var outputURL: URL?
     @State private var isExporting = false
-    @State private var showFilePicker = false
+
+    // Custom resolution state
+    @State private var isCustomResolution: Bool
+    @State private var customWidth: Int
+    @State private var customHeight: Int
+    @State private var resolutionValidationError: String?
+
+    // Custom frame rate state
+    @State private var isCustomFrameRate: Bool
+    @State private var customFPS: Int
+    @State private var frameRateValidationError: String?
 
     // MARK: - Initialization
 
@@ -38,6 +48,30 @@ struct ExportSheetView: View {
         self.onDismiss = onDismiss
         self.onComplete = onComplete
         self._renderSettings = State(initialValue: project.renderSettings)
+
+        // Detect existing custom resolution
+        if case .custom(let w, let h) = project.renderSettings.outputResolution {
+            self._isCustomResolution = State(initialValue: true)
+            self._customWidth = State(initialValue: w)
+            self._customHeight = State(initialValue: h)
+        } else {
+            self._isCustomResolution = State(initialValue: false)
+            self._customWidth = State(initialValue: 1920)
+            self._customHeight = State(initialValue: 1080)
+        }
+        self._resolutionValidationError = State(initialValue: nil)
+
+        // Detect existing custom frame rate
+        let presetFPS = [24, 30, 60]
+        if case .fixed(let fps) = project.renderSettings.outputFrameRate,
+           !presetFPS.contains(fps) {
+            self._isCustomFrameRate = State(initialValue: true)
+            self._customFPS = State(initialValue: fps)
+        } else {
+            self._isCustomFrameRate = State(initialValue: false)
+            self._customFPS = State(initialValue: 60)
+        }
+        self._frameRateValidationError = State(initialValue: nil)
     }
 
     // MARK: - Body
@@ -63,20 +97,6 @@ struct ExportSheetView: View {
             footer
         }
         .frame(width: 400)
-        .fileExporter(
-            isPresented: $showFilePicker,
-            document: ExportDocument(),
-            contentType: .mpeg4Movie,
-            defaultFilename: "\(project.media.videoURL.deletingPathExtension().lastPathComponent)_edited"
-        ) { result in
-            switch result {
-            case .success(let url):
-                outputURL = url
-                startExport()
-            case .failure(let error):
-                print("File picker error: \(error)")
-            }
-        }
     }
 
     // MARK: - Header
@@ -115,18 +135,61 @@ struct ExportSheetView: View {
 
             // Resolution
             Section("Resolution") {
-                Picker("Output Size", selection: $renderSettings.outputResolution) {
+                Picker("Output Size", selection: resolutionPickerBinding) {
                     ForEach(OutputResolution.allCases, id: \.self) { resolution in
                         Text(resolution.displayName).tag(resolution)
+                    }
+                    Text("Custom").tag(OutputResolution.custom(width: 0, height: 0))
+                }
+
+                if isCustomResolution {
+                    HStack(spacing: 8) {
+                        TextField("Width", value: $customWidth, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                            .onChange(of: customWidth) { _ in applyCustomResolution() }
+
+                        Text("\u{00d7}")
+                            .foregroundColor(.secondary)
+
+                        TextField("Height", value: $customHeight, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                            .onChange(of: customHeight) { _ in applyCustomResolution() }
+                    }
+
+                    if let error = resolutionValidationError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.red)
                     }
                 }
             }
 
             // Frame rate
             Section("Frame Rate") {
-                Picker("Frame Rate", selection: $renderSettings.outputFrameRate) {
+                Picker("Frame Rate", selection: frameRatePickerBinding) {
                     ForEach(OutputFrameRate.allCases, id: \.self) { rate in
                         Text(rate.displayName).tag(rate)
+                    }
+                    Text("Custom").tag(OutputFrameRate.fixed(-1))
+                }
+
+                if isCustomFrameRate {
+                    HStack(spacing: 8) {
+                        TextField("FPS", value: $customFPS, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 80)
+                            .onChange(of: customFPS) { _ in applyCustomFrameRate() }
+
+                        Text("fps")
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let error = frameRateValidationError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.red)
                     }
                 }
             }
@@ -243,9 +306,10 @@ struct ExportSheetView: View {
 
             if !isExporting {
                 Button("Export") {
-                    showFilePicker = true
+                    showSavePanel()
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(hasValidationError)
             } else if exportEngine.progress.isCompleted {
                 Button("Done") {
                     if let url = exportEngine.progress.outputURL {
@@ -257,6 +321,112 @@ struct ExportSheetView: View {
             }
         }
         .padding()
+    }
+
+    // MARK: - Picker Bindings
+
+    private var resolutionPickerBinding: Binding<OutputResolution> {
+        Binding(
+            get: {
+                if isCustomResolution {
+                    return .custom(width: 0, height: 0)
+                }
+                return renderSettings.outputResolution
+            },
+            set: { newValue in
+                if case .custom = newValue {
+                    isCustomResolution = true
+                    applyCustomResolution()
+                } else {
+                    isCustomResolution = false
+                    resolutionValidationError = nil
+                    renderSettings.outputResolution = newValue
+                }
+            }
+        )
+    }
+
+    private var frameRatePickerBinding: Binding<OutputFrameRate> {
+        Binding(
+            get: {
+                if isCustomFrameRate {
+                    return .fixed(-1)
+                }
+                return renderSettings.outputFrameRate
+            },
+            set: { newValue in
+                if case .fixed(-1) = newValue {
+                    isCustomFrameRate = true
+                    applyCustomFrameRate()
+                } else {
+                    isCustomFrameRate = false
+                    frameRateValidationError = nil
+                    renderSettings.outputFrameRate = newValue
+                }
+            }
+        )
+    }
+
+    // MARK: - Validation
+
+    private var hasValidationError: Bool {
+        resolutionValidationError != nil || frameRateValidationError != nil
+    }
+
+    private func applyCustomResolution() {
+        resolutionValidationError = nil
+
+        guard customWidth >= 2 else {
+            resolutionValidationError = "Width must be at least 2"
+            return
+        }
+        guard customHeight >= 2 else {
+            resolutionValidationError = "Height must be at least 2"
+            return
+        }
+        guard customWidth <= 7680 else {
+            resolutionValidationError = "Width cannot exceed 7680"
+            return
+        }
+        guard customHeight <= 4320 else {
+            resolutionValidationError = "Height cannot exceed 4320"
+            return
+        }
+
+        // Ensure even dimensions for AVAssetWriter
+        let w = customWidth.isMultiple(of: 2) ? customWidth : customWidth + 1
+        let h = customHeight.isMultiple(of: 2) ? customHeight : customHeight + 1
+        renderSettings.outputResolution = .custom(width: w, height: h)
+    }
+
+    private func applyCustomFrameRate() {
+        frameRateValidationError = nil
+
+        guard customFPS >= 1 else {
+            frameRateValidationError = "Frame rate must be at least 1"
+            return
+        }
+        guard customFPS <= 240 else {
+            frameRateValidationError = "Frame rate cannot exceed 240"
+            return
+        }
+
+        renderSettings.outputFrameRate = .fixed(customFPS)
+    }
+
+    // MARK: - File Picker
+
+    private func showSavePanel() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [renderSettings.codec.utType]
+        let baseName = project.media.videoURL
+            .deletingPathExtension().lastPathComponent
+        panel.nameFieldStringValue = "\(baseName)_edited.\(renderSettings.codec.fileExtension)"
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        outputURL = url
+        startExport()
     }
 
     // MARK: - Actions
@@ -302,23 +472,6 @@ struct ExportSheetView: View {
         } else {
             return "\(seconds)s"
         }
-    }
-}
-
-// MARK: - Export Document (for file exporter)
-
-struct ExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] = [.mpeg4Movie]
-
-    init() {}
-
-    init(configuration: ReadConfiguration) throws {
-        // Not used for export
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        // Return empty wrapper - actual content written by export engine
-        return FileWrapper(regularFileWithContents: Data())
     }
 }
 

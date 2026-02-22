@@ -26,7 +26,8 @@ struct ProjectCreator {
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
-            duration: videoInfo.duration
+            duration: videoInfo.duration,
+            isVariableFrameRate: videoInfo.isVariableFrameRate
         )
 
         // Create a default timeline
@@ -38,7 +39,8 @@ struct ProjectCreator {
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
-            renderSettings: RenderSettings()
+            renderSettings: RenderSettings(),
+            interop: packageInfo.interop
         )
     }
 
@@ -60,7 +62,8 @@ struct ProjectCreator {
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
-            duration: videoInfo.duration
+            duration: videoInfo.duration,
+            isVariableFrameRate: videoInfo.isVariableFrameRate
         )
 
         // Basic capture metadata based on video size
@@ -92,6 +95,7 @@ struct ProjectCreator {
         let size: CGSize
         let frameRate: Double
         let duration: TimeInterval
+        let isVariableFrameRate: Bool
     }
 
     private static func loadVideoInfo(from url: URL) async throws -> VideoInfo {
@@ -107,10 +111,22 @@ struct ProjectCreator {
 
         let frameRate = nominalFrameRate > 0 ? nominalFrameRate : 60.0
 
+        // Detect variable frame rate by comparing minFrameDuration with nominal
+        let minFrameDuration = try await videoTrack.load(.minFrameDuration)
+        let minFrameDurationSec = CMTimeGetSeconds(minFrameDuration)
+        let isVFR: Bool
+        if minFrameDurationSec > 0 && nominalFrameRate > 0 {
+            let minFPS = 1.0 / minFrameDurationSec
+            isVFR = abs(minFPS - nominalFrameRate) / nominalFrameRate > 0.1
+        } else {
+            isVFR = false
+        }
+
         return VideoInfo(
             size: size,
             frameRate: frameRate,
-            duration: duration
+            duration: duration,
+            isVariableFrameRate: isVFR
         )
     }
 
@@ -135,45 +151,33 @@ struct ProjectCreator {
     private static func createDefaultTimeline(duration: TimeInterval) -> Timeline {
         Timeline(
             tracks: [
-                AnyTrack(TransformTrack(
+                AnySegmentTrack.camera(CameraTrack(
                     id: UUID(),
-                    name: "Transform",
+                    name: "Camera",
                     isEnabled: true,
-                    keyframes: [
-                        TransformKeyframe(
-                            time: 0,
-                            zoom: 1.0,
-                            centerX: 0.5,
-                            centerY: 0.5,
-                            easing: .easeInOut
-                        )
+                    segments: [
+                        CameraSegment(
+                            startTime: 0,
+                            endTime: max(0.1, duration),
+                            startTransform: .identity,
+                            endTransform: .identity,
+                            interpolation: .easeInOut
+                        ),
                     ]
                 )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: []
-                )),
-                AnyTrack(CursorTrack(
+                AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
-                    styleKeyframes: [
-                        CursorStyleKeyframe(
-                            time: 0,
-                            style: .arrow,
-                            visible: true,
-                            scale: 1.5,
-                            easing: .linear
-                        )
+                    segments: [
+                        CursorSegment(startTime: 0, endTime: max(0.1, duration), style: .arrow, visible: true, scale: 1.5),
                     ]
                 )),
-                AnyTrack(KeystrokeTrack(
+                AnySegmentTrack.keystroke(KeystrokeTrackV2(
                     id: UUID(),
                     name: "Keystroke",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 )),
             ],
             duration: duration
@@ -221,7 +225,6 @@ struct ProjectCreatorOptions {
 
     enum AutoGeneratorType {
         case clickZoom
-        case ripple
         case cursorSmooth
     }
 

@@ -5,7 +5,7 @@ import CoreVideo
 import Combine
 
 /// Export engine
-/// Timeline-based final video output
+/// Timeline-based final video output with Metal-accelerated GPU pipeline
 final class ExportEngine: ObservableObject {
 
     // MARK: - Published Properties
@@ -58,14 +58,9 @@ final class ExportEngine: ObservableObject {
         let startTime = Date()
 
         do {
-            // 1. Load video
+            // 1. Load video metadata
             await MainActor.run { progress = .loadingVideo }
             let extractor = try await VideoFrameExtractor(url: project.media.videoURL)
-
-            let asset = AVAsset(url: project.media.videoURL)
-            guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
-                throw ExportEngineError.noVideoTrack
-            }
 
             let naturalSize = extractor.videoSize
             let frameRate = extractor.frameRate
@@ -74,37 +69,33 @@ final class ExportEngine: ObservableObject {
             let trimStart = project.timeline.effectiveTrimStart
             let trimEnd = project.timeline.effectiveTrimEnd
             let trimmedDuration = project.timeline.trimmedDuration
-            let totalFrames = Int(trimmedDuration * frameRate)
 
             // 2. Load and interpolate mouse data
             await MainActor.run { progress = .loadingMouseData }
 
-            // Load and convert mouse data (including interpolation)
-            var mousePositions: [RenderMousePosition] = []
-            var clickEvents: [RenderClickEvent] = []
-
-            do {
-                let result = try await MainActor.run {
-                    try MouseDataConverter.loadAndConvertWithInterpolation(
-                        from: project,
-                        frameRate: frameRate
-                    )
-                }
-                mousePositions = result.positions
-                clickEvents = result.clicks
-                print("Export: Loaded mouse data - \(mousePositions.count) interpolated positions, \(clickEvents.count) clicks")
-            } catch {
-                print("Export: Failed to load mouse data: \(error.localizedDescription)")
-                // Continue without mouse data
+            let rawResult = await MainActor.run {
+                MouseDataConverter.loadAndConvert(from: project)
             }
+            let rawMousePositions = rawResult.positions
+            let clickEvents = rawResult.clicks
+
+            let smoothedResult = await MainActor.run {
+                MouseDataConverter.loadAndConvertWithInterpolation(
+                    from: project,
+                    frameRate: frameRate
+                )
+            }
+            let smoothedMousePositions = smoothedResult.positions
+            print("Export: Loaded mouse data - \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions, \(clickEvents.count) clicks")
 
             // 3. Determine output size
             let outputSize = project.renderSettings.outputResolution.size(sourceSize: naturalSize)
 
-            // 4. Create the render pipeline (Evaluator + Renderer)
+            // 4. Create the render pipeline (Metal-backed Evaluator + Renderer)
             let pipeline = RenderPipelineFactory.createExportPipeline(
                 project: project,
-                mousePositions: mousePositions,
+                rawMousePositions: rawMousePositions,
+                smoothedMousePositions: smoothedMousePositions,
                 clickEvents: clickEvents,
                 frameRate: frameRate,
                 sourceSize: naturalSize,
@@ -113,34 +104,24 @@ final class ExportEngine: ObservableObject {
             evaluator = pipeline.evaluator
             renderer = pipeline.renderer
 
-            // 6. Configure the video reader
-            let reader = try AVAssetReader(asset: asset)
+            // 5. Create GPU-resident sequential frame reader
+            let sequentialReader = try await SequentialFrameReader(url: project.media.videoURL)
+            try sequentialReader.startReading(from: trimStart, to: trimEnd)
 
-            // Set the trim range (read only the trimmed segment)
-            reader.timeRange = CMTimeRange(
-                start: CMTime(seconds: trimStart, preferredTimescale: 600),
-                end: CMTime(seconds: trimEnd, preferredTimescale: 600)
-            )
+            // 6. Configure the video writer
+            let outputFrameRate = project.renderSettings.outputFrameRate.value(sourceFrameRate: frameRate)
 
-            let readerOutputSettings: [String: Any] = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
-            ]
-            let readerOutput = AVAssetReaderTrackOutput(track: videoTrack, outputSettings: readerOutputSettings)
-            readerOutput.alwaysCopiesSampleData = false
-            reader.add(readerOutput)
-
-            // 7. Configure the video writer
-            // Remove existing file (AVAssetWriter does not overwrite)
             if FileManager.default.fileExists(atPath: outputURL.path) {
                 try FileManager.default.removeItem(at: outputURL)
             }
 
-            let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+            let writer = try AVAssetWriter(outputURL: outputURL, fileType: project.renderSettings.codec.avFileType)
 
             let videoSettings = createVideoSettings(
                 size: outputSize,
                 codec: project.renderSettings.codec,
-                quality: project.renderSettings.quality
+                quality: project.renderSettings.quality,
+                frameRate: outputFrameRate
             )
 
             let writerInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
@@ -151,123 +132,44 @@ final class ExportEngine: ObservableObject {
                 sourcePixelBufferAttributes: [
                     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
                     kCVPixelBufferWidthKey as String: Int(outputSize.width),
-                    kCVPixelBufferHeightKey as String: Int(outputSize.height)
+                    kCVPixelBufferHeightKey as String: Int(outputSize.height),
+                    kCVPixelBufferMetalCompatibilityKey as String: true,
+                    kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
                 ]
             )
 
             writer.add(writerInput)
 
-            // 8. Start the reader and writer
-            guard reader.startReading() else {
-                throw ExportEngineError.readerStartFailed
-            }
-
+            // 7. Start the writer
             guard writer.startWriting() else {
                 throw ExportEngineError.writerStartFailed(writer.error)
             }
 
             writer.startSession(atSourceTime: .zero)
 
-            // 9. Frame processing loop
-            var frameIndex = 0
-            let ciContext = CIContext(options: [.useSoftwareRenderer: false])
-
-            // Create pixel buffer pool
-            var pixelBufferPool: CVPixelBufferPool?
-            let poolAttrs: [String: Any] = [kCVPixelBufferPoolMinimumBufferCountKey as String: 3]
-            let bufferAttrs: [String: Any] = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-                kCVPixelBufferWidthKey as String: Int(outputSize.width),
-                kCVPixelBufferHeightKey as String: Int(outputSize.height),
-                kCVPixelBufferMetalCompatibilityKey as String: true
-            ]
-            CVPixelBufferPoolCreate(kCFAllocatorDefault, poolAttrs as CFDictionary, bufferAttrs as CFDictionary, &pixelBufferPool)
-
-            // Trim start time (used for output presentation time)
-            let trimStartTime = CMTime(seconds: trimStart, preferredTimescale: 600)
-
-            while let sampleBuffer = readerOutput.copyNextSampleBuffer() {
-                // Check for cancellation
-                if isCancelled {
-                    reader.cancelReading()
-                    writer.cancelWriting()
-                    await MainActor.run { progress = .cancelled }
-                    throw ExportEngineError.cancelled
-                }
-
-                // Extract the source frame
-                guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-                    frameIndex += 1
-                    continue
-                }
-
-                let sourceFrame = CIImage(cvPixelBuffer: imageBuffer)
-
-                // Presentation time
-                let sampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                let originalTime = CMTimeGetSeconds(sampleTime)
-
-                // Evaluate the state
-                guard let evaluator = evaluator else { continue }
-                let state = evaluator.evaluate(at: originalTime)
-
-                // Render the frame
-                guard let renderer = renderer,
-                      let rendered = renderer.render(sourceFrame: sourceFrame, state: state) else {
-                    frameIndex += 1
-                    continue
-                }
-
-                // Create a pixel buffer
-                var outputPixelBuffer: CVPixelBuffer?
-                if let pool = pixelBufferPool {
-                    CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &outputPixelBuffer)
-                }
-
-                guard let pixelBuffer = outputPixelBuffer else {
-                    frameIndex += 1
-                    continue
-                }
-
-                // Render the CIImage into the pixel buffer
-                ciContext.render(
-                    rendered,
-                    to: pixelBuffer,
-                    bounds: CGRect(origin: .zero, size: outputSize),
-                    colorSpace: CGColorSpaceCreateDeviceRGB()
-                )
-
-                // Compute the output time (relative to the trim start)
-                let outputPTS = CMTimeSubtract(sampleTime, trimStartTime)
-
-                while !writerInput.isReadyForMoreMediaData {
-                    try await Task.sleep(nanoseconds: 10_000_000) // 10ms
-                }
-
-                adaptor.append(pixelBuffer, withPresentationTime: outputPTS)
-
-                // Update progress (refresh UI every 10 frames to reduce main-thread load)
-                frameIndex += 1
-                if frameIndex % 10 == 0 || frameIndex == totalFrames {
-                    let currentFrame = frameIndex
-                    await MainActor.run {
-                        progress = .processing(frame: currentFrame, total: totalFrames)
-                        statistics = ExportStatistics(
-                            totalFrames: totalFrames,
-                            processedFrames: currentFrame,
-                            startTime: startTime,
-                            currentTime: Date()
-                        )
-                    }
-                }
+            // 8. Process frames
+            guard let evaluator = evaluator, let renderer = renderer else {
+                throw ExportEngineError.writerFailed
             }
 
-            print("📊 [Export] Completed - \(frameIndex) frames")
+            let totalOutputFrames = Int(trimmedDuration * outputFrameRate)
 
-            // 10. Finalizing
+            let framesWritten = try await processFrames(
+                reader: sequentialReader,
+                writerInput: writerInput,
+                adaptor: adaptor,
+                evaluator: evaluator,
+                renderer: renderer,
+                trimStart: trimStart,
+                outputFrameRate: outputFrameRate,
+                totalOutputFrames: totalOutputFrames,
+                startTime: startTime
+            )
+
+            print("[Export] Completed - \(framesWritten) frames")
+
+            // 9. Finalizing
             await MainActor.run { progress = .encoding }
-            writerInput.markAsFinished()
-
             await MainActor.run { progress = .finalizing }
 
             await writer.finishWriting()
@@ -276,12 +178,18 @@ final class ExportEngine: ObservableObject {
                 throw writer.error ?? ExportEngineError.writerFailed
             }
 
+            // Handle cancellation during finalization
+            if isCancelled {
+                await MainActor.run { progress = .cancelled }
+                throw ExportEngineError.cancelled
+            }
+
             // Completed
             await MainActor.run {
                 progress = .completed(outputURL)
                 statistics = ExportStatistics(
-                    totalFrames: frameIndex,
-                    processedFrames: frameIndex,
+                    totalFrames: framesWritten,
+                    processedFrames: framesWritten,
                     startTime: startTime,
                     currentTime: Date()
                 )
@@ -315,12 +223,121 @@ final class ExportEngine: ObservableObject {
         isCancelled = false
     }
 
+    // MARK: - Frame Processing
+
+    /// Process frames with frame-rate-aware sampling using requestMediaDataWhenReady
+    /// - Returns: Number of frames written
+    private func processFrames(
+        reader: SequentialFrameReader,
+        writerInput: AVAssetWriterInput,
+        adaptor: AVAssetWriterInputPixelBufferAdaptor,
+        evaluator: FrameEvaluator,
+        renderer: Renderer,
+        trimStart: TimeInterval,
+        outputFrameRate: Double,
+        totalOutputFrames: Int,
+        startTime: Date
+    ) async throws -> Int {
+        let outputFrameInterval = 1.0 / outputFrameRate
+        var outputFrameIndex = 0
+        let exportQueue = DispatchQueue(label: "com.screenize.export", qos: .userInitiated)
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            var didResume = false
+            var currentSourceFrame: (time: TimeInterval, image: CIImage)?
+
+            writerInput.requestMediaDataWhenReady(on: exportQueue) { [weak self] in
+                guard let self = self else {
+                    if !didResume {
+                        didResume = true
+                        continuation.resume(throwing: ExportEngineError.writerFailed)
+                    }
+                    return
+                }
+
+                while writerInput.isReadyForMoreMediaData {
+                    if self.isCancelled {
+                        reader.stopReading()
+                        writerInput.markAsFinished()
+                        if !didResume {
+                            didResume = true
+                            continuation.resume(throwing: ExportEngineError.cancelled)
+                        }
+                        return
+                    }
+
+                    if outputFrameIndex >= totalOutputFrames {
+                        writerInput.markAsFinished()
+                        if !didResume {
+                            didResume = true
+                            continuation.resume()
+                        }
+                        return
+                    }
+
+                    let idealTime = trimStart + Double(outputFrameIndex) * outputFrameInterval
+
+                    // Advance source reader until we have a frame at or past the ideal time
+                    while currentSourceFrame == nil || currentSourceFrame!.time < idealTime {
+                        guard let nextFrame = reader.nextFrame() else {
+                            break
+                        }
+                        currentSourceFrame = nextFrame
+                    }
+
+                    guard let sourceFrame = currentSourceFrame else {
+                        writerInput.markAsFinished()
+                        if !didResume {
+                            didResume = true
+                            continuation.resume()
+                        }
+                        return
+                    }
+
+                    let state = evaluator.evaluate(at: idealTime)
+
+                    guard let pixelBuffer = renderer.renderToPixelBuffer(
+                        sourceFrame: sourceFrame.image, state: state
+                    ) else {
+                        outputFrameIndex += 1
+                        continue
+                    }
+
+                    let outputPTS = CMTime(
+                        seconds: Double(outputFrameIndex) * outputFrameInterval,
+                        preferredTimescale: 600
+                    )
+
+                    adaptor.append(pixelBuffer, withPresentationTime: outputPTS)
+                    outputFrameIndex += 1
+
+                    if outputFrameIndex.isMultiple(of: 10) || outputFrameIndex == totalOutputFrames {
+                        let currentFrame = outputFrameIndex
+                        let total = totalOutputFrames
+                        Task { @MainActor [weak self] in
+                            self?.progress = .processing(frame: currentFrame, total: total)
+                            self?.statistics = ExportStatistics(
+                                totalFrames: total,
+                                processedFrames: currentFrame,
+                                startTime: startTime,
+                                currentTime: Date()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        return outputFrameIndex
+    }
+
     // MARK: - Video Settings
 
     private func createVideoSettings(
         size: CGSize,
         codec: VideoCodec,
-        quality: ExportQuality
+        quality: ExportQuality,
+        frameRate: Double
     ) -> [String: Any] {
         let bitRate = quality.bitRate(for: size)
 
@@ -336,7 +353,7 @@ final class ExportEngine: ObservableObject {
             let profileLevel: String = codec == .hevc ? "HEVC_Main_AutoLevel" : AVVideoProfileLevelH264HighAutoLevel
             settings[AVVideoCompressionPropertiesKey] = [
                 AVVideoAverageBitRateKey: bitRate,
-                AVVideoExpectedSourceFrameRateKey: 60,
+                AVVideoExpectedSourceFrameRateKey: Int(frameRate),
                 AVVideoProfileLevelKey: profileLevel
             ]
         case .proRes422, .proRes4444:

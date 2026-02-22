@@ -20,7 +20,6 @@ final class AppState: ObservableObject {
     @Published var recordingDuration: TimeInterval = 0
     @Published var hasRecording: Bool = false
     @Published var lastRecordingURL: URL?
-    @Published var lastMouseDataURL: URL?
     // v4 recording metadata (captured before coordinator is released)
     var lastMouseRecording: MouseRecording?
     var lastRecordingStartDate: Date?
@@ -59,8 +58,11 @@ final class AppState: ObservableObject {
 
     // Note: BackgroundStyle doesn't support @AppStorage directly
     var backgroundStyle: BackgroundStyle = .solid(.gray)
-    @AppStorage("autoZoomEnabled") var autoZoomEnabled: Bool = true
-    @AppStorage("zoomLevel") var zoomLevel: Double = 2.0
+
+    // MARK: - Capture Toolbar
+
+    @Published var showCaptureToolbar: Bool = false
+    private(set) var captureToolbarCoordinator: CaptureToolbarCoordinator?
 
     // MARK: - Managers
 
@@ -187,11 +189,7 @@ final class AppState: ObservableObject {
         do {
             try await coordinator.startRecording(
                 target: target,
-                backgroundStyle: backgroundStyle,
-                zoomSettings: ZoomSettings(
-                    isEnabled: autoZoomEnabled,
-                    zoomLevel: zoomLevel
-                )
+                backgroundStyle: backgroundStyle
             )
 
             isRecording = true
@@ -199,7 +197,10 @@ final class AppState: ObservableObject {
             recordingDuration = 0
             startDurationTimer()
             setupPreviewUpdates()
-            showRecordingFloatingPanel()
+            // Only show standalone panel when capture toolbar is not managing the UI
+            if !showCaptureToolbar {
+                showRecordingFloatingPanel()
+            }
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
             recordingCoordinator = nil
@@ -213,7 +214,10 @@ final class AppState: ObservableObject {
         isRecording = false
         isPaused = false
         stopDurationTimer()
-        hideRecordingFloatingPanel()
+        // Only hide standalone panel when capture toolbar is not managing the UI
+        if !showCaptureToolbar {
+            hideRecordingFloatingPanel()
+        }
 
         // Capture v4 timing metadata before releasing coordinator
         lastRecordingStartDate = coordinator.recordingStartDate
@@ -221,9 +225,9 @@ final class AppState: ObservableObject {
 
         if let videoURL = await coordinator.stopRecording() {
             lastRecordingURL = videoURL
-            lastMouseDataURL = MouseDataRecorder.mouseDataURL(for: videoURL)
             lastMouseRecording = coordinator.lastMouseRecording
             hasRecording = true
+            showEditor = true
         } else {
             errorMessage = "Failed to stop recording"
         }
@@ -246,11 +250,17 @@ final class AppState: ObservableObject {
 
     func toggleRecording() async {
         if isRecording {
-            await stopRecording()
+            if showCaptureToolbar {
+                captureToolbarCoordinator?.stopRecording()
+            } else {
+                await stopRecording()
+            }
         } else if isCountingDown {
             cancelCountdown()
+        } else if showCaptureToolbar {
+            captureToolbarCoordinator?.cancel()
         } else {
-            await startRecordingWithCountdown()
+            await showCaptureToolbarFlow()
         }
     }
 
@@ -343,7 +353,9 @@ final class AppState: ObservableObject {
     func startNewRecording() {
         currentProject = nil
         currentProjectURL = nil
-        showSourcePicker = true
+        Task {
+            await showCaptureToolbarFlow()
+        }
     }
 
     /// Leave the recording screen and return to the welcome screen
@@ -352,10 +364,49 @@ final class AppState: ObservableObject {
         showSourcePicker = false
         hasRecording = false
         lastRecordingURL = nil
-        lastMouseDataURL = nil
+    }
+
+    // MARK: - Capture Toolbar Flow
+
+    /// Show the capture toolbar for target selection
+    func showCaptureToolbarFlow() async {
+        if captureToolbarCoordinator == nil {
+            captureToolbarCoordinator = CaptureToolbarCoordinator(appState: self)
+        }
+        showCaptureToolbar = true
+        await captureToolbarCoordinator?.showToolbar()
+    }
+
+    /// Called when the capture toolbar is dismissed (cancelled or recording started)
+    func captureToolbarDidDismiss() {
+        showCaptureToolbar = false
+        captureToolbarCoordinator = nil
     }
 
     // MARK: - Project Creation
+
+    /// Build CaptureMeta from the current selectedTarget, falling back to video dimensions.
+    func buildCaptureMeta(videoURL: URL) async -> CaptureMeta? {
+        if let target = selectedTarget {
+            switch target {
+            case .display(let display):
+                return CaptureMeta(
+                    boundsPt: CGRect(origin: .zero, size: CGSize(width: display.width, height: display.height)),
+                    scaleFactor: CGFloat(display.width) / CGFloat(display.width) * 2.0
+                )
+            case .window(let window):
+                return CaptureMeta(boundsPt: window.frame, scaleFactor: 2.0)
+            case .region(let rect, _):
+                return CaptureMeta(boundsPt: rect, scaleFactor: 2.0)
+            }
+        } else {
+            guard let videoMetadata = await extractVideoMetadata(from: videoURL) else { return nil }
+            return CaptureMeta(
+                boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
+                scaleFactor: 2.0
+            )
+        }
+    }
 
     func createProject(packageInfo: PackageInfo) async -> ScreenizeProject? {
         // Extract video metadata
@@ -363,32 +414,10 @@ final class AppState: ObservableObject {
             return nil
         }
 
-        // Capture metadata
-        let captureMeta: CaptureMeta
-        if let target = selectedTarget {
-            switch target {
-            case .display(let display):
-                captureMeta = CaptureMeta(
-                    boundsPt: CGRect(origin: .zero, size: CGSize(width: display.width, height: display.height)),
-                    scaleFactor: CGFloat(display.width) / CGFloat(display.width) * 2.0  // Retina
-                )
-            case .window(let window):
-                captureMeta = CaptureMeta(
-                    boundsPt: window.frame,
-                    scaleFactor: 2.0
-                )
-            case .region(let rect, _):
-                captureMeta = CaptureMeta(
-                    boundsPt: rect,
-                    scaleFactor: 2.0
-                )
-            }
-        } else {
-            captureMeta = CaptureMeta(
-                boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
-                scaleFactor: 2.0
-            )
-        }
+        let captureMeta = await buildCaptureMeta(videoURL: packageInfo.videoURL) ?? CaptureMeta(
+            boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
+            scaleFactor: 2.0
+        )
 
         // Create media asset with relative paths
         let media = MediaAsset(
@@ -403,32 +432,23 @@ final class AppState: ObservableObject {
         // Generate default timeline
         let timeline = Timeline(
             tracks: [
-                AnyTrack(TransformTrack(
+                AnySegmentTrack.camera(CameraTrack(
                     id: UUID(),
-                    name: "Transform",
+                    name: "Camera",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: []
-                )),
-                AnyTrack(CursorTrack(
+                AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
-                    defaultStyle: .arrow,
-                    defaultScale: 1.5,
-                    defaultVisible: true,
-                    styleKeyframes: nil
+                    segments: []
                 )),
-                AnyTrack(KeystrokeTrack(
+                AnySegmentTrack.keystroke(KeystrokeTrackV2(
                     id: UUID(),
                     name: "Keystroke",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 ))
             ],
             duration: videoMetadata.duration
@@ -446,7 +466,8 @@ final class AppState: ObservableObject {
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
-            renderSettings: renderSettings
+            renderSettings: renderSettings,
+            interop: packageInfo.interop
         )
     }
 
@@ -506,6 +527,9 @@ final class AppState: ObservableObject {
 extension Notification.Name {
     static let editorUndo = Notification.Name("editorUndo")
     static let editorRedo = Notification.Name("editorRedo")
+    static let editorCopy = Notification.Name("editorCopy")
+    static let editorPaste = Notification.Name("editorPaste")
+    static let editorDuplicate = Notification.Name("editorDuplicate")
 }
 
 // MARK: - Auto Zoom Settings

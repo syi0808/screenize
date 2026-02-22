@@ -35,6 +35,12 @@ struct UIElementInfo: Codable {
         "AXSwitch",
         "AXSegmentedControl"
     ]
+
+    /// List of roles that represent text input elements
+    static let textInputRoles: Set<String> = [
+        "AXTextField", "AXTextArea", "AXSearchField",
+        "AXSecureTextField", "AXComboBox"
+    ]
 }
 
 /// Accessibility permission status

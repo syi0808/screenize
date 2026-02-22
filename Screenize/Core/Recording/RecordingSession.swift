@@ -101,10 +101,18 @@ final class RecordingSession: Identifiable, @unchecked Sendable {
     }
 
     private static func generateOutputURL(id: UUID) -> URL {
+        #if DEBUG
+        let repoRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // Recording/
+            .deletingLastPathComponent() // Core/
+            .deletingLastPathComponent() // Screenize/
+            .deletingLastPathComponent() // repo root
+        let screenizeFolder = repoRoot.appendingPathComponent("projects", isDirectory: true)
+        #else
         let documentsPath = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first!
         let screenizeFolder = documentsPath.appendingPathComponent("Screenize", isDirectory: true)
+        #endif
 
-        // Create folder if needed
         try? FileManager.default.createDirectory(at: screenizeFolder, withIntermediateDirectories: true)
 
         let dateFormatter = DateFormatter()

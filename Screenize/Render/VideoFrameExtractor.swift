@@ -92,14 +92,6 @@ final class VideoFrameExtractor {
         }
     }
 
-    /// Extract a frame by frame number
-    /// - Parameter frame: Frame number
-    /// - Returns: CIImage
-    func extractFrame(frame: Int) async throws -> CIImage {
-        let time = Double(frame) / frameRate
-        return try await extractFrame(at: time)
-    }
-
     /// Extract frames for multiple times
     /// - Parameter times: Times to extract (seconds)
     /// - Returns: Array of (time, CIImage) tuples

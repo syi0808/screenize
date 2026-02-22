@@ -63,8 +63,7 @@ final class RecordingCoordinator: ObservableObject {
     @available(macOS 15.0, *)
     func startRecording(
         target: CaptureTarget,
-        backgroundStyle: BackgroundStyle,
-        zoomSettings: ZoomSettings
+        backgroundStyle: BackgroundStyle
     ) async throws {
         guard currentSession == nil else {
             throw RecordingError.alreadyRecording
@@ -130,16 +129,9 @@ final class RecordingCoordinator: ObservableObject {
 
         stopDurationTimer()
 
-        // Save mouse data
+        // Collect mouse data (written to package later by EventStreamWriter)
         if let mouseRecording = mouseDataRecorder?.stopRecording() {
             lastMouseRecording = mouseRecording
-            let mouseDataURL = MouseDataRecorder.mouseDataURL(for: session.outputURL)
-            do {
-                try mouseRecording.save(to: mouseDataURL)
-                print("🖱️ [RecordingCoordinator] Saved mouse data: \(mouseDataURL.path)")
-            } catch {
-                print("⚠️ [RecordingCoordinator] Failed to save mouse data: \(error)")
-            }
         }
         mouseDataRecorder = nil
 
