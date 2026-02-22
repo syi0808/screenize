@@ -33,10 +33,6 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Frame rate
     private var frameRate: Double = 60.0
 
-    /// Fixed quantization rate for cache keys (matches CMTime timescale).
-    /// Decoupled from source frame rate to support VFR videos.
-    private static let cacheQuantizationRate: Double = 600
-
     /// Preview scale
     private let previewScale: CGFloat
 
@@ -109,7 +105,7 @@ final class RenderCoordinator: @unchecked Sendable {
             return
         }
 
-        let cacheKey = Int(time * Self.cacheQuantizationRate)
+        let cacheKey = Int(time * self.frameRate)
         let generation = renderGeneration
 
         // Check cache
@@ -177,7 +173,7 @@ final class RenderCoordinator: @unchecked Sendable {
             self.lock.unlock()
 
             // Store in cache
-            let actualCacheKey = Int(frame.time * Self.cacheQuantizationRate)
+            let actualCacheKey = Int(frame.time * self.frameRate)
             cache?.store(targetTexture, at: actualCacheKey)
 
             // Deliver
@@ -199,7 +195,7 @@ final class RenderCoordinator: @unchecked Sendable {
         completion: @escaping (MTLTexture?) -> Void
     ) {
         lock.lock()
-        let cacheKey = Int(time * Self.cacheQuantizationRate)
+        let cacheKey = Int(time * self.frameRate)
         let evaluator = self.evaluator
         let renderer = self.renderer
         let extractor = self.frameExtractor
@@ -314,8 +310,8 @@ final class RenderCoordinator: @unchecked Sendable {
 
     /// Invalidate cached frames within a time range
     func invalidateCache(from startTime: TimeInterval, to endTime: TimeInterval) {
-        let startKey = Int(startTime * Self.cacheQuantizationRate)
-        let endKey = Int(endTime * Self.cacheQuantizationRate)
+        let startKey = Int(startTime * frameRate)
+        let endKey = Int(endTime * frameRate)
         textureCache?.invalidate(from: startKey, to: endKey)
     }
 
@@ -326,7 +322,7 @@ final class RenderCoordinator: @unchecked Sendable {
 
     /// Check if a frame at the given time is cached
     func isCached(at time: TimeInterval) -> Bool {
-        let cacheKey = Int(time * Self.cacheQuantizationRate)
+        let cacheKey = Int(time * self.frameRate)
         return textureCache?.isCached(cacheKey) ?? false
     }
 
