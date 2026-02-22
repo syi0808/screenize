@@ -415,3 +415,169 @@ struct OptimizationSettings {
     /// Merge consecutive hold segments with negligible differences.
     var mergeConsecutiveHolds: Bool = true
 }
+
+// MARK: - Dynamics Factory
+
+extension SmartGenerationSettings {
+
+    /// Create settings driven by a single dynamics parameter.
+    ///
+    /// - Parameter dynamics: 0.0 (calm) to 1.0 (aggressive). 0.5 = current defaults.
+    ///   Calm produces minimal zoom, longer holds, heavy merging, and slow transitions.
+    ///   Aggressive produces maximum zoom, short holds, minimal merging, and fast snappy transitions.
+    static func withDynamics(_ d: CGFloat) -> SmartGenerationSettings {
+        let d = max(0, min(1, d))
+        var s = SmartGenerationSettings()
+
+        // --- Shot Settings ---
+        s.shot.typingCodeZoomRange = lerpRange3(
+            low: 1.4...1.7, mid: 2.0...2.5, high: 2.6...3.2, d: d
+        )
+        s.shot.typingTextFieldZoomRange = lerpRange3(
+            low: 1.5...1.8, mid: 2.2...2.8, high: 2.8...3.5, d: d
+        )
+        s.shot.typingTerminalZoomRange = lerpRange3(
+            low: 1.2...1.4, mid: 1.6...2.0, high: 2.0...2.6, d: d
+        )
+        s.shot.typingRichTextZoomRange = lerpRange3(
+            low: 1.3...1.5, mid: 1.8...2.2, high: 2.3...2.8, d: d
+        )
+        s.shot.clickingZoom = lerp3(1.4, 2.0, 2.6, d: d)
+        s.shot.navigatingZoomRange = lerpRange3(
+            low: 1.1...1.3, mid: 1.5...1.8, high: 1.9...2.3, d: d
+        )
+        s.shot.draggingZoomRange = lerpRange3(
+            low: 1.0...1.2, mid: 1.3...1.6, high: 1.6...2.0, d: d
+        )
+        s.shot.scrollingZoomRange = lerpRange3(
+            low: 1.0...1.1, mid: 1.3...1.5, high: 1.6...1.9, d: d
+        )
+        s.shot.readingZoomRange = lerpRange3(
+            low: 1.0...1.0, mid: 1.0...1.3, high: 1.3...1.6, d: d
+        )
+        s.shot.targetAreaCoverage = lerp3(0.8, 0.7, 0.55, d: d)
+        s.shot.workAreaPadding = lerp3(0.12, 0.08, 0.04, d: d)
+        s.shot.maxZoom = lerp3(2.0, 2.8, 3.5, d: d)
+
+        // --- Transition Settings ---
+        s.transition.directPanThreshold = lerp3(0.8, 0.6, 0.4, d: d)
+        s.transition.gentlePanThreshold = lerp3(1.6, 1.2, 0.8, d: d)
+        s.transition.fullZoomOutThreshold = lerp3(4.0, 3.0, 2.0, d: d)
+        s.transition.shortPanDurationRange = lerpTimeRange3(
+            low: 0.6...0.9, mid: 0.4...0.6, high: 0.2...0.35, d: d
+        )
+        s.transition.mediumPanDurationRange = lerpTimeRange3(
+            low: 0.9...1.3, mid: 0.6...0.9, high: 0.3...0.5, d: d
+        )
+        s.transition.zoomOutDurationRange = lerpTimeRange3(
+            low: 0.5...0.7, mid: 0.35...0.5, high: 0.2...0.3, d: d
+        )
+
+        // Spring easing: calm = critically damped slow, aggressive = slight underdamp fast
+        let panDamping = lerp3(1.0, 1.0, 0.85, d: d)
+        let panResponse = lerp3(0.8, 0.6, 0.4, d: d)
+        s.transition.panEasing = .spring(
+            dampingRatio: panDamping, response: panResponse
+        )
+        let zoomInDamping = lerp3(1.0, 0.92, 0.82, d: d)
+        let zoomInResponse = lerp3(0.7, 0.55, 0.4, d: d)
+        s.transition.zoomInEasing = .spring(
+            dampingRatio: zoomInDamping, response: zoomInResponse
+        )
+
+        // --- Hold Settings ---
+        s.postProcessing.hold.minZoomInHold = lerpTime3(
+            1.4, 0.8, 0.4, d: d
+        )
+        s.postProcessing.hold.minZoomOutHold = lerpTime3(
+            1.0, 0.5, 0.2, d: d
+        )
+
+        // --- Merge Settings ---
+        s.postProcessing.merge.minSegmentDuration = lerpTime3(
+            0.6, 0.3, 0.15, d: d
+        )
+        s.postProcessing.merge.maxZoomDiffForMerge = lerp3(
+            0.3, 0.15, 0.05, d: d
+        )
+        s.postProcessing.merge.maxCenterDiffForMerge = lerp3(
+            0.15, 0.08, 0.03, d: d
+        )
+
+        // --- Optimization Settings ---
+        s.postProcessing.optimization.negligibleZoomDiff = lerp3(
+            0.06, 0.03, 0.01, d: d
+        )
+        s.postProcessing.optimization.negligibleCenterDiff = lerp3(
+            0.03, 0.015, 0.005, d: d
+        )
+
+        // --- Cursor Settings ---
+        s.cursor.cursorScale = lerp3(1.5, 2.0, 2.5, d: d)
+
+        // --- Keystroke Settings ---
+        s.keystroke.displayDuration = lerpTime3(2.0, 1.5, 0.8, d: d)
+        s.keystroke.fadeInDuration = lerpTime3(0.25, 0.15, 0.08, d: d)
+        s.keystroke.fadeOutDuration = lerpTime3(0.5, 0.3, 0.15, d: d)
+
+        return s
+    }
+
+    // MARK: - Interpolation Helpers
+
+    /// Piecewise-linear interpolation with three anchors: low at d=0, mid at d=0.5, high at d=1.
+    private static func lerp3(
+        _ low: CGFloat, _ mid: CGFloat, _ high: CGFloat, d: CGFloat
+    ) -> CGFloat {
+        if d <= 0.5 {
+            let t = d / 0.5
+            return low + (mid - low) * t
+        } else {
+            let t = (d - 0.5) / 0.5
+            return mid + (high - mid) * t
+        }
+    }
+
+    /// Piecewise-linear interpolation for TimeInterval values.
+    private static func lerpTime3(
+        _ low: TimeInterval, _ mid: TimeInterval, _ high: TimeInterval,
+        d: CGFloat
+    ) -> TimeInterval {
+        let t = Double(d)
+        if t <= 0.5 {
+            let u = t / 0.5
+            return low + (mid - low) * u
+        } else {
+            let u = (t - 0.5) / 0.5
+            return mid + (high - mid) * u
+        }
+    }
+
+    /// Interpolate a ClosedRange<CGFloat> with three anchors.
+    private static func lerpRange3(
+        low: ClosedRange<CGFloat>, mid: ClosedRange<CGFloat>,
+        high: ClosedRange<CGFloat>, d: CGFloat
+    ) -> ClosedRange<CGFloat> {
+        let lb = lerp3(
+            low.lowerBound, mid.lowerBound, high.lowerBound, d: d
+        )
+        let ub = lerp3(
+            low.upperBound, mid.upperBound, high.upperBound, d: d
+        )
+        return lb...ub
+    }
+
+    /// Interpolate a ClosedRange<TimeInterval> with three anchors.
+    private static func lerpTimeRange3(
+        low: ClosedRange<TimeInterval>, mid: ClosedRange<TimeInterval>,
+        high: ClosedRange<TimeInterval>, d: CGFloat
+    ) -> ClosedRange<TimeInterval> {
+        let lb = lerpTime3(
+            low.lowerBound, mid.lowerBound, high.lowerBound, d: d
+        )
+        let ub = lerpTime3(
+            low.upperBound, mid.upperBound, high.upperBound, d: d
+        )
+        return lb...ub
+    }
+}

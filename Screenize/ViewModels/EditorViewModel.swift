@@ -248,7 +248,10 @@ final class EditorViewModel: ObservableObject {
     // MARK: - Lifecycle
 
     /// Initialize the editor
-    func setup(autoGenerateKeyframes: Bool = false) async {
+    func setup(
+        autoGenerateKeyframes: Bool = false,
+        dynamics: CGFloat = 0.5
+    ) async {
         isLoading = true
         errorMessage = nil
 
@@ -256,7 +259,7 @@ final class EditorViewModel: ObservableObject {
 
         // Run smart generation when the timeline is empty and auto-generation is enabled
         if autoGenerateKeyframes && isTimelineEmpty {
-            await runSmartGeneration()
+            await runSmartGeneration(dynamics: dynamics)
         }
 
         isLoading = false
@@ -272,13 +275,17 @@ final class EditorViewModel: ObservableObject {
     /// Auto-generate keyframes using mouse data
     /// - Parameter selection: Which track types to generate. Unselected types are preserved.
     func runSmartGeneration(
-        for selection: Set<TrackType> = [.transform, .cursor, .keystroke]
+        for selection: Set<TrackType> = [.transform, .cursor, .keystroke],
+        dynamics: CGFloat = 0.5
     ) async {
-        await runSmartZoomGeneration(for: selection)
+        await runSmartZoomGeneration(for: selection, dynamics: dynamics)
     }
 
     /// Smart generation with selective track types (video analysis + UI state)
-    private func runSmartZoomGeneration(for selection: Set<TrackType>) async {
+    private func runSmartZoomGeneration(
+        for selection: Set<TrackType>,
+        dynamics: CGFloat
+    ) async {
         saveUndoSnapshot()
 
         isLoading = true
@@ -326,7 +333,7 @@ final class EditorViewModel: ObservableObject {
                 uiStateSamples: uiStateSamples,
                 frameAnalysis: frameAnalysis,
                 screenBounds: project.media.pixelSize,
-                settings: .default
+                settings: .withDynamics(dynamics)
             )
 
             // 5. Apply selected tracks

@@ -389,6 +389,7 @@ struct GeneratorPanelView: View {
 
     @ObservedObject var viewModel: EditorViewModel
 
+    @AppStorage("generatorDynamics") private var dynamics: Double = 0.5
     @State private var isGenerating: Bool = false
     @State private var generationResult: String?
     @State private var selectedTypes: Set<TrackType> = [
@@ -466,6 +467,34 @@ struct GeneratorPanelView: View {
 
             Divider()
 
+            // Dynamics slider
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Dynamics")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Slider(value: $dynamics, in: 0...1, step: 0.05) {
+                    Text("Dynamics")
+                }
+                .disabled(isGenerating)
+
+                HStack {
+                    Text("Calm")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Default")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Dynamic")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+
             // Generation result
             if let result = generationResult {
                 Text(result)
@@ -522,7 +551,10 @@ struct GeneratorPanelView: View {
         isGenerating = true
         generationResult = nil
 
-        await viewModel.runSmartGeneration(for: selectedTypes)
+        await viewModel.runSmartGeneration(
+            for: selectedTypes,
+            dynamics: CGFloat(dynamics)
+        )
 
         if let error = viewModel.errorMessage {
             generationResult = "Failed: \(error)"
