@@ -160,6 +160,64 @@ final class EffectCompositor {
         return CGPoint(x: hotspot.x * scale, y: hotspot.y * scale)
     }
 
+    // MARK: - High-Resolution Cursor Rendering (Post-Transform)
+
+    /// Render cursor at output resolution after the zoom transform has been applied.
+    /// The cursor is drawn at the exact pixel size needed, avoiding any upscale artifacts.
+    /// - Parameters:
+    ///   - cursor: Cursor state
+    ///   - outputPosition: Cursor hotspot position in output pixel coordinates (bottom-left origin)
+    ///   - outputSize: Output frame size
+    ///   - zoomLevel: Current zoom level (for proportional cursor sizing)
+    ///   - outputScale: Ratio of output height to source height (accounts for resolution difference)
+    ///   - cursorImageProvider: Provider for resolution-independent cursor images
+    /// - Returns: Cursor image sized to the output frame
+    func renderCursorAtOutputResolution(
+        _ cursor: CursorState,
+        outputPosition: CGPoint,
+        outputSize: CGSize,
+        zoomLevel: CGFloat,
+        outputScale: CGFloat,
+        cursorImageProvider: CursorImageProvider
+    ) -> CIImage? {
+        guard cursor.visible else { return nil }
+
+        let effectiveScale = cursor.scale * cursor.clickScaleModifier
+
+        // Base cursor height matches the NSCursor image size (~28 design units for arrow).
+        // The final pixel height accounts for user scale, zoom level, and output/source ratio.
+        let baseCursorHeight: CGFloat = 28.0
+        let cursorPixelHeight = baseCursorHeight * effectiveScale * zoomLevel * outputScale
+
+        guard let cursorImage = cursorImageProvider.cursorImage(style: cursor.style, pixelHeight: cursorPixelHeight) else {
+            return nil
+        }
+
+        let cursorSize = cursorImage.extent.size
+        let hotspot = cursorImageProvider.normalizedHotspot(style: cursor.style)
+
+        // Hotspot pixel offset (hotspot is in top-left origin, convert for CoreImage bottom-left)
+        let hotspotPixelX = hotspot.x * cursorSize.width
+        let hotspotPixelY = hotspot.y * cursorSize.height
+
+        // Scale correction proportionally (was fixed -2/+2 at ~80px cursor size)
+        let correctionScale = cursorPixelHeight / 80.0
+        let correctionX: CGFloat = -2.0 * correctionScale
+        let correctionY: CGFloat = 2.0 * correctionScale
+
+        // Position: place cursor so hotspot aligns with outputPosition
+        // CoreImage uses bottom-left origin; hotspot.y is from top
+        let finalX = outputPosition.x - hotspotPixelX + correctionX
+        let finalY = outputPosition.y - cursorSize.height + hotspotPixelY + correctionY
+
+        let translated = cursorImage.transformed(by: CGAffineTransform(
+            translationX: finalX,
+            y: finalY
+        ))
+
+        return translated.cropped(to: CGRect(origin: .zero, size: outputSize))
+    }
+
     // MARK: - Keystroke Overlay Rendering
 
     /// Render keystroke overlay

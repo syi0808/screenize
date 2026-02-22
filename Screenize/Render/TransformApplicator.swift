@@ -157,6 +157,49 @@ final class TransformApplicator {
     }
 }
 
+// MARK: - Point Conversion
+
+extension TransformApplicator {
+    /// Convert a source-normalized point to output pixel coordinates after zoom/pan.
+    /// - Parameters:
+    ///   - point: Normalized position in source frame (0-1, bottom-left origin)
+    ///   - transform: Current transform state
+    ///   - sourceSize: Source frame size in pixels
+    ///   - outputSize: Output frame size in pixels
+    /// - Returns: Position in output pixel coordinates (bottom-left origin)
+    func sourcePointToOutputPoint(
+        _ point: NormalizedPoint,
+        transform: TransformState,
+        sourceSize: CGSize,
+        outputSize: CGSize
+    ) -> CGPoint {
+        if transform == .identity {
+            let scaleX = outputSize.width / sourceSize.width
+            let scaleY = outputSize.height / sourceSize.height
+            return CGPoint(
+                x: point.x * sourceSize.width * scaleX,
+                y: point.y * sourceSize.height * scaleY
+            )
+        }
+
+        let cropRect = calculateCropRect(transform: transform, sourceSize: sourceSize)
+
+        // Source pixel position
+        let sourcePixelX = point.x * sourceSize.width
+        let sourcePixelY = point.y * sourceSize.height
+
+        // Relative position within the crop rect
+        let relX = sourcePixelX - cropRect.origin.x
+        let relY = sourcePixelY - cropRect.origin.y
+
+        // Scale to output
+        let scaleX = outputSize.width / cropRect.width
+        let scaleY = outputSize.height / cropRect.height
+
+        return CGPoint(x: relX * scaleX, y: relY * scaleY)
+    }
+}
+
 // MARK: - Transform Validation
 
 extension TransformApplicator {

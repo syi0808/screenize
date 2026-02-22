@@ -30,6 +30,7 @@
 		F0000023296A0001 /* RenderContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000023296A0001 /* RenderContext.swift */; };
 		F0000024296A0001 /* TransformApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000024296A0001 /* TransformApplicator.swift */; };
 		F0000025296A0001 /* EffectCompositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000025296A0001 /* EffectCompositor.swift */; };
+		C2000001296A0001 /* CursorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2100001296A0001 /* CursorImageProvider.swift */; };
 		F0000026296A0001 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000026296A0001 /* Renderer.swift */; };
 		F0000027296A0001 /* PreviewCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000027296A0001 /* PreviewCache.swift */; };
 		F0000028296A0001 /* VideoFrameExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000028296A0001 /* VideoFrameExtractor.swift */; };
@@ -184,6 +185,7 @@
 		F1000023296A0001 /* RenderContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderContext.swift; sourceTree = "<group>"; };
 		F1000024296A0001 /* TransformApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformApplicator.swift; sourceTree = "<group>"; };
 		F1000025296A0001 /* EffectCompositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectCompositor.swift; sourceTree = "<group>"; };
+		C2100001296A0001 /* CursorImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorImageProvider.swift; sourceTree = "<group>"; };
 		F1000026296A0001 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		F1000027296A0001 /* PreviewCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewCache.swift; sourceTree = "<group>"; };
 		F1000028296A0001 /* VideoFrameExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoFrameExtractor.swift; sourceTree = "<group>"; };
@@ -546,6 +548,7 @@
 				F1000023296A0001 /* RenderContext.swift */,
 				F1000024296A0001 /* TransformApplicator.swift */,
 				F1000025296A0001 /* EffectCompositor.swift */,
+				C2100001296A0001 /* CursorImageProvider.swift */,
 				F1000026296A0001 /* Renderer.swift */,
 				F1000027296A0001 /* PreviewCache.swift */,
 				F1000028296A0001 /* VideoFrameExtractor.swift */,
@@ -933,6 +936,7 @@
 				F0000023296A0001 /* RenderContext.swift in Sources */,
 				F0000024296A0001 /* TransformApplicator.swift in Sources */,
 				F0000025296A0001 /* EffectCompositor.swift in Sources */,
+				C2000001296A0001 /* CursorImageProvider.swift in Sources */,
 				F0000026296A0001 /* Renderer.swift in Sources */,
 				F0000027296A0001 /* PreviewCache.swift in Sources */,
 				F0000028296A0001 /* VideoFrameExtractor.swift in Sources */,

@@ -157,4 +157,39 @@ final class WindowTransformApplicator {
             y: screenCenterY - windowPointY
         )
     }
+
+    /// Convert a source-normalized point to output pixel coordinates in window mode.
+    /// - Parameters:
+    ///   - point: Normalized position in source frame (0-1, bottom-left origin)
+    ///   - transform: Current transform state
+    ///   - sourceSize: Source frame size (after window inset adjustment, if any)
+    ///   - outputSize: Output frame size
+    ///   - padding: Window padding
+    /// - Returns: Position in output pixel coordinates (bottom-left origin)
+    func sourcePointToOutputPoint(
+        _ point: NormalizedPoint,
+        transform: TransformState,
+        sourceSize: CGSize,
+        outputSize: CGSize,
+        padding: CGFloat
+    ) -> CGPoint {
+        let scaledSize = calculateScaledSize(
+            sourceSize: sourceSize,
+            outputSize: outputSize,
+            padding: padding,
+            zoom: transform.zoom
+        )
+
+        let origin = calculateWindowOrigin(
+            transform: transform,
+            sourceSize: sourceSize,
+            outputSize: outputSize,
+            padding: padding
+        )
+
+        return CGPoint(
+            x: origin.x + point.x * scaledSize.width,
+            y: origin.y + point.y * scaledSize.height
+        )
+    }
 }

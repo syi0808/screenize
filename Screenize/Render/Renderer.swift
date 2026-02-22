@@ -31,6 +31,12 @@ final class Renderer {
     /// Rendering settings for window mode
     private let renderSettings: RenderSettings?
 
+    /// High-resolution cursor image provider
+    private let cursorImageProvider: CursorImageProvider
+
+    /// Window transform applicator (for cursor position calculation in window mode)
+    private let windowTransformApplicator: WindowTransformApplicator
+
     // MARK: - Initialization
 
     init(
@@ -43,6 +49,8 @@ final class Renderer {
         self.transformApplicator = TransformApplicator()
         self.compositor = EffectCompositor(ciContext: context.ciContext)
         self.motionBlurSettings = motionBlurSettings
+        self.cursorImageProvider = CursorImageProvider()
+        self.windowTransformApplicator = WindowTransformApplicator()
 
         self.isWindowMode = isWindowMode
         self.renderSettings = renderSettings
@@ -64,15 +72,7 @@ final class Renderer {
     ) -> CIImage? {
         var result = sourceFrame
 
-        // 1. Render cursor (over source frame, before transform)
-        // The cursor renders at the source frame's absolute position and scales/moves with the transform
-        if state.cursor.visible {
-            if let cursorImage = compositor.renderCursor(state.cursor, frameSize: context.sourceSize) {
-                result = cursorImage.composited(over: result)
-            }
-        }
-
-        // 2. Apply transform (mode-specific branch)
+        // 1. Apply transform (mode-specific branch)
         if isWindowMode, let windowRenderer = windowModeRenderer, let settings = renderSettings {
             // Window mode: background + window scale/offset + effects
             result = windowRenderer.render(
@@ -91,6 +91,67 @@ final class Renderer {
                 outputSize: context.outputSize,
                 motionBlurSettings: motionBlurSettings
             )
+        }
+
+        // 2. Render cursor (after transform — always sharp at output resolution)
+        if state.cursor.visible {
+            let outputPosition: CGPoint
+            let outputScale: CGFloat
+
+            if isWindowMode, let settings = renderSettings {
+                // Window mode: account for window inset when computing cursor position
+                var adjustedSourceSize = context.sourceSize
+                if settings.windowInset > 0 {
+                    adjustedSourceSize = CGSize(
+                        width: max(1, adjustedSourceSize.width - settings.windowInset * 2),
+                        height: max(1, adjustedSourceSize.height - settings.windowInset * 2)
+                    )
+                }
+
+                // Re-normalize cursor position relative to the inset-adjusted frame
+                var adjustedPosition = state.cursor.position
+                if settings.windowInset > 0 {
+                    let inset = settings.windowInset
+                    let adjX = (state.cursor.position.x * context.sourceSize.width - inset) / adjustedSourceSize.width
+                    let adjY = (state.cursor.position.y * context.sourceSize.height - inset) / adjustedSourceSize.height
+                    adjustedPosition = NormalizedPoint(x: adjX, y: adjY)
+                }
+
+                outputPosition = windowTransformApplicator.sourcePointToOutputPoint(
+                    adjustedPosition,
+                    transform: state.transform,
+                    sourceSize: adjustedSourceSize,
+                    outputSize: context.outputSize,
+                    padding: settings.padding
+                )
+
+                // Window mode output scale: base fit scale
+                let availableWidth = context.outputSize.width - settings.padding * 2
+                let availableHeight = context.outputSize.height - settings.padding * 2
+                let scaleX = availableWidth / adjustedSourceSize.width
+                let scaleY = availableHeight / adjustedSourceSize.height
+                outputScale = min(scaleX, scaleY)
+            } else {
+                // Screen mode
+                outputPosition = transformApplicator.sourcePointToOutputPoint(
+                    state.cursor.position,
+                    transform: state.transform,
+                    sourceSize: context.sourceSize,
+                    outputSize: context.outputSize
+                )
+                outputScale = context.outputSize.height / context.sourceSize.height
+            }
+
+            if let cursorImage = compositor.renderCursorAtOutputResolution(
+                state.cursor,
+                outputPosition: outputPosition,
+                outputSize: context.outputSize,
+                zoomLevel: state.transform.zoom,
+                outputScale: outputScale,
+                cursorImageProvider: cursorImageProvider
+            ) {
+                result = cursorImage.composited(over: result)
+            }
         }
 
         // 3. Keystroke overlay (after transform — fixed screen position)
