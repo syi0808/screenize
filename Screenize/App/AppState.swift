@@ -250,7 +250,11 @@ final class AppState: ObservableObject {
 
     func toggleRecording() async {
         if isRecording {
-            await stopRecording()
+            if showCaptureToolbar {
+                captureToolbarCoordinator?.stopRecording()
+            } else {
+                await stopRecording()
+            }
         } else if isCountingDown {
             cancelCountdown()
         } else if showCaptureToolbar {
