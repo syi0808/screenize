@@ -91,6 +91,15 @@ final class CaptureToolbarCoordinator: ObservableObject {
         appState.selectedTarget = target
         overlayController.deactivate()
 
+        // Bring the target window's application to front so it's fully visible
+        // for region-based capture (avoids overlap and purple indicator)
+        if case .window(let scWindow) = target {
+            if let pid = scWindow.owningApplication?.processID,
+               let runningApp = NSRunningApplication(processIdentifier: pid) {
+                runningApp.activate(options: .activateIgnoringOtherApps)
+            }
+        }
+
         // Hide toolbar during countdown
         toolbarPanel?.dismiss()
 

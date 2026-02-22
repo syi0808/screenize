@@ -11,6 +11,7 @@ struct CaptureConfiguration {
     var capturesAudio: Bool
     var scaleFactor: CGFloat
     var capturesShadow: Bool
+    var sourceRect: CGRect?
 
     init(
         width: Int = 1920,
@@ -20,7 +21,8 @@ struct CaptureConfiguration {
         showsCursor: Bool = false,
         capturesAudio: Bool = true,
         scaleFactor: CGFloat = 2.0,
-        capturesShadow: Bool = true
+        capturesShadow: Bool = true,
+        sourceRect: CGRect? = nil
     ) {
         self.width = width
         self.height = height
@@ -30,6 +32,7 @@ struct CaptureConfiguration {
         self.capturesAudio = capturesAudio
         self.scaleFactor = scaleFactor
         self.capturesShadow = capturesShadow
+        self.sourceRect = sourceRect
     }
 
     static let `default` = Self()
@@ -67,6 +70,9 @@ struct CaptureConfiguration {
         if #available(macOS 14.0, *) {
             config.ignoreShadowsSingleWindow = !capturesShadow
         }
+        if let sourceRect {
+            config.sourceRect = sourceRect
+        }
         return config
     }
 
@@ -74,12 +80,47 @@ struct CaptureConfiguration {
         let width = Int(CGFloat(target.width) * scaleFactor)
         let height = Int(CGFloat(target.height) * scaleFactor)
 
+        var sourceRect: CGRect?
+        if case .window(let scWindow) = target {
+            sourceRect = Self.computeSourceRect(for: scWindow)
+        }
+
         return Self(
             width: width,
             height: height,
             frameRate: 60,
             scaleFactor: scaleFactor,
-            capturesShadow: !target.isWindow
+            capturesShadow: !target.isWindow,
+            sourceRect: sourceRect
+        )
+    }
+
+    /// Compute the sourceRect for a window relative to its containing display.
+    /// sourceRect is in the display's CG coordinate space.
+    private static func computeSourceRect(for window: SCWindow) -> CGRect {
+        let windowCenter = CGPoint(x: window.frame.midX, y: window.frame.midY)
+
+        // Find the display containing the window's center
+        let maxDisplays: UInt32 = 16
+        var displayIDs = [CGDirectDisplayID](repeating: 0, count: Int(maxDisplays))
+        var displayCount: UInt32 = 0
+        CGGetOnlineDisplayList(maxDisplays, &displayIDs, &displayCount)
+
+        var displayOrigin = CGPoint.zero
+        for i in 0..<Int(displayCount) {
+            let bounds = CGDisplayBounds(displayIDs[i])
+            if bounds.contains(windowCenter) {
+                displayOrigin = bounds.origin
+                break
+            }
+        }
+
+        // sourceRect is relative to the display's origin
+        return CGRect(
+            x: window.frame.origin.x - displayOrigin.x,
+            y: window.frame.origin.y - displayOrigin.y,
+            width: window.frame.width,
+            height: window.frame.height
         )
     }
 }

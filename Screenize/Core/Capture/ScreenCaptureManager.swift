@@ -217,10 +217,21 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
             )
 
         case .window(let window):
-            guard let scWindow = content.windows.first(where: { $0.windowID == window.windowID }) else {
+            // Use display-based capture with sourceRect instead of desktopIndependentWindow
+            // to avoid macOS injecting the purple recording indicator into captured frames.
+            // The target window is brought to front before recording starts.
+            let windowCenter = CGPoint(x: window.frame.midX, y: window.frame.midY)
+            guard let scDisplay = content.displays.first(where: { display in
+                let bounds = CGDisplayBounds(display.displayID)
+                return bounds.contains(windowCenter)
+            }) else {
                 throw CaptureError.targetNotFound
             }
-            return SCContentFilter(desktopIndependentWindow: scWindow)
+            return SCContentFilter(
+                display: scDisplay,
+                excludingApplications: excludedApps,
+                exceptingWindows: []
+            )
 
         case .region(_, let display):
             guard let scDisplay = content.displays.first(where: { $0.displayID == display.displayID }) else {
