@@ -316,12 +316,6 @@ final class PreviewEngine: ObservableObject {
         }
     }
 
-    /// Seek to a specific frame
-    func seek(toFrame frame: Int) async {
-        let time = Double(frame) / frameRate
-        await seek(to: time)
-    }
-
     /// Jump to the start (trim start)
     func seekToStart() async {
         await seek(to: effectiveTrimStart)
@@ -477,12 +471,12 @@ final class PreviewEngine: ObservableObject {
 // MARK: - Computed Properties
 
 extension PreviewEngine {
-    /// Current frame index
+    /// Current frame index (approximate for VFR videos, display only)
     var currentFrameNumber: Int {
         Int(currentTime * frameRate)
     }
 
-    /// Total number of frames
+    /// Total number of frames (approximate for VFR videos, display only)
     var totalFrames: Int {
         Int(duration * frameRate)
     }

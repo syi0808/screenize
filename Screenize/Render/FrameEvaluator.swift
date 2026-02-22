@@ -77,12 +77,6 @@ final class FrameEvaluator {
         )
     }
 
-    /// Evaluate using a specific frame number
-    func evaluate(frame: Int) -> EvaluatedFrameState {
-        let time = Double(frame) / frameRate
-        return evaluate(at: time)
-    }
-
     // MARK: - Transform Evaluation
 
     /// Evaluate the transform track
@@ -471,34 +465,5 @@ struct RenderClickEvent {
         self.duration = duration
         self.position = CGPoint(x: x, y: y)
         self.clickType = clickType
-    }
-}
-
-// MARK: - Batch Evaluation
-
-extension FrameEvaluator {
-    /// Generate an array of states for all frames
-    func evaluateAllFrames(totalFrames: Int) -> [EvaluatedFrameState] {
-        var states: [EvaluatedFrameState] = []
-        states.reserveCapacity(totalFrames)
-
-        for frame in 0..<totalFrames {
-            states.append(evaluate(frame: frame))
-        }
-
-        return states
-    }
-
-    /// Evaluate states for a specific frame range
-    func evaluateFrames(from startFrame: Int, to endFrame: Int) -> [EvaluatedFrameState] {
-        var states: [EvaluatedFrameState] = []
-        let count = endFrame - startFrame + 1
-        states.reserveCapacity(count)
-
-        for frame in startFrame...endFrame {
-            states.append(evaluate(frame: frame))
-        }
-
-        return states
     }
 }

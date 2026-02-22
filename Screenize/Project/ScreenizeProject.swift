@@ -83,7 +83,7 @@ struct ScreenizeProject: Codable, Identifiable {
         media.duration
     }
 
-    /// Total frame count
+    /// Total frame count (approximate for VFR videos)
     var totalFrames: Int {
         Int(media.duration * media.frameRate)
     }
