@@ -169,6 +169,16 @@ final class EditorViewModel: ObservableObject {
         if self.project.timeline.keystrokeTrackV2 == nil {
             self.project.timeline.tracks.append(.keystroke(KeystrokeTrackV2()))
         }
+        if self.project.timeline.audioTrack == nil && self.project.media.micAudioExists {
+            self.project.timeline.tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "Mic Audio",
+                isEnabled: true,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: self.project.timeline.duration)
+                ]
+            )))
+        }
 
         setupBindings()
     }
