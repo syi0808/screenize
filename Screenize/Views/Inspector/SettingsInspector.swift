@@ -42,27 +42,27 @@ struct SettingsInspector: View {
 
                 // Background style
                 backgroundStyleSection
-
-                Divider()
-
-                // Padding
-                paddingSection
-
-                Divider()
-
-                // Window inset (border removal)
-                windowInsetSection
-
-                Divider()
-
-                // Rounded corners
-                cornerRadiusSection
-
-                Divider()
-
-                // Shadow
-                shadowSection
             }
+
+            Divider()
+
+            // Padding
+            paddingSection
+
+            Divider()
+
+            // Window inset (border removal)
+            windowInsetSection
+
+            Divider()
+
+            // Rounded corners
+            cornerRadiusSection
+
+            Divider()
+
+            // Shadow
+            shadowSection
 
             Spacer()
         }
