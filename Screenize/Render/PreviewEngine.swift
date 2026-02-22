@@ -57,6 +57,9 @@ final class PreviewEngine: ObservableObject {
     /// Scrub controller (coalesces scrub requests)
     private let scrubController: ScrubController
 
+    /// Audio preview player (synchronized AVPlayer-based audio)
+    private let audioPlayer = AudioPreviewPlayer()
+
     /// Sequential frame reader for playback
     private var sequentialReader: SequentialFrameReader?
 
@@ -242,6 +245,14 @@ final class PreviewEngine: ObservableObject {
                 frameRate: frameRate
             )
 
+            // Set up audio preview player
+            await audioPlayer.setup(
+                videoURL: project.media.videoURL,
+                micAudioURL: project.media.micAudioURL,
+                renderSettings: project.renderSettings
+            )
+            await audioPlayer.seek(to: effectiveTrimStart)
+
             // Render the first frame (at trim start)
             isSeeking = true
             currentTime = effectiveTrimStart
@@ -281,12 +292,19 @@ final class PreviewEngine: ObservableObject {
 
         // Start vsync-driven playback
         displayLinkDriver.start(fromVideoTime: currentTime, frameRate: frameRate)
+
+        // Start audio playback locked to the same mach-time anchor
+        audioPlayer.play(
+            fromVideoTime: displayLinkDriver.playbackAnchorVideoTime,
+            hostTime: displayLinkDriver.playbackAnchorMachTime
+        )
     }
 
     /// Pause playback
     func pause() {
         isPlaying = false
         displayLinkDriver.stop()
+        audioPlayer.pause()
     }
 
     /// Toggle playback/pause
@@ -311,9 +329,14 @@ final class PreviewEngine: ObservableObject {
 
         if !isPlaying {
             scrubController.scrub(to: clampedTime)
+            Task { await audioPlayer.seek(to: clampedTime) }
         } else {
             // During playback, update the display link anchor
             displayLinkDriver.updateAnchor(videoTime: clampedTime)
+            audioPlayer.play(
+                fromVideoTime: displayLinkDriver.playbackAnchorVideoTime,
+                hostTime: displayLinkDriver.playbackAnchorMachTime
+            )
         }
     }
 
@@ -446,6 +469,9 @@ final class PreviewEngine: ObservableObject {
         renderCoordinator.updateRenderer(newRenderer)
         renderCoordinator.invalidateAllCache()
 
+        // Update audio volumes
+        audioPlayer.updateVolumes(renderSettings: renderSettings)
+
         // Re-render the current frame
         scrubController.scrub(to: currentTime)
     }
@@ -461,6 +487,7 @@ final class PreviewEngine: ObservableObject {
 
     func cleanup() {
         pause()
+        audioPlayer.cleanup()
         scrubController.cancel()
         renderCoordinator.cleanup()
         sequentialReader?.stopReading()
