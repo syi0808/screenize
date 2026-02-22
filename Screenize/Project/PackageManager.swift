@@ -14,6 +14,8 @@ struct PackageInfo {
     let videoRelativePath: String
     /// Relative path to mouse data within the package
     let mouseDataRelativePath: String
+    /// Relative path to mic audio within the package (nil if no mic)
+    let micAudioRelativePath: String?
     /// v4 interop block (nil for legacy v2 packages)
     let interop: InteropBlock?
 
@@ -24,6 +26,7 @@ struct PackageInfo {
         mouseDataURL: URL,
         videoRelativePath: String,
         mouseDataRelativePath: String,
+        micAudioRelativePath: String? = nil,
         interop: InteropBlock? = nil
     ) {
         self.packageURL = packageURL
@@ -32,6 +35,7 @@ struct PackageInfo {
         self.mouseDataURL = mouseDataURL
         self.videoRelativePath = videoRelativePath
         self.mouseDataRelativePath = mouseDataRelativePath
+        self.micAudioRelativePath = micAudioRelativePath
         self.interop = interop
     }
 }
@@ -57,6 +61,9 @@ final class PackageManager {
 
     /// Canonical mouse data filename
     static let canonicalMouseDataFilename = "recording.mouse.json"
+
+    /// Canonical microphone audio filename
+    static let canonicalMicAudioFilename = "recording_mic.m4a"
 
     // MARK: - Singleton
 
@@ -110,6 +117,7 @@ final class PackageManager {
         videoURL: URL,
         mouseRecording: MouseRecording?,
         captureMeta: CaptureMeta,
+        micAudioURL: URL? = nil,
         in parentDirectory: URL,
         recordingStartDate: Date,
         processTimeStartMs: Int64,
@@ -149,6 +157,16 @@ final class PackageManager {
 
         }
 
+        // Move mic audio file into the package (if present)
+        var micAudioRelativePath: String?
+        if let micURL = micAudioURL,
+           fileManager.fileExists(atPath: micURL.path) {
+            let relPath = "\(Self.recordingDirectory)/\(Self.canonicalMicAudioFilename)"
+            let destMicURL = packageURL.appendingPathComponent(relPath)
+            try fileManager.moveItem(at: micURL, to: destMicURL)
+            micAudioRelativePath = relPath
+        }
+
         let interop = InteropBlock.forRecording(videoRelativePath: videoRelativePath)
 
         return PackageInfo(
@@ -158,6 +176,7 @@ final class PackageManager {
             mouseDataURL: destMouseDataURL,
             videoRelativePath: videoRelativePath,
             mouseDataRelativePath: mouseDataRelativePath,
+            micAudioRelativePath: micAudioRelativePath,
             interop: interop
         )
     }

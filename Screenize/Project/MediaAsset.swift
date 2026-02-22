@@ -10,11 +10,17 @@ struct MediaAsset: Codable {
     /// Relative path within the package (stored in JSON)
     var mouseDataRelativePath: String
 
+    /// Relative path to microphone audio within the package (nil if no mic was used)
+    var micAudioRelativePath: String?
+
     /// Absolute video file URL (resolved at runtime, NOT stored in JSON)
     var videoURL: URL
 
     /// Absolute mouse data JSON file URL (resolved at runtime, NOT stored in JSON)
     var mouseDataURL: URL
+
+    /// Absolute mic audio file URL (resolved at runtime, NOT stored in JSON)
+    var micAudioURL: URL?
 
     /// Original video resolution (pixels)
     let pixelSize: CGSize
@@ -34,6 +40,7 @@ struct MediaAsset: Codable {
     init(
         videoRelativePath: String,
         mouseDataRelativePath: String,
+        micAudioRelativePath: String? = nil,
         packageRootURL: URL,
         pixelSize: CGSize,
         frameRate: Double,
@@ -42,8 +49,12 @@ struct MediaAsset: Codable {
     ) {
         self.videoRelativePath = videoRelativePath
         self.mouseDataRelativePath = mouseDataRelativePath
+        self.micAudioRelativePath = micAudioRelativePath
         self.videoURL = packageRootURL.appendingPathComponent(videoRelativePath)
         self.mouseDataURL = packageRootURL.appendingPathComponent(mouseDataRelativePath)
+        if let micPath = micAudioRelativePath {
+            self.micAudioURL = packageRootURL.appendingPathComponent(micPath)
+        }
         self.pixelSize = pixelSize
         self.frameRate = frameRate
         self.duration = duration
@@ -56,6 +67,9 @@ struct MediaAsset: Codable {
     mutating func resolveURLs(from packageRootURL: URL) {
         videoURL = packageRootURL.appendingPathComponent(videoRelativePath)
         mouseDataURL = packageRootURL.appendingPathComponent(mouseDataRelativePath)
+        if let micPath = micAudioRelativePath {
+            micAudioURL = packageRootURL.appendingPathComponent(micPath)
+        }
     }
 
     // MARK: - Validation
@@ -74,6 +88,12 @@ struct MediaAsset: Codable {
     /// Check whether the mouse data file exists
     var mouseDataExists: Bool {
         FileManager.default.fileExists(atPath: mouseDataURL.path)
+    }
+
+    /// Check whether the mic audio file exists
+    var micAudioExists: Bool {
+        guard let url = micAudioURL else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
     }
 
     // MARK: - Computed Properties
@@ -100,6 +120,7 @@ struct MediaAsset: Codable {
     enum CodingKeys: String, CodingKey {
         case videoRelativePath = "videoPath"
         case mouseDataRelativePath = "mouseDataPath"
+        case micAudioRelativePath = "micAudioPath"
         case pixelSize
         case frameRate
         case duration
@@ -110,6 +131,7 @@ struct MediaAsset: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(videoRelativePath, forKey: .videoRelativePath)
         try container.encode(mouseDataRelativePath, forKey: .mouseDataRelativePath)
+        try container.encodeIfPresent(micAudioRelativePath, forKey: .micAudioRelativePath)
         try container.encode(pixelSize, forKey: .pixelSize)
         try container.encode(frameRate, forKey: .frameRate)
         try container.encode(duration, forKey: .duration)
@@ -124,8 +146,12 @@ struct MediaAsset: Codable {
         isVariableFrameRate = try container.decodeIfPresent(Bool.self, forKey: .isVariableFrameRate) ?? false
         videoRelativePath = try container.decode(String.self, forKey: .videoRelativePath)
         mouseDataRelativePath = try container.decode(String.self, forKey: .mouseDataRelativePath)
+        micAudioRelativePath = try container.decodeIfPresent(String.self, forKey: .micAudioRelativePath)
         // Placeholder URLs - must be resolved by caller via resolveURLs(from:)
         videoURL = URL(fileURLWithPath: videoRelativePath)
         mouseDataURL = URL(fileURLWithPath: mouseDataRelativePath)
+        if let micPath = micAudioRelativePath {
+            micAudioURL = URL(fileURLWithPath: micPath)
+        }
     }
 }
