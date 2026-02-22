@@ -92,6 +92,20 @@ final class DisplayLinkDriver: @unchecked Sendable {
         previousFrameDelivered = true
     }
 
+    /// Playback anchor mach time (thread-safe read)
+    var playbackAnchorMachTime: UInt64 {
+        lock.lock()
+        defer { lock.unlock() }
+        return playbackStartMachTime
+    }
+
+    /// Playback anchor video time (thread-safe read)
+    var playbackAnchorVideoTime: TimeInterval {
+        lock.lock()
+        defer { lock.unlock() }
+        return playbackStartVideoTime
+    }
+
     /// Update the playback anchor (e.g., after a seek during playback)
     func updateAnchor(videoTime: TimeInterval) {
         lock.lock()
