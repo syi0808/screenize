@@ -144,6 +144,10 @@ struct CaptureToolbarView: View {
 
             toolbarDivider
 
+            ToolbarMicToggle()
+
+            toolbarDivider
+
             closeButton
         }
         .padding(.horizontal, 12)
@@ -280,6 +284,28 @@ private struct ToolbarIconButton: View {
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .help(tooltip)
+    }
+}
+
+// MARK: - Toolbar Mic Toggle
+
+private struct ToolbarMicToggle: View {
+    @AppStorage("isMicrophoneEnabled") private var isEnabled = false
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            isEnabled.toggle()
+        } label: {
+            Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(isEnabled ? .red : .white.opacity(0.5))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help(isEnabled ? "Disable Microphone" : "Enable Microphone")
     }
 }
 
