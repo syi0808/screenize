@@ -33,6 +33,11 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Frame rate
     private var frameRate: Double = 60.0
 
+    /// Fixed timescale for cache keys (independent of video's nominalFrameRate).
+    /// Prevents cache key collisions on VFR videos where nominalFrameRate < display refresh rate.
+    /// 240 is LCM-friendly with 30/60/120Hz displays.
+    private static let scrubCacheTimescale: Double = 240.0
+
     /// Preview scale
     private let previewScale: CGFloat
 
@@ -105,15 +110,12 @@ final class RenderCoordinator: @unchecked Sendable {
             return
         }
 
-        let cacheKey = Int(time * self.frameRate)
         let generation = renderGeneration
 
-        // Check cache
-        if let cachedTexture = textureCache?.texture(at: cacheKey) {
-            lock.unlock()
-            completion(cachedTexture, time)
-            return
-        }
+        // No cache lookup for playback: each frame has unique evaluator state
+        // (cursor position, zoom, keystrokes). Cache hits return stale textures
+        // rendered at a different time, causing visible stutter on VFR videos
+        // where nominalFrameRate < display refresh rate.
 
         isRenderingPlaybackFrame = true
         let evaluator = self.evaluator
@@ -182,8 +184,11 @@ final class RenderCoordinator: @unchecked Sendable {
             }
             self.lock.unlock()
 
-            // Store in cache using the requested time's cache key
-            cache?.store(targetTexture, at: cacheKey)
+            // Store in cache for texture lifecycle management (LRU eviction returns to pool).
+            // The key doesn't matter for playback (we never look it up), but the store
+            // ensures the texture pool doesn't leak.
+            let storeKey = Int(time * Self.scrubCacheTimescale)
+            cache?.store(targetTexture, at: storeKey)
 
             // Deliver at the requested time
             completion(targetTexture, time)
@@ -204,7 +209,7 @@ final class RenderCoordinator: @unchecked Sendable {
         completion: @escaping (MTLTexture?) -> Void
     ) {
         lock.lock()
-        let cacheKey = Int(time * self.frameRate)
+        let cacheKey = Int(time * Self.scrubCacheTimescale)
         let evaluator = self.evaluator
         let renderer = self.renderer
         let extractor = self.frameExtractor
@@ -319,8 +324,8 @@ final class RenderCoordinator: @unchecked Sendable {
 
     /// Invalidate cached frames within a time range
     func invalidateCache(from startTime: TimeInterval, to endTime: TimeInterval) {
-        let startKey = Int(startTime * frameRate)
-        let endKey = Int(endTime * frameRate)
+        let startKey = Int(startTime * Self.scrubCacheTimescale)
+        let endKey = Int(endTime * Self.scrubCacheTimescale)
         textureCache?.invalidate(from: startKey, to: endKey)
     }
 
@@ -331,7 +336,7 @@ final class RenderCoordinator: @unchecked Sendable {
 
     /// Check if a frame at the given time is cached
     func isCached(at time: TimeInterval) -> Bool {
-        let cacheKey = Int(time * self.frameRate)
+        let cacheKey = Int(time * Self.scrubCacheTimescale)
         return textureCache?.isCached(cacheKey) ?? false
     }
 

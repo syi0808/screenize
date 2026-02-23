@@ -96,6 +96,11 @@ final class PreviewTextureCache {
             }
         }
 
+        // Return overwritten texture to pool (prevents leak on VFR key collisions)
+        if let old = cache.removeValue(forKey: index) {
+            texturePool.append(old)
+        }
+
         cache[index] = texture
         accessOrder.removeAll { $0 == index }
         accessOrder.append(index)
