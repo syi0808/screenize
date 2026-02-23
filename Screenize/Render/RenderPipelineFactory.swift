@@ -98,7 +98,8 @@ struct RenderPipelineFactory {
             outputSize: outputSize,
             motionBlurSettings: project.renderSettings.motionBlur,
             isWindowMode: project.isWindowMode,
-            renderSettings: project.renderSettings
+            renderSettings: project.renderSettings,
+            colorSpace: project.renderSettings.outputColorSpace.cgColorSpace
         )
     }
 

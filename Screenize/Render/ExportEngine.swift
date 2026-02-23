@@ -135,7 +135,8 @@ final class ExportEngine: ObservableObject {
                 size: outputSize,
                 codec: project.renderSettings.codec,
                 quality: project.renderSettings.quality,
-                frameRate: outputFrameRate
+                frameRate: outputFrameRate,
+                colorSpace: project.renderSettings.outputColorSpace
             )
 
             let writerInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
@@ -566,7 +567,8 @@ final class ExportEngine: ObservableObject {
         size: CGSize,
         codec: VideoCodec,
         quality: ExportQuality,
-        frameRate: Double
+        frameRate: Double,
+        colorSpace: OutputColorSpace = .auto
     ) -> [String: Any] {
         let bitRate = quality.bitRate(for: size)
 
@@ -579,7 +581,9 @@ final class ExportEngine: ObservableObject {
         // Compression settings per codec
         switch codec {
         case .h264, .hevc:
-            let profileLevel: String = codec == .hevc ? "HEVC_Main_AutoLevel" : AVVideoProfileLevelH264HighAutoLevel
+            let profileLevel: String = codec == .hevc
+                ? "HEVC_Main_AutoLevel"
+                : AVVideoProfileLevelH264HighAutoLevel
             settings[AVVideoCompressionPropertiesKey] = [
                 AVVideoAverageBitRateKey: bitRate,
                 AVVideoExpectedSourceFrameRateKey: Int(frameRate),
@@ -589,6 +593,13 @@ final class ExportEngine: ObservableObject {
             // ProRes does not require bitrate settings
             break
         }
+
+        // Color space metadata tagging
+        settings[AVVideoColorPropertiesKey] = [
+            AVVideoColorPrimariesKey: colorSpace.avColorPrimaries,
+            AVVideoTransferFunctionKey: colorSpace.avTransferFunction,
+            AVVideoYCbCrMatrixKey: colorSpace.avYCbCrMatrix
+        ]
 
         return settings
     }

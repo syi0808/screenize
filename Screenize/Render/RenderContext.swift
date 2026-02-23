@@ -32,7 +32,7 @@ struct RenderContext {
     let commandQueue: MTLCommandQueue?
 
     /// Reusable color space (avoid per-frame allocation)
-    let colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
+    let colorSpace: CGColorSpace
 
     init(
         outputSize: CGSize,
@@ -42,7 +42,8 @@ struct RenderContext {
         isPreview: Bool = false,
         previewScale: CGFloat = 0.5,
         device: MTLDevice? = nil,
-        commandQueue: MTLCommandQueue? = nil
+        commandQueue: MTLCommandQueue? = nil,
+        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
     ) {
         self.outputSize = outputSize
         self.sourceSize = sourceSize
@@ -51,6 +52,7 @@ struct RenderContext {
         self.previewScale = previewScale
         self.device = device
         self.commandQueue = commandQueue
+        self.colorSpace = colorSpace
 
         // Use Metal-backed CIContext when device is available
         if let ciContext = ciContext {
@@ -58,25 +60,33 @@ struct RenderContext {
         } else if let device = device {
             self.ciContext = CIContext(mtlDevice: device, options: [
                 .cacheIntermediates: true,
-                .priorityRequestLow: false
+                .priorityRequestLow: false,
+                .workingColorSpace: colorSpace
             ])
         } else {
-            self.ciContext = Self.createOptimizedContext()
+            self.ciContext = Self.createOptimizedContext(colorSpace: colorSpace)
         }
     }
 
     /// Create an optimized CIContext for performance (non-Metal fallback)
-    static func createOptimizedContext() -> CIContext {
+    static func createOptimizedContext(
+        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+    ) -> CIContext {
         CIContext(options: [
             .useSoftwareRenderer: false,
             .highQualityDownsample: false,
             .cacheIntermediates: true,
-            .priorityRequestLow: false
+            .priorityRequestLow: false,
+            .workingColorSpace: colorSpace
         ])
     }
 
     /// Create a context for preview (Metal-backed for GPU-resident pipeline)
-    static func forPreview(sourceSize: CGSize, scale: CGFloat = 0.5) -> Self {
+    static func forPreview(
+        sourceSize: CGSize,
+        scale: CGFloat = 0.5,
+        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+    ) -> Self {
         let scaledSize = CGSize(
             width: sourceSize.width * scale,
             height: sourceSize.height * scale
@@ -91,12 +101,17 @@ struct RenderContext {
             isPreview: true,
             previewScale: scale,
             device: device,
-            commandQueue: commandQueue
+            commandQueue: commandQueue,
+            colorSpace: colorSpace
         )
     }
 
     /// Create a context for export (Metal-backed for GPU-accelerated rendering)
-    static func forExport(sourceSize: CGSize, outputSize: CGSize? = nil) -> Self {
+    static func forExport(
+        sourceSize: CGSize,
+        outputSize: CGSize? = nil,
+        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+    ) -> Self {
         let finalSize = outputSize ?? sourceSize
 
         let device = MTLCreateSystemDefaultDevice()
@@ -109,7 +124,8 @@ struct RenderContext {
             isPreview: false,
             previewScale: 1.0,
             device: device,
-            commandQueue: commandQueue
+            commandQueue: commandQueue,
+            colorSpace: colorSpace
         )
     }
 

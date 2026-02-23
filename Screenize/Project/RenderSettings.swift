@@ -24,6 +24,9 @@ struct RenderSettings: Codable {
     /// GIF-specific settings (used when exportFormat == .gif)
     var gifSettings: GIFSettings = .default
 
+    /// Output color space
+    var outputColorSpace: OutputColorSpace = .auto
+
     /// Enable background (for window mode)
     var backgroundEnabled: Bool = false
 
@@ -99,6 +102,7 @@ struct RenderSettings: Codable {
         case quality
         case exportFormat
         case gifSettings
+        case outputColorSpace
         case backgroundEnabled
         case backgroundStyle
         case cornerRadius
@@ -122,6 +126,7 @@ struct RenderSettings: Codable {
         quality = try container.decodeIfPresent(ExportQuality.self, forKey: .quality) ?? .high
         exportFormat = try container.decodeIfPresent(ExportFormat.self, forKey: .exportFormat) ?? .video
         gifSettings = try container.decodeIfPresent(GIFSettings.self, forKey: .gifSettings) ?? .default
+        outputColorSpace = try container.decodeIfPresent(OutputColorSpace.self, forKey: .outputColorSpace) ?? .auto
         backgroundEnabled = try container.decodeIfPresent(Bool.self, forKey: .backgroundEnabled) ?? false
         backgroundStyle = try container.decodeIfPresent(BackgroundStyle.self, forKey: .backgroundStyle) ?? .gradient(.defaultGradient)
         cornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .cornerRadius) ?? 22.0
@@ -368,5 +373,75 @@ struct GIFSettings: Codable, Equatable {
         let frameCount = Int(duration * Double(frameRate))
         let bytesPerFrame: Int64 = Int64(maxWidth) * 40
         return Int64(frameCount) * bytesPerFrame
+    }
+}
+
+// MARK: - Output Color Space
+
+/// Color space for video export
+enum OutputColorSpace: String, Codable, CaseIterable {
+    case auto = "auto"
+    case sRGB = "srgb"
+    case displayP3 = "displayP3"
+    case bt709 = "bt709"
+    case bt2020 = "bt2020"
+
+    var displayName: String {
+        switch self {
+        case .auto: return "Auto (sRGB)"
+        case .sRGB: return "sRGB"
+        case .displayP3: return "Display P3"
+        case .bt709: return "BT.709"
+        case .bt2020: return "BT.2020"
+        }
+    }
+
+    /// CGColorSpace for CIContext rendering
+    var cgColorSpace: CGColorSpace {
+        switch self {
+        case .auto, .sRGB:
+            return CGColorSpace(name: CGColorSpace.sRGB)!
+        case .displayP3:
+            return CGColorSpace(name: CGColorSpace.displayP3)!
+        case .bt709:
+            return CGColorSpace(name: CGColorSpace.itur_709)!
+        case .bt2020:
+            return CGColorSpace(name: CGColorSpace.itur_2020)!
+        }
+    }
+
+    /// AVFoundation color primaries
+    var avColorPrimaries: String {
+        switch self {
+        case .auto, .sRGB, .bt709:
+            return AVVideoColorPrimaries_ITU_R_709_2
+        case .displayP3:
+            return AVVideoColorPrimaries_P3_D65
+        case .bt2020:
+            return AVVideoColorPrimaries_ITU_R_2020
+        }
+    }
+
+    /// AVFoundation transfer function
+    var avTransferFunction: String {
+        return AVVideoTransferFunction_ITU_R_709_2
+    }
+
+    /// AVFoundation YCbCr matrix
+    var avYCbCrMatrix: String {
+        switch self {
+        case .auto, .sRGB, .bt709, .displayP3:
+            return AVVideoYCbCrMatrix_ITU_R_709_2
+        case .bt2020:
+            return AVVideoYCbCrMatrix_ITU_R_2020
+        }
+    }
+
+    /// Whether this color space is wide gamut
+    var isWideGamut: Bool {
+        switch self {
+        case .displayP3, .bt2020: return true
+        case .auto, .sRGB, .bt709: return false
+        }
     }
 }

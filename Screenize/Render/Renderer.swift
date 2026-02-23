@@ -326,9 +326,14 @@ extension Renderer {
         scale: CGFloat = 0.5,
         motionBlurSettings: MotionBlurSettings? = nil,
         isWindowMode: Bool = false,
-        renderSettings: RenderSettings? = nil
+        renderSettings: RenderSettings? = nil,
+        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
     ) -> Renderer {
-        let context = RenderContext.forPreview(sourceSize: sourceSize, scale: scale)
+        let context = RenderContext.forPreview(
+            sourceSize: sourceSize,
+            scale: scale,
+            colorSpace: colorSpace
+        )
         return Renderer(
             context: context,
             motionBlurSettings: motionBlurSettings,
@@ -343,9 +348,14 @@ extension Renderer {
         outputSize: CGSize? = nil,
         motionBlurSettings: MotionBlurSettings? = nil,
         isWindowMode: Bool = false,
-        renderSettings: RenderSettings? = nil
+        renderSettings: RenderSettings? = nil,
+        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
     ) -> Renderer {
-        let context = RenderContext.forExport(sourceSize: sourceSize, outputSize: outputSize)
+        let context = RenderContext.forExport(
+            sourceSize: sourceSize,
+            outputSize: outputSize,
+            colorSpace: colorSpace
+        )
         return Renderer(
             context: context,
             motionBlurSettings: motionBlurSettings,

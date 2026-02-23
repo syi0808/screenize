@@ -229,6 +229,21 @@ struct ExportSheetView: View {
                     // Estimated file size
                     estimatedVideoFileSize
                 }
+
+                // Color Space
+                Section("Color Space") {
+                    Picker("Color Space", selection: $renderSettings.outputColorSpace) {
+                        ForEach(OutputColorSpace.allCases, id: \.self) { cs in
+                            Text(cs.displayName).tag(cs)
+                        }
+                    }
+
+                    if renderSettings.outputColorSpace.isWideGamut {
+                        Text("Wide gamut preserves colors outside sRGB range")
+                            .font(Typography.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
 
             if renderSettings.exportFormat == .gif {
