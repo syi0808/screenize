@@ -107,7 +107,7 @@ struct ExportSheetView: View {
                 .font(.title2)
                 .foregroundColor(.accentColor)
 
-            Text("Export Video")
+            Text(renderSettings.exportFormat == .gif ? "Export GIF" : "Export Video")
                 .font(.headline)
 
             Spacer()
@@ -133,90 +133,145 @@ struct ExportSheetView: View {
                 PresetPickerView(settings: $renderSettings)
             }
 
-            // Resolution
-            Section("Resolution") {
-                Picker("Output Size", selection: resolutionPickerBinding) {
-                    ForEach(OutputResolution.allCases, id: \.self) { resolution in
-                        Text(resolution.displayName).tag(resolution)
+            // Format
+            Section("Format") {
+                Picker("Format", selection: $renderSettings.exportFormat) {
+                    ForEach(ExportFormat.allCases, id: \.self) { format in
+                        Text(format.displayName).tag(format)
                     }
-                    Text("Custom").tag(OutputResolution.custom(width: 0, height: 0))
+                }
+                .pickerStyle(.segmented)
+            }
+
+            if renderSettings.exportFormat == .video {
+                // Resolution
+                Section("Resolution") {
+                    Picker("Output Size", selection: resolutionPickerBinding) {
+                        ForEach(OutputResolution.allCases, id: \.self) { resolution in
+                            Text(resolution.displayName).tag(resolution)
+                        }
+                        Text("Custom").tag(OutputResolution.custom(width: 0, height: 0))
+                    }
+
+                    if isCustomResolution {
+                        HStack(spacing: 8) {
+                            TextField("Width", value: $customWidth, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                                .onChange(of: customWidth) { _ in applyCustomResolution() }
+
+                            Text("\u{00d7}")
+                                .foregroundColor(.secondary)
+
+                            TextField("Height", value: $customHeight, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                                .onChange(of: customHeight) { _ in applyCustomResolution() }
+                        }
+
+                        if let error = resolutionValidationError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
                 }
 
-                if isCustomResolution {
-                    HStack(spacing: 8) {
-                        TextField("Width", value: $customWidth, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                            .onChange(of: customWidth) { _ in applyCustomResolution() }
+                // Frame rate
+                Section("Frame Rate") {
+                    Picker("Frame Rate", selection: frameRatePickerBinding) {
+                        ForEach(OutputFrameRate.allCases, id: \.self) { rate in
+                            Text(rate.displayName).tag(rate)
+                        }
+                        Text("Custom").tag(OutputFrameRate.fixed(-1))
+                    }
 
-                        Text("\u{00d7}")
+                    if isCustomFrameRate {
+                        HStack(spacing: 8) {
+                            TextField("FPS", value: $customFPS, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                                .onChange(of: customFPS) { _ in applyCustomFrameRate() }
+
+                            Text("fps")
+                                .foregroundColor(.secondary)
+                        }
+
+                        if let error = frameRateValidationError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+
+                // Codec
+                Section("Codec") {
+                    Picker("Video Codec", selection: $renderSettings.codec) {
+                        ForEach(VideoCodec.allCases, id: \.self) { codec in
+                            Text(codec.displayName).tag(codec)
+                        }
+                    }
+
+                    Text(renderSettings.codec.displayName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                // Quality
+                Section("Quality") {
+                    Picker("Quality", selection: $renderSettings.quality) {
+                        ForEach(ExportQuality.allCases, id: \.self) { quality in
+                            Text(quality.displayName).tag(quality)
+                        }
+                    }
+
+                    // Estimated file size
+                    estimatedVideoFileSize
+                }
+            }
+
+            if renderSettings.exportFormat == .gif {
+                // GIF Settings
+                Section("GIF Settings") {
+                    HStack {
+                        Text("Frame Rate")
+                        Spacer()
+                        Text("\(renderSettings.gifSettings.frameRate) fps")
                             .foregroundColor(.secondary)
+                    }
+                    Slider(
+                        value: gifFrameRateBinding,
+                        in: 5...30,
+                        step: 1
+                    )
 
-                        TextField("Height", value: $customHeight, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                            .onChange(of: customHeight) { _ in applyCustomResolution() }
+                    Picker("Max Width", selection: $renderSettings.gifSettings.maxWidth) {
+                        Text("480px").tag(480)
+                        Text("640px").tag(640)
+                        Text("800px").tag(800)
+                        Text("960px").tag(960)
+                        Text("1280px").tag(1280)
                     }
 
-                    if let error = resolutionValidationError {
-                        Text(error)
+                    Picker("Loop", selection: $renderSettings.gifSettings.loopCount) {
+                        Text("Infinite").tag(0)
+                        Text("Once").tag(1)
+                        Text("Twice").tag(2)
+                        Text("3 times").tag(3)
+                    }
+
+                    // Estimated file size
+                    gifEstimatedFileSize
+                }
+
+                if let warning = gifFileSizeWarning {
+                    Section {
+                        Label(warning, systemImage: "exclamationmark.triangle.fill")
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundColor(.orange)
                     }
                 }
-            }
-
-            // Frame rate
-            Section("Frame Rate") {
-                Picker("Frame Rate", selection: frameRatePickerBinding) {
-                    ForEach(OutputFrameRate.allCases, id: \.self) { rate in
-                        Text(rate.displayName).tag(rate)
-                    }
-                    Text("Custom").tag(OutputFrameRate.fixed(-1))
-                }
-
-                if isCustomFrameRate {
-                    HStack(spacing: 8) {
-                        TextField("FPS", value: $customFPS, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                            .onChange(of: customFPS) { _ in applyCustomFrameRate() }
-
-                        Text("fps")
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let error = frameRateValidationError {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-                }
-            }
-
-            // Codec
-            Section("Codec") {
-                Picker("Video Codec", selection: $renderSettings.codec) {
-                    ForEach(VideoCodec.allCases, id: \.self) { codec in
-                        Text(codec.displayName).tag(codec)
-                    }
-                }
-
-                Text(renderSettings.codec.displayName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // Quality
-            Section("Quality") {
-                Picker("Quality", selection: $renderSettings.quality) {
-                    ForEach(ExportQuality.allCases, id: \.self) { quality in
-                        Text(quality.displayName).tag(quality)
-                    }
-                }
-
-                // Estimated file size
-                estimatedFileSize
             }
         }
         .formStyle(.grouped)
@@ -225,7 +280,7 @@ struct ExportSheetView: View {
 
     // MARK: - Estimated File Size
 
-    private var estimatedFileSize: some View {
+    private var estimatedVideoFileSize: some View {
         let sourceSize = project.media.pixelSize
         let outputSize = renderSettings.outputResolution.size(sourceSize: sourceSize)
         let bitRate = renderSettings.quality.bitRate(for: outputSize)
@@ -239,6 +294,46 @@ struct ExportSheetView: View {
                 .fontWeight(.medium)
         }
         .font(.caption)
+    }
+
+    // MARK: - GIF Helpers
+
+    private var gifFrameRateBinding: Binding<Double> {
+        Binding(
+            get: { Double(renderSettings.gifSettings.frameRate) },
+            set: { renderSettings.gifSettings.frameRate = Int($0) }
+        )
+    }
+
+    private var gifEstimatedFileSize: some View {
+        let duration = project.timeline.trimmedDuration
+        let estimated = renderSettings.gifSettings.estimatedFileSize(duration: duration)
+
+        return HStack {
+            Text("Estimated size:")
+                .foregroundColor(.secondary)
+
+            Text(ByteCountFormatter.string(fromByteCount: estimated, countStyle: .file))
+                .fontWeight(.medium)
+        }
+        .font(.caption)
+    }
+
+    private var gifFileSizeWarning: String? {
+        let duration = project.timeline.trimmedDuration
+        let estimated = renderSettings.gifSettings.estimatedFileSize(duration: duration)
+        let estimatedMB = Double(estimated) / 1_048_576.0
+
+        if duration > 30 {
+            return "Recording exceeds 30s. GIF files for long recordings will be very large (\(String(format: "%.0f", estimatedMB)) MB estimated)."
+        }
+        if renderSettings.gifSettings.maxWidth > 960 {
+            return "High resolution GIFs produce very large files (\(String(format: "%.0f", estimatedMB)) MB estimated). Consider reducing max width."
+        }
+        if estimatedMB > 50 {
+            return "Estimated file size exceeds 50 MB. Consider reducing frame rate, max width, or trimming the recording."
+        }
+        return nil
     }
 
     // MARK: - Export Progress View
@@ -418,10 +513,10 @@ struct ExportSheetView: View {
 
     private func showSavePanel() {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [renderSettings.codec.utType]
+        panel.allowedContentTypes = [renderSettings.exportUTType]
         let baseName = project.media.videoURL
             .deletingPathExtension().lastPathComponent
-        panel.nameFieldStringValue = "\(baseName)_edited.\(renderSettings.codec.fileExtension)"
+        panel.nameFieldStringValue = "\(baseName)_edited.\(renderSettings.fileExtension)"
         panel.canCreateDirectories = true
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
