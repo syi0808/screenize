@@ -148,7 +148,7 @@ struct ScreenizeApp: App {
                     }
                 }
                 .keyboardShortcut("2", modifiers: [.command, .shift])
-                .disabled(!appState.isRecording && !appState.isCountingDown && !appState.showCaptureToolbar)
+                .disabled(!appState.isRecording && !appState.showCaptureToolbar)
             }
         }
     }
@@ -202,8 +202,6 @@ struct ContentView: View {
     private var currentShortcutContext: ShortcutContext {
         if appState.currentProject != nil {
             return .editor
-        } else if appState.isRecording || appState.selectedTarget != nil || appState.showSourcePicker {
-            return .recording
         } else {
             return .welcome
         }
@@ -239,9 +237,6 @@ struct ContentView: View {
                         }
                     }
                 }
-            } else if appState.isRecording || appState.selectedTarget != nil || appState.showSourcePicker {
-                // Recording in progress or source selected → show recording view
-                RecordingView(appState: appState)
             } else {
                 // Initial state → welcome view
                 MainWelcomeView(

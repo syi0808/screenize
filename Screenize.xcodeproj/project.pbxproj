@@ -87,9 +87,6 @@
 		F00000E1296A0001 /* CaptureTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E1296A0001 /* CaptureTarget.swift */; };
 		F00000E2296A0001 /* MouseEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E2296A0001 /* MouseEvent.swift */; };
 		F00000E4296A0001 /* ClickType.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E4296A0001 /* ClickType.swift */; };
-		F00000F0296A0001 /* RecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F0296A0001 /* RecordingView.swift */; };
-		F00000F1296A0001 /* SourcePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F1296A0001 /* SourcePickerView.swift */; };
-		F00000F2296A0001 /* RecordingPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F2296A0001 /* RecordingPreviewView.swift */; };
 		F00000F3296A0001 /* CountdownPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F3296A0001 /* CountdownPanel.swift */; };
 		F00000F4296A0001 /* RecordingFloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F4296A0001 /* RecordingFloatingPanel.swift */; };
 		D1000001296A0001 /* CaptureMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100001296A0001 /* CaptureMode.swift */; };
@@ -264,9 +261,6 @@
 		F10000E1296A0001 /* CaptureTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureTarget.swift; sourceTree = "<group>"; };
 		F10000E2296A0001 /* MouseEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseEvent.swift; sourceTree = "<group>"; };
 		F10000E4296A0001 /* ClickType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickType.swift; sourceTree = "<group>"; };
-		F10000F0296A0001 /* RecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingView.swift; sourceTree = "<group>"; };
-		F10000F1296A0001 /* SourcePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcePickerView.swift; sourceTree = "<group>"; };
-		F10000F2296A0001 /* RecordingPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPreviewView.swift; sourceTree = "<group>"; };
 		F10000F3296A0001 /* CountdownPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownPanel.swift; sourceTree = "<group>"; };
 		F10000F4296A0001 /* RecordingFloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFloatingPanel.swift; sourceTree = "<group>"; };
 		D1100001296A0001 /* CaptureMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureMode.swift; sourceTree = "<group>"; };
@@ -872,9 +866,6 @@
 		F20000F0296A0001 /* Recording */ = {
 			isa = PBXGroup;
 			children = (
-				F10000F0296A0001 /* RecordingView.swift */,
-				F10000F1296A0001 /* SourcePickerView.swift */,
-				F10000F2296A0001 /* RecordingPreviewView.swift */,
 				F10000F3296A0001 /* CountdownPanel.swift */,
 				F10000F4296A0001 /* RecordingFloatingPanel.swift */,
 				D1100002296A0001 /* CaptureToolbarPanel.swift */,
@@ -1124,9 +1115,6 @@
 				F00000E1296A0001 /* CaptureTarget.swift in Sources */,
 				F00000E2296A0001 /* MouseEvent.swift in Sources */,
 				F00000E4296A0001 /* ClickType.swift in Sources */,
-				F00000F0296A0001 /* RecordingView.swift in Sources */,
-				F00000F1296A0001 /* SourcePickerView.swift in Sources */,
-				F00000F2296A0001 /* RecordingPreviewView.swift in Sources */,
 				98E0A84D3D3B09D78BC641AD /* VideoFrameAnalyzer.swift in Sources */,
 				A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */,
 				A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */,

@@ -18,7 +18,6 @@ final class AppState: ObservableObject {
     @Published var isRecording: Bool = false
     @Published var isPaused: Bool = false
     @Published var recordingDuration: TimeInterval = 0
-    @Published var hasRecording: Bool = false
     @Published var lastRecordingURL: URL?
     // v4 recording metadata (captured before coordinator is released)
     var lastMouseRecording: MouseRecording?
@@ -39,11 +38,7 @@ final class AppState: ObservableObject {
         return AVCaptureDevice(uniqueID: selectedMicrophoneDeviceID)
     }
 
-    // Countdown state
-    @Published var isCountingDown: Bool = false
-
     // UI state
-    @Published var showSourcePicker: Bool = false
     @Published var showEditor: Bool = false
     @Published var showExportSheet: Bool = false
     @Published var errorMessage: String?
@@ -87,7 +82,6 @@ final class AppState: ObservableObject {
 
     private var durationTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    private var countdownPanel: CountdownPanel?
     private var recordingFloatingPanel: RecordingFloatingPanel?
 
     // MARK: - Initialization
@@ -242,7 +236,6 @@ final class AppState: ObservableObject {
             lastMouseRecording = coordinator.lastMouseRecording
             lastMicAudioURL = coordinator.lastMicAudioURL
             lastSystemAudioURL = coordinator.lastSystemAudioURL
-            hasRecording = true
             showEditor = true
         } else {
             errorMessage = "Failed to stop recording"
@@ -271,66 +264,11 @@ final class AppState: ObservableObject {
             } else {
                 await stopRecording()
             }
-        } else if isCountingDown {
-            cancelCountdown()
         } else if showCaptureToolbar {
             captureToolbarCoordinator?.cancel()
         } else {
             await showCaptureToolbarFlow()
         }
-    }
-
-    // MARK: - Countdown Recording
-
-    /// Start recording after a 3-second countdown
-    func startRecordingWithCountdown() async {
-        guard !isRecording, !isCountingDown else { return }
-        guard selectedTarget != nil else {
-            errorMessage = "Please select a capture source first"
-            return
-        }
-
-        isCountingDown = true
-
-        // Hide the main window
-        hideMainWindow()
-
-        // Show the countdown panel
-        let panel = CountdownPanel()
-        self.countdownPanel = panel
-
-        let completed: Bool = await withCheckedContinuation { continuation in
-            panel.startCountdown(
-                seconds: 3,
-                onComplete: {
-                    continuation.resume(returning: true)
-                },
-                onCancel: {
-                    continuation.resume(returning: false)
-                }
-            )
-        }
-
-        countdownPanel = nil
-
-        guard completed, isCountingDown else {
-            // Cancelled
-            isCountingDown = false
-            showMainWindow()
-            return
-        }
-
-        isCountingDown = false
-        await startRecording()
-    }
-
-    /// Cancel the countdown
-    func cancelCountdown() {
-        guard isCountingDown else { return }
-        countdownPanel?.cancelCountdown()
-        countdownPanel = nil
-        isCountingDown = false
-        showMainWindow()
     }
 
     // MARK: - Window Management
@@ -374,14 +312,6 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// Leave the recording screen and return to the welcome screen
-    func returnToWelcome() {
-        selectedTarget = nil
-        showSourcePicker = false
-        hasRecording = false
-        lastRecordingURL = nil
-    }
-
     // MARK: - Capture Toolbar Flow
 
     /// Show the capture toolbar for target selection
@@ -393,10 +323,11 @@ final class AppState: ObservableObject {
         await captureToolbarCoordinator?.showToolbar()
     }
 
-    /// Called when the capture toolbar is dismissed (cancelled or recording started)
+    /// Called when the capture toolbar is dismissed (cancelled or recording stopped)
     func captureToolbarDidDismiss() {
         showCaptureToolbar = false
         captureToolbarCoordinator = nil
+        selectedTarget = nil
     }
 
     // MARK: - Project Creation
