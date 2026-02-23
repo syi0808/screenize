@@ -46,7 +46,7 @@ struct RenderSettings: Codable {
     var padding: CGFloat = 40.0
 
     /// Window inset (for trimming borders)
-    var windowInset: CGFloat = 12.0
+    var windowInset: CGFloat = 0.0
 
     /// Motion blur settings
     var motionBlur: MotionBlurSettings = .default
@@ -133,7 +133,7 @@ struct RenderSettings: Codable {
         shadowRadius = try container.decodeIfPresent(CGFloat.self, forKey: .shadowRadius) ?? 40.0
         shadowOpacity = try container.decodeIfPresent(Float.self, forKey: .shadowOpacity) ?? 0.7
         padding = try container.decodeIfPresent(CGFloat.self, forKey: .padding) ?? 40.0
-        windowInset = try container.decodeIfPresent(CGFloat.self, forKey: .windowInset) ?? 12.0
+        windowInset = try container.decodeIfPresent(CGFloat.self, forKey: .windowInset) ?? 0.0
         motionBlur = try container.decodeIfPresent(MotionBlurSettings.self, forKey: .motionBlur) ?? .default
         systemAudioVolume = try container.decodeIfPresent(Float.self, forKey: .systemAudioVolume) ?? 1.0
         microphoneAudioVolume = try container.decodeIfPresent(Float.self, forKey: .microphoneAudioVolume) ?? 1.0

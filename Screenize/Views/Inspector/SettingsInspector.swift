@@ -74,7 +74,7 @@ struct SettingsInspector: View {
             SliderWithField(
                 label: "Corner Radius",
                 value: $settings.cornerRadius.asDouble,
-                range: 0...40,
+                range: 0...60,
                 step: 2,
                 unit: "px",
                 presets: [("0", 0), ("8", 8), ("12", 12), ("20", 20)],
