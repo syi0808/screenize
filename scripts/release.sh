@@ -106,22 +106,99 @@ print_step "Build completed: $APP_PATH"
 # Create DMG
 print_step "Creating DMG..."
 DMG_PATH="$RELEASE_DIR/$DMG_NAME"
+TEMP_DMG="$BUILD_DIR/${APP_NAME}_temp.dmg"
 TEMP_DMG_DIR="$BUILD_DIR/dmg_temp"
+VOLUME_NAME="$APP_NAME"
+VOLUME_PATH="/Volumes/$VOLUME_NAME"
+BG_IMAGE="$PROJECT_DIR/assets/screenize-dmg-background@2x.png"
 
+# Prepare staging directory
 mkdir -p "$TEMP_DMG_DIR"
 cp -R "$APP_PATH" "$TEMP_DMG_DIR/"
-
-# Add Applications symlink
 ln -s /Applications "$TEMP_DMG_DIR/Applications"
 
-# Create DMG image
-hdiutil create -volname "$APP_NAME" \
+# Create writable DMG (generous size, will be compressed later)
+hdiutil create -volname "$VOLUME_NAME" \
                -srcfolder "$TEMP_DMG_DIR" \
                -ov \
-               -format UDZO \
-               "$DMG_PATH"
+               -format UDRW \
+               -size 200m \
+               "$TEMP_DMG"
 
 rm -rf "$TEMP_DMG_DIR"
+
+# Detach volume if already mounted
+if [ -d "$VOLUME_PATH" ]; then
+    hdiutil detach "$VOLUME_PATH" -force || true
+fi
+
+# Mount writable DMG
+hdiutil attach "$TEMP_DMG" -noautoopen -nobrowse
+
+# Prepare background image (Retina TIFF from @2x PNG)
+print_step "Preparing background image..."
+BG_TEMP_DIR="$BUILD_DIR/bg_temp"
+mkdir -p "$BG_TEMP_DIR"
+cp "$BG_IMAGE" "$BG_TEMP_DIR/2x.png"
+sips --setProperty dpiWidth 144 --setProperty dpiHeight 144 "$BG_TEMP_DIR/2x.png" > /dev/null
+sips -z 440 660 --setProperty dpiWidth 72 --setProperty dpiHeight 72 -s format png --out "$BG_TEMP_DIR/1x.png" "$BG_TEMP_DIR/2x.png" > /dev/null
+tiffutil -catnosizecheck "$BG_TEMP_DIR/1x.png" "$BG_TEMP_DIR/2x.png" -out "$BG_TEMP_DIR/background.tiff"
+
+# Copy background image and hide the folder
+mkdir -p "$VOLUME_PATH/.background"
+cp "$BG_TEMP_DIR/background.tiff" "$VOLUME_PATH/.background/background.tiff"
+rm -rf "$BG_TEMP_DIR"
+
+# Configure Finder window layout via AppleScript
+print_step "Applying DMG window layout..."
+osascript <<APPLESCRIPT
+tell application "Finder"
+    tell disk "$VOLUME_NAME"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set bounds of container window to {0, 0, 660, 440}
+        set theViewOptions to the icon view options of container window
+        set arrangement of theViewOptions to not arranged
+        set icon size of theViewOptions to 120
+        set text size of theViewOptions to 12
+        set background picture of theViewOptions to file ".background:background.tiff"
+        -- Move all items off-screen first (hides .background folder)
+        set position of every item to {760, 100}
+        -- Then position visible items
+        set position of item "${APP_NAME}.app" of container window to {180, 240}
+        set position of item "Applications" of container window to {480, 240}
+        close
+        open
+        update without registering applications
+        delay 3
+        close
+    end tell
+end tell
+APPLESCRIPT
+
+# Wait for .DS_Store to persist
+sync
+print_step "Waiting for .DS_Store to persist..."
+for i in $(seq 1 10); do
+    if [ -f "$VOLUME_PATH/.DS_Store" ]; then
+        break
+    fi
+    sleep 1
+done
+sleep 2
+
+# Detach
+hdiutil detach "$VOLUME_PATH"
+
+# Convert to compressed read-only DMG
+print_step "Compressing DMG..."
+hdiutil convert "$TEMP_DMG" \
+               -format UDZO \
+               -imagekey zlib-level=9 \
+               -o "$DMG_PATH"
+rm -f "$TEMP_DMG"
 
 print_step "DMG created: $DMG_PATH"
 
