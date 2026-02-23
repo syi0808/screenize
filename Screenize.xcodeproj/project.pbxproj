@@ -170,6 +170,7 @@
 		E6000004296A0001 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000004296A0001 /* CornerRadius.swift */; };
 		E6000005296A0001 /* DesignOpacity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000005296A0001 /* DesignOpacity.swift */; };
 		E6000006296A0001 /* AnimationTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000006296A0001 /* AnimationTokens.swift */; };
+		E6000007296A0001 /* Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000007296A0001 /* Accessibility.swift */; };
 		E6000010296A0001 /* ScreenizeButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000010296A0001 /* ScreenizeButtonStyles.swift */; };
 		E6000011296A0001 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000011296A0001 /* SectionHeader.swift */; };
 		E6000012296A0001 /* SliderWithField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000012296A0001 /* SliderWithField.swift */; };
@@ -344,6 +345,7 @@
 		E5000004296A0001 /* CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
 		E5000005296A0001 /* DesignOpacity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignOpacity.swift; sourceTree = "<group>"; };
 		E5000006296A0001 /* AnimationTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationTokens.swift; sourceTree = "<group>"; };
+		E5000007296A0001 /* Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Accessibility.swift; sourceTree = "<group>"; };
 		E5000010296A0001 /* ScreenizeButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeButtonStyles.swift; sourceTree = "<group>"; };
 		E5000011296A0001 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
 		E5000012296A0001 /* SliderWithField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderWithField.swift; sourceTree = "<group>"; };
@@ -889,6 +891,7 @@
 				E5000003296A0001 /* DesignColors.swift */,
 				E5000004296A0001 /* CornerRadius.swift */,
 				E5000005296A0001 /* DesignOpacity.swift */,
+				E5000007296A0001 /* Accessibility.swift */,
 				E5000006296A0001 /* AnimationTokens.swift */,
 				E5100001296A0001 /* Components */,
 			);
@@ -1013,6 +1016,7 @@
 				E6000004296A0001 /* CornerRadius.swift in Sources */,
 				E6000005296A0001 /* DesignOpacity.swift in Sources */,
 				E6000006296A0001 /* AnimationTokens.swift in Sources */,
+				E6000007296A0001 /* Accessibility.swift in Sources */,
 				E6000010296A0001 /* ScreenizeButtonStyles.swift in Sources */,
 				E6000011296A0001 /* SectionHeader.swift in Sources */,
 				E6000012296A0001 /* SliderWithField.swift in Sources */,
