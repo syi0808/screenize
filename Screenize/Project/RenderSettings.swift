@@ -18,6 +18,12 @@ struct RenderSettings: Codable {
     /// Output quality
     var quality: ExportQuality = .high
 
+    /// Export format (video or GIF)
+    var exportFormat: ExportFormat = .video
+
+    /// GIF-specific settings (used when exportFormat == .gif)
+    var gifSettings: GIFSettings = .default
+
     /// Enable background (for window mode)
     var backgroundEnabled: Bool = false
 
@@ -54,6 +60,22 @@ struct RenderSettings: Codable {
     /// Include microphone audio in export
     var includeMicrophoneAudio: Bool = true
 
+    /// File extension for the current export format
+    var fileExtension: String {
+        switch exportFormat {
+        case .video: return codec.fileExtension
+        case .gif: return "gif"
+        }
+    }
+
+    /// UTType for the current export format
+    var exportUTType: UTType {
+        switch exportFormat {
+        case .video: return codec.utType
+        case .gif: return .gif
+        }
+    }
+
     init(
         outputResolution: OutputResolution = .original,
         outputFrameRate: OutputFrameRate = .original,
@@ -75,6 +97,8 @@ struct RenderSettings: Codable {
         case outputFrameRate
         case codec
         case quality
+        case exportFormat
+        case gifSettings
         case backgroundEnabled
         case backgroundStyle
         case cornerRadius
@@ -96,6 +120,8 @@ struct RenderSettings: Codable {
         outputFrameRate = try container.decodeIfPresent(OutputFrameRate.self, forKey: .outputFrameRate) ?? .original
         codec = try container.decodeIfPresent(VideoCodec.self, forKey: .codec) ?? .hevc
         quality = try container.decodeIfPresent(ExportQuality.self, forKey: .quality) ?? .high
+        exportFormat = try container.decodeIfPresent(ExportFormat.self, forKey: .exportFormat) ?? .video
+        gifSettings = try container.decodeIfPresent(GIFSettings.self, forKey: .gifSettings) ?? .default
         backgroundEnabled = try container.decodeIfPresent(Bool.self, forKey: .backgroundEnabled) ?? false
         backgroundStyle = try container.decodeIfPresent(BackgroundStyle.self, forKey: .backgroundStyle) ?? .gradient(.defaultGradient)
         cornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .cornerRadius) ?? 22.0
@@ -103,7 +129,6 @@ struct RenderSettings: Codable {
         shadowOpacity = try container.decodeIfPresent(Float.self, forKey: .shadowOpacity) ?? 0.7
         padding = try container.decodeIfPresent(CGFloat.self, forKey: .padding) ?? 40.0
         windowInset = try container.decodeIfPresent(CGFloat.self, forKey: .windowInset) ?? 12.0
-        // Older projects might not have the motionBlur field, so use the default
         motionBlur = try container.decodeIfPresent(MotionBlurSettings.self, forKey: .motionBlur) ?? .default
         systemAudioVolume = try container.decodeIfPresent(Float.self, forKey: .systemAudioVolume) ?? 1.0
         microphoneAudioVolume = try container.decodeIfPresent(Float.self, forKey: .microphoneAudioVolume) ?? 1.0
@@ -283,6 +308,21 @@ enum ExportQuality: String, Codable, CaseIterable {
         let pixels = size.width * size.height
         let baseBitRate = pixels * bitRateMultiplier
         return Int(baseBitRate)
+    }
+}
+
+// MARK: - Export Format
+
+/// Export format type
+enum ExportFormat: String, Codable, CaseIterable {
+    case video = "video"
+    case gif = "gif"
+
+    var displayName: String {
+        switch self {
+        case .video: return "Video"
+        case .gif: return "GIF"
+        }
     }
 }
 
