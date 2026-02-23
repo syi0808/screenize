@@ -300,11 +300,15 @@ private struct ToolbarSystemAudioToggle: View {
         Button {
             isEnabled.toggle()
         } label: {
-            Image(systemName: isEnabled ? "speaker.wave.2.fill" : "speaker.slash")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(isEnabled ? .white.opacity(0.7) : .white.opacity(0.5))
-                .frame(width: 28, height: 28)
-                .contentShape(Rectangle())
+            VStack(spacing: 2) {
+                Image(systemName: isEnabled ? "speaker.wave.2.fill" : "speaker.slash")
+                    .font(.system(size: 13, weight: .medium))
+                Text("System")
+                    .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundColor(isEnabled ? .white.opacity(0.7) : .white.opacity(0.5))
+            .frame(width: 44, height: 36)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
@@ -347,11 +351,15 @@ private struct ToolbarMicMenu: View {
                 }
             }
         } label: {
-            Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(isEnabled ? .red : .white.opacity(0.5))
-                .frame(width: 28, height: 28)
-                .contentShape(Rectangle())
+            VStack(spacing: 2) {
+                Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
+                    .font(.system(size: 13, weight: .medium))
+                Text("Mic")
+                    .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundColor(isEnabled ? .red : .white.opacity(0.5))
+            .frame(width: 44, height: 36)
+            .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
