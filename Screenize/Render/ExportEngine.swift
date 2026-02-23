@@ -54,6 +54,13 @@ final class ExportEngine: ObservableObject {
             throw ExportEngineError.alreadyExporting
         }
 
+        // Reset stale state from any previous export
+        await MainActor.run {
+            progress = .idle
+            statistics = nil
+        }
+        self.isCancelled = false
+
         switch project.renderSettings.exportFormat {
         case .video:
             return try await exportVideo(project: project, to: outputURL)
@@ -194,6 +201,7 @@ final class ExportEngine: ObservableObject {
             let totalOutputFrames = Int(trimmedDuration * outputFrameRate)
 
             let framesWritten = try await processFrames(
+                writer: writer,
                 reader: sequentialReader,
                 writerInput: writerInput,
                 adaptor: adaptor,
@@ -445,6 +453,7 @@ final class ExportEngine: ObservableObject {
     /// Process frames with frame-rate-aware sampling using requestMediaDataWhenReady
     /// - Returns: Number of frames written
     private func processFrames(
+        writer: AVAssetWriter,
         reader: SequentialFrameReader,
         writerInput: AVAssetWriterInput,
         adaptor: AVAssetWriterInputPixelBufferAdaptor,
@@ -468,6 +477,18 @@ final class ExportEngine: ObservableObject {
                     if !didResume {
                         didResume = true
                         continuation.resume(throwing: ExportEngineError.writerFailed)
+                    }
+                    return
+                }
+
+                // Detect writer failure (prevents hang when writer silently fails)
+                if writer.status == .failed {
+                    writerInput.markAsFinished()
+                    if !didResume {
+                        didResume = true
+                        continuation.resume(
+                            throwing: writer.error ?? ExportEngineError.writerFailed
+                        )
                     }
                     return
                 }
@@ -525,7 +546,16 @@ final class ExportEngine: ObservableObject {
                         preferredTimescale: 600
                     )
 
-                    adaptor.append(pixelBuffer, withPresentationTime: outputPTS)
+                    if !adaptor.append(pixelBuffer, withPresentationTime: outputPTS) {
+                        writerInput.markAsFinished()
+                        if !didResume {
+                            didResume = true
+                            continuation.resume(
+                                throwing: writer.error ?? ExportEngineError.writerFailed
+                            )
+                        }
+                        return
+                    }
                     outputFrameIndex += 1
 
                     if outputFrameIndex.isMultiple(of: 10) || outputFrameIndex == totalOutputFrames {
