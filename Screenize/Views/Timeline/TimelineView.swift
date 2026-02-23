@@ -78,6 +78,11 @@ struct TimelineView: View {
     private let trackHeight: CGFloat = 40
     private let headerWidth: CGFloat = 140
 
+    /// Total height of ruler + all track rows (including dividers)
+    private var totalContentHeight: CGFloat {
+        rulerHeight + 1 + CGFloat(timeline.tracks.count) * (trackHeight + 1)
+    }
+
     private var logZoom: Binding<Double> {
         Binding(
             get: { log2(Double(pixelsPerSecond)) },
@@ -112,35 +117,38 @@ struct TimelineView: View {
                 let availableWidth = geometry.size.width - headerWidth - 1
                 let contentWidth = max(availableWidth, CGFloat(duration) * pixelsPerSecond)
 
-                HStack(spacing: 0) {
-                    trackHeaders
-                    Divider()
+                ScrollView(.vertical, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 0) {
+                        trackHeaders
+                        Divider()
 
-                    HorizontalScrollViewWithVerticalWheel {
-                        ZStack(alignment: .topLeading) {
-                            VStack(spacing: 0) {
-                                TimeRulerView(
-                                    duration: duration,
-                                    currentTime: currentTime,
-                                    pixelsPerSecond: pixelsPerSecond,
-                                    scrollOffset: 0,
-                                    onTimeTap: { time in
-                                        currentTime = time
-                                        Task { await onSeek?(time) }
-                                    }
-                                )
+                        HorizontalScrollViewWithVerticalWheel {
+                            ZStack(alignment: .topLeading) {
+                                VStack(spacing: 0) {
+                                    TimeRulerView(
+                                        duration: duration,
+                                        currentTime: currentTime,
+                                        pixelsPerSecond: pixelsPerSecond,
+                                        scrollOffset: 0,
+                                        onTimeTap: { time in
+                                            currentTime = time
+                                            Task { await onSeek?(time) }
+                                        }
+                                    )
 
-                                Divider()
+                                    Divider()
 
-                                trackContent
+                                    trackContent
+                                }
+
+                                trimOverlay
+
+                                PlayheadLine(currentTime: currentTime, pixelsPerSecond: pixelsPerSecond, scrollOffset: 0)
+                                    .offset(y: rulerHeight)
                             }
-
-                            trimOverlay
-
-                            PlayheadLine(currentTime: currentTime, pixelsPerSecond: pixelsPerSecond, scrollOffset: 0)
-                                .offset(y: rulerHeight)
+                            .frame(width: contentWidth)
                         }
-                        .frame(width: contentWidth)
+                        .frame(height: totalContentHeight)
                     }
                 }
                 .onAppear {
@@ -232,7 +240,6 @@ struct TimelineView: View {
                 Divider()
             }
 
-            Spacer()
         }
         .frame(width: headerWidth)
         .background(Color(nsColor: .controlBackgroundColor))
