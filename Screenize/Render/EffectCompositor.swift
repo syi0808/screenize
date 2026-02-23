@@ -322,7 +322,7 @@ final class EffectCompositor {
             height: bitmapHeight,
             bitsPerComponent: 8,
             bytesPerRow: bitmapWidth * 4,
-            space: CGColorSpaceCreateDeviceRGB(),
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
 

@@ -275,7 +275,7 @@ actor VideoFrameAnalyzer {
             rowBytes: 4,
             bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
             format: .RGBA8,
-            colorSpace: CGColorSpaceCreateDeviceRGB()
+            colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!
         )
 
         // Convert the RGB average into a change amount (0–1)
