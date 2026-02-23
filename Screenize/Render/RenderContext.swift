@@ -31,9 +31,6 @@ struct RenderContext {
     /// Metal command queue
     let commandQueue: MTLCommandQueue?
 
-    /// Reusable color space (avoid per-frame allocation)
-    let colorSpace: CGColorSpace
-
     init(
         outputSize: CGSize,
         sourceSize: CGSize,
@@ -42,8 +39,7 @@ struct RenderContext {
         isPreview: Bool = false,
         previewScale: CGFloat = 0.5,
         device: MTLDevice? = nil,
-        commandQueue: MTLCommandQueue? = nil,
-        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        commandQueue: MTLCommandQueue? = nil
     ) {
         self.outputSize = outputSize
         self.sourceSize = sourceSize
@@ -52,55 +48,34 @@ struct RenderContext {
         self.previewScale = previewScale
         self.device = device
         self.commandQueue = commandQueue
-        self.colorSpace = colorSpace
 
         // Use Metal-backed CIContext when device is available
         if let ciContext = ciContext {
             self.ciContext = ciContext
         } else if let device = device {
-            var ciOptions: [CIContextOption: Any] = [
+            self.ciContext = CIContext(mtlDevice: device, options: [
                 .cacheIntermediates: true,
                 .priorityRequestLow: false
-            ]
-            // Only set workingColorSpace for wide-gamut color spaces.
-            // sRGB is CIContext's default — setting it explicitly forces
-            // unnecessary per-pixel color conversion.
-            if Self.isWideGamut(colorSpace) {
-                ciOptions[.workingColorSpace] = colorSpace
-            }
-            self.ciContext = CIContext(mtlDevice: device, options: ciOptions)
+            ])
         } else {
-            self.ciContext = Self.createOptimizedContext(colorSpace: colorSpace)
+            self.ciContext = Self.createOptimizedContext()
         }
     }
 
     /// Create an optimized CIContext for performance (non-Metal fallback)
-    static func createOptimizedContext(
-        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
-    ) -> CIContext {
-        var options: [CIContextOption: Any] = [
+    static func createOptimizedContext() -> CIContext {
+        CIContext(options: [
             .useSoftwareRenderer: false,
             .highQualityDownsample: false,
             .cacheIntermediates: true,
             .priorityRequestLow: false
-        ]
-        if isWideGamut(colorSpace) {
-            options[.workingColorSpace] = colorSpace
-        }
-        return CIContext(options: options)
-    }
-
-    /// Check if a color space is wide gamut (requires explicit working color space)
-    private static func isWideGamut(_ colorSpace: CGColorSpace) -> Bool {
-        colorSpace != CGColorSpace(name: CGColorSpace.sRGB)!
-            && colorSpace != CGColorSpace(name: CGColorSpace.itur_709)!
+        ])
     }
 
     /// Create a context for preview (Metal-backed for GPU-resident pipeline)
     static func forPreview(
         sourceSize: CGSize,
-        scale: CGFloat = 0.5,
-        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        scale: CGFloat = 0.5
     ) -> Self {
         let scaledSize = CGSize(
             width: sourceSize.width * scale,
@@ -116,16 +91,14 @@ struct RenderContext {
             isPreview: true,
             previewScale: scale,
             device: device,
-            commandQueue: commandQueue,
-            colorSpace: colorSpace
+            commandQueue: commandQueue
         )
     }
 
     /// Create a context for export (Metal-backed for GPU-accelerated rendering)
     static func forExport(
         sourceSize: CGSize,
-        outputSize: CGSize? = nil,
-        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        outputSize: CGSize? = nil
     ) -> Self {
         let finalSize = outputSize ?? sourceSize
 
@@ -139,8 +112,7 @@ struct RenderContext {
             isPreview: false,
             previewScale: 1.0,
             device: device,
-            commandQueue: commandQueue,
-            colorSpace: colorSpace
+            commandQueue: commandQueue
         )
     }
 

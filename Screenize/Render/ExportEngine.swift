@@ -200,6 +200,10 @@ final class ExportEngine: ObservableObject {
 
             let totalOutputFrames = Int(trimmedDuration * outputFrameRate)
 
+            let exportColorSpace: CGColorSpace? = project.renderSettings.outputColorSpace == .auto
+                ? nil
+                : project.renderSettings.outputColorSpace.cgColorSpace
+
             let framesWritten = try await processFrames(
                 writer: writer,
                 reader: sequentialReader,
@@ -210,7 +214,8 @@ final class ExportEngine: ObservableObject {
                 trimStart: trimStart,
                 outputFrameRate: outputFrameRate,
                 totalOutputFrames: totalOutputFrames,
-                startTime: startTime
+                startTime: startTime,
+                colorSpace: exportColorSpace
             )
 
             print("[Export] Completed - \(framesWritten) frames")
@@ -462,7 +467,8 @@ final class ExportEngine: ObservableObject {
         trimStart: TimeInterval,
         outputFrameRate: Double,
         totalOutputFrames: Int,
-        startTime: Date
+        startTime: Date,
+        colorSpace: CGColorSpace? = nil
     ) async throws -> Int {
         let outputFrameInterval = 1.0 / outputFrameRate
         var outputFrameIndex = 0
@@ -535,7 +541,7 @@ final class ExportEngine: ObservableObject {
                     let state = evaluator.evaluate(at: idealTime)
 
                     guard let pixelBuffer = renderer.renderToPixelBuffer(
-                        sourceFrame: sourceFrame.image, state: state
+                        sourceFrame: sourceFrame.image, state: state, outputColorSpace: colorSpace
                     ) else {
                         outputFrameIndex += 1
                         continue
@@ -543,7 +549,7 @@ final class ExportEngine: ObservableObject {
 
                     let outputPTS = CMTime(
                         seconds: Double(outputFrameIndex) * outputFrameInterval,
-                        preferredTimescale: 600
+                        preferredTimescale: 90_000
                     )
 
                     if !adaptor.append(pixelBuffer, withPresentationTime: outputPTS) {

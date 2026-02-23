@@ -173,20 +173,25 @@ final class Renderer {
     /// - Parameters:
     ///   - sourceFrame: Source video frame
     ///   - state: Evaluated frame state
+    ///   - outputColorSpace: Color space for the output pixel buffer (export only, defaults to sRGB)
     /// - Returns: Rendered pixel buffer
     func renderToPixelBuffer(
         sourceFrame: CIImage,
-        state: EvaluatedFrameState
+        state: EvaluatedFrameState,
+        outputColorSpace: CGColorSpace? = nil
     ) -> CVPixelBuffer? {
         guard let rendered = render(sourceFrame: sourceFrame, state: state) else {
             return nil
         }
 
-        return createPixelBuffer(from: rendered)
+        return createPixelBuffer(from: rendered, outputColorSpace: outputColorSpace)
     }
 
     /// Convert a CIImage to a CVPixelBuffer
-    private func createPixelBuffer(from image: CIImage) -> CVPixelBuffer? {
+    private func createPixelBuffer(
+        from image: CIImage,
+        outputColorSpace: CGColorSpace? = nil
+    ) -> CVPixelBuffer? {
         var pixelBuffer: CVPixelBuffer?
 
         // Acquire from the pixel buffer pool
@@ -219,12 +224,14 @@ final class Renderer {
 
         guard let buffer = pixelBuffer else { return nil }
 
+        let colorSpace = outputColorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
+
         // Render the CIImage into the CVPixelBuffer
         context.ciContext.render(
             image,
             to: buffer,
             bounds: CGRect(origin: .zero, size: context.outputSize),
-            colorSpace: context.colorSpace
+            colorSpace: colorSpace
         )
 
         return buffer
@@ -255,7 +262,7 @@ final class Renderer {
             to: targetTexture,
             commandBuffer: nil,
             bounds: CGRect(origin: .zero, size: context.outputSize),
-            colorSpace: context.colorSpace
+            colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!
         )
         return true
     }
@@ -326,13 +333,11 @@ extension Renderer {
         scale: CGFloat = 0.5,
         motionBlurSettings: MotionBlurSettings? = nil,
         isWindowMode: Bool = false,
-        renderSettings: RenderSettings? = nil,
-        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        renderSettings: RenderSettings? = nil
     ) -> Renderer {
         let context = RenderContext.forPreview(
             sourceSize: sourceSize,
-            scale: scale,
-            colorSpace: colorSpace
+            scale: scale
         )
         return Renderer(
             context: context,
@@ -348,13 +353,11 @@ extension Renderer {
         outputSize: CGSize? = nil,
         motionBlurSettings: MotionBlurSettings? = nil,
         isWindowMode: Bool = false,
-        renderSettings: RenderSettings? = nil,
-        colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        renderSettings: RenderSettings? = nil
     ) -> Renderer {
         let context = RenderContext.forExport(
             sourceSize: sourceSize,
-            outputSize: outputSize,
-            colorSpace: colorSpace
+            outputSize: outputSize
         )
         return Renderer(
             context: context,
