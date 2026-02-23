@@ -624,12 +624,14 @@ final class ExportEngine: ObservableObject {
             break
         }
 
-        // Color space metadata tagging
-        settings[AVVideoColorPropertiesKey] = [
-            AVVideoColorPrimariesKey: colorSpace.avColorPrimaries,
-            AVVideoTransferFunctionKey: colorSpace.avTransferFunction,
-            AVVideoYCbCrMatrixKey: colorSpace.avYCbCrMatrix
-        ]
+        // Color space metadata tagging (only when explicitly selected)
+        if colorSpace != .auto {
+            settings[AVVideoColorPropertiesKey] = [
+                AVVideoColorPrimariesKey: colorSpace.avColorPrimaries,
+                AVVideoTransferFunctionKey: colorSpace.avTransferFunction,
+                AVVideoYCbCrMatrixKey: colorSpace.avYCbCrMatrix
+            ]
+        }
 
         return settings
     }
