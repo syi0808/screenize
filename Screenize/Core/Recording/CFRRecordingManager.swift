@@ -96,11 +96,13 @@ final class CFRRecordingManager: @unchecked Sendable {
         videoWriter = try VideoWriter(outputURL: outputURL, configuration: writerConfig)
         try videoWriter?.startWriting()
 
-        // Start system audio sidecar writer
-        let sysAudioURL = Self.generateSystemAudioURL(for: outputURL)
-        systemAudioWriter = SystemAudioWriter()
-        try systemAudioWriter?.startWriting(to: sysAudioURL)
-        self.systemAudioURL = sysAudioURL
+        // Start system audio sidecar writer (only if audio capture is enabled)
+        if configuration.capturesAudio {
+            let sysAudioURL = Self.generateSystemAudioURL(for: outputURL)
+            systemAudioWriter = SystemAudioWriter()
+            try systemAudioWriter?.startWriting(to: sysAudioURL)
+            self.systemAudioURL = sysAudioURL
+        }
 
         isRecording = true
         isPaused = false

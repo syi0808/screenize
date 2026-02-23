@@ -29,6 +29,7 @@ final class AppState: ObservableObject {
 
     // Audio
     @AppStorage("isMicrophoneEnabled") var isMicrophoneEnabled: Bool = false
+    @AppStorage("isSystemAudioEnabled") var isSystemAudioEnabled: Bool = true
 
     // Countdown state
     @Published var isCountingDown: Bool = false

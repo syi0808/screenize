@@ -144,6 +144,8 @@ struct CaptureToolbarView: View {
 
             toolbarDivider
 
+            ToolbarSystemAudioToggle()
+
             ToolbarMicToggle()
 
             toolbarDivider
@@ -284,6 +286,28 @@ private struct ToolbarIconButton: View {
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .help(tooltip)
+    }
+}
+
+// MARK: - Toolbar System Audio Toggle
+
+private struct ToolbarSystemAudioToggle: View {
+    @AppStorage("isSystemAudioEnabled") private var isEnabled = true
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            isEnabled.toggle()
+        } label: {
+            Image(systemName: isEnabled ? "speaker.wave.2.fill" : "speaker.slash")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(isEnabled ? .white.opacity(0.7) : .white.opacity(0.5))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help(isEnabled ? "Disable System Audio" : "Enable System Audio")
     }
 }
 

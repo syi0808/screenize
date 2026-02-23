@@ -82,7 +82,8 @@ final class RecordingCoordinator: ObservableObject {
         self.captureBounds = calculateCaptureBounds(for: target)
 
         // Setup capture configuration
-        let captureConfig = CaptureConfiguration.forTarget(target)
+        var captureConfig = CaptureConfiguration.forTarget(target)
+        captureConfig.capturesAudio = AppState.shared.isSystemAudioEnabled
 
         // DEBUG: Log capture setup details
         print("🔍 [DEBUG] Recording target: \(target), captureBounds: \(captureBounds)")
