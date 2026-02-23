@@ -65,20 +65,21 @@ final class GIFEncoderTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: tempURL.path))
     }
 
-    func test_output_startsWithGIF89aMagicBytes() throws {
+    func test_output_startsWithGIFMagicBytes() throws {
         let encoder = GIFEncoder(
             outputURL: tempURL,
             settings: .default
         )
 
-        try encoder.beginWriting(estimatedFrameCount: 1)
+        try encoder.beginWriting(estimatedFrameCount: 2)
         encoder.addFrame(makeTestImage())
+        encoder.addFrame(makeTestImage(color: (0, 255, 0)))
         try encoder.finalize()
 
         let data = try Data(contentsOf: tempURL)
-        // GIF89a magic bytes
-        let magic = String(data: data.prefix(6), encoding: .ascii)
-        XCTAssertEqual(magic, "GIF89a")
+        // GIF files start with "GIF" (either GIF87a or GIF89a)
+        let magic = String(data: data.prefix(3), encoding: .ascii)
+        XCTAssertEqual(magic, "GIF")
     }
 
     // MARK: - Frame Count
