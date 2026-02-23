@@ -170,6 +170,12 @@
 		E6000004296A0001 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000004296A0001 /* CornerRadius.swift */; };
 		E6000005296A0001 /* DesignOpacity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000005296A0001 /* DesignOpacity.swift */; };
 		E6000006296A0001 /* AnimationTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000006296A0001 /* AnimationTokens.swift */; };
+		E6000010296A0001 /* ScreenizeButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000010296A0001 /* ScreenizeButtonStyles.swift */; };
+		E6000011296A0001 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000011296A0001 /* SectionHeader.swift */; };
+		E6000012296A0001 /* SliderWithField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000012296A0001 /* SliderWithField.swift */; };
+		E6000013296A0001 /* SheetHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000013296A0001 /* SheetHeader.swift */; };
+		E6000014296A0001 /* DesignEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000014296A0001 /* DesignEmptyState.swift */; };
+		E6000015296A0001 /* TimeCodeLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000015296A0001 /* TimeCodeLabel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -338,6 +344,12 @@
 		E5000004296A0001 /* CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
 		E5000005296A0001 /* DesignOpacity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignOpacity.swift; sourceTree = "<group>"; };
 		E5000006296A0001 /* AnimationTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationTokens.swift; sourceTree = "<group>"; };
+		E5000010296A0001 /* ScreenizeButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeButtonStyles.swift; sourceTree = "<group>"; };
+		E5000011296A0001 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
+		E5000012296A0001 /* SliderWithField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderWithField.swift; sourceTree = "<group>"; };
+		E5000013296A0001 /* SheetHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetHeader.swift; sourceTree = "<group>"; };
+		E5000014296A0001 /* DesignEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignEmptyState.swift; sourceTree = "<group>"; };
+		E5000015296A0001 /* TimeCodeLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCodeLabel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -886,6 +898,12 @@
 		E5100001296A0001 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				E5000010296A0001 /* ScreenizeButtonStyles.swift */,
+				E5000011296A0001 /* SectionHeader.swift */,
+				E5000012296A0001 /* SliderWithField.swift */,
+				E5000013296A0001 /* SheetHeader.swift */,
+				E5000014296A0001 /* DesignEmptyState.swift */,
+				E5000015296A0001 /* TimeCodeLabel.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -995,6 +1013,12 @@
 				E6000004296A0001 /* CornerRadius.swift in Sources */,
 				E6000005296A0001 /* DesignOpacity.swift in Sources */,
 				E6000006296A0001 /* AnimationTokens.swift in Sources */,
+				E6000010296A0001 /* ScreenizeButtonStyles.swift in Sources */,
+				E6000011296A0001 /* SectionHeader.swift in Sources */,
+				E6000012296A0001 /* SliderWithField.swift in Sources */,
+				E6000013296A0001 /* SheetHeader.swift in Sources */,
+				E6000014296A0001 /* DesignEmptyState.swift in Sources */,
+				E6000015296A0001 /* TimeCodeLabel.swift in Sources */,
 				F0000081296A0001 /* ScreenizeApp.swift in Sources */,
 				F0000080296A0001 /* EditorEntryPoint.swift in Sources */,
 				F0000001296A0001 /* ScreenizeProject.swift in Sources */,
