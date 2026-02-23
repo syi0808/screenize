@@ -58,11 +58,17 @@ struct RenderContext {
         if let ciContext = ciContext {
             self.ciContext = ciContext
         } else if let device = device {
-            self.ciContext = CIContext(mtlDevice: device, options: [
+            var ciOptions: [CIContextOption: Any] = [
                 .cacheIntermediates: true,
-                .priorityRequestLow: false,
-                .workingColorSpace: colorSpace
-            ])
+                .priorityRequestLow: false
+            ]
+            // Only set workingColorSpace for wide-gamut color spaces.
+            // sRGB is CIContext's default — setting it explicitly forces
+            // unnecessary per-pixel color conversion.
+            if Self.isWideGamut(colorSpace) {
+                ciOptions[.workingColorSpace] = colorSpace
+            }
+            self.ciContext = CIContext(mtlDevice: device, options: ciOptions)
         } else {
             self.ciContext = Self.createOptimizedContext(colorSpace: colorSpace)
         }
@@ -72,13 +78,22 @@ struct RenderContext {
     static func createOptimizedContext(
         colorSpace: CGColorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
     ) -> CIContext {
-        CIContext(options: [
+        var options: [CIContextOption: Any] = [
             .useSoftwareRenderer: false,
             .highQualityDownsample: false,
             .cacheIntermediates: true,
-            .priorityRequestLow: false,
-            .workingColorSpace: colorSpace
-        ])
+            .priorityRequestLow: false
+        ]
+        if isWideGamut(colorSpace) {
+            options[.workingColorSpace] = colorSpace
+        }
+        return CIContext(options: options)
+    }
+
+    /// Check if a color space is wide gamut (requires explicit working color space)
+    private static func isWideGamut(_ colorSpace: CGColorSpace) -> Bool {
+        colorSpace != CGColorSpace(name: CGColorSpace.sRGB)!
+            && colorSpace != CGColorSpace(name: CGColorSpace.itur_709)!
     }
 
     /// Create a context for preview (Metal-backed for GPU-resident pipeline)
