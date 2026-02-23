@@ -53,24 +53,17 @@ private struct EmptyStateView: View {
     @ObservedObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "display")
-                .font(.system(size: 64))
-                .foregroundColor(.secondary)
-
-            Text("No Source Selected")
-                .font(.title2)
-
-            Text("Select a display or window to start recording")
-                .foregroundColor(.secondary)
-
-            Button("Select Source") {
-                appState.showSourcePicker = true
-            }
-            .buttonStyle(.borderedProminent)
+        DesignEmptyState(
+            icon: "display",
+            title: "No Source Selected",
+            subtitle: "Select a display or window to start recording",
+            iconSize: 64,
+            actionLabel: "Select Source"
+        ) {
+            appState.showSourcePicker = true
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(DesignColors.windowBackground)
     }
 }
 
@@ -100,12 +93,12 @@ private struct RecordingIndicator: View {
     @State private var isBlinking = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.sm) {
             Circle()
                 .fill(Color.red)
                 .frame(width: 12, height: 12)
                 .opacity(isBlinking ? 0.5 : 1.0)
-                .animation(.easeInOut(duration: 0.5).repeatForever(), value: isBlinking)
+                .animation(AnimationTokens.pulse, value: isBlinking)
 
             Text(formattedDuration)
                 .font(.system(.body, design: .monospaced))
@@ -117,10 +110,10 @@ private struct RecordingIndicator: View {
                     .foregroundColor(.yellow)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.black.opacity(0.7))
-        .cornerRadius(8)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .background(DesignColors.overlay.opacity(DesignOpacity.strong))
+        .cornerRadius(CornerRadius.lg)
         .onAppear {
             isBlinking = true
         }
