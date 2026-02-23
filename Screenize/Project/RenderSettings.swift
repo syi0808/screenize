@@ -285,3 +285,48 @@ enum ExportQuality: String, Codable, CaseIterable {
         return Int(baseBitRate)
     }
 }
+
+// MARK: - GIF Settings
+
+/// Settings for GIF export
+struct GIFSettings: Codable, Equatable {
+    /// Frame rate for GIF output (typically 10-20 fps)
+    var frameRate: Int = 15
+
+    /// Loop count (0 = infinite loop)
+    var loopCount: Int = 0
+
+    /// Maximum width in pixels (height scales proportionally)
+    var maxWidth: Int = 640
+
+    // MARK: - Presets
+
+    static let `default` = Self()
+    static let compact = Self(frameRate: 10, loopCount: 0, maxWidth: 480)
+    static let balanced = Self(frameRate: 15, loopCount: 0, maxWidth: 640)
+    static let highQuality = Self(frameRate: 20, loopCount: 0, maxWidth: 960)
+
+    // MARK: - Computed
+
+    /// Calculate effective output size, scaling down if source exceeds maxWidth
+    func effectiveSize(sourceSize: CGSize) -> CGSize {
+        guard sourceSize.width > CGFloat(maxWidth) else { return sourceSize }
+        let scale = CGFloat(maxWidth) / sourceSize.width
+        let w = CGFloat(maxWidth)
+        let h = (sourceSize.height * scale).rounded(.down)
+        let evenHeight = Int(h) % 2 == 0 ? Int(h) : Int(h) + 1
+        return CGSize(width: Int(w), height: evenHeight)
+    }
+
+    /// GIF frame delay in seconds
+    var frameDelay: Double {
+        1.0 / Double(max(1, frameRate))
+    }
+
+    /// Estimated file size in bytes (rough heuristic)
+    func estimatedFileSize(duration: TimeInterval) -> Int64 {
+        let frameCount = Int(duration * Double(frameRate))
+        let bytesPerFrame: Int64 = Int64(maxWidth) * 40
+        return Int64(frameCount) * bytesPerFrame
+    }
+}
