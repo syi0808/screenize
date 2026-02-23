@@ -15,8 +15,8 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Dedicated render queue (serial, high priority)
     private let renderQueue = DispatchQueue(label: "com.screenize.render", qos: .userInteractive)
 
-    /// Sequential frame reader for playback
-    private var sequentialReader: SequentialFrameReader?
+    /// CFR frame reader for playback (wraps SequentialFrameReader with VFR gap filling)
+    private var frameReader: CFRFrameReader?
 
     /// Random-access frame extractor for scrubbing
     private var frameExtractor: VideoFrameExtractor?
@@ -48,12 +48,6 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Lock for thread-safe access to shared state
     private let lock = NSLock()
 
-    /// Current display frame (latest source frame with time <= requested time)
-    private var heldFrame: (time: TimeInterval, image: CIImage)?
-
-    /// Buffered next frame (first source frame with time > last requested time)
-    private var lookaheadFrame: (time: TimeInterval, image: CIImage)?
-
     // MARK: - Initialization
 
     init(previewScale: CGFloat = 0.5, cacheSize: Int = 180) {
@@ -65,7 +59,7 @@ final class RenderCoordinator: @unchecked Sendable {
 
     /// Configure the coordinator with video and pipeline components
     func setup(
-        sequentialReader: SequentialFrameReader,
+        frameReader: CFRFrameReader,
         frameExtractor: VideoFrameExtractor,
         evaluator: FrameEvaluator,
         renderer: Renderer,
@@ -74,7 +68,7 @@ final class RenderCoordinator: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        self.sequentialReader = sequentialReader
+        self.frameReader = frameReader
         self.frameExtractor = frameExtractor
         self.evaluator = evaluator
         self.renderer = renderer
@@ -124,7 +118,7 @@ final class RenderCoordinator: @unchecked Sendable {
         isRenderingPlaybackFrame = true
         let evaluator = self.evaluator
         let renderer = self.renderer
-        let reader = self.sequentialReader
+        let reader = self.frameReader
         let cache = self.textureCache
 
         lock.unlock()
@@ -152,33 +146,13 @@ final class RenderCoordinator: @unchecked Sendable {
                 return
             }
 
-            // Lookahead-based VFR frame reading:
-            // Keep heldFrame as the latest source frame with time <= requested time.
-            // Buffer the first frame past the requested time in lookaheadFrame.
-
-            // Promote lookahead to held if it's now at or before the requested time
-            if let lookahead = self.lookaheadFrame, lookahead.time <= time {
-                self.heldFrame = lookahead
-                self.lookaheadFrame = nil
-            }
-
-            // Read new frames only when no lookahead is buffered
-            if self.lookaheadFrame == nil {
-                while let nextFrame = reader.nextFrame() {
-                    if nextFrame.time > time {
-                        self.lookaheadFrame = nextFrame
-                        break
-                    }
-                    self.heldFrame = nextFrame
-                }
-            }
-
-            guard let frame = self.heldFrame else {
+            // Get the frame for this time (CFRFrameReader fills VFR gaps)
+            guard let frame = reader.frame(at: time) else {
                 completion(nil, time)
                 return
             }
 
-            // Evaluate the state at the requested time (not the frame's actual time)
+            // Evaluate the state at the requested time
             let state = evaluator.evaluate(at: time)
 
             // Acquire a texture from the cache pool
@@ -287,14 +261,12 @@ final class RenderCoordinator: @unchecked Sendable {
     func seek(to time: TimeInterval) {
         lock.lock()
         renderGeneration += 1
-        heldFrame = nil
-        lookaheadFrame = nil
-        let reader = sequentialReader
+        let reader = frameReader
         lock.unlock()
 
         frameExtractor?.cancelAllPendingRequests()
 
-        // Reposition sequential reader on render queue
+        // Reposition frame reader on render queue
         renderQueue.async {
             try? reader?.seek(to: time)
         }
@@ -372,12 +344,10 @@ final class RenderCoordinator: @unchecked Sendable {
     func cleanup() {
         lock.lock()
         renderGeneration += 1
-        heldFrame = nil
-        lookaheadFrame = nil
         lock.unlock()
 
         frameExtractor?.cancelAllPendingRequests()
-        sequentialReader?.stopReading()
+        frameReader?.stopReading()
         textureCache?.invalidateAll()
     }
 }

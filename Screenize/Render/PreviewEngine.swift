@@ -236,9 +236,10 @@ final class PreviewEngine: ObservableObject {
             try reader.startReading(from: effectiveTrimStart)
             sequentialReader = reader
 
-            // Configure the render coordinator
+            // Configure the render coordinator with CFR frame reader (fills VFR gaps)
+            let cfrReader = CFRFrameReader(source: reader)
             renderCoordinator.setup(
-                sequentialReader: reader,
+                frameReader: cfrReader,
                 frameExtractor: extractor,
                 evaluator: pipeline.evaluator,
                 renderer: pipeline.renderer,
