@@ -9,19 +9,26 @@ import CoreGraphics
 struct CursorFollowController: CameraController {
 
     /// Minimum time between consecutive pans to prevent jitter.
-    private let minMoveInterval: TimeInterval = 0.3
+    private let minMoveInterval: TimeInterval = 0.15
 
     /// Minimum pan animation duration.
-    private let minPanDuration: TimeInterval = 0.15
+    private let minPanDuration: TimeInterval = 0.10
 
     /// Maximum pan animation duration.
-    private let maxPanDuration: TimeInterval = 0.5
+    private let maxPanDuration: TimeInterval = 0.40
 
     /// Distance multiplier to compute pan duration: duration = distance * panDurationScale.
-    private let panDurationScale: CGFloat = 1.5
+    private let panDurationScale: CGFloat = 1.2
 
     /// Margin inside viewport edge before triggering a pan (fraction of viewport).
     private let viewportMargin: CGFloat = 0.05
+
+    /// Partial correction fraction: 0 = move to edge only, 1 = move to center.
+    /// 0.6 means each pan only moves 60% toward the ideal center, keeping pans gentle.
+    private let correctionFraction: CGFloat = 0.6
+
+    /// Look-ahead duration for predictive panning (seconds).
+    private let lookAheadTime: TimeInterval = 0.2
 
     func simulate(
         scene: CameraScene,
@@ -53,68 +60,44 @@ struct CursorFollowController: CameraController {
         let sceneEvents = timeline.events(in: scene.startTime...scene.endTime)
 
         var lastPanTime: TimeInterval = -.greatestFiniteMagnitude
+        var previousTracked: (time: TimeInterval, position: NormalizedPoint)?
 
         for event in sceneEvents {
-            // Extract tracked position: prefer caret, fall back to mouse
-            let trackedPosition: NormalizedPoint
-            if let caretBounds = event.metadata.caretBounds,
-               let normalizedCaret = normalizeBoundsIfNeeded(
-                   caretBounds, screenBounds: settings.screenBounds
-               ) {
-                trackedPosition = NormalizedPoint(
-                    x: normalizedCaret.midX, y: normalizedCaret.midY
-                )
-            } else {
-                trackedPosition = event.position
-            }
+            let trackedPosition = extractTrackedPosition(
+                event: event, screenBounds: settings.screenBounds
+            )
+            let checkPosition = predictedPosition(
+                current: trackedPosition, eventTime: event.time, previous: previousTracked
+            )
+            previousTracked = (time: event.time, position: trackedPosition)
 
-            // Check if position is outside current viewport
-            guard trackedPosition.isOutsideViewport(
+            guard checkPosition.isOutsideViewport(
                 zoom: zoom, center: currentCenter, margin: viewportMargin
-            ) else {
-                continue
-            }
+            ) else { continue }
+            guard event.time - lastPanTime >= minMoveInterval else { continue }
 
-            // Debounce: skip if too soon after last pan
-            guard event.time - lastPanTime >= minMoveInterval else {
-                continue
-            }
-
-            // Compute distance-based pan duration
             let distance = trackedPosition.distance(to: currentCenter)
-            let computedPanDuration = min(
-                maxPanDuration,
-                max(minPanDuration, Double(distance * panDurationScale))
+            let panDuration = min(maxPanDuration, max(minPanDuration, Double(distance * panDurationScale)))
+            let newCenter = computePartialCorrection(
+                tracked: trackedPosition, current: currentCenter, zoom: zoom
             )
 
             #if DEBUG
             print(String(
-                format: "[V2-CursorFollow] t=%.2f pan dist=%.3f dur=%.2fs pos=(%.2f,%.2f)→(%.2f,%.2f)",
-                event.time, distance, computedPanDuration,
-                currentCenter.x, currentCenter.y,
-                trackedPosition.x, trackedPosition.y
+                format: "[V2-CursorFollow] t=%.2f dist=%.3f dur=%.2fs (%.2f,%.2f)→(%.2f,%.2f)",
+                event.time, distance, panDuration,
+                currentCenter.x, currentCenter.y, newCenter.x, newCenter.y
             ))
             #endif
 
-            // Generate pan: hold at current position, then animate to new center
             let panStart = event.time
-            let panEnd = min(panStart + computedPanDuration, scene.endTime)
-
-            // Hold keyframe just before pan
+            let panEnd = min(panStart + panDuration, scene.endTime)
             samples.append(TimedTransform(
-                time: panStart,
-                transform: TransformValue(zoom: zoom, center: currentCenter)
+                time: panStart, transform: TransformValue(zoom: zoom, center: currentCenter)
             ))
-
-            // Compute new center targeting the tracked position
-            let newCenter = ShotPlanner.clampCenter(trackedPosition, zoom: zoom)
-
-            // Pan end keyframe
             samples.append(TimedTransform(
-                time: panEnd,
-                transform: TransformValue(zoom: zoom, center: newCenter)
+                time: panEnd, transform: TransformValue(zoom: zoom, center: newCenter)
             ))
-
             currentCenter = newCenter
             lastPanTime = panStart
         }
@@ -129,6 +112,47 @@ struct CursorFollowController: CameraController {
         }
 
         return samples
+    }
+
+    // MARK: - Helpers
+
+    private func extractTrackedPosition(
+        event: UnifiedEvent, screenBounds: CGSize
+    ) -> NormalizedPoint {
+        if let caretBounds = event.metadata.caretBounds,
+           let normalized = normalizeBoundsIfNeeded(caretBounds, screenBounds: screenBounds) {
+            return NormalizedPoint(x: normalized.midX, y: normalized.midY)
+        }
+        return event.position
+    }
+
+    private func predictedPosition(
+        current: NormalizedPoint,
+        eventTime: TimeInterval,
+        previous: (time: TimeInterval, position: NormalizedPoint)?
+    ) -> NormalizedPoint {
+        guard let prev = previous else { return current }
+        let dt = eventTime - prev.time
+        guard dt > 0.01 else { return current }
+        let vx = (current.x - prev.position.x) / CGFloat(dt)
+        let vy = (current.y - prev.position.y) / CGFloat(dt)
+        return NormalizedPoint(
+            x: max(0, min(1, current.x + vx * CGFloat(lookAheadTime))),
+            y: max(0, min(1, current.y + vy * CGFloat(lookAheadTime)))
+        )
+    }
+
+    private func computePartialCorrection(
+        tracked: NormalizedPoint, current: NormalizedPoint, zoom: CGFloat
+    ) -> NormalizedPoint {
+        let full = tracked.centerToIncludeInViewport(
+            zoom: zoom, currentCenter: current, padding: viewportMargin
+        )
+        let blended = NormalizedPoint(
+            x: current.x + (full.x - current.x) * correctionFraction,
+            y: current.y + (full.y - current.y) * correctionFraction
+        )
+        return ShotPlanner.clampCenter(blended, zoom: zoom)
     }
 
     /// Normalize caret bounds from pixel space to 0-1 if needed.

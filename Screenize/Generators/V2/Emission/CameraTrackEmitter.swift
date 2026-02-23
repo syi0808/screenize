@@ -190,11 +190,11 @@ struct CameraTrackEmitter {
         for i in 0..<subCount {
             let easing: EasingCurve
             if subCount == 1 {
-                easing = .easeInOut
+                easing = .spring(dampingRatio: 1.0, response: 0.5)
             } else if i == 0 {
-                easing = .easeOut
+                easing = .spring(dampingRatio: 1.0, response: 0.4)
             } else if i == subCount - 1 {
-                easing = .easeIn
+                easing = .spring(dampingRatio: 1.0, response: 0.4)
             } else {
                 easing = .linear
             }

@@ -445,16 +445,16 @@ final class CameraTrackEmitterTests: XCTestCase {
 
         let sorted = track.segments.sorted { $0.startTime < $1.startTime }
         XCTAssertEqual(sorted.count, 4)
-        // Default zoomOutEasing = .easeOut
-        XCTAssertEqual(sorted[1].interpolation, .easeOut)
+        // Default zoomOutEasing = .spring(dampingRatio: 1.0, response: 0.5)
+        XCTAssertEqual(sorted[1].interpolation, .spring(dampingRatio: 1.0, response: 0.5))
         // Default zoomInEasing = .spring(dampingRatio: 1.0, response: 0.6)
         XCTAssertEqual(sorted[2].interpolation, .spring(dampingRatio: 1.0, response: 0.6))
     }
 
     // MARK: - Easing Propagation: Multi-Sample Scene Pattern
 
-    func test_emit_multiSampleScene_usesEaseOutLinearEaseInPattern() {
-        // Scene with 4 samples → 3 sub-segments → easeOut, linear, easeIn
+    func test_emit_multiSampleScene_usesSpringLinearSpringPattern() {
+        // Scene with 4 samples → 3 sub-segments → spring, linear, spring
         let scene = CameraScene(startTime: 0, endTime: 6, primaryIntent: .typing(context: .codeEditor))
         let shotPlan = ShotPlan(
             scene: scene, shotType: .medium(zoom: 2.0),
@@ -475,16 +475,16 @@ final class CameraTrackEmitterTests: XCTestCase {
         XCTAssertEqual(track.segments.count, 3,
                        "4 samples → 3 sub-segments")
         let sorted = track.segments.sorted { $0.startTime < $1.startTime }
-        XCTAssertEqual(sorted[0].interpolation, .easeOut,
-                       "First sub-segment should use easeOut")
+        XCTAssertEqual(sorted[0].interpolation, .spring(dampingRatio: 1.0, response: 0.4),
+                       "First sub-segment should use spring")
         XCTAssertEqual(sorted[1].interpolation, .linear,
                        "Middle sub-segment should use linear")
-        XCTAssertEqual(sorted[2].interpolation, .easeIn,
-                       "Last sub-segment should use easeIn")
+        XCTAssertEqual(sorted[2].interpolation, .spring(dampingRatio: 1.0, response: 0.4),
+                       "Last sub-segment should use spring")
     }
 
-    func test_emit_twoSampleMovingScene_usesEaseInOut() {
-        // Scene with 2 different-transform samples → 1 sub-segment → easeInOut
+    func test_emit_twoSampleMovingScene_usesSpring() {
+        // Scene with 2 different-transform samples → 2 sub-segments → spring, spring
         let scene = CameraScene(startTime: 0, endTime: 4, primaryIntent: .typing(context: .codeEditor))
         let shotPlan = ShotPlan(
             scene: scene, shotType: .medium(zoom: 2.0),
@@ -501,13 +501,13 @@ final class CameraTrackEmitterTests: XCTestCase {
         let path = SimulatedPath(sceneSegments: [seg], transitionSegments: [])
         let track = CameraTrackEmitter.emit(path, duration: 4.0)
 
-        // 3 samples → 2 sub-segments → easeOut, easeIn
+        // 3 samples → 2 sub-segments → spring, spring
         XCTAssertEqual(track.segments.count, 2)
         let sorted = track.segments.sorted { $0.startTime < $1.startTime }
-        XCTAssertEqual(sorted[0].interpolation, .easeOut,
-                       "First of 2 sub-segments should use easeOut")
-        XCTAssertEqual(sorted[1].interpolation, .easeIn,
-                       "Last of 2 sub-segments should use easeIn")
+        XCTAssertEqual(sorted[0].interpolation, .spring(dampingRatio: 1.0, response: 0.4),
+                       "First of 2 sub-segments should use spring")
+        XCTAssertEqual(sorted[1].interpolation, .spring(dampingRatio: 1.0, response: 0.4),
+                       "Last of 2 sub-segments should use spring")
     }
 
     func test_emit_singleSampleScene_usesLinear() {

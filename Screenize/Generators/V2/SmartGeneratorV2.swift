@@ -358,8 +358,8 @@ struct TransitionSettings {
     /// Easing for direct pan transitions (critically damped — no overshoot).
     var panEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.6)
 
-    /// Easing for the zoom-out phase.
-    var zoomOutEasing: EasingCurve = .easeOut
+    /// Easing for the zoom-out phase (critically damped spring for natural deceleration).
+    var zoomOutEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.5)
 
     /// Easing for the zoom-in phase (slight underdamp for snap feel).
     var zoomInEasing: EasingCurve = .spring(dampingRatio: 0.92, response: 0.55)

@@ -47,9 +47,6 @@ struct MousePositionInterpolator {
                 continue
             }
 
-            let v1 = smoothed[i].velocity
-            let v2 = smoothed[i + 1].velocity
-
             var t: TimeInterval = 0
             while t < duration {
                 let progress = CGFloat(t / duration)
@@ -57,7 +54,11 @@ struct MousePositionInterpolator {
                     p0: p0, p1: p1, p2: p2, p3: p3,
                     t: progress, tension: baseTension
                 )
-                let velocity = v1 + (v2 - v1) * progress
+                let deriv = catmullRomDerivative(
+                    p0: p0, p1: p1, p2: p2, p3: p3,
+                    t: progress, tension: baseTension
+                )
+                let velocity = sqrt(deriv.x * deriv.x + deriv.y * deriv.y) / CGFloat(duration)
 
                 interpolated.append(RenderMousePosition(
                     timestamp: startTime + t,
@@ -164,33 +165,49 @@ struct MousePositionInterpolator {
 
     // MARK: - Idle Stabilization
 
-    /// Clamp positions to the first idle point when velocity is below threshold
+    /// Gradually blend positions toward an idle anchor using exponential decay.
+    /// When velocity drops below threshold, blendFactor increases toward 1.0 (locked).
+    /// When velocity returns, blendFactor decays back toward 0.0 (free movement).
     private static func stabilizeIdlePositions(
         _ positions: [RenderMousePosition],
-        threshold: CGFloat
+        threshold: CGFloat,
+        decayRate: CGFloat = 8.0
     ) -> [RenderMousePosition] {
         guard positions.count >= 2 else { return positions }
 
         var result = positions
         var idleAnchor: CGPoint?
+        var blendFactor: CGFloat = 0
 
         for i in 0..<result.count {
             let velocity = computeInstantVelocity(result, at: i)
+            let dt: CGFloat = i > 0
+                ? CGFloat(result[i].timestamp - result[i - 1].timestamp)
+                : 0
 
             if velocity < threshold {
                 if idleAnchor == nil {
                     idleAnchor = result[i].position
                 }
-                if let anchor = idleAnchor {
-                    result[i] = RenderMousePosition(
-                        timestamp: result[i].timestamp,
-                        x: anchor.x,
-                        y: anchor.y,
-                        velocity: 0
-                    )
-                }
+                blendFactor = min(1.0, blendFactor + (1.0 - blendFactor) * (1.0 - exp(-decayRate * dt)))
             } else {
-                idleAnchor = nil
+                blendFactor = max(0.0, blendFactor * exp(-decayRate * dt))
+                if blendFactor < 0.01 {
+                    blendFactor = 0
+                    idleAnchor = nil
+                }
+            }
+
+            if let anchor = idleAnchor, blendFactor > 0.001 {
+                let blendedX = result[i].position.x + (anchor.x - result[i].position.x) * blendFactor
+                let blendedY = result[i].position.y + (anchor.y - result[i].position.y) * blendFactor
+                let blendedVelocity = result[i].velocity * (1.0 - blendFactor)
+                result[i] = RenderMousePosition(
+                    timestamp: result[i].timestamp,
+                    x: blendedX,
+                    y: blendedY,
+                    velocity: blendedVelocity
+                )
             }
         }
 
@@ -235,6 +252,33 @@ struct MousePositionInterpolator {
     }
 
     // MARK: - Catmull-Rom Spline
+
+    /// Catmull-Rom spline derivative at parameter t (velocity direction and magnitude in parameter space)
+    private static func catmullRomDerivative(
+        p0: CGPoint,
+        p1: CGPoint,
+        p2: CGPoint,
+        p3: CGPoint,
+        t: CGFloat,
+        tension: CGFloat
+    ) -> CGPoint {
+        let t2 = t * t
+
+        let m1x = tension * (p2.x - p0.x)
+        let m1y = tension * (p2.y - p0.y)
+        let m2x = tension * (p3.x - p1.x)
+        let m2y = tension * (p3.y - p1.y)
+
+        let da = 6 * t2 - 6 * t
+        let db = 3 * t2 - 4 * t + 1
+        let dc = -6 * t2 + 6 * t
+        let dd = 3 * t2 - 2 * t
+
+        let x = da * p1.x + db * m1x + dc * p2.x + dd * m2x
+        let y = da * p1.y + db * m1y + dc * p2.y + dd * m2y
+
+        return CGPoint(x: x, y: y)
+    }
 
     /// Catmull-Rom spline interpolation between p1 and p2
     private static func catmullRom(

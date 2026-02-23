@@ -72,10 +72,11 @@ final class CursorFollowControllerTests: XCTestCase {
 
         // Should have more than 2 samples (start + end) due to pan
         XCTAssertGreaterThan(samples.count, 2)
-        // Last sample should be near the new caret position
+        // Last sample should have moved significantly toward the caret
+        // With partial correction (0.6 fraction), center moves ~60% of the minimum shift
         let lastCenter = samples.last!.transform.center
-        XCTAssertGreaterThan(lastCenter.x, 0.5, "Center should have moved toward caret at 0.8")
-        XCTAssertGreaterThan(lastCenter.y, 0.5, "Center should have moved toward caret at 0.8")
+        XCTAssertGreaterThan(lastCenter.x, 0.4, "Center should have moved toward caret at 0.8")
+        XCTAssertGreaterThan(lastCenter.y, 0.45, "Center should have moved toward caret at 0.8")
     }
 
     // MARK: - Caret Within Viewport
@@ -174,10 +175,9 @@ final class CursorFollowControllerTests: XCTestCase {
             mouseData: EmptyMouseDataSource(), settings: settings
         )
 
-        // Should only trigger at most 1 pan (first one), the rest are debounced
-        // Start + hold + pan end + scene end = 4 max
-        // Or: start + pan-start + pan-end + end = 4
-        XCTAssertLessThanOrEqual(samples.count, 4, "Rapid caret jumps should be debounced")
+        // With minMoveInterval=0.15s, events at t=1.0 and t=1.2 can both trigger (0.2s gap)
+        // Start + hold1 + pan1_end + hold2 + pan2_end + end = 6 max
+        XCTAssertLessThanOrEqual(samples.count, 6, "Rapid caret jumps should be partially debounced")
     }
 
     // MARK: - Fallback to Mouse
@@ -199,9 +199,10 @@ final class CursorFollowControllerTests: XCTestCase {
         )
 
         // Should trigger a pan toward (0.85, 0.85)
+        // With partial correction, center moves ~60% of minimum shift
         XCTAssertGreaterThan(samples.count, 2, "Should pan to follow mouse when no caret data")
         let lastCenter = samples.last!.transform.center
-        XCTAssertGreaterThan(lastCenter.x, 0.5, "Should have followed mouse to the right")
+        XCTAssertGreaterThan(lastCenter.x, 0.4, "Should have followed mouse to the right")
     }
 
     // MARK: - Distance-Based Pan Duration
@@ -237,9 +238,9 @@ final class CursorFollowControllerTests: XCTestCase {
         let panStart = samples[1].time
         let panEnd = samples[2].time
         let panDuration = panEnd - panStart
-        // distance ≈ 0.23, duration = 0.23 * 1.5 = 0.345
-        XCTAssertLessThanOrEqual(panDuration, 0.35,
-            "Short distance pan should be quick (≤ 0.35s), got \(panDuration)")
+        // distance ≈ 0.23, duration = 0.23 * 1.2 = 0.276
+        XCTAssertLessThanOrEqual(panDuration, 0.30,
+            "Short distance pan should be quick (≤ 0.30s), got \(panDuration)")
     }
 
     func test_simulate_longDistance_longerPanDuration() {

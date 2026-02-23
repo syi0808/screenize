@@ -20,7 +20,7 @@ struct TransitionPlan {
     let style: TransitionStyle
     let easing: EasingCurve
     /// Easing for zoom-out phase of zoomOutAndIn transitions.
-    var zoomOutEasing: EasingCurve = .easeOut
+    var zoomOutEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.5)
     /// Easing for zoom-in phase of zoomOutAndIn transitions.
     var zoomInEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.6)
 }
