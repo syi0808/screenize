@@ -46,7 +46,7 @@ struct SourcePickerView: View {
                 .foregroundColor(.accentColor)
 
             Text("Select Source")
-                .font(.headline)
+                .font(Typography.heading)
 
             Spacer()
 
@@ -59,7 +59,7 @@ struct SourcePickerView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding()
+        .padding(Spacing.lg)
     }
 
     // MARK: - Tab Picker
@@ -70,7 +70,7 @@ struct SourcePickerView: View {
             Text("Windows (\(filteredWindows.count))").tag(SourceTab.windows)
         }
         .pickerStyle(.segmented)
-        .padding()
+        .padding(Spacing.lg)
     }
 
     /// Windows list filtered to exclude system UI
@@ -160,7 +160,7 @@ struct SourcePickerView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.lg) {
             Spacer()
 
             Image(systemName: "rectangle.slash")
@@ -168,15 +168,15 @@ struct SourcePickerView: View {
                 .foregroundStyle(.tertiary)
 
             Text("No Sources Available")
-                .font(.headline)
+                .font(Typography.heading)
                 .foregroundColor(.secondary)
 
             Text("Screen recording permission is required.\nPlease allow Screenize in System Settings.")
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
 
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.md) {
                 Button("Open System Settings") {
                     openSystemPreferences()
                 }
@@ -191,7 +191,7 @@ struct SourcePickerView: View {
             }
 
             Text("After enabling permission, click Refresh or restart the app")
-                .font(.caption2)
+                .font(Typography.footnote)
                 .foregroundStyle(.quaternary)
 
             Spacer()
@@ -217,7 +217,7 @@ struct SourcePickerView: View {
             .disabled(appState.selectedTarget == nil)
             .keyboardShortcut(.defaultAction)
         }
-        .padding()
+        .padding(Spacing.lg)
     }
 
     // MARK: - Helpers
@@ -271,13 +271,13 @@ struct DisplayCard: View {
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(spacing: 8) {
+            VStack(spacing: Spacing.sm) {
                 // Preview area
                 GeometryReader { geometry in
                     ZStack {
                         // Background
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(nsColor: .controlBackgroundColor))
+                        RoundedRectangle(cornerRadius: CornerRadius.lg)
+                            .fill(DesignColors.controlBackground)
 
                         // Thumbnail or placeholder
                         if let thumbnail = thumbnail {
@@ -295,29 +295,29 @@ struct DisplayCard: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: CornerRadius.lg)
                             .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3)
                     )
                 }
                 .aspectRatio(16/10, contentMode: .fit)
 
                 // Details
-                VStack(spacing: 2) {
+                VStack(spacing: Spacing.xxs) {
                     Text("Display \(display.displayID)")
-                        .font(.caption)
+                        .font(Typography.caption)
                         .fontWeight(isSelected ? .semibold : .regular)
 
                     Text("\(display.width) × \(display.height)")
-                        .font(.caption2)
+                        .font(Typography.footnote)
                         .foregroundColor(.secondary)
                 }
             }
-            .padding(8)
+            .padding(Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+                RoundedRectangle(cornerRadius: CornerRadius.xxl)
+                    .fill(isSelected ? Color.accentColor.opacity(DesignOpacity.subtle) : Color.clear)
             )
         }
         .buttonStyle(.plain)
@@ -383,13 +383,13 @@ struct WindowCard: View {
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(spacing: 8) {
+            VStack(spacing: Spacing.sm) {
                 // Preview area
                 GeometryReader { geometry in
                     ZStack {
                         // Background
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(nsColor: .controlBackgroundColor))
+                        RoundedRectangle(cornerRadius: CornerRadius.lg)
+                            .fill(DesignColors.controlBackground)
 
                         // Thumbnail or placeholder
                         if let thumbnail = thumbnail {
@@ -403,7 +403,7 @@ struct WindowCard: View {
                                 .scaleEffect(0.8)
                         } else {
                             // Default icon shown before loading or on failure
-                            VStack(spacing: 4) {
+                            VStack(spacing: Spacing.xs) {
                                 if let appName = window.owningApplication?.applicationName {
                                     Text(String(appName.prefix(2)))
                                         .font(.system(size: 24, weight: .bold))
@@ -416,37 +416,37 @@ struct WindowCard: View {
                             }
                         }
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: CornerRadius.lg)
                             .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3)
                     )
                 }
                 .aspectRatio(16/10, contentMode: .fit)
 
                 // Details
-                VStack(spacing: 2) {
+                VStack(spacing: Spacing.xxs) {
                     Text(window.owningApplication?.applicationName ?? "Unknown")
-                        .font(.caption)
+                        .font(Typography.caption)
                         .fontWeight(isSelected ? .semibold : .regular)
                         .lineLimit(1)
 
                     if let title = window.title, !title.isEmpty {
                         Text(title)
-                            .font(.caption2)
+                            .font(Typography.footnote)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                     }
 
                     Text("\(Int(window.frame.width)) × \(Int(window.frame.height))")
-                        .font(.caption2)
+                        .font(Typography.footnote)
                         .foregroundColor(.secondary)
                 }
             }
-            .padding(8)
+            .padding(Spacing.sm)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+                RoundedRectangle(cornerRadius: CornerRadius.xxl)
+                    .fill(isSelected ? Color.accentColor.opacity(DesignOpacity.subtle) : Color.clear)
             )
         }
         .buttonStyle(.plain)

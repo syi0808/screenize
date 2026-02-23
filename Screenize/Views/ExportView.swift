@@ -108,7 +108,7 @@ struct ExportSheetView: View {
                 .foregroundColor(.accentColor)
 
             Text(renderSettings.exportFormat == .gif ? "Export GIF" : "Export Video")
-                .font(.headline)
+                .font(Typography.heading)
 
             Spacer()
 
@@ -121,7 +121,7 @@ struct ExportSheetView: View {
             .buttonStyle(.plain)
             .disabled(isExporting)
         }
-        .padding()
+        .padding(Spacing.lg)
     }
 
     // MARK: - Settings Form
@@ -171,7 +171,7 @@ struct ExportSheetView: View {
 
                         if let error = resolutionValidationError {
                             Text(error)
-                                .font(.caption)
+                                .font(Typography.caption)
                                 .foregroundColor(.red)
                         }
                     }
@@ -199,7 +199,7 @@ struct ExportSheetView: View {
 
                         if let error = frameRateValidationError {
                             Text(error)
-                                .font(.caption)
+                                .font(Typography.caption)
                                 .foregroundColor(.red)
                         }
                     }
@@ -214,7 +214,7 @@ struct ExportSheetView: View {
                     }
 
                     Text(renderSettings.codec.displayName)
-                        .font(.caption)
+                        .font(Typography.caption)
                         .foregroundColor(.secondary)
                 }
 
@@ -268,7 +268,7 @@ struct ExportSheetView: View {
                 if let warning = gifFileSizeWarning {
                     Section {
                         Label(warning, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
+                            .font(Typography.caption)
                             .foregroundColor(.orange)
                     }
                 }
@@ -293,7 +293,7 @@ struct ExportSheetView: View {
             Text(ByteCountFormatter.string(fromByteCount: estimatedBytes, countStyle: .file))
                 .fontWeight(.medium)
         }
-        .font(.caption)
+        .font(Typography.caption)
     }
 
     // MARK: - GIF Helpers
@@ -316,7 +316,7 @@ struct ExportSheetView: View {
             Text(ByteCountFormatter.string(fromByteCount: estimated, countStyle: .file))
                 .fontWeight(.medium)
         }
-        .font(.caption)
+        .font(Typography.caption)
     }
 
     private var gifFileSizeWarning: String? {
@@ -339,13 +339,13 @@ struct ExportSheetView: View {
     // MARK: - Export Progress View
 
     private var exportProgressView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Spacing.xl) {
             Spacer()
 
             // Progress circle
             ZStack {
                 Circle()
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 8)
+                    .stroke(Color.secondary.opacity(DesignOpacity.light), lineWidth: 8)
                     .frame(width: 100, height: 100)
 
                 Circle()
@@ -353,7 +353,7 @@ struct ExportSheetView: View {
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .frame(width: 100, height: 100)
                     .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 0.1), value: exportEngine.progress.progress)
+                    .animation(AnimationTokens.linearFast, value: exportEngine.progress.progress)
 
                 Text("\(exportEngine.progress.percentComplete)%")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -361,24 +361,24 @@ struct ExportSheetView: View {
 
             // Status text
             Text(exportEngine.progress.statusText)
-                .font(.headline)
+                .font(Typography.heading)
 
             // Statistics
             if let stats = exportEngine.statistics {
-                VStack(spacing: 4) {
+                VStack(spacing: Spacing.xs) {
                     Text("Processing: \(String(format: "%.1f", stats.processingFPS)) fps")
 
                     if let remaining = stats.estimatedRemainingTime {
                         Text("Remaining: \(formatDuration(remaining))")
                     }
                 }
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundColor(.secondary)
             }
 
             Spacer()
         }
-        .padding()
+        .padding(Spacing.lg)
     }
 
     // MARK: - Footer
@@ -415,7 +415,7 @@ struct ExportSheetView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .padding()
+        .padding(Spacing.lg)
     }
 
     // MARK: - Picker Bindings
@@ -580,14 +580,14 @@ struct InlineExportProgressView: View {
     var onCancel: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spacing.md) {
             // Progress bar
             ProgressView(value: exportEngine.progress.progress)
                 .progressViewStyle(.linear)
 
             // Percentage
             Text("\(exportEngine.progress.percentComplete)%")
-                .font(.system(size: 11, design: .monospaced))
+                .font(Typography.mono)
                 .foregroundColor(.secondary)
                 .frame(width: 36, alignment: .trailing)
 
@@ -600,10 +600,10 @@ struct InlineExportProgressView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(8)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .background(DesignColors.controlBackground)
+        .cornerRadius(CornerRadius.lg)
     }
 }
 

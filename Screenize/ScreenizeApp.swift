@@ -224,9 +224,9 @@ struct ContentView: View {
                 VStack {
                     ProgressView()
                     Text("Creating project...")
-                        .font(.caption)
+                        .font(Typography.caption)
                         .foregroundColor(.secondary)
-                        .padding(.top, 8)
+                        .padding(.top, Spacing.sm)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .onAppear {
@@ -385,18 +385,17 @@ struct MainWelcomeView: View {
     @State private var isDragging = false
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: Spacing.xxxl) {
             Spacer()
 
             // Logo
-            VStack(spacing: 16) {
+            VStack(spacing: Spacing.lg) {
                 Image(systemName: "film.stack")
                     .font(.system(size: 64))
                     .foregroundColor(.accentColor)
 
                 Text("Screenize")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .font(Typography.displayLarge)
 
                 Text("Screen Recording & Timeline Editing")
                     .font(.title3)
@@ -404,7 +403,7 @@ struct MainWelcomeView: View {
             }
 
             // Primary action buttons
-            HStack(spacing: 24) {
+            HStack(spacing: Spacing.xxl) {
                 // Record button
                 ActionCard(
                     icon: "record.circle",
@@ -448,38 +447,38 @@ struct MainWelcomeView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(DesignColors.windowBackground)
         .overlay(alignment: .topTrailing) {
             ShortcutHelpButton(context: .welcome)
-                .padding()
+                .padding(Spacing.lg)
         }
     }
 
     private var dropZone: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.md) {
             Image(systemName: "arrow.down.doc")
                 .font(.system(size: 32))
                 .foregroundColor(isDragging ? .accentColor : .secondary)
 
             Text("Drop video or project here")
-                .font(.headline)
+                .font(Typography.heading)
                 .foregroundColor(isDragging ? .accentColor : .secondary)
 
             Text(".mp4, .mov, .m4v, .screenize")
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundStyle(.tertiary)
         }
         .frame(width: 300, height: 100)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: CornerRadius.xxl)
                 .strokeBorder(
-                    isDragging ? Color.accentColor : Color.secondary.opacity(0.3),
+                    isDragging ? Color.accentColor : Color.secondary.opacity(DesignOpacity.medium),
                     style: StrokeStyle(lineWidth: 2, dash: [8])
                 )
         )
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isDragging ? Color.accentColor.opacity(0.1) : Color.clear)
+            RoundedRectangle(cornerRadius: CornerRadius.xxl)
+                .fill(isDragging ? Color.accentColor.opacity(DesignOpacity.subtle) : Color.clear)
         )
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             handleDrop(providers: providers)
@@ -549,33 +548,33 @@ struct ActionCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 12) {
+            VStack(spacing: Spacing.md) {
                 Image(systemName: icon)
                     .font(.system(size: 32))
                     .foregroundColor(color)
 
                 Text(title)
-                    .font(.headline)
+                    .font(Typography.heading)
 
                 Text(description)
-                    .font(.caption)
+                    .font(Typography.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
             }
             .frame(width: 140, height: 120)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                RoundedRectangle(cornerRadius: CornerRadius.xxl)
+                    .fill(DesignColors.controlBackground)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isHovering ? color.opacity(0.5) : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: CornerRadius.xxl)
+                    .stroke(isHovering ? color.opacity(DesignOpacity.prominent) : Color.clear, lineWidth: 2)
             )
             .scaleEffect(isHovering ? 1.02 : 1.0)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withAnimation(AnimationTokens.quick) {
                 isHovering = hovering
             }
         }
