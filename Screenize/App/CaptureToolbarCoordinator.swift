@@ -60,8 +60,8 @@ final class CaptureToolbarCoordinator: ObservableObject {
     func showToolbar() async {
         guard let appState else { return }
 
-        await appState.refreshAvailableSources()
         hideMainWindow()
+        await appState.refreshAvailableSources()
 
         let panel = CaptureToolbarPanel(coordinator: self)
         panel.show()

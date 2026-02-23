@@ -308,6 +308,7 @@ final class AppState: ObservableObject {
 
     /// Close the current project and start a new recording
     func startNewRecording() {
+        hideMainWindow()
         currentProject = nil
         currentProjectURL = nil
         Task {
