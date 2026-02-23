@@ -122,7 +122,7 @@ struct SettingsInspector: View {
                 HStack(spacing: Spacing.sm) {
                     ForEach([1.0, 1.5, 2.0, 2.5], id: \.self) { value in
                         Button(String(format: "%.1fx", value)) {
-                            withAnimation(AnimationTokens.standard) {
+                            withMotionSafeAnimation(AnimationTokens.standard) {
                                 updateCursorScale(value)
                             }
                         }

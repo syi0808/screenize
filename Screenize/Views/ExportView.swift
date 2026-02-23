@@ -353,7 +353,7 @@ struct ExportSheetView: View {
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .frame(width: 100, height: 100)
                     .rotationEffect(.degrees(-90))
-                    .animation(AnimationTokens.linearFast, value: exportEngine.progress.progress)
+                    .motionSafeAnimation(AnimationTokens.linearFast, value: exportEngine.progress.progress)
 
                 Text("\(exportEngine.progress.percentComplete)%")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -362,6 +362,7 @@ struct ExportSheetView: View {
             // Status text
             Text(exportEngine.progress.statusText)
                 .font(Typography.heading)
+                .accessibilityLabel("Export status: \(exportEngine.progress.statusText)")
 
             // Statistics
             if let stats = exportEngine.statistics {

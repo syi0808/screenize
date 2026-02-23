@@ -668,7 +668,7 @@ struct CenterPointPicker: View {
             )
             .shadow(color: .black.opacity(0.3), radius: 2)
             .position(x: x, y: y)
-            .animation(.easeInOut(duration: 0.15), value: isDragging)
+            .motionSafeAnimation(AnimationTokens.quick, value: isDragging)
     }
 
     private func updateCenter(from location: CGPoint, in size: CGSize) {

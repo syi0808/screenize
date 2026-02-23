@@ -86,8 +86,10 @@ struct PreviewView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Video Preview")
             .onTapGesture {
-                withAnimation(AnimationTokens.standard) {
+                withMotionSafeAnimation(AnimationTokens.standard) {
                     showControls.toggle()
                 }
                 resetControlsTimer()
@@ -171,6 +173,7 @@ struct PreviewView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.white)
+                    .accessibilityLabel(isPlaying ? "Pause" : "Play")
 
                     // Current time display
                     Text(formatTime(currentTime))
@@ -242,6 +245,8 @@ struct PreviewView: View {
         }
         .frame(height: 20)
         .padding(.horizontal, 12)
+        .accessibilityLabel("Playback progress")
+        .accessibilityValue("\(Int(previewEngine.progress * 100)) percent")
     }
 
     // MARK: - Helpers
@@ -263,7 +268,7 @@ struct PreviewView: View {
         }
 
         controlsHideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-            withAnimation(.easeInOut(duration: 0.3)) {
+            withMotionSafeAnimation(AnimationTokens.gentle) {
                 showControls = false
             }
         }
@@ -289,6 +294,7 @@ struct PreviewView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss error")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)

@@ -104,7 +104,9 @@ struct PermissionSetupWizardView: View {
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, Spacing.md)
-        .animation(AnimationTokens.standard, value: status == .granted)
+        .motionSafeAnimation(AnimationTokens.standard, value: status == .granted)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(step.title), \(status == .granted ? "granted" : "not granted")")
     }
 
     // MARK: - Get Started Button

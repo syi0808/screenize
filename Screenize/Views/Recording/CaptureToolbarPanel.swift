@@ -119,7 +119,7 @@ struct CaptureToolbarView: View {
                 recordingContent
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.toolbarPhase)
+        .motionSafeAnimation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.toolbarPhase)
     }
 
     // MARK: - Selecting Phase
@@ -258,7 +258,7 @@ private struct RecordingDot: View {
             .fill(Color.red)
             .frame(width: 8, height: 8)
             .opacity(isBlinking ? 0.3 : 1.0)
-            .animation(
+            .motionSafeAnimation(
                 .easeInOut(duration: 0.6).repeatForever(autoreverses: true),
                 value: isBlinking
             )

@@ -483,6 +483,8 @@ struct MainWelcomeView: View {
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             handleDrop(providers: providers)
         }
+        .accessibilityLabel("Drop zone")
+        .accessibilityHint("Drop a video or project file here to open it")
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
@@ -574,10 +576,12 @@ struct ActionCard: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            withAnimation(AnimationTokens.quick) {
+            withMotionSafeAnimation(AnimationTokens.quick) {
                 isHovering = hovering
             }
         }
+        .accessibilityLabel(title)
+        .accessibilityHint(description)
     }
 }
 

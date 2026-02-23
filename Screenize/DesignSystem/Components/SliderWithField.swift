@@ -33,6 +33,8 @@ struct SliderWithField: View {
             // Slider + text field
             HStack(spacing: Spacing.md) {
                 Slider(value: $value, in: range, step: step)
+                    .accessibilityLabel(label)
+                    .accessibilityValue(formattedValue)
                     .onChange(of: value) { _ in
                         onChange?()
                     }
@@ -52,7 +54,7 @@ struct SliderWithField: View {
                 HStack(spacing: Spacing.sm) {
                     ForEach(presets, id: \.1) { preset in
                         Button(preset.0) {
-                            withAnimation(AnimationTokens.standard) {
+                            withMotionSafeAnimation(AnimationTokens.standard) {
                                 value = preset.1
                             }
                             onChange?()

@@ -321,6 +321,8 @@ struct DisplayCard: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Display \(display.displayID), \(display.width) by \(display.height)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .task {
             await loadThumbnail()
         }
@@ -450,6 +452,8 @@ struct WindowCard: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(window.owningApplication?.applicationName ?? "Unknown") window\(window.title.map { ", \($0)" } ?? "")")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .task {
             await loadThumbnail()
         }

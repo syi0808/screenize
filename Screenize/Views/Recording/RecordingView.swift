@@ -98,7 +98,7 @@ private struct RecordingIndicator: View {
                 .fill(Color.red)
                 .frame(width: 12, height: 12)
                 .opacity(isBlinking ? 0.5 : 1.0)
-                .animation(AnimationTokens.pulse, value: isBlinking)
+                .motionSafeAnimation(AnimationTokens.pulse, value: isBlinking)
 
             Text(formattedDuration)
                 .font(.system(.body, design: .monospaced))
@@ -114,6 +114,8 @@ private struct RecordingIndicator: View {
         .padding(.vertical, Spacing.sm)
         .background(DesignColors.overlay.opacity(DesignOpacity.strong))
         .cornerRadius(CornerRadius.lg)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Recording indicator, \(formattedDuration)\(isPaused ? ", paused" : "")")
         .onAppear {
             isBlinking = true
         }
@@ -143,6 +145,7 @@ private struct RecordingControlBar: View {
                 }
                 .buttonStyle(.plain)
                 .help("Return to Home")
+                .accessibilityLabel("Home")
             }
 
             // Source info (click to change)
@@ -160,6 +163,8 @@ private struct RecordingControlBar: View {
             }
             .buttonStyle(.plain)
             .disabled(appState.isRecording)
+            .accessibilityLabel("Select source: \(appState.selectedTarget?.displayName ?? "None")")
+            .accessibilityHint("Opens source picker to choose a display or window")
 
             Spacer()
 
@@ -202,6 +207,7 @@ private struct RecordingControlBar: View {
                     }
                     .buttonStyle(.borderless)
                     .help("Open Editor")
+                    .accessibilityLabel("Edit Recording")
                 }
 
                 if appState.isRecording {
@@ -214,6 +220,7 @@ private struct RecordingControlBar: View {
                     }
                     .buttonStyle(.borderless)
                     .help(appState.isPaused ? "Resume" : "Pause")
+                    .accessibilityLabel(appState.isPaused ? "Resume Recording" : "Pause Recording")
 
                     // Stop button
                     Button {
@@ -227,6 +234,7 @@ private struct RecordingControlBar: View {
                     }
                     .buttonStyle(.borderless)
                     .help("Stop Recording")
+                    .accessibilityLabel("Stop Recording")
                 } else {
                     // Record button
                     Button {
@@ -248,6 +256,8 @@ private struct RecordingControlBar: View {
                     .buttonStyle(.borderless)
                     .disabled(appState.selectedTarget == nil || appState.isCountingDown)
                     .help("Start Recording (⌘⇧2)")
+                    .accessibilityLabel("Start Recording")
+                    .accessibilityHint("Begins screen recording after a countdown")
                 }
             }
         }
@@ -284,10 +294,9 @@ private struct RecordingDot: View {
             .fill(Color.red)
             .frame(width: 10, height: 10)
             .opacity(isAnimating ? 0.5 : 1.0)
+            .motionSafeAnimation(AnimationTokens.pulse, value: isAnimating)
             .onAppear {
-                withAnimation(.easeInOut(duration: 0.5).repeatForever()) {
-                    isAnimating = true
-                }
+                isAnimating = true
             }
     }
 }

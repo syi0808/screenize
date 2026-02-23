@@ -195,6 +195,7 @@ struct EditorMainView: View {
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .help("Return to Home")
+            .accessibilityLabel("Home")
 
             // New Recording button
             Button {
@@ -208,6 +209,7 @@ struct EditorMainView: View {
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .help("New Recording")
+            .accessibilityLabel("New Recording")
 
             Divider()
                 .frame(height: Spacing.xl)
@@ -221,6 +223,8 @@ struct EditorMainView: View {
             .buttonStyle(ToolbarIconButtonStyle())
             .disabled(!viewModel.undoStack.canUndo)
             .help("Undo")
+            .accessibilityLabel("Undo")
+            .accessibilityHint("Undo last editing action")
 
             // Redo
             Button {
@@ -231,6 +235,8 @@ struct EditorMainView: View {
             .buttonStyle(ToolbarIconButtonStyle())
             .disabled(!viewModel.undoStack.canRedo)
             .help("Redo")
+            .accessibilityLabel("Redo")
+            .accessibilityHint("Redo last undone action")
 
             Divider()
                 .frame(height: Spacing.xl)

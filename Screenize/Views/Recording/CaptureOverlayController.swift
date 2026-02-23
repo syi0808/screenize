@@ -407,21 +407,21 @@ private struct RecordOverlayButtonView: View {
         .buttonStyle(.plain)
         .frame(width: 72, height: 72)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
+            withMotionSafeAnimation(AnimationTokens.quick) {
                 isHovering = hovering
             }
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
-                    withAnimation(.easeInOut(duration: 0.05)) { isPressed = true }
+                    withMotionSafeAnimation(AnimationTokens.quick) { isPressed = true }
                 }
                 .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                    withMotionSafeAnimation(AnimationTokens.quick) { isPressed = false }
                 }
         )
         .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+            withMotionSafeAnimation(AnimationTokens.springy) {
                 appeared = true
             }
         }

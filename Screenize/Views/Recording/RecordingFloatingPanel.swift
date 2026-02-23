@@ -86,7 +86,7 @@ struct RecordingFloatingView: View {
                 .fill(Color.red)
                 .frame(width: 10, height: 10)
                 .opacity(isBlinking ? 0.4 : 1.0)
-                .animation(AnimationTokens.pulse, value: isBlinking)
+                .motionSafeAnimation(AnimationTokens.pulse, value: isBlinking)
 
             // Recording duration
             Text(formattedDuration)
@@ -115,6 +115,7 @@ struct RecordingFloatingView: View {
             }
             .buttonStyle(.plain)
             .help(appState.isPaused ? "Resume" : "Pause")
+            .accessibilityLabel(appState.isPaused ? "Resume Recording" : "Pause Recording")
 
             // Stop button
             Button {
@@ -128,6 +129,7 @@ struct RecordingFloatingView: View {
             }
             .buttonStyle(.plain)
             .help("Stop Recording")
+            .accessibilityLabel("Stop Recording")
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 10)

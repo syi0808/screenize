@@ -31,7 +31,7 @@ struct TrimHandleView: View {
         }
         .frame(width: handleWidth)
         .opacity(isDragging ? 1.0 : 0.8)
-        .animation(.easeInOut(duration: 0.15), value: isDragging)
+        .motionSafeAnimation(AnimationTokens.quick, value: isDragging)
         .contentShape(Rectangle())
         .onHover { hovering in
             if hovering {

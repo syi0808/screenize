@@ -15,7 +15,7 @@ struct ToolbarIconButtonStyle: ButtonStyle {
                     .fill(backgroundColor(isPressed: configuration.isPressed))
             )
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(AnimationTokens.quick, value: configuration.isPressed)
+            .motionSafeAnimation(AnimationTokens.quick, value: configuration.isPressed)
             .onHover { isHovered = $0 }
     }
 
@@ -49,7 +49,7 @@ struct PillButtonStyle: ButtonStyle {
             )
             .foregroundStyle(color)
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(AnimationTokens.quick, value: configuration.isPressed)
+            .motionSafeAnimation(AnimationTokens.quick, value: configuration.isPressed)
             .onHover { isHovered = $0 }
     }
 }
@@ -71,7 +71,7 @@ struct DestructiveButtonStyle: ButtonStyle {
                     ))
             )
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(AnimationTokens.quick, value: configuration.isPressed)
+            .motionSafeAnimation(AnimationTokens.quick, value: configuration.isPressed)
     }
 }
 
@@ -90,6 +90,6 @@ struct PresetChipStyle: ButtonStyle {
                         configuration.isPressed ? DesignOpacity.light : DesignOpacity.subtle
                     ))
             )
-            .animation(AnimationTokens.quick, value: configuration.isPressed)
+            .motionSafeAnimation(AnimationTokens.quick, value: configuration.isPressed)
     }
 }
