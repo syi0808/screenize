@@ -164,6 +164,12 @@
 		B7000003296A0001 /* TransitionRefinerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100003296A0001 /* TransitionRefinerTests.swift */; };
 		B7000004296A0001 /* SegmentMergerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100004296A0001 /* SegmentMergerTests.swift */; };
 		B3000004296A0001 /* SegmentOptimizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100004296A0001 /* SegmentOptimizerTests.swift */; };
+		E6000001296A0001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000001296A0001 /* Spacing.swift */; };
+		E6000002296A0001 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000002296A0001 /* Typography.swift */; };
+		E6000003296A0001 /* DesignColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000003296A0001 /* DesignColors.swift */; };
+		E6000004296A0001 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000004296A0001 /* CornerRadius.swift */; };
+		E6000005296A0001 /* DesignOpacity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000005296A0001 /* DesignOpacity.swift */; };
+		E6000006296A0001 /* AnimationTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000006296A0001 /* AnimationTokens.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -326,6 +332,12 @@
 		B7100003296A0001 /* TransitionRefinerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRefinerTests.swift; sourceTree = "<group>"; };
 		B7100004296A0001 /* SegmentMergerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentMergerTests.swift; sourceTree = "<group>"; };
 		B3100004296A0001 /* SegmentOptimizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentOptimizerTests.swift; sourceTree = "<group>"; };
+		E5000001296A0001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		E5000002296A0001 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		E5000003296A0001 /* DesignColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignColors.swift; sourceTree = "<group>"; };
+		E5000004296A0001 /* CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
+		E5000005296A0001 /* DesignOpacity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignOpacity.swift; sourceTree = "<group>"; };
+		E5000006296A0001 /* AnimationTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationTokens.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -533,6 +545,7 @@
 				F1000090296A0001 /* Assets.xcassets */,
 				F1000091296A0001 /* Screenize.entitlements */,
 				1A210DB0FB901E8551815099 /* Analysis */,
+				E5100000296A0001 /* DesignSystem */,
 			);
 			path = Screenize;
 			sourceTree = "<group>";
@@ -856,6 +869,27 @@
 			path = Recording;
 			sourceTree = "<group>";
 		};
+		E5100000296A0001 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				E5000001296A0001 /* Spacing.swift */,
+				E5000002296A0001 /* Typography.swift */,
+				E5000003296A0001 /* DesignColors.swift */,
+				E5000004296A0001 /* CornerRadius.swift */,
+				E5000005296A0001 /* DesignOpacity.swift */,
+				E5000006296A0001 /* AnimationTokens.swift */,
+				E5100001296A0001 /* Components */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		E5100001296A0001 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -955,6 +989,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2000001296A0001 /* EditorViewModel+Clipboard.swift in Sources */,
+				E6000001296A0001 /* Spacing.swift in Sources */,
+				E6000002296A0001 /* Typography.swift in Sources */,
+				E6000003296A0001 /* DesignColors.swift in Sources */,
+				E6000004296A0001 /* CornerRadius.swift in Sources */,
+				E6000005296A0001 /* DesignOpacity.swift in Sources */,
+				E6000006296A0001 /* AnimationTokens.swift in Sources */,
 				F0000081296A0001 /* ScreenizeApp.swift in Sources */,
 				F0000080296A0001 /* EditorEntryPoint.swift in Sources */,
 				F0000001296A0001 /* ScreenizeProject.swift in Sources */,
