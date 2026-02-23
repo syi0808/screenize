@@ -117,7 +117,7 @@ struct TimelineView: View {
                 let availableWidth = geometry.size.width - headerWidth - 1
                 let contentWidth = max(availableWidth, CGFloat(duration) * pixelsPerSecond)
 
-                ScrollView(.vertical, showsIndicators: false) {
+                ScrollView(.vertical, showsIndicators: true) {
                     HStack(alignment: .top, spacing: 0) {
                         trackHeaders
                         Divider()
