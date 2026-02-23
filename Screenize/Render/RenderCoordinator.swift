@@ -48,6 +48,9 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Lock for thread-safe access to shared state
     private let lock = NSLock()
 
+    /// Last source frame held for VFR gap filling
+    private var heldFrame: (time: TimeInterval, image: CIImage)?
+
     // MARK: - Initialization
 
     init(previewScale: CGFloat = 0.5, cacheSize: Int = 180) {
@@ -146,14 +149,20 @@ final class RenderCoordinator: @unchecked Sendable {
                 return
             }
 
-            // Read next frame from sequential reader (nil = EOF)
-            guard let frame = reader.nextFrame() else {
+            // Advance reader until we have a frame at or past the requested time.
+            // Hold the previous frame to fill VFR gaps (same pattern as ExportEngine).
+            while self.heldFrame == nil || self.heldFrame!.time < time {
+                guard let nextFrame = reader.nextFrame() else { break }
+                self.heldFrame = nextFrame
+            }
+
+            guard let frame = self.heldFrame else {
                 completion(nil, time)
                 return
             }
 
-            // Evaluate the state at this time
-            let state = evaluator.evaluate(at: frame.time)
+            // Evaluate the state at the requested time (not the frame's actual time)
+            let state = evaluator.evaluate(at: time)
 
             // Acquire a texture from the cache pool
             guard let targetTexture = cache?.acquireTexture() else {
@@ -175,12 +184,11 @@ final class RenderCoordinator: @unchecked Sendable {
             }
             self.lock.unlock()
 
-            // Store in cache
-            let actualCacheKey = Int(frame.time * self.frameRate)
-            cache?.store(targetTexture, at: actualCacheKey)
+            // Store in cache using the requested time's cache key
+            cache?.store(targetTexture, at: cacheKey)
 
-            // Deliver
-            completion(targetTexture, frame.time)
+            // Deliver at the requested time
+            completion(targetTexture, time)
         }
     }
 
@@ -262,6 +270,7 @@ final class RenderCoordinator: @unchecked Sendable {
     func seek(to time: TimeInterval) {
         lock.lock()
         renderGeneration += 1
+        heldFrame = nil
         let reader = sequentialReader
         lock.unlock()
 
@@ -345,6 +354,7 @@ final class RenderCoordinator: @unchecked Sendable {
     func cleanup() {
         lock.lock()
         renderGeneration += 1
+        heldFrame = nil
         lock.unlock()
 
         frameExtractor?.cancelAllPendingRequests()
