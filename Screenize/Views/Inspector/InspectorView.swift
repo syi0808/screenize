@@ -26,8 +26,8 @@ struct InspectorView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
 
                 Divider()
             }
@@ -41,14 +41,14 @@ struct InspectorView: View {
             }
         }
         .frame(minWidth: 260, idealWidth: 280, maxWidth: 320)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(DesignColors.windowBackground)
     }
 
     private var segmentInspector: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 Text("Segment")
-                    .font(.headline)
+                    .font(Typography.heading)
 
                 if let selected = selection.single {
                     LabeledContent("Track") { Text(trackName(selected.trackType)) }
@@ -77,15 +77,11 @@ struct InspectorView: View {
                     }
                     .buttonStyle(.bordered)
                 } else if selection.count > 1 {
-                    VStack(spacing: 12) {
-                        Image(systemName: "rectangle.stack")
-                            .font(.system(size: 36))
-                            .foregroundStyle(.secondary)
-                        Text("\(selection.count) Segments Selected")
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 30)
+                    DesignEmptyState(
+                        icon: "rectangle.stack",
+                        title: "\(selection.count) Segments Selected"
+                    )
+                    .padding(.top, Spacing.xxxl - Spacing.sm)
 
                     Divider()
 
@@ -103,22 +99,15 @@ struct InspectorView: View {
                     }
                     .buttonStyle(.bordered)
                 } else {
-                    VStack(spacing: 12) {
-                        Image(systemName: "sidebar.right")
-                            .font(.system(size: 36))
-                            .foregroundStyle(.secondary)
-                        Text("No Selection")
-                            .foregroundStyle(.secondary)
-                        Text("Select a segment on the timeline to inspect it.")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 30)
+                    DesignEmptyState(
+                        icon: "sidebar.right",
+                        title: "No Selection",
+                        subtitle: "Select a segment on the timeline to inspect it."
+                    )
+                    .padding(.top, Spacing.xxxl - Spacing.sm)
                 }
             }
-            .padding(12)
+            .padding(Spacing.md)
         }
     }
 

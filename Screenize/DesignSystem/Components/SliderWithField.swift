@@ -73,3 +73,25 @@ struct SliderWithField: View {
         }
     }
 }
+
+// MARK: - Binding Helpers
+
+extension Binding where Value == CGFloat {
+    /// Bridge CGFloat binding to Double for use with SliderWithField
+    var asDouble: Binding<Double> {
+        Binding<Double>(
+            get: { Double(wrappedValue) },
+            set: { wrappedValue = CGFloat($0) }
+        )
+    }
+}
+
+extension Binding where Value == Float {
+    /// Bridge Float binding to Double for use with SliderWithField
+    var asDouble: Binding<Double> {
+        Binding<Double>(
+            get: { Double(wrappedValue) },
+            set: { wrappedValue = Float($0) }
+        )
+    }
+}

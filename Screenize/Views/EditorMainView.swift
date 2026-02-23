@@ -182,7 +182,7 @@ struct EditorMainView: View {
     // MARK: - Toolbar
 
     private var toolbar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: Spacing.lg) {
             // Home button
             Button {
                 if viewModel.hasUnsavedChanges {
@@ -193,7 +193,7 @@ struct EditorMainView: View {
             } label: {
                 Image(systemName: "house")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ToolbarIconButtonStyle())
             .help("Return to Home")
 
             // New Recording button
@@ -206,11 +206,11 @@ struct EditorMainView: View {
             } label: {
                 Image(systemName: "record.circle")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ToolbarIconButtonStyle())
             .help("New Recording")
 
             Divider()
-                .frame(height: 20)
+                .frame(height: Spacing.xl)
 
             // Undo
             Button {
@@ -218,7 +218,7 @@ struct EditorMainView: View {
             } label: {
                 Image(systemName: "arrow.uturn.backward")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ToolbarIconButtonStyle())
             .disabled(!viewModel.undoStack.canUndo)
             .help("Undo")
 
@@ -228,12 +228,12 @@ struct EditorMainView: View {
             } label: {
                 Image(systemName: "arrow.uturn.forward")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ToolbarIconButtonStyle())
             .disabled(!viewModel.undoStack.canRedo)
             .help("Redo")
 
             Divider()
-                .frame(height: 20)
+                .frame(height: Spacing.xl)
 
             // Add segment
             keyframeAddMenu
@@ -259,7 +259,7 @@ struct EditorMainView: View {
             }
 
             Divider()
-                .frame(height: 20)
+                .frame(height: Spacing.xl)
 
             // Save
             Button {
@@ -281,9 +281,9 @@ struct EditorMainView: View {
             // Keyboard shortcuts help
             ShortcutHelpButton(context: .editor)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(.horizontal, Spacing.lg)
+        .padding(.vertical, Spacing.sm)
+        .background(DesignColors.windowBackground)
     }
 
     // MARK: - Keyframe Add Menu
@@ -435,27 +435,21 @@ struct GeneratorPanelView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             // Header
-            HStack {
-                Image(systemName: "wand.and.stars")
-                    .foregroundColor(.accentColor)
-                Text("Smart Generation")
-                    .font(.headline)
-                Spacer()
-            }
+            SectionHeader(title: "Smart Generation", icon: "wand.and.stars")
 
             Divider()
 
             // Per-type toggles
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: Spacing.xl - Spacing.sm) {
                 ForEach(generatorOptions) { option in
                     Toggle(isOn: toggleBinding(for: option.type)) {
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: Spacing.xxs) {
                             Label(option.name, systemImage: option.icon)
-                                .font(.subheadline)
+                                .font(Typography.subheading)
                             Text(option.description)
-                                .font(.caption)
+                                .font(Typography.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -469,11 +463,11 @@ struct GeneratorPanelView: View {
             // Generation result
             if let result = generationResult {
                 Text(result)
-                    .font(.caption)
+                    .font(Typography.caption)
                     .foregroundColor(
-                        result.hasPrefix("Failed") ? .red : .green
+                        result.hasPrefix("Failed") ? DesignColors.destructive : DesignColors.success
                     )
-                    .padding(.vertical, 4)
+                    .padding(.vertical, Spacing.xs)
             }
 
             // Generation button
@@ -495,10 +489,10 @@ struct GeneratorPanelView: View {
 
             // Helper text
             Text("Selected types replace existing keyframes. Unselected types are preserved.")
-                .font(.caption2)
+                .font(Typography.footnote)
                 .foregroundStyle(.tertiary)
         }
-        .padding(20)
+        .padding(Spacing.xl)
         .frame(width: 320)
     }
 
