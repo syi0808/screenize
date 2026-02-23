@@ -247,7 +247,7 @@ final class PreviewEngine: ObservableObject {
 
             // Set up audio preview player
             await audioPlayer.setup(
-                videoURL: project.media.videoURL,
+                systemAudioURL: project.media.systemAudioURL,
                 micAudioURL: project.media.micAudioURL,
                 renderSettings: project.renderSettings
             )

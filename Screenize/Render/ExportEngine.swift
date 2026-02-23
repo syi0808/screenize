@@ -144,11 +144,14 @@ final class ExportEngine: ObservableObject {
             writer.add(writerInput)
 
             // 6b. Configure audio writer input (if audio sources exist)
-            let systemAudioURL = project.media.videoURL
+            let systemAudioURL = project.media.systemAudioURL
             let micAudioURL = project.media.micAudioURL
-            let hasSystemAudio = project.renderSettings.includeSystemAudio
-                ? await Self.hasAudioTrack(url: systemAudioURL)
-                : false
+            let hasSystemAudio: Bool
+            if let sysURL = systemAudioURL, project.renderSettings.includeSystemAudio {
+                hasSystemAudio = await Self.hasAudioTrack(url: sysURL)
+            } else {
+                hasSystemAudio = false
+            }
             let hasMicAudio: Bool
             if project.renderSettings.includeMicrophoneAudio, let micURL = micAudioURL {
                 hasMicAudio = await Self.hasAudioTrack(url: micURL)
@@ -199,9 +202,9 @@ final class ExportEngine: ObservableObject {
                 let systemVolume = project.renderSettings.systemAudioVolume
                 let micVolume = project.renderSettings.microphoneAudioVolume
 
-                if hasSystemAudio && hasMicAudio, let micURL = micAudioURL {
+                if hasSystemAudio && hasMicAudio, let sysURL = systemAudioURL, let micURL = micAudioURL {
                     try await audioMixer.mixAndWrite(
-                        systemAudioURL: systemAudioURL,
+                        systemAudioURL: sysURL,
                         micAudioURL: micURL,
                         writerInput: audioInput,
                         trimStart: trimStart,
@@ -209,9 +212,9 @@ final class ExportEngine: ObservableObject {
                         systemVolume: systemVolume,
                         micVolume: micVolume
                     )
-                } else if hasSystemAudio {
+                } else if hasSystemAudio, let sysURL = systemAudioURL {
                     try await audioMixer.writePassthrough(
-                        audioURL: systemAudioURL,
+                        audioURL: sysURL,
                         writerInput: audioInput,
                         trimStart: trimStart,
                         trimEnd: trimEnd,

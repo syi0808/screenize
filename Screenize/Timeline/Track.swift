@@ -615,19 +615,32 @@ struct AudioSegment: Codable, Identifiable, Equatable {
 
 // MARK: - Audio Track
 
+enum AudioSource: String, Codable {
+    case system
+    case microphone
+}
+
 struct AudioTrack: SegmentTrack, Equatable {
     let id: UUID
     var name: String
     var isEnabled: Bool
+    var audioSource: AudioSource
     var segments: [AudioSegment]
 
     var trackType: TrackType { .audio }
     var segmentCount: Int { segments.count }
 
-    init(id: UUID = UUID(), name: String = "Mic Audio", isEnabled: Bool = true, segments: [AudioSegment] = []) {
+    init(
+        id: UUID = UUID(),
+        name: String = "Mic Audio",
+        isEnabled: Bool = true,
+        audioSource: AudioSource = .microphone,
+        segments: [AudioSegment] = []
+    ) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
+        self.audioSource = audioSource
         self.segments = segments.sorted { $0.startTime < $1.startTime }
     }
 

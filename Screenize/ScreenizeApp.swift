@@ -349,6 +349,7 @@ struct ContentView: View {
                 mouseRecording: appState.lastMouseRecording,
                 captureMeta: captureMeta,
                 micAudioURL: appState.lastMicAudioURL,
+                systemAudioURL: appState.lastSystemAudioURL,
                 in: parentDirectory,
                 recordingStartDate: appState.lastRecordingStartDate ?? Date(),
                 processTimeStartMs: appState.lastProcessTimeStartMs,
@@ -357,6 +358,7 @@ struct ContentView: View {
 
             appState.lastMouseRecording = nil
             appState.lastMicAudioURL = nil
+            appState.lastSystemAudioURL = nil
 
             guard let project = await appState.createProject(packageInfo: packageInfo) else {
                 return

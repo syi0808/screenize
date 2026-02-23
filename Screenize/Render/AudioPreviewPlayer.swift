@@ -22,28 +22,30 @@ final class AudioPreviewPlayer {
 
     /// Set up audio players for system audio and mic audio
     /// - Parameters:
-    ///   - videoURL: URL of the video file (contains system audio track)
+    ///   - systemAudioURL: URL of the system audio sidecar file (optional)
     ///   - micAudioURL: URL of the mic audio sidecar file (optional)
     ///   - renderSettings: Current render settings for volume levels
-    func setup(videoURL: URL, micAudioURL: URL?, renderSettings: RenderSettings) async {
+    func setup(systemAudioURL: URL?, micAudioURL: URL?, renderSettings: RenderSettings) async {
         cleanup()
 
-        // System audio: use the video file's audio track
-        let systemAsset = AVAsset(url: videoURL)
-        let hasSysAudio: Bool
-        do {
-            let audioTracks = try await systemAsset.loadTracks(withMediaType: .audio)
-            hasSysAudio = !audioTracks.isEmpty
-        } catch {
-            hasSysAudio = false
-        }
+        // System audio: use the sidecar file
+        if let sysURL = systemAudioURL, FileManager.default.fileExists(atPath: sysURL.path) {
+            let systemAsset = AVAsset(url: sysURL)
+            let hasSysAudio: Bool
+            do {
+                let audioTracks = try await systemAsset.loadTracks(withMediaType: .audio)
+                hasSysAudio = !audioTracks.isEmpty
+            } catch {
+                hasSysAudio = false
+            }
 
-        if hasSysAudio {
-            let playerItem = AVPlayerItem(asset: systemAsset)
-            let player = AVPlayer(playerItem: playerItem)
-            player.automaticallyWaitsToMinimizeStalling = false
-            player.volume = renderSettings.includeSystemAudio ? renderSettings.systemAudioVolume : 0
-            systemAudioPlayer = player
+            if hasSysAudio {
+                let playerItem = AVPlayerItem(asset: systemAsset)
+                let player = AVPlayer(playerItem: playerItem)
+                player.automaticallyWaitsToMinimizeStalling = false
+                player.volume = renderSettings.includeSystemAudio ? renderSettings.systemAudioVolume : 0
+                systemAudioPlayer = player
+            }
         }
 
         // Mic audio: use the sidecar file

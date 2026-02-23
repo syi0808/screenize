@@ -74,6 +74,7 @@
 		F00000C3296A0001 /* VideoWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000C3296A0001 /* VideoWriter.swift */; };
 		D2000001296A0001 /* MicrophoneRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000002296A0001 /* MicrophoneRecorder.swift */; };
 		D2000003296A0001 /* AudioMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000004296A0001 /* AudioMixer.swift */; };
+		D2000001SYSAUDIO /* SystemAudioWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000002SYSAUDIO /* SystemAudioWriter.swift */; };
 		F00000CF296A0001 /* CFRRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000CF296A0001 /* CFRRecordingManager.swift */; };
 		F00000D0296A0001 /* AccessibilityInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D0296A0001 /* AccessibilityInspector.swift */; };
 		F00000D1296A0001 /* ClickDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D1296A0001 /* ClickDetector.swift */; };
@@ -233,6 +234,7 @@
 		F10000C2296A0001 /* RecordingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingSession.swift; sourceTree = "<group>"; };
 		F10000C3296A0001 /* VideoWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoWriter.swift; sourceTree = "<group>"; };
 		D2000002296A0001 /* MicrophoneRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneRecorder.swift; sourceTree = "<group>"; };
+		D2000002SYSAUDIO /* SystemAudioWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioWriter.swift; sourceTree = "<group>"; };
 		F10000CF296A0001 /* CFRRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFRRecordingManager.swift; sourceTree = "<group>"; };
 		F10000D0296A0001 /* AccessibilityInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityInspector.swift; sourceTree = "<group>"; };
 		F10000D1296A0001 /* ClickDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickDetector.swift; sourceTree = "<group>"; };
@@ -762,6 +764,7 @@
 				F10000C3296A0001 /* VideoWriter.swift */,
 				F10000CF296A0001 /* CFRRecordingManager.swift */,
 				D2000002296A0001 /* MicrophoneRecorder.swift */,
+				D2000002SYSAUDIO /* SystemAudioWriter.swift */,
 				F1A00005296A0001 /* EventStreamWriter.swift */,
 			);
 			path = Recording;
@@ -1009,6 +1012,7 @@
 				F00000C2296A0001 /* RecordingSession.swift in Sources */,
 				D2000001296A0001 /* MicrophoneRecorder.swift in Sources */,
 				D2000003296A0001 /* AudioMixer.swift in Sources */,
+				D2000001SYSAUDIO /* SystemAudioWriter.swift in Sources */,
 				F00000CF296A0001 /* CFRRecordingManager.swift in Sources */,
 				F00000C3296A0001 /* VideoWriter.swift in Sources */,
 				F00000D0296A0001 /* AccessibilityInspector.swift in Sources */,

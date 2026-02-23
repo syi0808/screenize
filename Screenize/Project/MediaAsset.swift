@@ -13,6 +13,9 @@ struct MediaAsset: Codable {
     /// Relative path to microphone audio within the package (nil if no mic was used)
     var micAudioRelativePath: String?
 
+    /// Relative path to system audio within the package (nil if no system audio sidecar)
+    var systemAudioRelativePath: String?
+
     /// Absolute video file URL (resolved at runtime, NOT stored in JSON)
     var videoURL: URL
 
@@ -21,6 +24,9 @@ struct MediaAsset: Codable {
 
     /// Absolute mic audio file URL (resolved at runtime, NOT stored in JSON)
     var micAudioURL: URL?
+
+    /// Absolute system audio file URL (resolved at runtime, NOT stored in JSON)
+    var systemAudioURL: URL?
 
     /// Original video resolution (pixels)
     let pixelSize: CGSize
@@ -41,6 +47,7 @@ struct MediaAsset: Codable {
         videoRelativePath: String,
         mouseDataRelativePath: String,
         micAudioRelativePath: String? = nil,
+        systemAudioRelativePath: String? = nil,
         packageRootURL: URL,
         pixelSize: CGSize,
         frameRate: Double,
@@ -50,10 +57,14 @@ struct MediaAsset: Codable {
         self.videoRelativePath = videoRelativePath
         self.mouseDataRelativePath = mouseDataRelativePath
         self.micAudioRelativePath = micAudioRelativePath
+        self.systemAudioRelativePath = systemAudioRelativePath
         self.videoURL = packageRootURL.appendingPathComponent(videoRelativePath)
         self.mouseDataURL = packageRootURL.appendingPathComponent(mouseDataRelativePath)
         if let micPath = micAudioRelativePath {
             self.micAudioURL = packageRootURL.appendingPathComponent(micPath)
+        }
+        if let sysPath = systemAudioRelativePath {
+            self.systemAudioURL = packageRootURL.appendingPathComponent(sysPath)
         }
         self.pixelSize = pixelSize
         self.frameRate = frameRate
@@ -69,6 +80,9 @@ struct MediaAsset: Codable {
         mouseDataURL = packageRootURL.appendingPathComponent(mouseDataRelativePath)
         if let micPath = micAudioRelativePath {
             micAudioURL = packageRootURL.appendingPathComponent(micPath)
+        }
+        if let sysPath = systemAudioRelativePath {
+            systemAudioURL = packageRootURL.appendingPathComponent(sysPath)
         }
     }
 
@@ -93,6 +107,12 @@ struct MediaAsset: Codable {
     /// Check whether the mic audio file exists
     var micAudioExists: Bool {
         guard let url = micAudioURL else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    /// Check whether the system audio file exists
+    var systemAudioExists: Bool {
+        guard let url = systemAudioURL else { return false }
         return FileManager.default.fileExists(atPath: url.path)
     }
 
@@ -121,6 +141,7 @@ struct MediaAsset: Codable {
         case videoRelativePath = "videoPath"
         case mouseDataRelativePath = "mouseDataPath"
         case micAudioRelativePath = "micAudioPath"
+        case systemAudioRelativePath = "systemAudioPath"
         case pixelSize
         case frameRate
         case duration
@@ -132,6 +153,7 @@ struct MediaAsset: Codable {
         try container.encode(videoRelativePath, forKey: .videoRelativePath)
         try container.encode(mouseDataRelativePath, forKey: .mouseDataRelativePath)
         try container.encodeIfPresent(micAudioRelativePath, forKey: .micAudioRelativePath)
+        try container.encodeIfPresent(systemAudioRelativePath, forKey: .systemAudioRelativePath)
         try container.encode(pixelSize, forKey: .pixelSize)
         try container.encode(frameRate, forKey: .frameRate)
         try container.encode(duration, forKey: .duration)
@@ -147,11 +169,15 @@ struct MediaAsset: Codable {
         videoRelativePath = try container.decode(String.self, forKey: .videoRelativePath)
         mouseDataRelativePath = try container.decode(String.self, forKey: .mouseDataRelativePath)
         micAudioRelativePath = try container.decodeIfPresent(String.self, forKey: .micAudioRelativePath)
+        systemAudioRelativePath = try container.decodeIfPresent(String.self, forKey: .systemAudioRelativePath)
         // Placeholder URLs - must be resolved by caller via resolveURLs(from:)
         videoURL = URL(fileURLWithPath: videoRelativePath)
         mouseDataURL = URL(fileURLWithPath: mouseDataRelativePath)
         if let micPath = micAudioRelativePath {
             micAudioURL = URL(fileURLWithPath: micPath)
+        }
+        if let sysPath = systemAudioRelativePath {
+            systemAudioURL = URL(fileURLWithPath: sysPath)
         }
     }
 }

@@ -24,6 +24,7 @@ struct ProjectCreator {
             videoRelativePath: packageInfo.videoRelativePath,
             mouseDataRelativePath: packageInfo.mouseDataRelativePath,
             micAudioRelativePath: packageInfo.micAudioRelativePath,
+            systemAudioRelativePath: packageInfo.systemAudioRelativePath,
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
@@ -39,8 +40,20 @@ struct ProjectCreator {
             micAudioDuration = try? await CMTimeGetSeconds(micAsset.load(.duration))
         }
 
+        // Load system audio duration if available
+        var systemAudioDuration: TimeInterval?
+        if let sysRelPath = packageInfo.systemAudioRelativePath {
+            let sysURL = packageInfo.packageURL.appendingPathComponent(sysRelPath)
+            let sysAsset = AVAsset(url: sysURL)
+            systemAudioDuration = try? await CMTimeGetSeconds(sysAsset.load(.duration))
+        }
+
         // Create a default timeline
-        let timeline = createDefaultTimeline(duration: videoInfo.duration, micAudioDuration: micAudioDuration)
+        let timeline = createDefaultTimeline(
+            duration: videoInfo.duration,
+            micAudioDuration: micAudioDuration,
+            systemAudioDuration: systemAudioDuration
+        )
 
         // Create the project
         return ScreenizeProject(
@@ -157,7 +170,11 @@ struct ProjectCreator {
 
     // MARK: - Default Timeline
 
-    private static func createDefaultTimeline(duration: TimeInterval, micAudioDuration: TimeInterval? = nil) -> Timeline {
+    private static func createDefaultTimeline(
+        duration: TimeInterval,
+        micAudioDuration: TimeInterval? = nil,
+        systemAudioDuration: TimeInterval? = nil
+    ) -> Timeline {
         var tracks: [AnySegmentTrack] = [
             .camera(CameraTrack(
                 id: UUID(),
@@ -189,12 +206,26 @@ struct ProjectCreator {
             )),
         ]
 
+        if let sysAudioDuration = systemAudioDuration, sysAudioDuration > 0 {
+            let clampedEnd = min(duration, sysAudioDuration)
+            tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "System Audio",
+                isEnabled: true,
+                audioSource: .system,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: max(0.1, clampedEnd))
+                ]
+            )))
+        }
+
         if let audioDuration = micAudioDuration, audioDuration > 0 {
             let clampedEnd = min(duration, audioDuration)
             tracks.append(.audio(AudioTrack(
                 id: UUID(),
                 name: "Mic Audio",
                 isEnabled: true,
+                audioSource: .microphone,
                 segments: [
                     AudioSegment(startTime: 0, endTime: max(0.1, clampedEnd))
                 ]

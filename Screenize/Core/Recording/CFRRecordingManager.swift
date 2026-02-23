@@ -24,6 +24,9 @@ final class CFRRecordingManager: @unchecked Sendable {
     /// Video writer
     private var videoWriter: VideoWriter?
 
+    /// System audio sidecar writer
+    private var systemAudioWriter: SystemAudioWriter?
+
     /// Recording status
     private var isRecording = false
 
@@ -54,6 +57,9 @@ final class CFRRecordingManager: @unchecked Sendable {
     /// Pause state
     private var isPaused = false
 
+    /// System audio output URL
+    private var systemAudioURL: URL?
+
     /// Recording completion callback
     var onRecordingFinished: ((URL?) -> Void)?
 
@@ -75,7 +81,7 @@ final class CFRRecordingManager: @unchecked Sendable {
         self.outputURL = outputURL
         self.configuration = configuration
 
-        // Configure the VideoWriter
+        // Configure the VideoWriter (video only — system audio goes to sidecar)
         let writerConfig = VideoWriterConfiguration(
             width: configuration.width,
             height: configuration.height,
@@ -83,11 +89,18 @@ final class CFRRecordingManager: @unchecked Sendable {
             videoBitRate: 20_000_000,  // 20Mbps for high quality
             keyFrameInterval: Int(targetFPS),  // Keyframe every second
             videoCodec: .hevc,
-            fileType: .mov
+            fileType: .mov,
+            includeAudio: false
         )
 
         videoWriter = try VideoWriter(outputURL: outputURL, configuration: writerConfig)
         try videoWriter?.startWriting()
+
+        // Start system audio sidecar writer
+        let sysAudioURL = Self.generateSystemAudioURL(for: outputURL)
+        systemAudioWriter = SystemAudioWriter()
+        try systemAudioWriter?.startWriting(to: sysAudioURL)
+        self.systemAudioURL = sysAudioURL
 
         isRecording = true
         isPaused = false
@@ -103,15 +116,19 @@ final class CFRRecordingManager: @unchecked Sendable {
     }
 
     /// Stop recording
-    func stopRecording() async -> URL? {
-        guard isRecording else { return nil }
+    func stopRecording() async -> CFRRecordingResult {
+        guard isRecording else { return CFRRecordingResult(videoURL: nil, systemAudioURL: nil) }
 
         isRecording = false
 
         // Stop the timer
         stopFrameTimer()
 
-        // Finish the writer
+        // Stop system audio writer
+        let sysAudioURL = await systemAudioWriter?.stopWriting()
+        self.systemAudioWriter = nil
+
+        // Finish the video writer
         do {
             let url = try await videoWriter?.finishWriting()
 
@@ -128,9 +145,10 @@ final class CFRRecordingManager: @unchecked Sendable {
             configuration = nil
             recordingStartTime = nil
             audioBaseTime = nil
+            systemAudioURL = nil
 
             onRecordingFinished?(url)
-            return url
+            return CFRRecordingResult(videoURL: url, systemAudioURL: sysAudioURL)
         } catch {
             print("❌ [CFRRecordingManager] Failed to stop recording: \(error)")
             videoWriter?.cancelWriting()
@@ -140,9 +158,10 @@ final class CFRRecordingManager: @unchecked Sendable {
             frameLock.unlock()
 
             videoWriter = nil
+            systemAudioURL = nil
 
             onRecordingFinished?(nil)
-            return nil
+            return CFRRecordingResult(videoURL: nil, systemAudioURL: sysAudioURL)
         }
     }
 
@@ -196,7 +215,7 @@ final class CFRRecordingManager: @unchecked Sendable {
 
         guard status == noErr, let buffer = rebasedBuffer else { return }
 
-        videoWriter?.appendAudioSampleBuffer(buffer)
+        systemAudioWriter?.appendSampleBuffer(buffer)
     }
 
     // MARK: - Frame Handling
@@ -373,6 +392,22 @@ final class CFRRecordingManager: @unchecked Sendable {
     var recordedFrameCount: Int64 {
         return frameIndex
     }
+
+    // MARK: - Helpers
+
+    /// Generate the system audio sidecar URL from the video output URL.
+    private static func generateSystemAudioURL(for videoURL: URL) -> URL {
+        let dir = videoURL.deletingLastPathComponent()
+        let name = videoURL.deletingPathExtension().lastPathComponent
+        return dir.appendingPathComponent("\(name)_system.m4a")
+    }
+}
+
+// MARK: - CFRRecordingResult
+
+struct CFRRecordingResult {
+    let videoURL: URL?
+    let systemAudioURL: URL?
 }
 
 // MARK: - Errors

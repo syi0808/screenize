@@ -169,11 +169,23 @@ final class EditorViewModel: ObservableObject {
         if self.project.timeline.keystrokeTrackV2 == nil {
             self.project.timeline.tracks.append(.keystroke(KeystrokeTrackV2()))
         }
-        if self.project.timeline.audioTrack == nil && self.project.media.micAudioExists {
+        if self.project.timeline.systemAudioTrack == nil && self.project.media.systemAudioExists {
+            self.project.timeline.tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "System Audio",
+                isEnabled: true,
+                audioSource: .system,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: self.project.timeline.duration)
+                ]
+            )))
+        }
+        if self.project.timeline.micAudioTrack == nil && self.project.media.micAudioExists {
             self.project.timeline.tracks.append(.audio(AudioTrack(
                 id: UUID(),
                 name: "Mic Audio",
                 isEnabled: true,
+                audioSource: .microphone,
                 segments: [
                     AudioSegment(startTime: 0, endTime: self.project.timeline.duration)
                 ]

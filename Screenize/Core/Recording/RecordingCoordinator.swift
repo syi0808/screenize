@@ -34,6 +34,7 @@ final class RecordingCoordinator: ObservableObject {
     private(set) var processTimeStartMs: Int64 = 0
     private(set) var lastMouseRecording: MouseRecording?
     private(set) var lastMicAudioURL: URL?
+    private(set) var lastSystemAudioURL: URL?
 
     private let ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
@@ -156,7 +157,11 @@ final class RecordingCoordinator: ObservableObject {
         microphoneRecorder = nil
 
         // Stop SCRecordingOutput recording
-        let outputURL = await captureManager?.stopRecording()
+        let result = await captureManager?.stopRecording()
+        let outputURL = result?.videoURL
+        if let sysAudioURL = result?.systemAudioURL {
+            lastSystemAudioURL = sysAudioURL
+        }
 
         if let url = outputURL {
             session.transition(to: .completed(url))

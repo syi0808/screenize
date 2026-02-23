@@ -133,6 +133,46 @@ struct Timeline: Codable, Equatable {
         }
     }
 
+    var micAudioTrack: AudioTrack? {
+        get {
+            for case .audio(let track) in tracks where track.audioSource == .microphone {
+                return track
+            }
+            return nil
+        }
+        set {
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: {
+                if case .audio(let t) = $0, t.audioSource == .microphone { return true }
+                return false
+            }) {
+                tracks[index] = .audio(newValue)
+            } else {
+                tracks.append(.audio(newValue))
+            }
+        }
+    }
+
+    var systemAudioTrack: AudioTrack? {
+        get {
+            for case .audio(let track) in tracks where track.audioSource == .system {
+                return track
+            }
+            return nil
+        }
+        set {
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: {
+                if case .audio(let t) = $0, t.audioSource == .system { return true }
+                return false
+            }) {
+                tracks[index] = .audio(newValue)
+            } else {
+                tracks.append(.audio(newValue))
+            }
+        }
+    }
+
     // MARK: - Validation
 
     var totalSegmentCount: Int {

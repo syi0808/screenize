@@ -25,6 +25,7 @@ final class AppState: ObservableObject {
     var lastRecordingStartDate: Date?
     var lastProcessTimeStartMs: Int64 = 0
     var lastMicAudioURL: URL?
+    var lastSystemAudioURL: URL?
 
     // Audio
     @AppStorage("isMicrophoneEnabled") var isMicrophoneEnabled: Bool = false
@@ -231,6 +232,7 @@ final class AppState: ObservableObject {
             lastRecordingURL = videoURL
             lastMouseRecording = coordinator.lastMouseRecording
             lastMicAudioURL = coordinator.lastMicAudioURL
+            lastSystemAudioURL = coordinator.lastSystemAudioURL
             hasRecording = true
             showEditor = true
         } else {

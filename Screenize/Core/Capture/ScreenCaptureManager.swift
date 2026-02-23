@@ -88,7 +88,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
     }
 
     @available(macOS 15.0, *)
-    func stopRecording() async -> URL? {
+    func stopRecording() async -> CFRRecordingResult? {
         guard isCapturing, let stream = stream else { return nil }
 
         do {
@@ -103,7 +103,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         }
 
         // End CFR recording
-        let finalURL = await cfrRecordingManager?.stopRecording()
+        let result = await cfrRecordingManager?.stopRecording()
         self.cfrRecordingManager = nil
 
         self.stream = nil
@@ -112,8 +112,8 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         self.recordingURL = nil
         isCapturing = false
 
-        print("🎬 [ScreenCaptureManager] CFR recording stopped: \(finalURL?.path ?? "nil")")
-        return finalURL
+        print("🎬 [ScreenCaptureManager] CFR recording stopped: \(result?.videoURL?.path ?? "nil")")
+        return result
     }
 
     // MARK: - Preview-only capture (no recording)
