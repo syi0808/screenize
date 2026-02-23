@@ -431,6 +431,7 @@ final class AppState: ObservableObject {
             videoRelativePath: packageInfo.videoRelativePath,
             mouseDataRelativePath: packageInfo.mouseDataRelativePath,
             micAudioRelativePath: packageInfo.micAudioRelativePath,
+            systemAudioRelativePath: packageInfo.systemAudioRelativePath,
             packageRootURL: packageInfo.packageURL,
             pixelSize: CGSize(width: videoMetadata.width, height: videoMetadata.height),
             frameRate: videoMetadata.frameRate,
