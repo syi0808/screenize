@@ -170,18 +170,18 @@ struct TimelineView: View {
         .onDisappear {
             resetResizeCursorIfNeeded()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(DesignColors.windowBackground)
     }
 
     private var toolbar: some View {
         HStack {
             Spacer()
 
-            HStack(spacing: 8) {
+            HStack(spacing: Spacing.sm) {
                 Button { pixelsPerSecond = max(minPixelsPerSecond, pixelsPerSecond / 1.5) } label: {
                     Image(systemName: "minus.magnifyingglass")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ToolbarIconButtonStyle())
 
                 Slider(
                     value: logZoom,
@@ -192,17 +192,17 @@ struct TimelineView: View {
                 Button { pixelsPerSecond = min(maxPixelsPerSecond, pixelsPerSecond * 1.5) } label: {
                     Image(systemName: "plus.magnifyingglass")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ToolbarIconButtonStyle())
 
                 Button { fitToView() } label: {
                     Image(systemName: "arrow.left.and.right.square")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ToolbarIconButtonStyle())
                 .help("Fit timeline to view")
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.md)
     }
 
     private var trackHeaders: some View {
@@ -211,13 +211,13 @@ struct TimelineView: View {
             Divider()
 
             ForEach(Array(timeline.tracks.enumerated()), id: \.element.id) { index, track in
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.sm) {
                     Image(systemName: timelineTrackIcon(for: track.trackType))
-                        .foregroundColor(TrackColor.color(for: track.trackType))
-                        .frame(width: 16)
+                        .foregroundColor(DesignColors.trackColor(for: track.trackType))
+                        .frame(width: Spacing.lg)
 
                     Text(track.name)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(Typography.timelineLabel)
                         .lineLimit(1)
                         .foregroundColor(track.isEnabled ? .primary : .secondary)
 
@@ -229,12 +229,12 @@ struct TimelineView: View {
                         timeline.tracks[index] = updated
                     } label: {
                         Image(systemName: track.isEnabled ? "eye" : "eye.slash")
-                            .font(.system(size: 10))
+                            .font(Typography.monoSmall)
                             .foregroundStyle(track.isEnabled ? .secondary : .tertiary)
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, Spacing.sm)
                 .frame(height: trackHeight)
 
                 Divider()
@@ -242,7 +242,7 @@ struct TimelineView: View {
 
         }
         .frame(width: headerWidth)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(DesignColors.controlBackground)
     }
 
     private var trackContent: some View {
@@ -357,7 +357,7 @@ struct TimelineView: View {
         let displayEnd = segmentDisplayEnd(for: id, fallback: end)
         let x = CGFloat(displayStart) * pixelsPerSecond
         let width = max(6, CGFloat(displayEnd - displayStart) * pixelsPerSecond)
-        let color = TrackColor.color(for: trackType)
+        let color = DesignColors.trackColor(for: trackType)
         let isSelected = selection.contains(id)
         let isHovered = hoveredSegmentID == id
         let showHandles = isSelected || isHovered
@@ -886,24 +886,4 @@ struct TimelineGridView: View {
     }
 }
 
-// MARK: - Track Color
-
-/// Track colors by timeline track type.
-enum TrackColor {
-    static let transform = Color.blue
-    static let cursor = Color.orange
-    static let keystroke = Color.cyan
-
-    static func color(for trackType: TrackType) -> Color {
-        switch trackType {
-        case .transform:
-            return transform
-        case .cursor:
-            return cursor
-        case .keystroke:
-            return keystroke
-        case .audio:
-            return .green
-        }
-    }
-}
+// TrackColor moved to DesignSystem/DesignColors.swift

@@ -79,15 +79,15 @@ struct PreviewView: View {
                 }
             }
             .frame(width: videoSize.width, height: videoSize.height)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                RoundedRectangle(cornerRadius: CornerRadius.lg)
+                    .stroke(Color.secondary.opacity(DesignOpacity.light), lineWidth: 1)
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
             .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(AnimationTokens.standard) {
                     showControls.toggle()
                 }
                 resetControlsTimer()
@@ -104,12 +104,12 @@ struct PreviewView: View {
     // MARK: - Loading View
 
     private var loadingView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.md) {
             ProgressView()
                 .scaleEffect(1.5)
 
             Text("Loading preview...")
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundColor(.secondary)
         }
     }
@@ -117,34 +117,34 @@ struct PreviewView: View {
     // MARK: - Error View
 
     private func errorView(_ message: String) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.md) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 48))
                 .foregroundColor(.red.opacity(0.7))
 
             Text("Preview failed")
-                .font(.caption.bold())
+                .font(Typography.captionMedium)
                 .foregroundColor(.secondary)
 
             Text(message)
-                .font(.caption2)
+                .font(Typography.footnote)
                 .foregroundColor(.secondary.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, Spacing.xxl)
         }
     }
 
     // MARK: - Placeholder View
 
     private var placeholderView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.md) {
             Image(systemName: "film")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary.opacity(0.5))
 
             Text("No preview available")
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundColor(.secondary)
         }
     }
@@ -174,21 +174,21 @@ struct PreviewView: View {
 
                     // Current time display
                     Text(formatTime(currentTime))
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(Typography.mono)
                         .foregroundColor(.white)
 
                     Text("/")
                         .foregroundColor(.white.opacity(0.5))
 
                     Text(formatTime(previewEngine.duration))
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(Typography.mono)
                         .foregroundColor(.white.opacity(0.7))
 
                     Spacer()
 
                     // Frame display
                     Text("Frame \(previewEngine.currentFrameNumber)")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(Typography.monoSmall)
                         .foregroundColor(.white.opacity(0.5))
                 }
                 .padding(.horizontal, 12)
@@ -211,12 +211,12 @@ struct PreviewView: View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 // Background
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: CornerRadius.xs)
                     .fill(Color.white.opacity(0.3))
                     .frame(height: 4)
 
                 // Progress fill
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: CornerRadius.xs)
                     .fill(Color.accentColor)
                     .frame(width: geometry.size.width * previewEngine.progress, height: 4)
 
@@ -277,7 +277,7 @@ struct PreviewView: View {
                     .foregroundColor(.yellow)
 
                 Text("Render error at frame \(error.frameIndex)")
-                    .font(.caption.bold())
+                    .font(Typography.captionMedium)
                     .foregroundColor(.white)
 
                 Spacer()
@@ -292,7 +292,7 @@ struct PreviewView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.red.opacity(0.85))
+            .background(DesignColors.destructive.opacity(DesignOpacity.intense))
             .cornerRadius(6)
             .padding(.horizontal, 12)
             .padding(.top, 8)
@@ -325,12 +325,12 @@ struct MiniPreviewView: View {
             }
 
             Text(formatTime(time))
-                .font(.system(size: 10, design: .monospaced))
+                .font(Typography.monoSmall)
                 .foregroundColor(.secondary)
         }
         .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: CornerRadius.lg)
                 .fill(Color(nsColor: .windowBackgroundColor))
                 .shadow(color: .black.opacity(0.2), radius: 8)
         )
