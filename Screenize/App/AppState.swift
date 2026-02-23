@@ -31,6 +31,9 @@ final class AppState: ObservableObject {
     @AppStorage("isSystemAudioEnabled") var isSystemAudioEnabled: Bool = true
     @AppStorage("selectedMicrophoneDeviceID") var selectedMicrophoneDeviceID: String = ""
 
+    // Capture frame rate (VFR target: 30, 60, 120, or 240)
+    @AppStorage("captureFrameRate") var captureFrameRate: Int = 60
+
     /// Resolve the persisted microphone device ID to an AVCaptureDevice.
     /// Returns nil if the saved device is unavailable (disconnected, etc.).
     var selectedMicrophoneDevice: AVCaptureDevice? {

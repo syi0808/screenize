@@ -62,7 +62,7 @@ struct ExportSheetView: View {
         self._resolutionValidationError = State(initialValue: nil)
 
         // Detect existing custom frame rate
-        let presetFPS = [24, 30, 60]
+        let presetFPS = [24, 30, 60, 120, 240]
         if case .fixed(let fps) = project.renderSettings.outputFrameRate,
            !presetFPS.contains(fps) {
             self._isCustomFrameRate = State(initialValue: true)

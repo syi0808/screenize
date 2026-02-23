@@ -82,7 +82,10 @@ final class RecordingCoordinator: ObservableObject {
         self.captureBounds = calculateCaptureBounds(for: target)
 
         // Setup capture configuration
-        var captureConfig = CaptureConfiguration.forTarget(target)
+        var captureConfig = CaptureConfiguration.forTarget(
+            target,
+            frameRate: AppState.shared.captureFrameRate
+        )
         captureConfig.capturesAudio = AppState.shared.isSystemAudioEnabled
 
         // DEBUG: Log capture setup details
@@ -108,7 +111,11 @@ final class RecordingCoordinator: ObservableObject {
         recordingStartDate = Date()
         processTimeStartMs = Int64(ProcessInfo.processInfo.systemUptime * 1000)
         mouseDataRecorder = MouseDataRecorder()
-        mouseDataRecorder?.startRecording(screenBounds: captureBounds, scaleFactor: captureConfig.scaleFactor)
+        mouseDataRecorder?.startRecording(
+            screenBounds: captureBounds,
+            scaleFactor: captureConfig.scaleFactor,
+            captureFrameRate: captureConfig.frameRate
+        )
 
         // Start microphone recording if enabled
         if AppState.shared.isMicrophoneEnabled {

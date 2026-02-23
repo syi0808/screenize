@@ -6,6 +6,7 @@ import ScreenCaptureKit
 
 /// CFR (Constant Frame Rate) recording manager
 /// Converts ScreenCaptureKit's VFR output to a fixed 60fps CFR recording
+@available(*, deprecated, message: "Use VFRRecordingManager instead")
 final class CFRRecordingManager: @unchecked Sendable {
 
     // MARK: - Properties

@@ -149,6 +149,8 @@ struct CaptureToolbarView: View {
 
             ToolbarMicMenu()
 
+            ToolbarFrameRateMenu()
+
             toolbarDivider
 
             closeButton
@@ -382,6 +384,46 @@ private struct ToolbarMicMenu: View {
             position: .unspecified
         )
         availableDevices = discovery.devices
+    }
+}
+
+// MARK: - Toolbar Frame Rate Menu
+
+private struct ToolbarFrameRateMenu: View {
+    @AppStorage("captureFrameRate") private var frameRate = 60
+    @State private var isHovering = false
+
+    private let options = [30, 60, 120, 240]
+
+    var body: some View {
+        Menu {
+            ForEach(options, id: \.self) { fps in
+                Button {
+                    frameRate = fps
+                } label: {
+                    if frameRate == fps {
+                        Label("\(fps) fps", systemImage: "checkmark")
+                    } else {
+                        Text("\(fps) fps")
+                    }
+                }
+            }
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: "gauge.with.dots.needle.67percent")
+                    .font(.system(size: 13, weight: .medium))
+                Text("\(frameRate)fps")
+                    .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundColor(frameRate > 60 ? .orange : .white.opacity(0.5))
+            .frame(width: 44, height: 36)
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .onHover { isHovering = $0 }
+        .help("Capture Frame Rate")
     }
 }
 

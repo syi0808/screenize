@@ -222,9 +222,11 @@ enum OutputFrameRate: Codable, Equatable, Hashable {
     static let fps24 = Self.fixed(24)
     static let fps30 = Self.fixed(30)
     static let fps60 = Self.fixed(60)
+    static let fps120 = Self.fixed(120)
+    static let fps240 = Self.fixed(240)
 
     /// Preset list (used by the picker)
-    static let allCases: [Self] = [.original, .fps24, .fps30, .fps60]
+    static let allCases: [Self] = [.original, .fps24, .fps30, .fps60, .fps120, .fps240]
 
     /// Validate a custom frame rate value (1-240 fps)
     static func validatedCustom(fps: Int) -> OutputFrameRate? {

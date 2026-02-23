@@ -415,11 +415,16 @@ struct VideoWriterConfiguration {
             codec = .hevc
         }
 
+        // Scale bitrate proportionally for higher frame rates (base rates are for 60fps)
+        let frameRateScale = max(1.0, Double(captureConfig.frameRate) / 60.0)
+        let scaledBitRate = Int(Double(bitRate) * frameRateScale)
+
         return Self(
             width: captureConfig.width,
             height: captureConfig.height,
             frameRate: captureConfig.frameRate,
-            videoBitRate: bitRate,
+            videoBitRate: scaledBitRate,
+            keyFrameInterval: captureConfig.frameRate,  // Keyframe every second
             videoCodec: codec
         )
     }

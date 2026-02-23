@@ -28,8 +28,8 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
 
     private var recordingURL: URL?
 
-    // CFR recording manager (locked at 60fps)
-    fileprivate var cfrRecordingManager: CFRRecordingManager?
+    // VFR recording manager
+    fileprivate var recordingManager: VFRRecordingManager?
 
     // Used to wait safely for recording finalization to complete
     private let recordingFinished = RecordingFinishSignal()
@@ -38,7 +38,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         super.init()
     }
 
-    // MARK: - Start recording (CFR locked at 60fps)
+    // MARK: - Start recording (VFR)
 
     @available(macOS 15.0, *)
     func startRecording(
@@ -69,22 +69,22 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
             try stream.addStreamOutput(output, type: .audio, sampleHandlerQueue: captureQueue)
         }
 
-        // CFR recording: capture at a fixed 60fps rate
-        let cfrManager = CFRRecordingManager()
-        cfrManager.onRecordingFinished = { [weak self] url in
+        // VFR recording: write frames at their actual ScreenCaptureKit timestamps
+        let vfrManager = VFRRecordingManager(targetFrameRate: configuration.frameRate)
+        vfrManager.onRecordingFinished = { [weak self] url in
             self?.recordingFinished.signal()
             if let url = url {
                 self?.delegate?.captureManager(self!, didFinishRecordingTo: url)
             }
         }
-        try cfrManager.startRecording(to: outputURL, configuration: configuration)
-        self.cfrRecordingManager = cfrManager
+        try vfrManager.startRecording(to: outputURL, configuration: configuration)
+        self.recordingManager = vfrManager
 
         recordingFinished.reset()
         try await stream.startCapture()
         isCapturing = true
 
-        print("🎬 [ScreenCaptureManager] CFR recording started (60fps): \(outputURL.path)")
+        print("🎬 [ScreenCaptureManager] VFR recording started (\(configuration.frameRate)fps target): \(outputURL.path)")
     }
 
     @available(macOS 15.0, *)
@@ -102,9 +102,9 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
             print("❌ [ScreenCaptureManager] Error stopping recording: \(error)")
         }
 
-        // End CFR recording
-        let result = await cfrRecordingManager?.stopRecording()
-        self.cfrRecordingManager = nil
+        // End VFR recording
+        let result = await recordingManager?.stopRecording()
+        self.recordingManager = nil
 
         self.stream = nil
         self.streamOutput = nil
@@ -112,7 +112,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         self.recordingURL = nil
         isCapturing = false
 
-        print("🎬 [ScreenCaptureManager] CFR recording stopped: \(result?.videoURL?.path ?? "nil")")
+        print("🎬 [ScreenCaptureManager] VFR recording stopped: \(result?.videoURL?.path ?? "nil")")
         return result
     }
 
@@ -274,14 +274,14 @@ private final class StreamOutput: NSObject, SCStreamOutput, @unchecked Sendable 
 
         switch type {
         case .screen:
-            // CFR recording mode: forward frames to CFRRecordingManager
-            delegate?.cfrRecordingManager?.receiveFrame(sampleBuffer)
+            // VFR recording: forward frames to VFRRecordingManager
+            delegate?.recordingManager?.receiveFrame(sampleBuffer)
 
             // Also forward to the delegate (for preview, etc.)
             delegate?.delegate?.captureManager(delegate!, didOutputVideoSampleBuffer: sampleBuffer)
         case .audio:
-            // Forward system audio to CFR recording manager for writing
-            delegate?.cfrRecordingManager?.receiveAudioSample(sampleBuffer)
+            // Forward system audio to VFR recording manager for writing
+            delegate?.recordingManager?.receiveAudioSample(sampleBuffer)
             delegate?.delegate?.captureManager(delegate!, didOutputAudioSampleBuffer: sampleBuffer)
         case .microphone:
             // Microphone audio - currently unused

@@ -17,7 +17,7 @@ final class MouseDataRecorder {
 
     // Position sampling
     private var positionTimer: Timer?
-    private let sampleInterval: TimeInterval = 1.0 / 60.0  // 60Hz sampling
+    private var sampleInterval: TimeInterval = 1.0 / 60.0  // Default 60Hz, configurable
 
     // UI state sampling (for Smart Zoom)
     private var uiStateSampleTimer: Timer?
@@ -43,9 +43,12 @@ final class MouseDataRecorder {
 
     // MARK: - Recording Control
 
-    func startRecording(screenBounds: CGRect, scaleFactor: CGFloat = 1.0) {
+    func startRecording(screenBounds: CGRect, scaleFactor: CGFloat = 1.0, captureFrameRate: Int = 60) {
         guard !isRecording else { return }
 
+        // Cap mouse sampling at 120Hz (Timer resolution degrades beyond this)
+        let mouseHz = min(captureFrameRate, 120)
+        self.sampleInterval = 1.0 / Double(mouseHz)
         self.screenBounds = screenBounds
         self.scaleFactor = scaleFactor
         self.positions.removeAll()

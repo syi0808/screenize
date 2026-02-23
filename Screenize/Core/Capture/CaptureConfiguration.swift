@@ -76,7 +76,7 @@ struct CaptureConfiguration {
         return config
     }
 
-    static func forTarget(_ target: CaptureTarget, scaleFactor: CGFloat = 2.0) -> Self {
+    static func forTarget(_ target: CaptureTarget, scaleFactor: CGFloat = 2.0, frameRate: Int = 60) -> Self {
         let width = Int(CGFloat(target.width) * scaleFactor)
         let height = Int(CGFloat(target.height) * scaleFactor)
 
@@ -88,7 +88,7 @@ struct CaptureConfiguration {
         return Self(
             width: width,
             height: height,
-            frameRate: 60,
+            frameRate: frameRate,
             scaleFactor: scaleFactor,
             capturesShadow: !target.isWindow,
             sourceRect: sourceRect
