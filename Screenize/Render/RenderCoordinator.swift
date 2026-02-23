@@ -48,8 +48,11 @@ final class RenderCoordinator: @unchecked Sendable {
     /// Lock for thread-safe access to shared state
     private let lock = NSLock()
 
-    /// Last source frame held for VFR gap filling
+    /// Current display frame (latest source frame with time <= requested time)
     private var heldFrame: (time: TimeInterval, image: CIImage)?
+
+    /// Buffered next frame (first source frame with time > last requested time)
+    private var lookaheadFrame: (time: TimeInterval, image: CIImage)?
 
     // MARK: - Initialization
 
@@ -149,11 +152,25 @@ final class RenderCoordinator: @unchecked Sendable {
                 return
             }
 
-            // Advance reader until we have a frame at or past the requested time.
-            // Hold the previous frame to fill VFR gaps (same pattern as ExportEngine).
-            while self.heldFrame == nil || self.heldFrame!.time < time {
-                guard let nextFrame = reader.nextFrame() else { break }
-                self.heldFrame = nextFrame
+            // Lookahead-based VFR frame reading:
+            // Keep heldFrame as the latest source frame with time <= requested time.
+            // Buffer the first frame past the requested time in lookaheadFrame.
+
+            // Promote lookahead to held if it's now at or before the requested time
+            if let lookahead = self.lookaheadFrame, lookahead.time <= time {
+                self.heldFrame = lookahead
+                self.lookaheadFrame = nil
+            }
+
+            // Read new frames only when no lookahead is buffered
+            if self.lookaheadFrame == nil {
+                while let nextFrame = reader.nextFrame() {
+                    if nextFrame.time > time {
+                        self.lookaheadFrame = nextFrame
+                        break
+                    }
+                    self.heldFrame = nextFrame
+                }
             }
 
             guard let frame = self.heldFrame else {
@@ -271,6 +288,7 @@ final class RenderCoordinator: @unchecked Sendable {
         lock.lock()
         renderGeneration += 1
         heldFrame = nil
+        lookaheadFrame = nil
         let reader = sequentialReader
         lock.unlock()
 
@@ -355,6 +373,7 @@ final class RenderCoordinator: @unchecked Sendable {
         lock.lock()
         renderGeneration += 1
         heldFrame = nil
+        lookaheadFrame = nil
         lock.unlock()
 
         frameExtractor?.cancelAllPendingRequests()

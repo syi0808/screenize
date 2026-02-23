@@ -366,6 +366,7 @@ final class ExportEngine: ObservableObject {
             let outputFrameInterval = 1.0 / gifFrameRate
             var outputFrameIndex = 0
             var currentSourceFrame: (time: TimeInterval, image: CIImage)?
+            var gifLookaheadFrame: (time: TimeInterval, image: CIImage)?
 
             while outputFrameIndex < totalOutputFrames {
                 if isCancelled {
@@ -375,10 +376,19 @@ final class ExportEngine: ObservableObject {
 
                 let idealTime = trimStart + Double(outputFrameIndex) * outputFrameInterval
 
-                // Advance source reader
-                while currentSourceFrame == nil || currentSourceFrame!.time < idealTime {
-                    guard let next = sequentialReader.nextFrame() else { break }
-                    currentSourceFrame = next
+                // Advance source reader with lookahead to avoid consuming past ideal time
+                if let lookahead = gifLookaheadFrame, lookahead.time <= idealTime {
+                    currentSourceFrame = lookahead
+                    gifLookaheadFrame = nil
+                }
+                if gifLookaheadFrame == nil {
+                    while let next = sequentialReader.nextFrame() {
+                        if next.time > idealTime {
+                            gifLookaheadFrame = next
+                            break
+                        }
+                        currentSourceFrame = next
+                    }
                 }
 
                 guard let sourceFrame = currentSourceFrame else { break }
@@ -477,6 +487,7 @@ final class ExportEngine: ObservableObject {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var didResume = false
             var currentSourceFrame: (time: TimeInterval, image: CIImage)?
+            var videoLookaheadFrame: (time: TimeInterval, image: CIImage)?
 
             writerInput.requestMediaDataWhenReady(on: exportQueue) { [weak self] in
                 guard let self = self else {
@@ -521,12 +532,19 @@ final class ExportEngine: ObservableObject {
 
                     let idealTime = trimStart + Double(outputFrameIndex) * outputFrameInterval
 
-                    // Advance source reader until we have a frame at or past the ideal time
-                    while currentSourceFrame == nil || currentSourceFrame!.time < idealTime {
-                        guard let nextFrame = reader.nextFrame() else {
-                            break
+                    // Advance source reader with lookahead to avoid consuming past ideal time
+                    if let lookahead = videoLookaheadFrame, lookahead.time <= idealTime {
+                        currentSourceFrame = lookahead
+                        videoLookaheadFrame = nil
+                    }
+                    if videoLookaheadFrame == nil {
+                        while let nextFrame = reader.nextFrame() {
+                            if nextFrame.time > idealTime {
+                                videoLookaheadFrame = nextFrame
+                                break
+                            }
+                            currentSourceFrame = nextFrame
                         }
-                        currentSourceFrame = nextFrame
                     }
 
                     guard let sourceFrame = currentSourceFrame else {
