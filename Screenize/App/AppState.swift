@@ -30,6 +30,14 @@ final class AppState: ObservableObject {
     // Audio
     @AppStorage("isMicrophoneEnabled") var isMicrophoneEnabled: Bool = false
     @AppStorage("isSystemAudioEnabled") var isSystemAudioEnabled: Bool = true
+    @AppStorage("selectedMicrophoneDeviceID") var selectedMicrophoneDeviceID: String = ""
+
+    /// Resolve the persisted microphone device ID to an AVCaptureDevice.
+    /// Returns nil if the saved device is unavailable (disconnected, etc.).
+    var selectedMicrophoneDevice: AVCaptureDevice? {
+        guard !selectedMicrophoneDeviceID.isEmpty else { return nil }
+        return AVCaptureDevice(uniqueID: selectedMicrophoneDeviceID)
+    }
 
     // Countdown state
     @Published var isCountingDown: Bool = false

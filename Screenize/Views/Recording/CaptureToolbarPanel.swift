@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import SwiftUI
 
 /// Unified floating panel for the entire capture/recording lifecycle
@@ -146,7 +147,7 @@ struct CaptureToolbarView: View {
 
             ToolbarSystemAudioToggle()
 
-            ToolbarMicToggle()
+            ToolbarMicMenu()
 
             toolbarDivider
 
@@ -311,15 +312,40 @@ private struct ToolbarSystemAudioToggle: View {
     }
 }
 
-// MARK: - Toolbar Mic Toggle
+// MARK: - Toolbar Mic Menu
 
-private struct ToolbarMicToggle: View {
+private struct ToolbarMicMenu: View {
     @AppStorage("isMicrophoneEnabled") private var isEnabled = false
+    @AppStorage("selectedMicrophoneDeviceID") private var selectedDeviceID = ""
+    @State private var availableDevices: [AVCaptureDevice] = []
     @State private var isHovering = false
 
     var body: some View {
-        Button {
-            isEnabled.toggle()
+        Menu {
+            ForEach(availableDevices, id: \.uniqueID) { device in
+                Button {
+                    selectedDeviceID = device.uniqueID
+                    isEnabled = true
+                } label: {
+                    if isEnabled && selectedDeviceID == device.uniqueID {
+                        Label(device.localizedName, systemImage: "checkmark")
+                    } else {
+                        Text(device.localizedName)
+                    }
+                }
+            }
+
+            Divider()
+
+            Button {
+                isEnabled = false
+            } label: {
+                if !isEnabled {
+                    Label("Off", systemImage: "checkmark")
+                } else {
+                    Text("Off")
+                }
+            }
         } label: {
             Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
                 .font(.system(size: 13, weight: .medium))
@@ -327,9 +353,27 @@ private struct ToolbarMicToggle: View {
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
         .onHover { isHovering = $0 }
-        .help(isEnabled ? "Disable Microphone" : "Enable Microphone")
+        .help(isEnabled ? "Microphone Source" : "Enable Microphone")
+        .onAppear { refreshDevices() }
+        .onReceive(
+            NotificationCenter.default.publisher(for: .AVCaptureDeviceWasConnected)
+        ) { _ in refreshDevices() }
+        .onReceive(
+            NotificationCenter.default.publisher(for: .AVCaptureDeviceWasDisconnected)
+        ) { _ in refreshDevices() }
+    }
+
+    private func refreshDevices() {
+        let discovery = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInMicrophone, .externalUnknown],
+            mediaType: .audio,
+            position: .unspecified
+        )
+        availableDevices = discovery.devices
     }
 }
 

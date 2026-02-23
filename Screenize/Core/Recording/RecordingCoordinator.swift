@@ -115,7 +115,7 @@ final class RecordingCoordinator: ObservableObject {
             let micRecorder = MicrophoneRecorder()
             let micURL = Self.generateMicOutputURL(for: session.outputURL)
             do {
-                try micRecorder.startRecording(to: micURL)
+                try micRecorder.startRecording(to: micURL, device: AppState.shared.selectedMicrophoneDevice)
                 self.microphoneRecorder = micRecorder
             } catch {
                 print("[RecordingCoordinator] Mic recording failed (non-fatal): \(error)")
