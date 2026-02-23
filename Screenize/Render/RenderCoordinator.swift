@@ -136,6 +136,7 @@ final class RenderCoordinator: @unchecked Sendable {
             self.lock.lock()
             guard generation == self.renderGeneration else {
                 self.lock.unlock()
+                completion(nil, time)
                 return
             }
             self.lock.unlock()
@@ -143,6 +144,7 @@ final class RenderCoordinator: @unchecked Sendable {
             guard let evaluator = evaluator,
                   let renderer = renderer,
                   let reader = reader else {
+                completion(nil, time)
                 return
             }
 
@@ -157,6 +159,7 @@ final class RenderCoordinator: @unchecked Sendable {
 
             // Acquire a texture from the cache pool
             guard let targetTexture = cache?.acquireTexture() else {
+                completion(nil, time)
                 return
             }
 
@@ -165,12 +168,16 @@ final class RenderCoordinator: @unchecked Sendable {
                 sourceFrame: frame.image,
                 state: state,
                 targetTexture: targetTexture
-            ) else { return }
+            ) else {
+                completion(nil, time)
+                return
+            }
 
             // Check generation again
             self.lock.lock()
             guard generation == self.renderGeneration else {
                 self.lock.unlock()
+                completion(nil, time)
                 return
             }
             self.lock.unlock()
