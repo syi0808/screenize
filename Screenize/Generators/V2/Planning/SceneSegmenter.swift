@@ -7,6 +7,10 @@ struct SceneSegmenter {
     /// Minimum scene duration; shorter scenes are absorbed into neighbors.
     static let minSceneDuration: TimeInterval = 0.3
 
+    /// Maximum spatial distance (Chebyshev, normalized) before same-intent spans split.
+    /// At zoom 2.0, viewport covers 0.5 of screen; 0.25 = half the viewport width.
+    static let spatialSplitThreshold: CGFloat = 0.25
+
     // MARK: - Public API
 
     /// Segment a sequence of intent spans into camera scenes.
@@ -93,6 +97,27 @@ struct SceneSegmenter {
         let currentIntent = dominantIntent(of: current)
         if !intentsSameCategory(currentIntent, next.intent) {
             return true
+        }
+
+        // Spatial distance: split if focus positions are far apart.
+        // Exempt typing and dragging — CursorFollowController handles spatial
+        // movement within those scenes.
+        let spatialExempt: Bool
+        switch next.intent {
+        case .typing, .dragging:
+            spatialExempt = true
+        default:
+            spatialExempt = false
+        }
+        if !spatialExempt {
+            let centroid = groupCentroid(of: current)
+            let distance = max(
+                abs(centroid.x - next.focusPosition.x),
+                abs(centroid.y - next.focusPosition.y)
+            )
+            if distance > spatialSplitThreshold {
+                return true
+            }
         }
 
         return false
@@ -233,6 +258,16 @@ struct SceneSegmenter {
             }
         }
         return nil
+    }
+
+    // MARK: - Group Centroid
+
+    private static func groupCentroid(of spans: [IntentSpan]) -> NormalizedPoint {
+        guard !spans.isEmpty else { return NormalizedPoint(x: 0.5, y: 0.5) }
+        let count = CGFloat(spans.count)
+        let x = spans.map(\.focusPosition.x).reduce(0, +) / count
+        let y = spans.map(\.focusPosition.y).reduce(0, +) / count
+        return NormalizedPoint(x: x, y: y)
     }
 
     // MARK: - Phase 2: Absorb Short Scenes

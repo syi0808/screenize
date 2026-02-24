@@ -387,6 +387,92 @@ final class SceneSegmenterTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(scenes.count, 4)
     }
 
+    // MARK: - Spatial Segmentation
+
+    func test_segment_sameIntent_farApart_splits() {
+        // Two clicking spans at opposite corners (distance 0.6 > threshold 0.25)
+        let spans = [
+            makeSpan(start: 0, end: 3, intent: .clicking,
+                     position: NormalizedPoint(x: 0.2, y: 0.2)),
+            makeSpan(start: 3, end: 6, intent: .clicking,
+                     position: NormalizedPoint(x: 0.8, y: 0.8))
+        ]
+        let timeline = EventTimeline(events: [], duration: 6.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 6.0
+        )
+        XCTAssertEqual(scenes.count, 2,
+                       "Spatially distant same-intent spans should split")
+    }
+
+    func test_segment_sameIntent_closeBy_merges() {
+        // Two clicking spans nearby (distance 0.1 < threshold 0.25)
+        let spans = [
+            makeSpan(start: 0, end: 3, intent: .clicking,
+                     position: NormalizedPoint(x: 0.4, y: 0.5)),
+            makeSpan(start: 3, end: 6, intent: .clicking,
+                     position: NormalizedPoint(x: 0.5, y: 0.5))
+        ]
+        let timeline = EventTimeline(events: [], duration: 6.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 6.0
+        )
+        XCTAssertEqual(scenes.count, 1,
+                       "Spatially close same-intent spans should still merge")
+    }
+
+    func test_segment_typing_farApart_doesNotSplit() {
+        // Two typing spans far apart — typing is exempt from spatial splitting
+        let spans = [
+            makeSpan(start: 0, end: 3, intent: .typing(context: .codeEditor),
+                     position: NormalizedPoint(x: 0.1, y: 0.1)),
+            makeSpan(start: 3, end: 6, intent: .typing(context: .codeEditor),
+                     position: NormalizedPoint(x: 0.9, y: 0.9))
+        ]
+        let timeline = EventTimeline(events: [], duration: 6.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 6.0
+        )
+        XCTAssertEqual(scenes.count, 1,
+                       "Typing spans should NOT split spatially (CursorFollowController handles it)")
+    }
+
+    func test_segment_dragging_farApart_doesNotSplit() {
+        // Two dragging spans far apart — dragging is exempt from spatial splitting
+        let spans = [
+            makeSpan(start: 0, end: 3, intent: .dragging(.selection),
+                     position: NormalizedPoint(x: 0.1, y: 0.1)),
+            makeSpan(start: 3, end: 6, intent: .dragging(.selection),
+                     position: NormalizedPoint(x: 0.9, y: 0.9))
+        ]
+        let timeline = EventTimeline(events: [], duration: 6.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 6.0
+        )
+        XCTAssertEqual(scenes.count, 1,
+                       "Dragging spans should NOT split spatially (CursorFollowController handles it)")
+    }
+
+    func test_segment_threeClicks_splitAfterSecond() {
+        // 1st and 2nd close, 3rd far from group — splits after 2nd
+        let spans = [
+            makeSpan(start: 0, end: 2, intent: .clicking,
+                     position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeSpan(start: 2, end: 4, intent: .clicking,
+                     position: NormalizedPoint(x: 0.35, y: 0.35)),
+            makeSpan(start: 4, end: 6, intent: .clicking,
+                     position: NormalizedPoint(x: 0.8, y: 0.8))
+        ]
+        let timeline = EventTimeline(events: [], duration: 6.0)
+        let scenes = SceneSegmenter.segment(
+            intentSpans: spans, eventTimeline: timeline, duration: 6.0
+        )
+        XCTAssertEqual(scenes.count, 2,
+                       "Should split when 3rd click is far from group centroid")
+        XCTAssertEqual(scenes[0].primaryIntent, .clicking)
+        XCTAssertEqual(scenes[1].primaryIntent, .clicking)
+    }
+
     // MARK: - Helpers
 
     private func makeSpan(
