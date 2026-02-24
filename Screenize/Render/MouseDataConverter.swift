@@ -84,7 +84,8 @@ struct MouseDataConverter {
     @MainActor
     static func loadAndConvertWithInterpolation(
         from project: ScreenizeProject,
-        frameRate: Double
+        frameRate: Double,
+        springConfig: SpringCursorConfig? = nil
     ) -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
         guard let source = loadMouseDataSourceFromEventStreams(project: project) else {
             return ([], [])
@@ -92,7 +93,8 @@ struct MouseDataConverter {
         let result = convertFromMouseDataSource(source)
         let interpolatedPositions = PreviewEngine.interpolateMousePositions(
             result.positions,
-            outputFrameRate: frameRate
+            outputFrameRate: frameRate,
+            springConfig: springConfig
         )
         return (interpolatedPositions, result.clicks)
     }

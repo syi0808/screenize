@@ -137,7 +137,62 @@ struct SettingsInspector: View {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text("Smooth Cursor")
                         .font(Typography.bodyMedium)
-                    Text("Interpolate cursor movement between data points")
+                    Text("Spring-based cursor smoothing for polished motion")
+                        .font(Typography.monoSmall)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            // Spring smoothing controls (visible when smooth cursor is on)
+            if timeline.cursorTrackV2?.useSmoothCursor == true {
+                cursorSmoothingControls
+            }
+        }
+    }
+
+    // MARK: - Cursor Smoothing Controls
+
+    private var cursorSmoothingControls: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            SubSectionLabel(
+                label: "Smoothing",
+                value: smoothingIntensityLabel
+            )
+
+            HStack(spacing: Spacing.md) {
+                Text("Snappy")
+                    .font(Typography.monoSmall)
+                    .foregroundColor(.secondary)
+
+                Slider(
+                    value: smoothingResponseBinding,
+                    in: 0.02...0.20,
+                    step: 0.01
+                )
+
+                Text("Smooth")
+                    .font(Typography.monoSmall)
+                    .foregroundColor(.secondary)
+            }
+
+            // Preset buttons
+            HStack(spacing: Spacing.sm) {
+                ForEach(smoothingPresets, id: \.label) { preset in
+                    Button(preset.label) {
+                        withMotionSafeAnimation(AnimationTokens.standard) {
+                            updateSpringResponse(preset.value)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+
+            Toggle(isOn: adaptiveResponseBinding) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("Adaptive Speed")
+                        .font(Typography.bodyMedium)
+                    Text("Reduce lag for fast cursor movements")
                         .font(Typography.monoSmall)
                         .foregroundColor(.secondary)
                 }
@@ -145,12 +200,52 @@ struct SettingsInspector: View {
         }
     }
 
+    private var smoothingPresets: [(label: String, value: CGFloat)] {
+        [("Subtle", 0.04), ("Default", 0.08), ("Smooth", 0.12), ("Heavy", 0.18)]
+    }
+
+    private var smoothingIntensityLabel: String {
+        let response = timeline.cursorTrackV2?.springConfig.response ?? 0.08
+        return String(format: "%.0fms", response * 1000)
+    }
+
+    private var smoothingResponseBinding: Binding<Double> {
+        Binding(
+            get: { Double(timeline.cursorTrackV2?.springConfig.response ?? 0.08) },
+            set: { updateSpringResponse(CGFloat($0)) }
+        )
+    }
+
+    private var adaptiveResponseBinding: Binding<Bool> {
+        Binding(
+            get: { timeline.cursorTrackV2?.springConfig.adaptiveResponse ?? true },
+            set: { newValue in
+                guard let trackIndex = timeline.tracks.firstIndex(
+                    where: { $0.trackType == .cursor }
+                ), case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+                track.springConfig.adaptiveResponse = newValue
+                timeline.tracks[trackIndex] = .cursor(track)
+                onChange?()
+            }
+        )
+    }
+
+    private func updateSpringResponse(_ newValue: CGFloat) {
+        guard let trackIndex = timeline.tracks.firstIndex(
+            where: { $0.trackType == .cursor }
+        ), case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+        track.springConfig.response = newValue
+        timeline.tracks[trackIndex] = .cursor(track)
+        onChange?()
+    }
+
     private var smoothCursorBinding: Binding<Bool> {
         Binding(
             get: { timeline.cursorTrackV2?.useSmoothCursor ?? true },
             set: { newValue in
-                guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
-                      case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+                guard let trackIndex = timeline.tracks.firstIndex(
+                    where: { $0.trackType == .cursor }
+                ), case .cursor(var track) = timeline.tracks[trackIndex] else { return }
                 track.useSmoothCursor = newValue
                 timeline.tracks[trackIndex] = .cursor(track)
                 onChange?()

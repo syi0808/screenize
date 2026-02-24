@@ -100,10 +100,12 @@ final class ExportEngine: ObservableObject {
             let rawMousePositions = rawResult.positions
             let clickEvents = rawResult.clicks
 
+            let springConfig = project.timeline.cursorTrackV2?.springConfig
             let smoothedResult = await MainActor.run {
                 MouseDataConverter.loadAndConvertWithInterpolation(
                     from: project,
-                    frameRate: frameRate
+                    frameRate: frameRate,
+                    springConfig: springConfig
                 )
             }
             let smoothedMousePositions = smoothedResult.positions
@@ -319,10 +321,12 @@ final class ExportEngine: ObservableObject {
             let rawResult = await MainActor.run {
                 MouseDataConverter.loadAndConvert(from: project)
             }
+            let gifSpringConfig = project.timeline.cursorTrackV2?.springConfig
             let smoothedResult = await MainActor.run {
                 MouseDataConverter.loadAndConvertWithInterpolation(
                     from: project,
-                    frameRate: frameRate
+                    frameRate: frameRate,
+                    springConfig: gifSpringConfig
                 )
             }
             print("[GIF Export] Loaded mouse data - \(rawResult.positions.count) raw, \(smoothedResult.positions.count) smoothed positions")

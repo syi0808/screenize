@@ -500,6 +500,7 @@ struct CursorTrackV2: SegmentTrack, Equatable {
     var name: String
     var isEnabled: Bool
     var useSmoothCursor: Bool
+    var springConfig: SpringCursorConfig
     var segments: [CursorSegment]
 
     var trackType: TrackType { .cursor }
@@ -510,12 +511,14 @@ struct CursorTrackV2: SegmentTrack, Equatable {
         name: String = "Cursor",
         isEnabled: Bool = true,
         useSmoothCursor: Bool = true,
+        springConfig: SpringCursorConfig = .default,
         segments: [CursorSegment] = []
     ) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
         self.useSmoothCursor = useSmoothCursor
+        self.springConfig = springConfig
         self.segments = segments.sorted { $0.startTime < $1.startTime }
     }
 
@@ -547,6 +550,24 @@ struct CursorTrackV2: SegmentTrack, Equatable {
             if let excludedID, existing.id == excludedID { return false }
             return segment.startTime < existing.endTime && segment.endTime > existing.startTime
         }
+    }
+
+    // MARK: - Codable (backward-compatible)
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, isEnabled, useSmoothCursor, springConfig, segments
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        useSmoothCursor = try container.decode(Bool.self, forKey: .useSmoothCursor)
+        springConfig = try container.decodeIfPresent(SpringCursorConfig.self, forKey: .springConfig)
+            ?? .default
+        segments = try container.decode([CursorSegment].self, forKey: .segments)
+        segments.sort { $0.startTime < $1.startTime }
     }
 }
 

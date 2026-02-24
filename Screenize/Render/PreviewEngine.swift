@@ -108,8 +108,11 @@ final class PreviewEngine: ObservableObject {
     /// Raw mouse position data
     private var rawMousePositions: [RenderMousePosition] = []
 
-    /// Smoothed mouse position data (Catmull-Rom interpolated)
+    /// Smoothed mouse position data (spring-based or legacy interpolated)
     private var smoothedMousePositions: [RenderMousePosition] = []
+
+    /// Last spring config used for interpolation (to detect changes)
+    private var lastSpringConfig: SpringCursorConfig?
 
     /// Click event data (reused during timeline updates)
     private var renderClickEvents: [RenderClickEvent] = []
@@ -210,12 +213,15 @@ final class PreviewEngine: ObservableObject {
             rawMousePositions = rawResult.positions
             renderClickEvents = rawResult.clicks
 
-            // Load smoothed mouse data (Catmull-Rom interpolated)
+            // Load smoothed mouse data (spring-based or legacy interpolation)
+            let springConfig = project.timeline.cursorTrackV2?.springConfig
             let smoothedResult = MouseDataConverter.loadAndConvertWithInterpolation(
                 from: project,
-                frameRate: extractor.frameRate
+                frameRate: extractor.frameRate,
+                springConfig: springConfig
             )
             smoothedMousePositions = smoothedResult.positions
+            lastSpringConfig = springConfig
 
             // Build the render pipeline (Evaluator + Renderer)
             let pipeline = RenderPipelineFactory.createPreviewPipeline(
@@ -420,6 +426,18 @@ final class PreviewEngine: ObservableObject {
     /// - Parameter timeline: New timeline
     func updateTimeline(_ timeline: Timeline) {
         guard let project = project else { return }
+
+        // Re-interpolate mouse positions if spring config changed
+        let newSpringConfig = timeline.cursorTrackV2?.springConfig
+        if newSpringConfig != lastSpringConfig {
+            let smoothedResult = MouseDataConverter.loadAndConvertWithInterpolation(
+                from: project,
+                frameRate: frameRate,
+                springConfig: newSpringConfig
+            )
+            smoothedMousePositions = smoothedResult.positions
+            lastSpringConfig = newSpringConfig
+        }
 
         // Create a new evaluator (reuse stored mouse data)
         let newEvaluator = RenderPipelineFactory.createEvaluator(

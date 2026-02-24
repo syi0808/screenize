@@ -3,8 +3,9 @@ import CoreGraphics
 
 // MARK: - Mouse Position Interpolator
 
-/// Smooths mouse positions using Gaussian pre-filtering + Catmull-Rom spline interpolation
-/// with boundary reflection and idle stabilization
+/// Smooths mouse positions using either:
+/// - Spring pipeline: Catmull-Rom resample -> Spring following -> Dedup (default)
+/// - Legacy pipeline: Gaussian pre-filter -> Catmull-Rom -> Idle stabilization -> Dedup
 struct MousePositionInterpolator {
 
     // MARK: - Public API
@@ -14,36 +15,54 @@ struct MousePositionInterpolator {
     ///   - positions: Original mouse position data
     ///   - outputFrameRate: Output frame rate
     ///   - baseTension: Catmull-Rom tension (0.2 = natural curve)
-    ///   - gaussianRadius: Gaussian pre-filter radius (3 = mild smoothing)
+    ///   - springConfig: Spring cursor config. When provided, uses the spring pipeline.
+    ///                   When nil, falls back to the legacy Gaussian + idle stabilization pipeline.
     /// - Returns: Interpolated mouse positions at frame rate intervals
     static func interpolate(
         _ positions: [RenderMousePosition],
         outputFrameRate: Double,
         baseTension: CGFloat = 0.2,
-        gaussianRadius: Int = 3
+        springConfig: SpringCursorConfig? = nil
     ) -> [RenderMousePosition] {
         guard positions.count >= 2 else { return positions }
 
         let frameDuration = 1.0 / outputFrameRate
 
-        // Step 1: Gaussian pre-filter to remove sub-pixel jitter
-        let smoothed = gaussianSmooth(positions, radius: gaussianRadius)
+        if let springConfig {
+            // Spring pipeline: Catmull-Rom resample -> Spring following -> Dedup
+            let resampled = catmullRomResample(
+                positions, frameDuration: frameDuration, tension: baseTension
+            )
+            let springSmoothed = SpringCursorSimulator.simulate(resampled, config: springConfig)
+            return deduplicateByTimestamp(springSmoothed, minInterval: frameDuration * 0.5)
+        } else {
+            // Legacy pipeline: Gaussian -> Catmull-Rom -> Idle stabilization -> Dedup
+            return legacyInterpolate(positions, frameDuration: frameDuration, tension: baseTension)
+        }
+    }
 
-        // Step 2: Catmull-Rom interpolation with reflected boundaries
+    // MARK: - Spring Pipeline
+
+    /// Resample positions at frame rate intervals using Catmull-Rom splines
+    private static func catmullRomResample(
+        _ positions: [RenderMousePosition],
+        frameDuration: TimeInterval,
+        tension: CGFloat
+    ) -> [RenderMousePosition] {
         var interpolated: [RenderMousePosition] = []
 
-        for i in 0..<smoothed.count - 1 {
-            let p0 = reflectedPoint(smoothed, index: i - 1).position
-            let p1 = smoothed[i].position
-            let p2 = smoothed[i + 1].position
-            let p3 = reflectedPoint(smoothed, index: i + 2).position
+        for i in 0..<positions.count - 1 {
+            let p0 = reflectedPoint(positions, index: i - 1).position
+            let p1 = positions[i].position
+            let p2 = positions[i + 1].position
+            let p3 = reflectedPoint(positions, index: i + 2).position
 
-            let startTime = smoothed[i].timestamp
-            let endTime = smoothed[i + 1].timestamp
+            let startTime = positions[i].timestamp
+            let endTime = positions[i + 1].timestamp
             let duration = endTime - startTime
 
             guard duration > 0.001 else {
-                interpolated.append(smoothed[i])
+                interpolated.append(positions[i])
                 continue
             }
 
@@ -52,28 +71,43 @@ struct MousePositionInterpolator {
                 let progress = CGFloat(t / duration)
                 let point = catmullRom(
                     p0: p0, p1: p1, p2: p2, p3: p3,
-                    t: progress, tension: baseTension
+                    t: progress, tension: tension
                 )
                 let deriv = catmullRomDerivative(
                     p0: p0, p1: p1, p2: p2, p3: p3,
-                    t: progress, tension: baseTension
+                    t: progress, tension: tension
                 )
                 let velocity = sqrt(deriv.x * deriv.x + deriv.y * deriv.y) / CGFloat(duration)
 
                 interpolated.append(RenderMousePosition(
                     timestamp: startTime + t,
-                    x: point.x,
-                    y: point.y,
+                    x: point.x, y: point.y,
                     velocity: velocity
                 ))
                 t += frameDuration
             }
         }
 
-        // Add the final position
-        if let last = smoothed.last {
+        if let last = positions.last {
             interpolated.append(last)
         }
+
+        return interpolated
+    }
+
+    // MARK: - Legacy Pipeline
+
+    /// Legacy pipeline: Gaussian pre-filter -> Catmull-Rom -> Idle stabilization -> Dedup
+    private static func legacyInterpolate(
+        _ positions: [RenderMousePosition],
+        frameDuration: TimeInterval,
+        tension: CGFloat
+    ) -> [RenderMousePosition] {
+        // Step 1: Gaussian pre-filter to remove sub-pixel jitter
+        let smoothed = gaussianSmooth(positions, radius: 3)
+
+        // Step 2: Catmull-Rom interpolation with reflected boundaries
+        let interpolated = catmullRomResample(smoothed, frameDuration: frameDuration, tension: tension)
 
         // Step 3: Idle stabilization (clamp stationary jitter)
         let stabilized = stabilizeIdlePositions(interpolated, threshold: 0.001)
@@ -189,7 +223,9 @@ struct MousePositionInterpolator {
                 if idleAnchor == nil {
                     idleAnchor = result[i].position
                 }
-                blendFactor = min(1.0, blendFactor + (1.0 - blendFactor) * (1.0 - exp(-decayRate * dt)))
+                blendFactor = min(
+                    1.0, blendFactor + (1.0 - blendFactor) * (1.0 - exp(-decayRate * dt))
+                )
             } else {
                 blendFactor = max(0.0, blendFactor * exp(-decayRate * dt))
                 if blendFactor < 0.01 {
@@ -204,8 +240,7 @@ struct MousePositionInterpolator {
                 let blendedVelocity = result[i].velocity * (1.0 - blendFactor)
                 result[i] = RenderMousePosition(
                     timestamp: result[i].timestamp,
-                    x: blendedX,
-                    y: blendedY,
+                    x: blendedX, y: blendedY,
                     velocity: blendedVelocity
                 )
             }
@@ -253,7 +288,7 @@ struct MousePositionInterpolator {
 
     // MARK: - Catmull-Rom Spline
 
-    /// Catmull-Rom spline derivative at parameter t (velocity direction and magnitude in parameter space)
+    /// Catmull-Rom spline derivative at parameter t
     private static func catmullRomDerivative(
         p0: CGPoint,
         p1: CGPoint,
@@ -315,12 +350,14 @@ extension PreviewEngine {
     static func interpolateMousePositions(
         _ positions: [RenderMousePosition],
         outputFrameRate: Double,
-        tension: CGFloat = 0.2
+        tension: CGFloat = 0.2,
+        springConfig: SpringCursorConfig? = nil
     ) -> [RenderMousePosition] {
         MousePositionInterpolator.interpolate(
             positions,
             outputFrameRate: outputFrameRate,
-            baseTension: tension
+            baseTension: tension,
+            springConfig: springConfig
         )
     }
 }
