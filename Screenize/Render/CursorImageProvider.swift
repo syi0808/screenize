@@ -46,13 +46,16 @@ final class CursorImageProvider {
     }
 
     /// Normalized hotspot position for a cursor style (top-left origin, 0-1 range).
-    /// Matches the convention used by NSCursor.hotSpot.
+    /// Values are derived from actual tip coordinates in the custom drawing paths,
+    /// expressed as (designX / designWidth, designY / designHeight).
     func normalizedHotspot(style: CursorStyle) -> CGPoint {
         switch style {
         case .arrow:
-            return CGPoint(x: 0.24, y: 0.16)
+            // Tip at design (1.5, 1.0) in 17x25 space
+            return CGPoint(x: 1.5 / 17.0, y: 1.0 / 25.0)
         case .pointer:
-            return CGPoint(x: 0.33, y: 0.08)
+            // Fingertip at design (~6.25, 1.0) in 19x24 space
+            return CGPoint(x: 6.25 / 19.0, y: 1.0 / 24.0)
         case .iBeam:
             return CGPoint(x: 0.5, y: 0.5)
         case .crosshair:
@@ -62,7 +65,8 @@ final class CursorImageProvider {
         case .closedHand:
             return CGPoint(x: 0.5, y: 0.5)
         case .contextMenu:
-            return CGPoint(x: 0.14, y: 0.10)
+            // Arrow tip at design (1.5, 1.0) in 25x25 space
+            return CGPoint(x: 1.5 / 25.0, y: 1.0 / 25.0)
         }
     }
 

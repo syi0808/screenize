@@ -200,15 +200,10 @@ final class EffectCompositor {
         let hotspotPixelX = hotspot.x * cursorSize.width
         let hotspotPixelY = hotspot.y * cursorSize.height
 
-        // Scale correction proportionally (was fixed -2/+2 at ~80px cursor size)
-        let correctionScale = cursorPixelHeight / 80.0
-        let correctionX: CGFloat = -2.0 * correctionScale
-        let correctionY: CGFloat = 2.0 * correctionScale
-
         // Position: place cursor so hotspot aligns with outputPosition
         // CoreImage uses bottom-left origin; hotspot.y is from top
-        let finalX = outputPosition.x - hotspotPixelX + correctionX
-        let finalY = outputPosition.y - cursorSize.height + hotspotPixelY + correctionY
+        let finalX = outputPosition.x - hotspotPixelX
+        let finalY = outputPosition.y - cursorSize.height + hotspotPixelY
 
         let translated = cursorImage.transformed(by: CGAffineTransform(
             translationX: finalX,
