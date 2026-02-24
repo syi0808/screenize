@@ -132,14 +132,12 @@ struct HoldEnforcer {
             }) else { return nil }
 
             let plan = trans.transitionPlan
-            var newPlan = TransitionPlan(
+            let newPlan = TransitionPlan(
                 fromScene: fromScene.scene,
                 toScene: toScene.scene,
                 style: plan.style,
                 easing: plan.easing
             )
-            newPlan.zoomOutEasing = plan.zoomOutEasing
-            newPlan.zoomInEasing = plan.zoomInEasing
 
             return SimulatedTransitionSegment(
                 fromScene: fromScene.scene,

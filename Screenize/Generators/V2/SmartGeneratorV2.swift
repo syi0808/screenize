@@ -210,8 +210,10 @@ class SmartGeneratorV2 {
             switch trans.style {
             case .directPan(let dur):
                 style = String(format: "directPan(%.2fs)", dur)
-            case let .zoomOutAndIn(outDur, inDur, midZoom):
-                style = String(format: "zoomOutAndIn(%.2f+%.2fs midZ=%.2f)", outDur, inDur, midZoom)
+            case .zoomOutAndPan(let dur):
+                style = String(format: "zoomOutAndPan(%.2fs)", dur)
+            case .zoomInAndPan(let dur):
+                style = String(format: "zoomInAndPan(%.2fs)", dur)
             case .cut:
                 style = "cut"
             }
@@ -352,8 +354,11 @@ struct TransitionSettings {
     /// Duration range for medium direct pans.
     var mediumPanDurationRange: ClosedRange<TimeInterval> = 0.6...0.9
 
-    /// Duration range for zoom-out/in phases (scales with distance).
-    var zoomOutDurationRange: ClosedRange<TimeInterval> = 0.35...0.5
+    /// Duration range for zoom-out-and-pan transitions (scales with distance).
+    var zoomOutPanDurationRange: ClosedRange<TimeInterval> = 0.5...0.8
+
+    /// Duration range for zoom-in-and-pan transitions (scales with distance).
+    var zoomInPanDurationRange: ClosedRange<TimeInterval> = 0.5...0.8
 
     /// Easing for direct pan transitions (critically damped — no overshoot).
     var panEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.6)

@@ -326,9 +326,7 @@ final class TransitionRefinerTests: XCTestCase {
     func test_refine_preservesTransitionPlanProperties() {
         let seg1 = makeSegment(start: 0, end: 3)
         let seg2 = makeSegment(start: 3, end: 6)
-        let style = TransitionStyle.zoomOutAndIn(
-            outDuration: 0.4, inDuration: 0.5, intermediateZoom: 1.2
-        )
+        let style = TransitionStyle.zoomOutAndPan(duration: 0.9)
         let trans = SimulatedTransitionSegment(
             fromScene: seg1.scene, toScene: seg2.scene,
             transitionPlan: TransitionPlan(
@@ -352,12 +350,10 @@ final class TransitionRefinerTests: XCTestCase {
         let refined = result.transitionSegments[0]
 
         // Style and easing should be preserved
-        if case let .zoomOutAndIn(out, inDur, midZoom) = refined.transitionPlan.style {
-            XCTAssertEqual(out, 0.4, accuracy: 0.001)
-            XCTAssertEqual(inDur, 0.5, accuracy: 0.001)
-            XCTAssertEqual(midZoom, 1.2, accuracy: 0.001)
+        if case let .zoomOutAndPan(dur) = refined.transitionPlan.style {
+            XCTAssertEqual(dur, 0.9, accuracy: 0.001)
         } else {
-            XCTFail("Expected zoomOutAndIn style")
+            XCTFail("Expected zoomOutAndPan style")
         }
     }
 }

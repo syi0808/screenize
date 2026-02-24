@@ -260,14 +260,12 @@ struct SegmentMerger {
             }
 
             if needsUpdate {
-                var plan = TransitionPlan(
+                let plan = TransitionPlan(
                     fromScene: fromScene,
                     toScene: toScene,
                     style: trans.transitionPlan.style,
                     easing: trans.transitionPlan.easing
                 )
-                plan.zoomOutEasing = trans.transitionPlan.zoomOutEasing
-                plan.zoomInEasing = trans.transitionPlan.zoomInEasing
 
                 transitions[i] = SimulatedTransitionSegment(
                     fromScene: fromScene,

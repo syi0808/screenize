@@ -3,13 +3,10 @@ import Foundation
 /// Visual transition style between scenes.
 enum TransitionStyle {
     case directPan(duration: TimeInterval)
-    /// Two-phase transition: zoom out to intermediate level, pan, zoom in.
-    /// `intermediateZoom` controls how far to zoom out (1.0 = full overview, higher = less zoom-out).
-    case zoomOutAndIn(
-        outDuration: TimeInterval,
-        inDuration: TimeInterval,
-        intermediateZoom: CGFloat = 1.0
-    )
+    /// Single-phase zoom out while panning to target.
+    case zoomOutAndPan(duration: TimeInterval)
+    /// Single-phase zoom in while panning to target.
+    case zoomInAndPan(duration: TimeInterval)
     case cut
 }
 
@@ -19,8 +16,4 @@ struct TransitionPlan {
     let toScene: CameraScene
     let style: TransitionStyle
     let easing: EasingCurve
-    /// Easing for zoom-out phase of zoomOutAndIn transitions.
-    var zoomOutEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.5)
-    /// Easing for zoom-in phase of zoomOutAndIn transitions.
-    var zoomInEasing: EasingCurve = .spring(dampingRatio: 1.0, response: 0.6)
 }

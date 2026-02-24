@@ -51,13 +51,11 @@ final class TransitionPlannerTests: XCTestCase {
     // MARK: - Medium Distance → Direct Pan (Long)
 
     func test_plan_mediumDistanceScenes_directPanLong() {
-        // At zoom 2.0, effective distance = raw * 2.0
-        // Use positions where effective distance is in medium range (0.15...0.4)
+        // At zoom 2.0, viewportHalf = 0.25; dx = 0.2 → viewportDistance = 0.8 (medium range 0.6...1.2)
         let shots = [
-            makeShotPlan(start: 0, end: 3, center: NormalizedPoint(x: 0.45, y: 0.45)),
-            makeShotPlan(start: 3, end: 6, center: NormalizedPoint(x: 0.55, y: 0.55))
+            makeShotPlan(start: 0, end: 3, center: NormalizedPoint(x: 0.4, y: 0.5)),
+            makeShotPlan(start: 3, end: 6, center: NormalizedPoint(x: 0.6, y: 0.5))
         ]
-        // raw distance ≈ 0.14, effective = 0.14 * 2.0 = 0.28 (medium range)
         let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
         XCTAssertEqual(plans.count, 1)
         if case .directPan(let duration) = plans[0].style {
@@ -68,23 +66,35 @@ final class TransitionPlannerTests: XCTestCase {
         }
     }
 
-    // MARK: - Far Distance → Zoom Out and In
+    // MARK: - Far Distance → Zoom Out/In And Pan
 
-    func test_plan_farScenes_zoomOutAndIn() {
+    func test_plan_farScenes_equalZoom_zoomOutAndPan() {
         let shots = [
             makeShotPlan(start: 0, end: 3, center: NormalizedPoint(x: 0.1, y: 0.1)),
             makeShotPlan(start: 3, end: 6, center: NormalizedPoint(x: 0.9, y: 0.9))
         ]
-        // distance ≈ 1.13 > 0.4
         let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
         XCTAssertEqual(plans.count, 1)
-        if case .zoomOutAndIn(let outDur, let inDur, _) = plans[0].style {
-            XCTAssertGreaterThanOrEqual(outDur, defaultSettings.zoomOutDurationRange.lowerBound)
-            XCTAssertLessThanOrEqual(outDur, defaultSettings.zoomOutDurationRange.upperBound)
-            XCTAssertGreaterThanOrEqual(inDur, defaultSettings.zoomOutDurationRange.lowerBound)
-            XCTAssertLessThanOrEqual(inDur, defaultSettings.zoomOutDurationRange.upperBound)
+        if case .zoomOutAndPan(let duration) = plans[0].style {
+            XCTAssertGreaterThanOrEqual(duration, defaultSettings.zoomOutPanDurationRange.lowerBound)
+            XCTAssertLessThanOrEqual(duration, defaultSettings.zoomOutPanDurationRange.upperBound)
         } else {
-            XCTFail("Expected zoomOutAndIn for far scenes")
+            XCTFail("Expected zoomOutAndPan for far scenes with equal zoom")
+        }
+    }
+
+    func test_plan_farScenes_zoomInAndPan_whenToZoomHigher() {
+        let shots = [
+            makeShotPlan(start: 0, end: 3, center: NormalizedPoint(x: 0.1, y: 0.1), zoom: 1.5),
+            makeShotPlan(start: 3, end: 6, center: NormalizedPoint(x: 0.9, y: 0.9), zoom: 2.5)
+        ]
+        let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
+        XCTAssertEqual(plans.count, 1)
+        if case .zoomInAndPan(let duration) = plans[0].style {
+            XCTAssertGreaterThanOrEqual(duration, defaultSettings.zoomInPanDurationRange.lowerBound)
+            XCTAssertLessThanOrEqual(duration, defaultSettings.zoomInPanDurationRange.upperBound)
+        } else {
+            XCTFail("Expected zoomInAndPan when to.idealZoom > from.idealZoom")
         }
     }
 
@@ -127,13 +137,22 @@ final class TransitionPlannerTests: XCTestCase {
         }
     }
 
-    func test_plan_zoomOutAndIn_easeOutEasing() {
+    func test_plan_zoomOutAndPan_usesZoomOutEasing() {
         let shots = [
             makeShotPlan(start: 0, end: 3, center: NormalizedPoint(x: 0.1, y: 0.1)),
             makeShotPlan(start: 3, end: 6, center: NormalizedPoint(x: 0.9, y: 0.9))
         ]
         let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
-        XCTAssertEqual(plans[0].easing, .easeOut)
+        XCTAssertEqual(plans[0].easing, defaultSettings.zoomOutEasing)
+    }
+
+    func test_plan_zoomInAndPan_usesZoomInEasing() {
+        let shots = [
+            makeShotPlan(start: 0, end: 3, center: NormalizedPoint(x: 0.1, y: 0.1), zoom: 1.5),
+            makeShotPlan(start: 3, end: 6, center: NormalizedPoint(x: 0.9, y: 0.9), zoom: 2.5)
+        ]
+        let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
+        XCTAssertEqual(plans[0].easing, defaultSettings.zoomInEasing)
     }
 
     // MARK: - Zoom-Aware Distance
@@ -163,7 +182,7 @@ final class TransitionPlannerTests: XCTestCase {
     }
 
     func test_plan_lowZoomMediumRawDistance_usesDirectPan() {
-        // Raw distance 0.35 at zoom 1.0 → effective 0.35 → medium pan (not zoomOutAndIn)
+        // Raw distance 0.35 at zoom 1.0 → effective 0.35 → medium pan (not zoom+pan)
         let shots = [
             makeShotPlan(
                 start: 0, end: 3,
@@ -183,24 +202,24 @@ final class TransitionPlannerTests: XCTestCase {
         }
     }
 
-    func test_plan_highZoomMediumRawDistance_usesZoomOutAndIn() {
-        // Raw distance 0.25 at zoom 2.0 → effective 0.50 > 0.4 → zoomOutAndIn
+    func test_plan_highZoomMediumRawDistance_usesZoomOutAndPan() {
+        // At zoom 2.0, viewportHalf = 0.25; dx = 0.35 → viewportDistance = 1.4 (far range >= 1.2)
         let shots = [
             makeShotPlan(
                 start: 0, end: 3,
-                center: NormalizedPoint(x: 0.35, y: 0.5), zoom: 2.0
+                center: NormalizedPoint(x: 0.2, y: 0.5), zoom: 2.0
             ),
             makeShotPlan(
                 start: 3, end: 6,
-                center: NormalizedPoint(x: 0.6, y: 0.5), zoom: 2.0
+                center: NormalizedPoint(x: 0.55, y: 0.5), zoom: 2.0
             )
         ]
         let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
         XCTAssertEqual(plans.count, 1)
-        if case .zoomOutAndIn = plans[0].style {
-            // expected
+        if case .zoomOutAndPan = plans[0].style {
+            // expected (equal zoom → zoomOutAndPan)
         } else {
-            XCTFail("Expected zoomOutAndIn at high zoom for medium raw distance")
+            XCTFail("Expected zoomOutAndPan at high zoom for medium raw distance")
         }
     }
 

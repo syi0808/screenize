@@ -75,24 +75,25 @@ struct TransitionPlanner {
             style = .directPan(duration: duration)
             easing = settings.panEasing
         } else {
-            // Target is well outside viewport — zoom out proportionally, pan, zoom in
+            // Target is well outside viewport — zoom+pan transition
             let t = (viewportDistance - settings.gentlePanThreshold)
                 / (settings.fullZoomOutThreshold - settings.gentlePanThreshold)
             let clamped = max(0, min(1, t))
 
-            // Proportional intermediate zoom: lerp between minZoom(fromZoom, toZoom) and 1.0
-            let minSceneZoom = min(from.idealZoom, to.idealZoom)
-            let intermediateZoom = max(1.0, minSceneZoom * (1.0 - clamped * 0.6))
-
-            let duration = interpolate(
-                range: settings.zoomOutDurationRange, t: clamped
-            )
-            style = .zoomOutAndIn(
-                outDuration: duration,
-                inDuration: duration,
-                intermediateZoom: intermediateZoom
-            )
-            easing = settings.zoomOutEasing
+            // Choose zoom direction based on which scene is more zoomed in
+            if from.idealZoom >= to.idealZoom {
+                let duration = interpolate(
+                    range: settings.zoomOutPanDurationRange, t: clamped
+                )
+                style = .zoomOutAndPan(duration: duration)
+                easing = settings.zoomOutEasing
+            } else {
+                let duration = interpolate(
+                    range: settings.zoomInPanDurationRange, t: clamped
+                )
+                style = .zoomInAndPan(duration: duration)
+                easing = settings.zoomInEasing
+            }
         }
 
         #if DEBUG
@@ -100,8 +101,10 @@ struct TransitionPlanner {
         switch style {
         case .directPan(let dur):
             styleLabel = String(format: "directPan(%.2fs)", dur)
-        case let .zoomOutAndIn(o, i, midZoom):
-            styleLabel = String(format: "zoomOut+In(%.2f+%.2fs midZ=%.2f)", o, i, midZoom)
+        case .zoomOutAndPan(let dur):
+            styleLabel = String(format: "zoomOutAndPan(%.2fs)", dur)
+        case .zoomInAndPan(let dur):
+            styleLabel = String(format: "zoomInAndPan(%.2fs)", dur)
         case .cut:
             styleLabel = "cut"
         }
@@ -115,9 +118,7 @@ struct TransitionPlanner {
             fromScene: from.scene,
             toScene: to.scene,
             style: style,
-            easing: easing,
-            zoomOutEasing: settings.zoomOutEasing,
-            zoomInEasing: settings.zoomInEasing
+            easing: easing
         )
     }
 

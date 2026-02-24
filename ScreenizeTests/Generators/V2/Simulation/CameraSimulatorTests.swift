@@ -98,7 +98,7 @@ final class CameraSimulatorTests: XCTestCase {
         let shot2 = makeShotPlan(start: 3, end: 6, zoom: 1.5, center: NormalizedPoint(x: 0.5, y: 0.5))
         let shot3 = makeShotPlan(start: 6, end: 10, zoom: 2.0, center: NormalizedPoint(x: 0.8, y: 0.8))
         let t1 = makeTransition(from: shot1, to: shot2, style: .directPan(duration: 0.5))
-        let t2 = makeTransition(from: shot2, to: shot3, style: .zoomOutAndIn(outDuration: 0.5, inDuration: 0.5))
+        let t2 = makeTransition(from: shot2, to: shot3, style: .zoomOutAndPan(duration: 1.0))
 
         let path = simulator.simulate(
             shotPlans: [shot1, shot2, shot3], transitions: [t1, t2],

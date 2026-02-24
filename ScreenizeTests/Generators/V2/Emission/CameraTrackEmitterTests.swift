@@ -70,9 +70,9 @@ final class CameraTrackEmitterTests: XCTestCase {
         XCTAssertEqual(track.segments.count, 3)
     }
 
-    // MARK: - With ZoomOutAndIn Transition
+    // MARK: - With ZoomOutAndPan Transition
 
-    func test_emit_zoomOutAndInTransition_producesTwoTransitionSegments() {
+    func test_emit_zoomOutAndPanTransition_producesOneTransitionSegment() {
         let t1 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.2, y: 0.2))
         let t2 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.8, y: 0.8))
         let scene1 = CameraScene(startTime: 0, endTime: 3, primaryIntent: .clicking)
@@ -92,8 +92,8 @@ final class CameraTrackEmitterTests: XCTestCase {
         ]
         let transition = TransitionPlan(
             fromScene: scene1, toScene: scene2,
-            style: .zoomOutAndIn(outDuration: 0.5, inDuration: 0.5),
-            easing: .easeOut
+            style: .zoomOutAndPan(duration: 1.0),
+            easing: .spring(dampingRatio: 1.0, response: 0.5)
         )
         let transSeg = SimulatedTransitionSegment(
             fromScene: scene1, toScene: scene2,
@@ -103,8 +103,45 @@ final class CameraTrackEmitterTests: XCTestCase {
         let path = SimulatedPath(sceneSegments: sceneSegs, transitionSegments: [transSeg])
         let track = CameraTrackEmitter.emit(path, duration: 6.0)
 
-        // Should have scene1 + zoomOut + zoomIn + scene2 = 4 segments
-        XCTAssertEqual(track.segments.count, 4)
+        // Should have scene1 + transition + scene2 = 3 segments (single-phase)
+        XCTAssertEqual(track.segments.count, 3)
+    }
+
+    // MARK: - With ZoomInAndPan Transition
+
+    func test_emit_zoomInAndPanTransition_producesOneTransitionSegment() {
+        let t1 = TransformValue(zoom: 1.5, center: NormalizedPoint(x: 0.2, y: 0.2))
+        let t2 = TransformValue(zoom: 2.5, center: NormalizedPoint(x: 0.8, y: 0.8))
+        let scene1 = CameraScene(startTime: 0, endTime: 3, primaryIntent: .clicking)
+        let scene2 = CameraScene(startTime: 3, endTime: 6, primaryIntent: .clicking)
+        let shot1 = ShotPlan(scene: scene1, shotType: .medium(zoom: 1.5), idealZoom: 1.5, idealCenter: t1.center)
+        let shot2 = ShotPlan(scene: scene2, shotType: .closeUp(zoom: 2.5), idealZoom: 2.5, idealCenter: t2.center)
+
+        let sceneSegs = [
+            SimulatedSceneSegment(scene: scene1, shotPlan: shot1, samples: [
+                TimedTransform(time: 0, transform: t1),
+                TimedTransform(time: 3, transform: t1)
+            ]),
+            SimulatedSceneSegment(scene: scene2, shotPlan: shot2, samples: [
+                TimedTransform(time: 3, transform: t2),
+                TimedTransform(time: 6, transform: t2)
+            ])
+        ]
+        let transition = TransitionPlan(
+            fromScene: scene1, toScene: scene2,
+            style: .zoomInAndPan(duration: 1.0),
+            easing: .spring(dampingRatio: 0.92, response: 0.55)
+        )
+        let transSeg = SimulatedTransitionSegment(
+            fromScene: scene1, toScene: scene2,
+            transitionPlan: transition,
+            startTransform: t1, endTransform: t2
+        )
+        let path = SimulatedPath(sceneSegments: sceneSegs, transitionSegments: [transSeg])
+        let track = CameraTrackEmitter.emit(path, duration: 6.0)
+
+        // Should have scene1 + transition + scene2 = 3 segments (single-phase)
+        XCTAssertEqual(track.segments.count, 3)
     }
 
     // MARK: - Segments Time-Sorted
@@ -177,19 +214,16 @@ final class CameraTrackEmitterTests: XCTestCase {
                              "DirectPan transition should have actual duration, not 0.001s")
     }
 
-    func test_emit_contiguousScenes_zoomOutAndIn_hasActualDuration() {
+    func test_emit_contiguousScenes_zoomOutAndPan_hasActualDuration() {
         let (track, _) = makeContiguousTwoSceneTrack(
-            transitionStyle: .zoomOutAndIn(outDuration: 0.5, inDuration: 0.5)
+            transitionStyle: .zoomOutAndPan(duration: 1.0)
         )
         let sorted = track.segments.sorted { $0.startTime < $1.startTime }
-        // scene1 + zoomOut + zoomIn + scene2 = 4
-        XCTAssertEqual(sorted.count, 4)
-        let zoomOut = sorted[1]
-        let zoomIn = sorted[2]
-        XCTAssertGreaterThan(zoomOut.endTime - zoomOut.startTime, 0.1,
-                             "Zoom-out phase should have actual duration")
-        XCTAssertGreaterThan(zoomIn.endTime - zoomIn.startTime, 0.1,
-                             "Zoom-in phase should have actual duration")
+        // scene1 + transition + scene2 = 3 (single-phase)
+        XCTAssertEqual(sorted.count, 3)
+        let transition = sorted[1]
+        XCTAssertGreaterThan(transition.endTime - transition.startTime, 0.1,
+                             "Transition should have actual duration")
     }
 
     func test_emit_contiguousScenes_scenesTrimmedForTransitions() {
@@ -377,9 +411,9 @@ final class CameraTrackEmitterTests: XCTestCase {
         XCTAssertEqual(track.segments[0].endTime, 5, accuracy: 0.01)
     }
 
-    // MARK: - Easing Propagation: zoomOutAndIn Uses Plan Easings
+    // MARK: - Easing Propagation: zoomOutAndPan/zoomInAndPan Use Plan Easing
 
-    func test_emit_zoomOutAndIn_usesTransitionPlanEasings() {
+    func test_emit_zoomOutAndPan_usesTransitionPlanEasing() {
         let t1 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.3))
         let t2 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.7, y: 0.7))
         let scene1 = CameraScene(startTime: 0, endTime: 3, primaryIntent: .clicking)
@@ -388,14 +422,11 @@ final class CameraTrackEmitterTests: XCTestCase {
             makeStaticSceneSeg(scene: scene1, transform: t1),
             makeStaticSceneSeg(scene: scene2, transform: t2)
         ]
-        let customOutEasing: EasingCurve = .easeIn
-        let customInEasing: EasingCurve = .spring(dampingRatio: 0.7, response: 0.4)
+        let customEasing: EasingCurve = .spring(dampingRatio: 0.9, response: 0.5)
         let plan = TransitionPlan(
             fromScene: scene1, toScene: scene2,
-            style: .zoomOutAndIn(outDuration: 0.5, inDuration: 0.5),
-            easing: .easeOut,
-            zoomOutEasing: customOutEasing,
-            zoomInEasing: customInEasing
+            style: .zoomOutAndPan(duration: 1.0),
+            easing: customEasing
         )
         let transSeg = SimulatedTransitionSegment(
             fromScene: scene1, toScene: scene2,
@@ -406,49 +437,11 @@ final class CameraTrackEmitterTests: XCTestCase {
         let track = CameraTrackEmitter.emit(path, duration: 6.0)
 
         let sorted = track.segments.sorted { $0.startTime < $1.startTime }
-        // scene1 + zoomOut + zoomIn + scene2 = 4
-        XCTAssertEqual(sorted.count, 4)
-
-        let zoomOutSeg = sorted[1]
-        let zoomInSeg = sorted[2]
-        // Zoom-out phase should use the plan's zoomOutEasing
-        XCTAssertEqual(zoomOutSeg.interpolation, customOutEasing,
-                       "Zoom-out should use plan.zoomOutEasing, not hardcoded .easeOut")
-        // Zoom-in phase should use the plan's zoomInEasing
-        XCTAssertEqual(zoomInSeg.interpolation, customInEasing,
-                       "Zoom-in should use plan.zoomInEasing, not hardcoded spring")
-    }
-
-    func test_emit_zoomOutAndIn_defaultEasings_matchTransitionPlanDefaults() {
-        // When using default TransitionPlan easings, segments should carry those defaults
-        let t1 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.2, y: 0.2))
-        let t2 = TransformValue(zoom: 2.0, center: NormalizedPoint(x: 0.8, y: 0.8))
-        let scene1 = CameraScene(startTime: 0, endTime: 3, primaryIntent: .clicking)
-        let scene2 = CameraScene(startTime: 3, endTime: 6, primaryIntent: .clicking)
-        let sceneSegs = [
-            makeStaticSceneSeg(scene: scene1, transform: t1),
-            makeStaticSceneSeg(scene: scene2, transform: t2)
-        ]
-        // Use default zoomOutEasing/zoomInEasing (from TransitionPlan defaults)
-        let plan = TransitionPlan(
-            fromScene: scene1, toScene: scene2,
-            style: .zoomOutAndIn(outDuration: 0.5, inDuration: 0.5),
-            easing: .easeOut
-        )
-        let transSeg = SimulatedTransitionSegment(
-            fromScene: scene1, toScene: scene2,
-            transitionPlan: plan,
-            startTransform: t1, endTransform: t2
-        )
-        let path = SimulatedPath(sceneSegments: sceneSegs, transitionSegments: [transSeg])
-        let track = CameraTrackEmitter.emit(path, duration: 6.0)
-
-        let sorted = track.segments.sorted { $0.startTime < $1.startTime }
-        XCTAssertEqual(sorted.count, 4)
-        // Default zoomOutEasing = .spring(dampingRatio: 1.0, response: 0.5)
-        XCTAssertEqual(sorted[1].interpolation, .spring(dampingRatio: 1.0, response: 0.5))
-        // Default zoomInEasing = .spring(dampingRatio: 1.0, response: 0.6)
-        XCTAssertEqual(sorted[2].interpolation, .spring(dampingRatio: 1.0, response: 0.6))
+        // scene1 + transition + scene2 = 3
+        XCTAssertEqual(sorted.count, 3)
+        let transitionSeg = sorted[1]
+        XCTAssertEqual(transitionSeg.interpolation, customEasing,
+                       "Transition should use plan.easing")
     }
 
     // MARK: - Easing Propagation: Multi-Sample Scene Pattern
@@ -574,7 +567,8 @@ final class CameraTrackEmitterTests: XCTestCase {
         switch style {
         case .cut: easing = .linear
         case .directPan: easing = .spring(dampingRatio: 0.85, response: 0.5)
-        case .zoomOutAndIn: easing = .easeOut
+        case .zoomOutAndPan: easing = .spring(dampingRatio: 1.0, response: 0.5)
+        case .zoomInAndPan: easing = .spring(dampingRatio: 0.92, response: 0.55)
         }
         let plan = TransitionPlan(
             fromScene: from, toScene: to, style: style, easing: easing

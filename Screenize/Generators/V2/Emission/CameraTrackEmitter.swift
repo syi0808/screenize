@@ -18,7 +18,6 @@ struct CameraTrackEmitter {
     private struct TransitionTiming {
         let startTime: TimeInterval
         let endTime: TimeInterval
-        let midTime: TimeInterval? // for zoomOutAndIn
     }
 
     // MARK: - Public API
@@ -96,15 +95,8 @@ struct CameraTrackEmitter {
             let transEnd = orderedScenes[info.toIndex].scene.startTime
                 + trims[info.toIndex].leftTrim
 
-            var midTime: TimeInterval?
-            if case let .zoomOutAndIn(outDur, inDur, _) =
-                info.segment.transitionPlan.style {
-                let actualDur = transEnd - transStart
-                midTime = transStart + actualDur * (outDur / (outDur + inDur))
-            }
-
             let timing = TransitionTiming(
-                startTime: transStart, endTime: transEnd, midTime: midTime
+                startTime: transStart, endTime: transEnd
             )
             allSegments.append(contentsOf: emitTimedTransitionSegment(
                 info.segment, timing: timing
@@ -133,10 +125,10 @@ struct CameraTrackEmitter {
         _ style: TransitionStyle
     ) -> TimeInterval {
         switch style {
-        case let .directPan(duration):
+        case let .directPan(duration),
+             let .zoomOutAndPan(duration),
+             let .zoomInAndPan(duration):
             return duration
-        case let .zoomOutAndIn(outDuration, inDuration, _):
-            return outDuration + inDuration
         case .cut:
             return 0.01
         }
@@ -285,41 +277,13 @@ struct CameraTrackEmitter {
         let plan = transSeg.transitionPlan
 
         switch plan.style {
-        case .directPan:
+        case .directPan, .zoomOutAndPan, .zoomInAndPan:
             return [makeSegment(
                 start: timing.startTime, end: timing.endTime,
                 startTransform: transSeg.startTransform,
                 endTransform: transSeg.endTransform,
                 easing: plan.easing
             )]
-
-        case let .zoomOutAndIn(_, _, intermediateZoom):
-            let midTime = timing.midTime
-                ?? (timing.startTime + timing.endTime) / 2
-
-            let midCenter = NormalizedPoint(
-                x: (transSeg.startTransform.center.x
-                    + transSeg.endTransform.center.x) / 2,
-                y: (transSeg.startTransform.center.y
-                    + transSeg.endTransform.center.y) / 2
-            )
-            let midTransform = TransformValue(
-                zoom: intermediateZoom, center: midCenter
-            )
-
-            let zoomOut = makeSegment(
-                start: timing.startTime, end: midTime,
-                startTransform: transSeg.startTransform,
-                endTransform: midTransform,
-                easing: plan.zoomOutEasing
-            )
-            let zoomIn = makeSegment(
-                start: midTime, end: timing.endTime,
-                startTransform: midTransform,
-                endTransform: transSeg.endTransform,
-                easing: plan.zoomInEasing
-            )
-            return [zoomOut, zoomIn]
 
         case .cut:
             return [makeSegment(
