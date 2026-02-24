@@ -288,14 +288,15 @@ struct ShotPlanner {
         let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
         var center: NormalizedPoint
 
-        // Prefer caret position from UIStateSample metadata
-        if let lastWithCaret = sceneEvents.last(where: {
+        // Prefer first caret position: CursorFollowController starts at idealCenter
+        // and pans forward, so the camera should start where typing begins.
+        if let firstWithCaret = sceneEvents.first(where: {
             $0.metadata.caretBounds != nil
-        }), let caretBounds = lastWithCaret.metadata.caretBounds,
+        }), let caretBounds = firstWithCaret.metadata.caretBounds,
            let normalized = normalizeFrame(caretBounds, screenBounds: screenBounds) {
             center = NormalizedPoint(x: normalized.midX, y: normalized.midY)
-        } else if let lastEvent = sceneEvents.last {
-            center = lastEvent.position
+        } else if let firstEvent = sceneEvents.first {
+            center = firstEvent.position
         } else {
             // Fallback to focus region cursor position
             let cursorRegions = scene.focusRegions.filter {

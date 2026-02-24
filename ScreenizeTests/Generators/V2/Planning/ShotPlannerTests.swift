@@ -281,8 +281,9 @@ final class ShotPlannerTests: XCTestCase {
         XCTAssertEqual(plans[0].idealCenter.y, 0.7, accuracy: 0.1)
     }
 
-    func test_plan_center_typing_usesLastEventPosition() {
-        // Typing: last mouse position from timeline should determine center
+    func test_plan_center_typing_usesFirstEventPosition() {
+        // Typing: first mouse position from timeline should determine center,
+        // so CursorFollowController starts where typing begins and pans forward.
         let events = [
             makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.3, y: 0.3)),
             makeMouseMoveEvent(time: 4.0, position: NormalizedPoint(x: 0.7, y: 0.6)),
@@ -293,10 +294,10 @@ final class ShotPlannerTests: XCTestCase {
             scenes: [scene], screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        // Typing center should be near last event position
+        // Typing center should be near first event position
         let center = plans[0].idealCenter
-        XCTAssertEqual(center.x, 0.7, accuracy: 0.15)
-        XCTAssertEqual(center.y, 0.6, accuracy: 0.15)
+        XCTAssertEqual(center.x, 0.3, accuracy: 0.15)
+        XCTAssertEqual(center.y, 0.3, accuracy: 0.15)
     }
 
     // MARK: - Idle Scene Inheritance
