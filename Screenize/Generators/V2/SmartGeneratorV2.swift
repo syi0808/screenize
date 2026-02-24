@@ -18,11 +18,22 @@ class SmartGeneratorV2 {
         screenBounds: CGSize,
         settings: SmartGenerationSettings
     ) -> GeneratedTimeline {
-        let duration = mouseData.duration
+        // Step 0: Pre-smooth mouse positions to match render pipeline cursor path
+        let effectiveMouseData: MouseDataSource
+        if let springConfig = settings.springConfig {
+            effectiveMouseData = SmoothedMouseDataSource(
+                wrapping: mouseData,
+                springConfig: springConfig
+            )
+        } else {
+            effectiveMouseData = mouseData
+        }
+
+        let duration = effectiveMouseData.duration
 
         // 1. Build event timeline
         let timeline = EventTimeline.build(
-            from: mouseData,
+            from: effectiveMouseData,
             uiStateSamples: uiStateSamples
         )
 
@@ -60,7 +71,7 @@ class SmartGeneratorV2 {
         let path = simulator.simulate(
             shotPlans: shotPlans,
             transitions: transitions,
-            mouseData: mouseData,
+            mouseData: effectiveMouseData,
             settings: simSettings,
             duration: duration
         )
@@ -292,6 +303,12 @@ struct SmartGenerationSettings {
     /// Formula: newZoom = 1.0 + (originalZoom - 1.0) * zoomIntensity
     /// 1.0 = default, <1.0 = less zoom, >1.0 = more zoom.
     var zoomIntensity: CGFloat = 1.0
+
+    /// Spring cursor config for pre-smoothing mouse positions.
+    /// When set, mouse positions are smoothed with Catmull-Rom + Spring
+    /// before entering the pipeline, matching the render pipeline's cursor path.
+    /// Set to nil to skip smoothing (uses raw positions).
+    var springConfig: SpringCursorConfig? = .default
 
     static let `default` = Self()
 }

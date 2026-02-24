@@ -343,12 +343,15 @@ final class EditorViewModel: ObservableObject {
             }
 
             // 4. Run V2 smart generation pipeline
+            var genSettings = SmartGenerationSettings.default
+            genSettings.springConfig = project.timeline.cursorTrackV2?.springConfig ?? .default
+
             let generated = SmartGeneratorV2().generate(
                 from: mouseDataSource,
                 uiStateSamples: uiStateSamples,
                 frameAnalysis: frameAnalysis,
                 screenBounds: project.media.pixelSize,
-                settings: .default
+                settings: genSettings
             )
 
             // 5. Apply selected tracks

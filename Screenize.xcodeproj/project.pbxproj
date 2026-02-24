@@ -22,6 +22,8 @@
 		AA000005296A0001 /* TransitionPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000005296A0001 /* TransitionPlan.swift */; };
 		AA000006296A0001 /* SimulatedPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000006296A0001 /* SimulatedPath.swift */; };
 		AA000007296A0001 /* SmartGeneratorV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000007296A0001 /* SmartGeneratorV2.swift */; };
+		D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100001296A0001 /* SmoothedMouseDataSource.swift */; };
+		D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */; };
 		AD000010296A0001 /* EventTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100010296A0001 /* EventTimeline.swift */; };
 		AD000011296A0001 /* IntentClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100011296A0001 /* IntentClassifier.swift */; };
 		AD000021296A0001 /* MockMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100021296A0001 /* MockMouseDataSource.swift */; };
@@ -200,6 +202,8 @@
 		AB000005296A0001 /* TransitionPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlan.swift; sourceTree = "<group>"; };
 		AB000006296A0001 /* SimulatedPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatedPath.swift; sourceTree = "<group>"; };
 		AB000007296A0001 /* SmartGeneratorV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGeneratorV2.swift; sourceTree = "<group>"; };
+		D3100001296A0001 /* SmoothedMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSource.swift; sourceTree = "<group>"; };
+		D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSourceTests.swift; sourceTree = "<group>"; };
 		AD100010296A0001 /* EventTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeline.swift; sourceTree = "<group>"; };
 		AD100011296A0001 /* IntentClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifier.swift; sourceTree = "<group>"; };
 		AD100020296A0001 /* ScreenizeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScreenizeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -404,6 +408,7 @@
 				B6200001296A0001 /* PostProcessing */,
 				B2200001296A0001 /* Emission */,
 				AB000007296A0001 /* SmartGeneratorV2.swift */,
+				D3100001296A0001 /* SmoothedMouseDataSource.swift */,
 			);
 			path = V2;
 			sourceTree = "<group>";
@@ -467,6 +472,7 @@
 				B1200001296A0001 /* Simulation */,
 				B7200001296A0001 /* PostProcessing */,
 				B3200001296A0001 /* Emission */,
+				D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */,
 			);
 			path = V2;
 			sourceTree = "<group>";
@@ -1016,6 +1022,7 @@
 				D2100002296A0001 /* GIFSettingsTests.swift in Sources */,
 				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
 				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
+				D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1105,6 +1112,7 @@
 				AA000005296A0001 /* TransitionPlan.swift in Sources */,
 				AA000006296A0001 /* SimulatedPath.swift in Sources */,
 				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
+				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
 				F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */,
 				2A626F302F2A280000510712 /* SparkleController.swift in Sources */,
