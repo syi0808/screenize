@@ -15,8 +15,8 @@ struct IntentClassifier {
     static let navigatingClickWindow: TimeInterval = 2.0
 
     /// Maximum spatial distance between clicks to count as navigating.
-    /// 0.5 covers half the screen — clicks within this range during UI navigation are grouped.
-    static let navigatingClickDistance: CGFloat = 0.5
+    /// 0.25 covers a quarter of the screen — clicks within this range during UI navigation are grouped.
+    static let navigatingClickDistance: CGFloat = 0.25
 
     /// Minimum number of clicks for a navigating span.
     static let navigatingMinClicks: Int = 2
@@ -31,7 +31,7 @@ struct IntentClassifier {
 
     /// Max spatial distance (normalized) for continuation gap merging.
     /// Prevents merging temporally close but spatially distant clicks.
-    static let continuationMaxDistance: CGFloat = 0.3
+    static let continuationMaxDistance: CGFloat = 0.20
 
     /// Maximum gap between scroll events to merge into one span.
     static let scrollMergeGap: TimeInterval = 1.0
