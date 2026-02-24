@@ -149,7 +149,7 @@ struct CameraTrackEmitter {
         effectiveStart: TimeInterval,
         effectiveEnd: TimeInterval
     ) -> [CameraSegment] {
-        let samples = sceneSeg.samples
+        let samples = sceneSeg.samples.sorted { $0.time < $1.time }
         guard !samples.isEmpty else { return [] }
 
         if samples.count == 1 {

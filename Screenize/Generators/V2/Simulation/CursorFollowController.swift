@@ -59,10 +59,25 @@ struct CursorFollowController: CameraController {
         // Get events in scene range
         let sceneEvents = timeline.events(in: scene.startTime...scene.endTime)
 
+        // During typing, only pan for mouse moves and clicks.
+        // keyDown/uiStateChange events carry caret positions that differ from
+        // mouse position, causing the camera to ping-pong between the two.
+        let panTriggerEvents: [UnifiedEvent]
+        if case .typing = scene.primaryIntent {
+            panTriggerEvents = sceneEvents.filter { event in
+                switch event.kind {
+                case .mouseMove, .click: return true
+                default: return false
+                }
+            }
+        } else {
+            panTriggerEvents = sceneEvents
+        }
+
         var lastPanTime: TimeInterval = -.greatestFiniteMagnitude
         var previousTracked: (time: TimeInterval, position: NormalizedPoint)?
 
-        for event in sceneEvents {
+        for event in panTriggerEvents {
             let trackedPosition = extractTrackedPosition(
                 event: event, screenBounds: settings.screenBounds
             )
@@ -92,15 +107,22 @@ struct CursorFollowController: CameraController {
 
             let panStart = event.time
             let panEnd = min(panStart + panDuration, scene.endTime)
-            samples.append(TimedTransform(
-                time: panStart, transform: TransformValue(zoom: zoom, center: currentCenter)
-            ))
+
+            // Only emit "hold at old center" if previous pan has finished
+            if panStart >= lastPanTime {
+                samples.append(TimedTransform(
+                    time: panStart, transform: TransformValue(zoom: zoom, center: currentCenter)
+                ))
+            }
             samples.append(TimedTransform(
                 time: panEnd, transform: TransformValue(zoom: zoom, center: newCenter)
             ))
             currentCenter = newCenter
-            lastPanTime = panStart
+            lastPanTime = panEnd
         }
+
+        // Ensure chronological order after overlapping pan corrections
+        samples.sort { $0.time < $1.time }
 
         // End at current position
         let lastTime = samples.last?.time ?? scene.startTime
@@ -116,13 +138,12 @@ struct CursorFollowController: CameraController {
 
     // MARK: - Helpers
 
+    /// Use mouse position for follow panning. ShotPlanner already computes
+    /// the initial center from caret bounds; the follow controller only needs
+    /// to react to intentional mouse movement.
     private func extractTrackedPosition(
         event: UnifiedEvent, screenBounds: CGSize
     ) -> NormalizedPoint {
-        if let caretBounds = event.metadata.caretBounds,
-           let normalized = normalizeBoundsIfNeeded(caretBounds, screenBounds: screenBounds) {
-            return NormalizedPoint(x: normalized.midX, y: normalized.midY)
-        }
         return event.position
     }
 
@@ -155,28 +176,4 @@ struct CursorFollowController: CameraController {
         return ShotPlanner.clampCenter(blended, zoom: zoom)
     }
 
-    /// Normalize caret bounds from pixel space to 0-1 if needed.
-    /// Returns nil if the result is out of valid range (e.g. global screen coordinates).
-    private func normalizeBoundsIfNeeded(
-        _ bounds: CGRect, screenBounds: CGSize
-    ) -> CGRect? {
-        // Already normalized (values in 0-1 range)
-        if bounds.maxX <= 1.1 && bounds.maxY <= 1.1 &&
-            bounds.minX >= -0.1 && bounds.minY >= -0.1 {
-            return bounds
-        }
-        guard screenBounds.width > 0, screenBounds.height > 0 else { return nil }
-        let normalized = CGRect(
-            x: bounds.origin.x / screenBounds.width,
-            y: bounds.origin.y / screenBounds.height,
-            width: bounds.width / screenBounds.width,
-            height: bounds.height / screenBounds.height
-        )
-        // Validate: origin must be within [0,1] range
-        guard normalized.origin.x >= -0.1 && normalized.origin.x <= 1.1 &&
-              normalized.origin.y >= -0.1 && normalized.origin.y <= 1.1 else {
-            return nil
-        }
-        return normalized
-    }
 }

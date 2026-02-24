@@ -29,6 +29,10 @@ struct IntentClassifier {
     /// Set high enough to bridge natural pauses between clicks (1-2s).
     static let continuationGapThreshold: TimeInterval = 1.5
 
+    /// Max spatial distance (normalized) for continuation gap merging.
+    /// Prevents merging temporally close but spatially distant clicks.
+    static let continuationMaxDistance: CGFloat = 0.3
+
     /// Maximum gap between scroll events to merge into one span.
     static let scrollMergeGap: TimeInterval = 1.0
 
@@ -377,8 +381,18 @@ struct IntentClassifier {
             let gapEnd = span.startTime
 
             if gapEnd - gapStart > 0.01 {
+                let canContinue: Bool
                 if gapEnd - gapStart <= continuationGapThreshold && !result.isEmpty {
-                    // Tiny gap: extend previous span (same action continuation)
+                    let lastPos = result[result.count - 1].focusPosition
+                    let nextPos = span.focusPosition
+                    let distance = lastPos.distance(to: nextPos)
+                    canContinue = distance < continuationMaxDistance
+                } else {
+                    canContinue = false
+                }
+
+                if canContinue {
+                    // Nearby gap: extend previous span (same action continuation)
                     let lastIdx = result.count - 1
                     result[lastIdx] = IntentSpan(
                         startTime: result[lastIdx].startTime,
@@ -389,7 +403,7 @@ struct IntentClassifier {
                         focusElement: result[lastIdx].focusElement
                     )
                 } else {
-                    // Gap > continuationGapThreshold: insert idle span
+                    // Gap too large (temporal or spatial): insert idle span
                     result.append(makeIdleSpan(
                         start: gapStart, end: gapEnd,
                         focusPosition: span.focusPosition

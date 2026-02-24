@@ -71,19 +71,29 @@ struct SegmentOptimizer {
               junctionCenterDiffY < settings.negligibleCenterDiff
         else { return false }
 
-        // Check overall similarity: a.start ≈ b.end (it's a "hold")
-        let overallZoomDiff = abs(
-            a.startTransform.zoom - b.endTransform.zoom
+        // Check per-segment internal change instead of overall drift.
+        // This allows merging segments that individually are nearly static
+        // even if they've drifted cumulatively (e.g. typing micro-pans).
+        let aInternalZoomDiff = abs(a.startTransform.zoom - a.endTransform.zoom)
+        let bInternalZoomDiff = abs(b.startTransform.zoom - b.endTransform.zoom)
+        let aInternalCenterDiffX = abs(
+            a.startTransform.center.x - a.endTransform.center.x
         )
-        let overallCenterDiffX = abs(
-            a.startTransform.center.x - b.endTransform.center.x
+        let aInternalCenterDiffY = abs(
+            a.startTransform.center.y - a.endTransform.center.y
         )
-        let overallCenterDiffY = abs(
-            a.startTransform.center.y - b.endTransform.center.y
+        let bInternalCenterDiffX = abs(
+            b.startTransform.center.x - b.endTransform.center.x
+        )
+        let bInternalCenterDiffY = abs(
+            b.startTransform.center.y - b.endTransform.center.y
         )
 
-        return overallZoomDiff < settings.negligibleZoomDiff
-            && overallCenterDiffX < settings.negligibleCenterDiff
-            && overallCenterDiffY < settings.negligibleCenterDiff
+        let bothNearlyStatic =
+            max(aInternalZoomDiff, bInternalZoomDiff) < settings.negligibleZoomDiff
+            && max(aInternalCenterDiffX, bInternalCenterDiffX) < settings.negligibleCenterDiff
+            && max(aInternalCenterDiffY, bInternalCenterDiffY) < settings.negligibleCenterDiff
+
+        return bothNearlyStatic
     }
 }
