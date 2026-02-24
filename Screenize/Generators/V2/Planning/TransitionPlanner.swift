@@ -44,12 +44,17 @@ struct TransitionPlanner {
         }
 
         let rawDistance = from.idealCenter.distance(to: to.idealCenter)
-        let maxZoom = max(from.idealZoom, to.idealZoom)
+
+        // Use the FROM scene's zoom for viewport distance: the viewer is currently
+        // looking at the FROM viewport, so distance should be relative to what's visible.
+        // Using max(from, to) inflates distance when transitioning TO a zoomed-in scene,
+        // causing unnecessary zoomOutAndPan/zoomInAndPan.
+        let viewerZoom = max(from.idealZoom, 1.0)
 
         // Viewport-relative distance: how many viewport-widths away is the target?
         // At zoom Z, viewport covers 1/Z of the screen in each axis.
         // viewportDistance ~1.0 means the target center is at the viewport edge.
-        let viewportHalf = 0.5 / maxZoom
+        let viewportHalf = 0.5 / viewerZoom
         let dx = abs(from.idealCenter.x - to.idealCenter.x)
         let dy = abs(from.idealCenter.y - to.idealCenter.y)
         let viewportDistance = max(dx / viewportHalf, dy / viewportHalf)
@@ -109,8 +114,8 @@ struct TransitionPlanner {
             styleLabel = "cut"
         }
         print(String(
-            format: "[V2-Transition] raw=%.3f maxZ=%.2f vpDist=%.3f → %@",
-            rawDistance, maxZoom, viewportDistance, styleLabel
+            format: "[V2-Transition] raw=%.3f viewerZ=%.2f vpDist=%.3f → %@",
+            rawDistance, viewerZoom, viewportDistance, styleLabel
         ))
         #endif
 

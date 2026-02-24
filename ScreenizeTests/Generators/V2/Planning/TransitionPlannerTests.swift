@@ -223,6 +223,52 @@ final class TransitionPlannerTests: XCTestCase {
         }
     }
 
+    // MARK: - Viewer Zoom (from.zoom) Based Distance
+
+    func test_plan_lowFromZoom_highToZoom_moderateDistance_directPan() {
+        // From zoom 1.0, viewportHalf = 0.5; dx = 0.3 → viewportDistance = 0.6 → short/medium directPan
+        // Previously with max(1.0, 2.5) = 2.5: viewportHalf = 0.2, vpDist = 1.5 → zoomInAndPan
+        let shots = [
+            makeShotPlan(
+                start: 0, end: 3,
+                center: NormalizedPoint(x: 0.35, y: 0.5), zoom: 1.0
+            ),
+            makeShotPlan(
+                start: 3, end: 6,
+                center: NormalizedPoint(x: 0.65, y: 0.5), zoom: 2.5
+            )
+        ]
+        let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
+        XCTAssertEqual(plans.count, 1)
+        if case .directPan = plans[0].style {
+            // expected: target is within the wide FROM viewport
+        } else {
+            XCTFail("Expected directPan when FROM zoom is low (target visible in current viewport), got \(plans[0].style)")
+        }
+    }
+
+    func test_plan_highFromZoom_lowToZoom_moderateDistance_usesLongerTransition() {
+        // From zoom 2.5, viewportHalf = 0.2; dx = 0.3 → viewportDistance = 1.5 → far
+        // The viewer is zoomed in, so moderate distance IS far from their perspective
+        let shots = [
+            makeShotPlan(
+                start: 0, end: 3,
+                center: NormalizedPoint(x: 0.35, y: 0.5), zoom: 2.5
+            ),
+            makeShotPlan(
+                start: 3, end: 6,
+                center: NormalizedPoint(x: 0.65, y: 0.5), zoom: 1.0
+            )
+        ]
+        let plans = TransitionPlanner.plan(shotPlans: shots, settings: defaultSettings)
+        XCTAssertEqual(plans.count, 1)
+        if case .zoomOutAndPan = plans[0].style {
+            // expected: target is far from the tight FROM viewport
+        } else {
+            XCTFail("Expected zoomOutAndPan when FROM zoom is high, got \(plans[0].style)")
+        }
+    }
+
     // MARK: - Helpers
 
     private func makeShotPlan(
