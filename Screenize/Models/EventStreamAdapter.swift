@@ -81,10 +81,33 @@ struct EventStreamAdapter: MouseDataSource {
                     return nil
                 }
 
+                // Reconstruct element info from serialized fields
+                let elementInfo: UIElementInfo?
+                if let role = event.elementRole,
+                   let frameX = event.elementFrameX,
+                   let frameY = event.elementFrameY,
+                   let frameW = event.elementFrameW,
+                   let frameH = event.elementFrameH {
+                    let rawFrame = CGRect(
+                        x: frameX, y: frameY, width: frameW, height: frameH
+                    )
+                    elementInfo = UIElementInfo(
+                        role: role,
+                        subrole: event.elementSubrole,
+                        frame: rawFrame,
+                        title: event.elementTitle,
+                        isClickable: event.elementIsClickable ?? false,
+                        applicationName: event.elementAppName
+                    )
+                } else {
+                    elementInfo = nil
+                }
+
                 return ClickEventData(
                     time: timelineSec,
                     position: NormalizedPoint(x: CGFloat(xNorm), y: CGFloat(yNorm)),
-                    clickType: clickType
+                    clickType: clickType,
+                    elementInfo: elementInfo
                 )
             }
 

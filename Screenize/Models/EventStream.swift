@@ -25,6 +25,17 @@ struct PolyMouseClickEvent: Codable {
     let button: String
     let cursorId: String?
     let activeModifiers: [String]
+
+    // Element info at click position (optional for backward compat with old JSON)
+    let elementRole: String?
+    let elementSubrole: String?
+    let elementTitle: String?
+    let elementAppName: String?
+    let elementFrameX: Double?
+    let elementFrameY: Double?
+    let elementFrameW: Double?
+    let elementFrameH: Double?
+    let elementIsClickable: Bool?
 }
 
 /// Keystroke event in polyrecorder event stream format.

@@ -106,13 +106,23 @@ struct EventStreamWriter {
         var result: [PolyMouseClickEvent] = []
         for click in clicks {
             let button = (click.type == .left) ? "left" : "right"
+            let elem = click.targetElement
             let downMs = Int64(click.timestamp * 1000)
             result.append(PolyMouseClickEvent(
                 type: "mouseDown",
                 processTimeMs: processTimeStartMs + downMs, unixTimeMs: unixStartMs + downMs,
                 x: Double(click.x) * scaleFactor,
                 y: Double(height - click.y) * scaleFactor,
-                button: button, cursorId: nil, activeModifiers: []
+                button: button, cursorId: nil, activeModifiers: [],
+                elementRole: elem?.role,
+                elementSubrole: elem?.subrole,
+                elementTitle: elem?.title,
+                elementAppName: elem?.applicationName,
+                elementFrameX: elem.map { Double($0.frame.origin.x) },
+                elementFrameY: elem.map { Double($0.frame.origin.y) },
+                elementFrameW: elem.map { Double($0.frame.width) },
+                elementFrameH: elem.map { Double($0.frame.height) },
+                elementIsClickable: elem?.isClickable
             ))
             let upMs = Int64(click.endTimestamp * 1000)
             result.append(PolyMouseClickEvent(
@@ -120,7 +130,16 @@ struct EventStreamWriter {
                 processTimeMs: processTimeStartMs + upMs, unixTimeMs: unixStartMs + upMs,
                 x: Double(click.x) * scaleFactor,
                 y: Double(height - click.y) * scaleFactor,
-                button: button, cursorId: nil, activeModifiers: []
+                button: button, cursorId: nil, activeModifiers: [],
+                elementRole: elem?.role,
+                elementSubrole: elem?.subrole,
+                elementTitle: elem?.title,
+                elementAppName: elem?.applicationName,
+                elementFrameX: elem.map { Double($0.frame.origin.x) },
+                elementFrameY: elem.map { Double($0.frame.origin.y) },
+                elementFrameW: elem.map { Double($0.frame.width) },
+                elementFrameH: elem.map { Double($0.frame.height) },
+                elementIsClickable: elem?.isClickable
             ))
         }
         try encoder.encode(result).write(
