@@ -54,7 +54,9 @@ final class ShotPlannerTests: XCTestCase {
         let plans = ShotPlanner.plan(
             scenes: [scene], screenBounds: screenBounds, eventTimeline: emptyTimeline, settings: defaultSettings
         )
-        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoom)
+        let zoom = plans[0].idealZoom
+        XCTAssertGreaterThanOrEqual(zoom, defaultSettings.clickingZoomRange.lowerBound)
+        XCTAssertLessThanOrEqual(zoom, defaultSettings.clickingZoomRange.upperBound)
     }
 
     func test_plan_navigatingScene_zoomInRange() {
@@ -443,7 +445,9 @@ final class ShotPlannerTests: XCTestCase {
             eventTimeline: timeline, settings: defaultSettings
         )
         // Clicking and navigating should have their own zoom values
-        XCTAssertEqual(plansWithIdle[0].idealZoom, defaultSettings.clickingZoom, accuracy: 0.01)
+        let clickZoom = plansWithIdle[0].idealZoom
+        XCTAssertGreaterThanOrEqual(clickZoom, defaultSettings.clickingZoomRange.lowerBound)
+        XCTAssertLessThanOrEqual(clickZoom, defaultSettings.clickingZoomRange.upperBound)
         let navZoom = plansWithIdle[2].idealZoom
         XCTAssertGreaterThanOrEqual(navZoom, defaultSettings.navigatingZoomRange.lowerBound)
         XCTAssertLessThanOrEqual(navZoom, defaultSettings.navigatingZoomRange.upperBound)
@@ -464,9 +468,9 @@ final class ShotPlannerTests: XCTestCase {
             scenes: [scene], screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        // Small spread → zoom should be near upper end of clicking range (2.0)
-        // bbox ~0.05+padding*2=0.21 → targetAreaCoverage/0.21 = 3.33 → clamped to 2.0
-        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoom, accuracy: 0.01)
+        // Small spread → zoom should be clamped to upper end of clicking range (2.5)
+        // bbox ~0.05+padding*2=0.21 → targetAreaCoverage/0.21 = 3.33 → clamped to 2.5
+        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoomRange.upperBound, accuracy: 0.01)
     }
 
     func test_plan_activityBBox_largeSpread_lowZoom() {
@@ -558,8 +562,8 @@ final class ShotPlannerTests: XCTestCase {
             scenes: [scene], screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        // Clicking has fixed zoom range: clickingZoom...clickingZoom
-        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoom, accuracy: 0.01)
+        // Clicking uses clickingZoomRange
+        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoomRange.lowerBound, accuracy: 0.01)
         XCTAssertEqual(plans[0].zoomSource, .singleEvent)
     }
 
@@ -702,11 +706,10 @@ final class ShotPlannerTests: XCTestCase {
             scenes: [scene], screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        // Click bbox is tiny (~0.05 + padding) → zoom should be at clicking max (2.0)
-        // Mouse bbox is huge (0.8) → zoom would be ~0.875 (below minZoom) → clamped to 1.0
-        // With filtering, zoom should be 2.0 (clicking fixed zoom)
-        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoom, accuracy: 0.01,
-                       "Clicking zoom should use click bbox, not mouse bbox")
+        // Click bbox is tiny (~0.05 + padding=0.21) → zoom = 0.7/0.21 ≈ 3.3 → clamped to 2.5
+        // Mouse bbox is huge (0.8) → zoom would be ~0.875 → irrelevant (only clicks used)
+        XCTAssertEqual(plans[0].idealZoom, defaultSettings.clickingZoomRange.upperBound, accuracy: 0.01,
+                       "Clicking zoom should use click bbox, clamped to range upper bound")
     }
 
     func test_plan_navigatingZoom_bboxFromClicks() {

@@ -322,7 +322,7 @@ struct ShotSettings {
     var typingTextFieldZoomRange: ClosedRange<CGFloat> = 2.2...2.8
     var typingTerminalZoomRange: ClosedRange<CGFloat> = 1.6...2.0
     var typingRichTextZoomRange: ClosedRange<CGFloat> = 1.8...2.2
-    var clickingZoom: CGFloat = 2.0
+    var clickingZoomRange: ClosedRange<CGFloat> = 1.5...2.5
     var navigatingZoomRange: ClosedRange<CGFloat> = 1.5...1.8
     var draggingZoomRange: ClosedRange<CGFloat> = 1.3...1.6
     var scrollingZoomRange: ClosedRange<CGFloat> = 1.3...1.5

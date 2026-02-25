@@ -136,7 +136,7 @@ struct ShotPlanner {
             case .richTextEditor: return settings.typingRichTextZoomRange
             }
         case .clicking:
-            return settings.clickingZoom...settings.clickingZoom
+            return settings.clickingZoomRange
         case .navigating:
             return settings.navigatingZoomRange
         case .dragging:
@@ -178,8 +178,24 @@ struct ShotPlanner {
             }
         }
 
-        // 2. Activity bounding box from intent-relevant event positions
+        // 1.5. UIStateSample fallback: use nearest UI state element when no FocusRegion
         let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        if scene.focusRegions.first(where: { if case .activeElement = $0.source { return true }; return false }) == nil {
+            if let elemFrame = nearestUIStateElementFrame(
+                events: sceneEvents, screenBounds: screenBounds
+            ) {
+                let areaSize = max(
+                    elemFrame.width + settings.workAreaPadding * 2,
+                    elemFrame.height + settings.workAreaPadding * 2
+                )
+                if areaSize > 0.01 {
+                    let computed = settings.targetAreaCoverage / areaSize
+                    return (clamp(computed, to: zoomRange, settings: settings), .element)
+                }
+            }
+        }
+
+        // 2. Activity bounding box from intent-relevant event positions
         let positions = relevantPositions(for: scene.primaryIntent, events: sceneEvents)
         if positions.count >= 2 {
             let bbox = computeBoundingBox(
@@ -416,6 +432,29 @@ struct ShotPlanner {
         let x = max(halfCrop, min(1.0 - halfCrop, center.x))
         let y = max(halfCrop, min(1.0 - halfCrop, center.y))
         return NormalizedPoint(x: x, y: y)
+    }
+
+    // MARK: - UIStateSample Element Lookup
+
+    /// Find the nearest UI state element frame (normalized) from events in a scene.
+    private static func nearestUIStateElementFrame(
+        events: [UnifiedEvent],
+        screenBounds: CGSize
+    ) -> CGRect? {
+        for event in events {
+            if case .uiStateChange(let sample) = event.kind,
+               let info = sample.elementInfo {
+                return normalizeFrame(info.frame, screenBounds: screenBounds)
+            }
+        }
+        // Fallback: check click events that carry element info
+        for event in events {
+            if case .click = event.kind,
+               let info = event.metadata.elementInfo {
+                return normalizeFrame(info.frame, screenBounds: screenBounds)
+            }
+        }
+        return nil
     }
 
     // MARK: - Shot Type Classification
