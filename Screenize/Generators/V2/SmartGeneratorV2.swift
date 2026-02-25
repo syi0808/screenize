@@ -227,7 +227,18 @@ class SmartGeneratorV2 {
             }
             let sceneEvents = timeline.events(in: plan.scene.startTime...plan.scene.endTime)
             let inherited = plan.inherited ? " inherited" : ""
-            print("[V2-Pipeline]   [\(i)] \(intent) \(t) \(zoom) \(center) \(src) events=\(sceneEvents.count)\(inherited)")
+            let ctxLabel: String
+            if let change = plan.scene.contextChange {
+                switch change {
+                case .expansion(let r): ctxLabel = String(format: " ctx=expansion(%.1f)", r)
+                case .contraction(let r): ctxLabel = String(format: " ctx=contraction(%.1f)", r)
+                case .modalOpened(let role): ctxLabel = " ctx=modal(\(role))"
+                case .none: ctxLabel = ""
+                }
+            } else {
+                ctxLabel = ""
+            }
+            print("[V2-Pipeline]   [\(i)] \(intent) \(t) \(zoom) \(center) \(src) events=\(sceneEvents.count)\(inherited)\(ctxLabel)")
 
             // Event type breakdown
             let breakdown = eventBreakdown(sceneEvents)

@@ -33,11 +33,19 @@ struct ShotPlanner {
         settings: ShotSettings
     ) -> ShotPlan {
         let zoomRange = zoomRange(for: scene.primaryIntent, settings: settings)
-        let (zoom, zoomSource) = computeZoom(
+        var (zoom, zoomSource) = computeZoom(
             scene: scene, zoomRange: zoomRange,
             screenBounds: screenBounds, eventTimeline: eventTimeline,
             settings: settings
         )
+
+        // Reduce zoom for post-click expansions/modals to show more content
+        if let change = scene.contextChange {
+            zoom = adjustZoomForContextChange(
+                zoom, change: change, zoomRange: zoomRange, settings: settings
+            )
+        }
+
         let center = computeCenter(
             scene: scene, zoom: zoom, screenBounds: screenBounds,
             eventTimeline: eventTimeline, frameAnalysis: frameAnalysis,
@@ -52,6 +60,26 @@ struct ShotPlanner {
             idealCenter: center,
             zoomSource: zoomSource
         )
+    }
+
+    /// Reduce zoom when post-click UI changes expand the area of interest.
+    private static func adjustZoomForContextChange(
+        _ zoom: CGFloat,
+        change: UIStateSample.ContextChange,
+        zoomRange: ClosedRange<CGFloat>,
+        settings: ShotSettings
+    ) -> CGFloat {
+        switch change {
+        case .expansion(let ratio):
+            // Scale zoom inversely with expansion ratio (capped at 0.5x reduction)
+            let factor = max(0.5, 1.0 / sqrt(ratio))
+            return clamp(zoom * factor, to: zoomRange, settings: settings)
+        case .modalOpened:
+            // Modals need room to display — use lower bound of zoom range
+            return clamp(zoomRange.lowerBound, to: zoomRange, settings: settings)
+        case .contraction, .none:
+            return zoom
+        }
     }
 
     // MARK: - Idle Scene Resolution

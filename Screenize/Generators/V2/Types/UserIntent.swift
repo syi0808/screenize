@@ -35,4 +35,5 @@ struct IntentSpan {
     let confidence: Float
     let focusPosition: NormalizedPoint
     let focusElement: UIElementInfo?
+    var contextChange: UIStateSample.ContextChange?
 }

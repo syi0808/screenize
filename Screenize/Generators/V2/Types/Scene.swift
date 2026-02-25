@@ -9,6 +9,7 @@ struct CameraScene {
     let primaryIntent: UserIntent
     let focusRegions: [FocusRegion]
     let appContext: String?
+    var contextChange: UIStateSample.ContextChange?
 
     init(
         id: UUID = UUID(),
@@ -16,7 +17,8 @@ struct CameraScene {
         endTime: TimeInterval,
         primaryIntent: UserIntent,
         focusRegions: [FocusRegion] = [],
-        appContext: String? = nil
+        appContext: String? = nil,
+        contextChange: UIStateSample.ContextChange? = nil
     ) {
         self.id = id
         self.startTime = startTime
@@ -24,6 +26,7 @@ struct CameraScene {
         self.primaryIntent = primaryIntent
         self.focusRegions = focusRegions
         self.appContext = appContext
+        self.contextChange = contextChange
     }
 }
 

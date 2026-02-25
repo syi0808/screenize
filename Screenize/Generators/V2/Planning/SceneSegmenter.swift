@@ -159,14 +159,41 @@ struct SceneSegmenter {
         let appContext = extractAppContext(
             from: eventTimeline, start: startTime, end: endTime
         )
+        let contextChange = strongestContextChange(from: spans)
 
         return CameraScene(
             startTime: startTime,
             endTime: endTime,
             primaryIntent: primary,
             focusRegions: focusRegions,
-            appContext: appContext
+            appContext: appContext,
+            contextChange: contextChange
         )
+    }
+
+    /// Extract the strongest context change from a group of spans.
+    /// Expansion/modal are stronger than contraction; higher ratio wins.
+    private static func strongestContextChange(
+        from spans: [IntentSpan]
+    ) -> UIStateSample.ContextChange? {
+        var best: UIStateSample.ContextChange?
+        var bestPriority: Int = -1
+
+        for span in spans {
+            guard let change = span.contextChange else { continue }
+            let priority: Int
+            switch change {
+            case .modalOpened: priority = 3
+            case .expansion: priority = 2
+            case .contraction: priority = 1
+            case .none: continue
+            }
+            if priority > bestPriority {
+                best = change
+                bestPriority = priority
+            }
+        }
+        return best
     }
 
     /// Determine the dominant intent from a group of spans (longest total duration wins).
@@ -330,7 +357,8 @@ struct SceneSegmenter {
                         endTime: scene.endTime,
                         primaryIntent: scene.primaryIntent,
                         focusRegions: last.focusRegions + scene.focusRegions,
-                        appContext: scene.appContext ?? last.appContext
+                        appContext: scene.appContext ?? last.appContext,
+                        contextChange: scene.contextChange ?? last.contextChange
                     )
                     result.append(merged)
                 } else {

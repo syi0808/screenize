@@ -78,7 +78,8 @@ struct IntentClassifier {
             $0.startTime...$0.endTime
         }
         let clickSpans = detectClickSpans(
-            from: timeline, excludingTimeRanges: excludedRanges
+            from: timeline, excludingTimeRanges: excludedRanges,
+            uiStateSamples: uiStateSamples
         )
 
         // Merge all spans and sort by start time
@@ -273,7 +274,8 @@ struct IntentClassifier {
 
     private static func detectClickSpans(
         from timeline: EventTimeline,
-        excludingTimeRanges: [ClosedRange<TimeInterval>]
+        excludingTimeRanges: [ClosedRange<TimeInterval>],
+        uiStateSamples: [UIStateSample]
     ) -> [IntentSpan] {
         let leftDownClicks = timeline.events.filter { event in
             if case .click(let data) = event.kind, data.clickType == .leftDown {
@@ -296,32 +298,48 @@ struct IntentClassifier {
                 && distance <= navigatingClickDistance {
                 group.append(click)
             } else {
-                spans.append(contentsOf: emitClickGroup(group))
+                spans.append(contentsOf: emitClickGroup(
+                    group, uiStateSamples: uiStateSamples
+                ))
                 group = [click]
             }
         }
-        spans.append(contentsOf: emitClickGroup(group))
+        spans.append(contentsOf: emitClickGroup(
+            group, uiStateSamples: uiStateSamples
+        ))
 
         return spans
     }
 
-    private static func emitClickGroup(_ group: [UnifiedEvent]) -> [IntentSpan] {
+    private static func emitClickGroup(
+        _ group: [UnifiedEvent],
+        uiStateSamples: [UIStateSample]
+    ) -> [IntentSpan] {
         guard !group.isEmpty else { return [] }
 
         if group.count >= navigatingMinClicks {
             let avgX = group.map(\.position.x).reduce(0, +) / CGFloat(group.count)
             let avgY = group.map(\.position.y).reduce(0, +) / CGFloat(group.count)
-            return [IntentSpan(
+            // Use last click's context change for the navigating span
+            let change = detectPostClickChange(
+                clickTime: group.last!.time, uiStateSamples: uiStateSamples
+            )
+            var span = IntentSpan(
                 startTime: group.first!.time,
                 endTime: group.last!.time + pointSpanDuration,
                 intent: .navigating,
                 confidence: 0.8,
                 focusPosition: NormalizedPoint(x: avgX, y: avgY),
                 focusElement: group.last?.metadata.elementInfo
-            )]
+            )
+            span.contextChange = change
+            return [span]
         } else {
             return group.map { event in
-                IntentSpan(
+                let change = detectPostClickChange(
+                    clickTime: event.time, uiStateSamples: uiStateSamples
+                )
+                var span = IntentSpan(
                     startTime: event.time,
                     endTime: event.time + pointSpanDuration,
                     intent: .clicking,
@@ -329,8 +347,34 @@ struct IntentClassifier {
                     focusPosition: event.position,
                     focusElement: event.metadata.elementInfo
                 )
+                span.contextChange = change
+                return span
             }
         }
+    }
+
+    /// Find nearest pre-click and post-click UI state samples and detect context change.
+    private static func detectPostClickChange(
+        clickTime: TimeInterval,
+        uiStateSamples: [UIStateSample]
+    ) -> UIStateSample.ContextChange? {
+        guard !uiStateSamples.isEmpty else { return nil }
+
+        // Find nearest sample before or at the click time
+        let preSample = uiStateSamples
+            .filter { $0.timestamp <= clickTime }
+            .max(by: { $0.timestamp < $1.timestamp })
+
+        // Find nearest sample after the click time (within 2 seconds)
+        let postSample = uiStateSamples
+            .filter { $0.timestamp > clickTime && $0.timestamp <= clickTime + 2.0 }
+            .min(by: { $0.timestamp < $1.timestamp })
+
+        guard let post = postSample else { return nil }
+
+        let change = post.detectContextChange(from: preSample)
+        if case .none = change { return nil }
+        return change
     }
 
     // MARK: - Overlap Resolution
