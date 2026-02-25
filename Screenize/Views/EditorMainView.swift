@@ -445,6 +445,14 @@ struct GeneratorPanelView: View {
             // Header
             SectionHeader(title: "Smart Generation", icon: "wand.and.stars")
 
+            // Method picker
+            Picker("Method", selection: $viewModel.cameraGenerationMethod) {
+                ForEach(CameraGenerationMethod.allCases, id: \.self) {
+                    Text($0.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+
             Divider()
 
             // Per-type toggles

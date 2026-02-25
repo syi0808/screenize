@@ -156,7 +156,7 @@ struct ShotPlanner {
 
     // MARK: - Zoom Range by Intent
 
-    private static func zoomRange(
+    static func zoomRange(
         for intent: UserIntent, settings: ShotSettings
     ) -> ClosedRange<CGFloat> {
         switch intent {

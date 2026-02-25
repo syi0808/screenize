@@ -24,6 +24,9 @@ final class EditorViewModel: ObservableObject {
     /// Internal clipboard for segment copy/paste
     var clipboard: [CopiedSegment] = []
 
+    /// Camera generation method selection
+    @Published var cameraGenerationMethod: CameraGenerationMethod = .continuousCamera
+
     /// Loading state
     @Published var isLoading: Bool = false
 
@@ -342,17 +345,31 @@ final class EditorViewModel: ObservableObject {
                 uiStateSamples = []
             }
 
-            // 4. Run V2 smart generation pipeline
-            var genSettings = SmartGenerationSettings.default
-            genSettings.springConfig = project.timeline.cursorTrackV2?.springConfig ?? .default
+            // 4. Run generation pipeline (V2 or Continuous Camera)
+            let generated: GeneratedTimeline
+            let springConfig = project.timeline.cursorTrackV2?.springConfig ?? .default
 
-            let generated = SmartGeneratorV2().generate(
-                from: mouseDataSource,
-                uiStateSamples: uiStateSamples,
-                frameAnalysis: frameAnalysis,
-                screenBounds: project.media.pixelSize,
-                settings: genSettings
-            )
+            if cameraGenerationMethod == .continuousCamera {
+                var ccSettings = ContinuousCameraSettings()
+                ccSettings.springConfig = springConfig
+                generated = ContinuousCameraGenerator().generate(
+                    from: mouseDataSource,
+                    uiStateSamples: uiStateSamples,
+                    frameAnalysis: frameAnalysis,
+                    screenBounds: project.media.pixelSize,
+                    settings: ccSettings
+                )
+            } else {
+                var genSettings = SmartGenerationSettings.default
+                genSettings.springConfig = springConfig
+                generated = SmartGeneratorV2().generate(
+                    from: mouseDataSource,
+                    uiStateSamples: uiStateSamples,
+                    frameAnalysis: frameAnalysis,
+                    screenBounds: project.media.pixelSize,
+                    settings: genSettings
+                )
+            }
 
             // 5. Apply selected tracks
             updateTimeline(
@@ -909,6 +926,14 @@ final class EditorViewModel: ObservableObject {
         invalidatePreviewCache()
     }
 
+}
+
+// MARK: - Camera Generation Method
+
+/// Which camera generation pipeline to use.
+enum CameraGenerationMethod: String, CaseIterable {
+    case smartGeneration = "Smart Generation"
+    case continuousCamera = "Continuous Camera"
 }
 
 

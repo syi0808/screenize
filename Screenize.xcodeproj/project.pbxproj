@@ -180,6 +180,15 @@
 		F0A00003296A0001 /* EventStreamAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00003296A0001 /* EventStreamAdapter.swift */; };
 		F0A00004296A0001 /* InteropBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00004296A0001 /* InteropBlock.swift */; };
 		F0A00005296A0001 /* EventStreamWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00005296A0001 /* EventStreamWriter.swift */; };
+		E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100001296A0001 /* ContinuousCameraTypes.swift */; };
+		E7000002296A0001 /* WaypointGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100002296A0001 /* WaypointGenerator.swift */; };
+		E7000003296A0001 /* SpringDamperSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100003296A0001 /* SpringDamperSimulator.swift */; };
+		E7000004296A0001 /* ContinuousTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100004296A0001 /* ContinuousTrackEmitter.swift */; };
+		E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100005296A0001 /* ContinuousCameraGenerator.swift */; };
+		E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100011296A0001 /* WaypointGeneratorTests.swift */; };
+		E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100012296A0001 /* SpringDamperSimulatorTests.swift */; };
+		E7000013296A0001 /* ContinuousTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100013296A0001 /* ContinuousTrackEmitterTests.swift */; };
+		E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -368,6 +377,15 @@
 		F1A00003296A0001 /* EventStreamAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamAdapter.swift; sourceTree = "<group>"; };
 		F1A00004296A0001 /* InteropBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteropBlock.swift; sourceTree = "<group>"; };
 		F1A00005296A0001 /* EventStreamWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamWriter.swift; sourceTree = "<group>"; };
+		E7100001296A0001 /* ContinuousCameraTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraTypes.swift; sourceTree = "<group>"; };
+		E7100002296A0001 /* WaypointGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGenerator.swift; sourceTree = "<group>"; };
+		E7100003296A0001 /* SpringDamperSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulator.swift; sourceTree = "<group>"; };
+		E7100004296A0001 /* ContinuousTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousTrackEmitter.swift; sourceTree = "<group>"; };
+		E7100005296A0001 /* ContinuousCameraGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGenerator.swift; sourceTree = "<group>"; };
+		E7100011296A0001 /* WaypointGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGeneratorTests.swift; sourceTree = "<group>"; };
+		E7100012296A0001 /* SpringDamperSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulatorTests.swift; sourceTree = "<group>"; };
+		E7100013296A0001 /* ContinuousTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousTrackEmitterTests.swift; sourceTree = "<group>"; };
+		E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGeneratorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -468,8 +486,20 @@
 			isa = PBXGroup;
 			children = (
 				AD200023296A0001 /* V2 */,
+				E7200002296A0001 /* ContinuousCamera */,
 			);
 			path = Generators;
+			sourceTree = "<group>";
+		};
+		E7200002296A0001 /* ContinuousCamera */ = {
+			isa = PBXGroup;
+			children = (
+				E7100011296A0001 /* WaypointGeneratorTests.swift */,
+				E7100012296A0001 /* SpringDamperSimulatorTests.swift */,
+				E7100013296A0001 /* ContinuousTrackEmitterTests.swift */,
+				E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */,
+			);
+			path = ContinuousCamera;
 			sourceTree = "<group>";
 		};
 		AD200023296A0001 /* V2 */ = {
@@ -801,8 +831,21 @@
 			children = (
 				F1000070296A0001 /* KeyframeGenerator.swift */,
 				AC000001296A0001 /* V2 */,
+				E7200001296A0001 /* ContinuousCamera */,
 			);
 			path = Generators;
+			sourceTree = "<group>";
+		};
+		E7200001296A0001 /* ContinuousCamera */ = {
+			isa = PBXGroup;
+			children = (
+				E7100001296A0001 /* ContinuousCameraTypes.swift */,
+				E7100002296A0001 /* WaypointGenerator.swift */,
+				E7100003296A0001 /* SpringDamperSimulator.swift */,
+				E7100004296A0001 /* ContinuousTrackEmitter.swift */,
+				E7100005296A0001 /* ContinuousCameraGenerator.swift */,
+			);
+			path = ContinuousCamera;
 			sourceTree = "<group>";
 		};
 		F20000A0296A0001 /* App */ = {
@@ -1035,6 +1078,10 @@
 				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
 				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
 				D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */,
+				E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */,
+				E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */,
+				E7000013296A0001 /* ContinuousTrackEmitterTests.swift in Sources */,
+				E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1190,6 +1237,11 @@
 				B6000003296A0001 /* TransitionRefiner.swift in Sources */,
 				B6000004296A0001 /* SegmentMerger.swift in Sources */,
 				B2000004296A0001 /* SegmentOptimizer.swift in Sources */,
+				E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */,
+				E7000002296A0001 /* WaypointGenerator.swift in Sources */,
+				E7000003296A0001 /* SpringDamperSimulator.swift in Sources */,
+				E7000004296A0001 /* ContinuousTrackEmitter.swift in Sources */,
+				E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
