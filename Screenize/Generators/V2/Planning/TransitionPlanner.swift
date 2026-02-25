@@ -8,8 +8,10 @@ struct TransitionPlanner {
 
     /// Plan transitions between adjacent shot plans.
     /// Returns `shotPlans.count - 1` transition plans.
+    /// - Parameter fromCenters: Optional actual end centers from simulation (overrides idealCenter).
     static func plan(
         shotPlans: [ShotPlan],
+        fromCenters: [NormalizedPoint]? = nil,
         settings: TransitionSettings
     ) -> [TransitionPlan] {
         guard shotPlans.count >= 2 else { return [] }
@@ -19,7 +21,12 @@ struct TransitionPlanner {
         for i in 0..<(shotPlans.count - 1) {
             let from = shotPlans[i]
             let to = shotPlans[i + 1]
-            let transition = planTransition(from: from, to: to, settings: settings)
+            let actualFromCenter = fromCenters?[i]
+            let transition = planTransition(
+                from: from, to: to,
+                actualFromCenter: actualFromCenter,
+                settings: settings
+            )
             transitions.append(transition)
         }
 
@@ -31,6 +38,7 @@ struct TransitionPlanner {
     private static func planTransition(
         from: ShotPlan,
         to: ShotPlan,
+        actualFromCenter: NormalizedPoint?,
         settings: TransitionSettings
     ) -> TransitionPlan {
         // App switch → cut
@@ -43,49 +51,48 @@ struct TransitionPlanner {
             )
         }
 
-        let rawDistance = from.idealCenter.distance(to: to.idealCenter)
+        // Use actual end center from simulation when available (cursor-aware panning
+        // may have moved the camera during the scene)
+        let fromCenter = actualFromCenter ?? from.idealCenter
 
-        // Use the FROM scene's zoom for viewport distance: the viewer is currently
-        // looking at the FROM viewport, so distance should be relative to what's visible.
-        // Using max(from, to) inflates distance when transitioning TO a zoomed-in scene,
-        // causing unnecessary zoomOutAndPan/zoomInAndPan.
         let viewerZoom = max(from.idealZoom, 1.0)
-
-        // Viewport-relative distance: how many viewport-widths away is the target?
-        // At zoom Z, viewport covers 1/Z of the screen in each axis.
-        // viewportDistance ~1.0 means the target center is at the viewport edge.
         let viewportHalf = 0.5 / viewerZoom
-        let dx = abs(from.idealCenter.x - to.idealCenter.x)
-        let dy = abs(from.idealCenter.y - to.idealCenter.y)
+        let dx = abs(fromCenter.x - to.idealCenter.x)
+        let dy = abs(fromCenter.y - to.idealCenter.y)
         let viewportDistance = max(dx / viewportHalf, dy / viewportHalf)
+
+        // When zoom levels are similar, extend directPan range to avoid unnecessary zoom-out-in
+        let zoomDiff = abs(from.idealZoom - to.idealZoom)
+        let effectiveGentleThreshold: CGFloat
+        if zoomDiff < settings.sameZoomTolerance {
+            effectiveGentleThreshold = settings.gentlePanThreshold * settings.sameZoomDistanceMultiplier
+        } else {
+            effectiveGentleThreshold = settings.gentlePanThreshold
+        }
 
         let style: TransitionStyle
         let easing: EasingCurve
 
         if viewportDistance < settings.directPanThreshold {
-            // Target is well within current viewport — smooth direct pan
             let t = viewportDistance / settings.directPanThreshold
             let duration = interpolate(
                 range: settings.shortPanDurationRange, t: t
             )
             style = .directPan(duration: duration)
             easing = settings.panEasing
-        } else if viewportDistance < settings.gentlePanThreshold {
-            // Target is near viewport edge or slightly outside — direct pan with longer duration
+        } else if viewportDistance < effectiveGentleThreshold {
             let t = (viewportDistance - settings.directPanThreshold)
-                / (settings.gentlePanThreshold - settings.directPanThreshold)
+                / (effectiveGentleThreshold - settings.directPanThreshold)
             let duration = interpolate(
                 range: settings.mediumPanDurationRange, t: t
             )
             style = .directPan(duration: duration)
             easing = settings.panEasing
         } else {
-            // Target is well outside viewport — zoom+pan transition
-            let t = (viewportDistance - settings.gentlePanThreshold)
-                / (settings.fullZoomOutThreshold - settings.gentlePanThreshold)
+            let t = (viewportDistance - effectiveGentleThreshold)
+                / (settings.fullZoomOutThreshold - effectiveGentleThreshold)
             let clamped = max(0, min(1, t))
 
-            // Choose zoom direction based on which scene is more zoomed in
             if from.idealZoom >= to.idealZoom {
                 let duration = interpolate(
                     range: settings.zoomOutPanDurationRange, t: clamped
@@ -113,9 +120,10 @@ struct TransitionPlanner {
         case .cut:
             styleLabel = "cut"
         }
+        let effThreshLabel = zoomDiff < settings.sameZoomTolerance ? " (sameZoom)" : ""
         print(String(
-            format: "[V2-Transition] raw=%.3f viewerZ=%.2f vpDist=%.3f → %@",
-            rawDistance, viewerZoom, viewportDistance, styleLabel
+            format: "[V2-Transition] viewerZ=%.2f vpDist=%.3f effThresh=%.2f%@ → %@",
+            viewerZoom, viewportDistance, effectiveGentleThreshold, effThreshLabel, styleLabel
         ))
         #endif
 

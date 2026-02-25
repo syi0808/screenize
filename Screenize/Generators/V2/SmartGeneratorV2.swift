@@ -58,8 +58,8 @@ class SmartGeneratorV2 {
             settings: settings.shot
         )
 
-        // 5. Plan transitions
-        let transitions = TransitionPlanner.plan(
+        // 5. Plan initial transitions (using ideal centers)
+        let initialTransitions = TransitionPlanner.plan(
             shotPlans: shotPlans,
             settings: settings.transition
         )
@@ -68,6 +68,26 @@ class SmartGeneratorV2 {
         var simSettings = settings.simulation
         simSettings.eventTimeline = timeline
         simSettings.screenBounds = screenBounds
+        let initialPath = simulator.simulate(
+            shotPlans: shotPlans,
+            transitions: initialTransitions,
+            mouseData: effectiveMouseData,
+            settings: simSettings,
+            duration: duration
+        )
+
+        // 6.5. Re-plan transitions using actual end positions from simulation
+        // (cursor-aware panning may have moved the camera during scenes)
+        let sceneEndCenters = initialPath.sceneSegments.map { segment -> NormalizedPoint in
+            segment.samples.last?.transform.center ?? segment.shotPlan.idealCenter
+        }
+        let transitions = TransitionPlanner.plan(
+            shotPlans: shotPlans,
+            fromCenters: sceneEndCenters,
+            settings: settings.transition
+        )
+
+        // Re-simulate with refined transitions
         let path = simulator.simulate(
             shotPlans: shotPlans,
             transitions: transitions,
@@ -385,6 +405,13 @@ struct TransitionSettings {
 
     /// Easing for the zoom-in phase (slight underdamp for snap feel).
     var zoomInEasing: EasingCurve = .spring(dampingRatio: 0.92, response: 0.55)
+
+    /// Zoom difference below which scenes are considered "same zoom" for transition purposes.
+    var sameZoomTolerance: CGFloat = 0.3
+
+    /// Multiplier for gentlePanThreshold when transitioning between same-zoom scenes.
+    /// Allows directPan for longer distances when zoom isn't changing.
+    var sameZoomDistanceMultiplier: CGFloat = 1.5
 }
 
 // MARK: - Simulation Settings
