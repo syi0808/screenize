@@ -55,6 +55,7 @@ class SmartGeneratorV2 {
             scenes: scenes,
             screenBounds: screenBounds,
             eventTimeline: timeline,
+            frameAnalysis: frameAnalysis,
             settings: settings.shot
         )
 
@@ -219,6 +220,7 @@ class SmartGeneratorV2 {
             let src: String
             switch plan.zoomSource {
             case .element: src = "src=element"
+            case .saliency: src = "src=saliency"
             case .activityBBox: src = "src=bbox"
             case .singleEvent: src = "src=single"
             case .intentMidpoint: src = "src=midpoint"

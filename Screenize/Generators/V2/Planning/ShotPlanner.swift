@@ -11,11 +11,13 @@ struct ShotPlanner {
         scenes: [CameraScene],
         screenBounds: CGSize,
         eventTimeline: EventTimeline,
+        frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis] = [],
         settings: ShotSettings
     ) -> [ShotPlan] {
         var plans = scenes.map { scene in
             planScene(scene, screenBounds: screenBounds,
-                      eventTimeline: eventTimeline, settings: settings)
+                      eventTimeline: eventTimeline,
+                      frameAnalysis: frameAnalysis, settings: settings)
         }
         resolveIdleScenes(&plans, settings: settings)
         return plans
@@ -27,6 +29,7 @@ struct ShotPlanner {
         _ scene: CameraScene,
         screenBounds: CGSize,
         eventTimeline: EventTimeline,
+        frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis],
         settings: ShotSettings
     ) -> ShotPlan {
         let zoomRange = zoomRange(for: scene.primaryIntent, settings: settings)
@@ -37,7 +40,8 @@ struct ShotPlanner {
         )
         let center = computeCenter(
             scene: scene, zoom: zoom, screenBounds: screenBounds,
-            eventTimeline: eventTimeline, settings: settings
+            eventTimeline: eventTimeline, frameAnalysis: frameAnalysis,
+            settings: settings
         )
         let shotType = classifyShotType(zoom: zoom)
 
@@ -273,6 +277,7 @@ struct ShotPlanner {
         zoom: CGFloat,
         screenBounds: CGSize,
         eventTimeline: EventTimeline,
+        frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis],
         settings: ShotSettings
     ) -> NormalizedPoint {
         switch scene.primaryIntent {
@@ -288,7 +293,8 @@ struct ShotPlanner {
         default:
             return computeActivityCenter(
                 scene: scene, zoom: zoom,
-                eventTimeline: eventTimeline, settings: settings
+                eventTimeline: eventTimeline, frameAnalysis: frameAnalysis,
+                settings: settings
             )
         }
     }
@@ -344,11 +350,12 @@ struct ShotPlanner {
         return clampCenter(center, zoom: zoom)
     }
 
-    /// Clicking/dragging/etc: geometric centroid of event positions.
+    /// Clicking/dragging/etc: geometric centroid of event positions, optionally blended with saliency.
     private static func computeActivityCenter(
         scene: CameraScene,
         zoom: CGFloat,
         eventTimeline: EventTimeline,
+        frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis],
         settings: ShotSettings
     ) -> NormalizedPoint {
         // Use intent-relevant event positions; fall back to focus regions
@@ -371,8 +378,21 @@ struct ShotPlanner {
 
         // Geometric centroid (equal weight for all positions)
         let count = CGFloat(dataPoints.count)
-        let centerX = dataPoints.map(\.x).reduce(0, +) / count
-        let centerY = dataPoints.map(\.y).reduce(0, +) / count
+        var centerX = dataPoints.map(\.x).reduce(0, +) / count
+        var centerY = dataPoints.map(\.y).reduce(0, +) / count
+
+        // Blend with saliency center when no element info is available
+        let hasElementInfo = scene.focusRegions.contains {
+            if case .activeElement = $0.source { return true }
+            return false
+        }
+        if !hasElementInfo, let saliency = nearestSaliencyCenter(
+            for: scene, frameAnalysis: frameAnalysis
+        ) {
+            let weight: CGFloat = 0.3
+            centerX = centerX * (1 - weight) + saliency.x * weight
+            centerY = centerY * (1 - weight) + saliency.y * weight
+        }
 
         let center = NormalizedPoint(x: centerX, y: centerY)
         return clampCenter(center, zoom: zoom)
@@ -432,6 +452,28 @@ struct ShotPlanner {
         let x = max(halfCrop, min(1.0 - halfCrop, center.x))
         let y = max(halfCrop, min(1.0 - halfCrop, center.y))
         return NormalizedPoint(x: x, y: y)
+    }
+
+    // MARK: - Saliency Lookup
+
+    /// Find the nearest saliency center from frame analysis within a scene's time range.
+    private static func nearestSaliencyCenter(
+        for scene: CameraScene,
+        frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis]
+    ) -> NormalizedPoint? {
+        let sceneMidTime = (scene.startTime + scene.endTime) / 2
+        var best: (distance: TimeInterval, center: CGPoint)?
+        for analysis in frameAnalysis {
+            guard let saliencyCenter = analysis.saliencyCenter else { continue }
+            let dist = abs(analysis.time - sceneMidTime)
+            if best == nil || dist < best!.distance {
+                best = (dist, saliencyCenter)
+            }
+        }
+        guard let result = best else { return nil }
+        // FrameAnalysis.saliencyCenter is normalized (0-1) with top-left origin Y
+        // Convert to bottom-left origin to match NormalizedPoint convention
+        return NormalizedPoint(x: CGFloat(result.center.x), y: 1.0 - CGFloat(result.center.y))
     }
 
     // MARK: - UIStateSample Element Lookup
