@@ -195,7 +195,7 @@ struct EventStreamAdapter: MouseDataSource {
             guard maxDisplacement >= dragDistanceThreshold else { continue }
 
             // Use last mouse move position as the drag end position
-            let lastMove = movesInRange.last!
+            guard let lastMove = movesInRange.last else { continue }
             let endX = CGFloat(lastMove.x / displayWidth)
             let endY = CGFloat(1.0 - (lastMove.y / displayHeight))
             let endPos = NormalizedPoint(x: endX, y: endY)
