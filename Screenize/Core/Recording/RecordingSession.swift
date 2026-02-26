@@ -53,7 +53,7 @@ final class RecordingSession: Identifiable, @unchecked Sendable {
             callback(newState)
         }
 
-        print("Recording session \(id): \(oldState) -> \(newState)")
+        Log.recording.info("Session \(self.id): \(String(describing: oldState)) -> \(String(describing: newState))")
     }
 
     func onStateChange(_ callback: @escaping (RecordingState) -> Void) {

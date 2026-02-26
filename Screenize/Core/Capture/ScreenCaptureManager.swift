@@ -84,7 +84,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         try await stream.startCapture()
         isCapturing = true
 
-        print("🎬 [ScreenCaptureManager] VFR recording started (\(configuration.frameRate)fps target): \(outputURL.path)")
+        Log.capture.info("VFR recording started (\(configuration.frameRate)fps target): \(outputURL.path)")
     }
 
     @available(macOS 15.0, *)
@@ -99,7 +99,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
 
             try await stream.stopCapture()
         } catch {
-            print("❌ [ScreenCaptureManager] Error stopping recording: \(error)")
+            Log.capture.error("Error stopping recording: \(error)")
         }
 
         // End VFR recording
@@ -112,7 +112,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         self.recordingURL = nil
         isCapturing = false
 
-        print("🎬 [ScreenCaptureManager] VFR recording stopped: \(result?.videoURL?.path ?? "nil")")
+        Log.capture.info("VFR recording stopped: \(result?.videoURL?.path ?? "nil")")
         return result
     }
 
@@ -150,7 +150,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         do {
             try await stream.stopCapture()
         } catch {
-            print("Error stopping capture: \(error)")
+            Log.capture.error("Error stopping capture: \(error)")
         }
 
         self.stream = nil

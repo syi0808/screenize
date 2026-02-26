@@ -121,10 +121,11 @@ struct TransitionPlanner {
             styleLabel = "cut"
         }
         let effThreshLabel = zoomDiff < settings.sameZoomTolerance ? " (sameZoom)" : ""
-        print(String(
+        let msg = String(
             format: "[V2-Transition] viewerZ=%.2f vpDist=%.3f effThresh=%.2f%@ → %@",
             viewerZoom, viewportDistance, effectiveGentleThreshold, effThreshLabel, styleLabel
-        ))
+        )
+        Log.generator.debug("\(msg)")
         #endif
 
         return TransitionPlan(

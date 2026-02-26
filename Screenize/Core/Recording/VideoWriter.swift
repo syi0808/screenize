@@ -132,7 +132,7 @@ final class VideoWriter: @unchecked Sendable {
 
             // Check for timeout
             if Date().timeIntervalSince(startTime) > maxWaitTime {
-                print("⚠️ [VideoWriter] Video sample wait timeout (\(waitCount) retries)")
+                Log.recording.warning("Video sample wait timeout (\(waitCount) retries)")
                 onFrameDropped?()
                 return
             }
@@ -150,7 +150,7 @@ final class VideoWriter: @unchecked Sendable {
 
         // Append the frame
         if !videoInput.append(sampleBuffer) {
-            print("❌ [VideoWriter] Failed to append video sample buffer")
+            Log.recording.error("Failed to append video sample buffer")
             lock.unlock()
             onFrameDropped?()
             return
@@ -186,7 +186,7 @@ final class VideoWriter: @unchecked Sendable {
 
             // Check for timeout
             if Date().timeIntervalSince(startTime) > maxWaitTime {
-                print("⚠️ [VideoWriter] Frame wait timeout (\(waitCount) retries)")
+                Log.recording.warning("Frame wait timeout (\(waitCount) retries)")
                 onFrameDropped?()
                 return
             }
@@ -204,7 +204,7 @@ final class VideoWriter: @unchecked Sendable {
 
         // Append the frame
         if !adaptor.append(pixelBuffer, withPresentationTime: presentationTime) {
-            print("❌ [VideoWriter] Failed to append pixel buffer")
+            Log.recording.error("Failed to append pixel buffer")
             lock.unlock()
             onFrameDropped?()
             return
@@ -230,7 +230,7 @@ final class VideoWriter: @unchecked Sendable {
             lock.unlock()
 
             if Date().timeIntervalSince(startTime) > maxWaitTime {
-                print("⚠️ [VideoWriter] Audio sample wait timeout")
+                Log.recording.warning("Audio sample wait timeout")
                 return
             }
 
@@ -244,7 +244,7 @@ final class VideoWriter: @unchecked Sendable {
         }
 
         if !audioInput.append(sampleBuffer) {
-            print("❌ [VideoWriter] Failed to append audio sample buffer")
+            Log.recording.error("Failed to append audio sample buffer")
         }
 
         lock.unlock()

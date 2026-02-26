@@ -64,7 +64,7 @@ final class PresetManager: ObservableObject {
             decoder.dateDecodingStrategy = .iso8601
             userPresets = try decoder.decode([RenderSettingsPreset].self, from: data)
         } catch {
-            print("Failed to load presets: \(error)")
+            Log.project.error("Failed to load presets: \(error)")
         }
     }
 
@@ -80,7 +80,7 @@ final class PresetManager: ObservableObject {
             let data = try encoder.encode(userPresets)
             try data.write(to: presetsFileURL, options: .atomic)
         } catch {
-            print("Failed to save presets: \(error)")
+            Log.project.error("Failed to save presets: \(error)")
         }
     }
 }

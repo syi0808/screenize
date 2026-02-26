@@ -143,6 +143,7 @@
 		F0000081296A0001 /* ScreenizeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000081296A0001 /* ScreenizeApp.swift */; };
 		F0000090296A0001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000090296A0001 /* Assets.xcassets */; };
 		F00000A0296A0001 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A0296A0001 /* AppState.swift */; };
+		F00000A2296A0001 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A2296A0001 /* Log.swift */; };
 		F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A1296A0001 /* GlobalHotkeyManager.swift */; };
 		F00000AF296A0001 /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000AF296A0001 /* Coordinates.swift */; };
 		F00000B0296A0001 /* CaptureConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000B0296A0001 /* CaptureConfiguration.swift */; };
@@ -327,6 +328,7 @@
 		F1000090296A0001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F1000091296A0001 /* Screenize.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Screenize.entitlements; sourceTree = "<group>"; };
 		F10000A0296A0001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		F10000A2296A0001 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		F10000A1296A0001 /* GlobalHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyManager.swift; sourceTree = "<group>"; };
 		F10000AF296A0001 /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
 		F10000B0296A0001 /* CaptureConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureConfiguration.swift; sourceTree = "<group>"; };
@@ -801,6 +803,7 @@
 			isa = PBXGroup;
 			children = (
 				F10000A0296A0001 /* AppState.swift */,
+				F10000A2296A0001 /* Log.swift */,
 				F10000A1296A0001 /* GlobalHotkeyManager.swift */,
 				2A626F2E2F2A280000510712 /* SparkleController.swift */,
 				D1100004296A0001 /* CaptureToolbarCoordinator.swift */,
@@ -1114,6 +1117,7 @@
 				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
 				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
+				F00000A2296A0001 /* Log.swift in Sources */,
 				F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */,
 				2A626F302F2A280000510712 /* SparkleController.swift in Sources */,
 				2A626F312F2A280000510712 /* CheckForUpdatesView.swift in Sources */,

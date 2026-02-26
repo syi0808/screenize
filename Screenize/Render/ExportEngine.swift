@@ -109,7 +109,7 @@ final class ExportEngine: ObservableObject {
                 )
             }
             let smoothedMousePositions = smoothedResult.positions
-            print("Export: Loaded mouse data - \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions, \(clickEvents.count) clicks")
+            Log.export.info("Export: Loaded mouse data - \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions, \(clickEvents.count) clicks")
 
             // 3. Determine output size
             let outputSize = project.renderSettings.outputResolution.size(sourceSize: naturalSize)
@@ -220,7 +220,7 @@ final class ExportEngine: ObservableObject {
                 colorSpace: exportColorSpace
             )
 
-            print("[Export] Completed - \(framesWritten) frames")
+            Log.export.info("Export completed - \(framesWritten) frames")
 
             // 9. Write audio
             if let audioInput = audioWriterInput {
@@ -329,7 +329,7 @@ final class ExportEngine: ObservableObject {
                     springConfig: gifSpringConfig
                 )
             }
-            print("[GIF Export] Loaded mouse data - \(rawResult.positions.count) raw, \(smoothedResult.positions.count) smoothed positions")
+            Log.export.info("GIF Export: Loaded mouse data - \(rawResult.positions.count) raw, \(smoothedResult.positions.count) smoothed positions")
 
             // 3. Determine GIF output size
             let gifSettings = project.renderSettings.gifSettings
@@ -411,7 +411,7 @@ final class ExportEngine: ObservableObject {
             try gifEncoder.finalize()
 
             let totalWritten = gifEncoder.framesWritten
-            print("[GIF Export] Completed - \(totalWritten) frames")
+            Log.export.info("GIF Export completed - \(totalWritten) frames")
 
             await MainActor.run {
                 progress = .completed(outputURL)

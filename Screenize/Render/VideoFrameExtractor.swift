@@ -47,7 +47,7 @@ final class VideoFrameExtractor {
 
         // DEBUG: Log video metadata
         let transform = try await videoTrack.load(.preferredTransform)
-        print("🔍 [DEBUG] VideoFrameExtractor: videoSize=\(size), frameRate=\(self.frameRate), transform=\(transform)")
+        Log.export.debug("VideoFrameExtractor: videoSize=\(String(describing: size)), frameRate=\(self.frameRate), transform=\(String(describing: transform))")
 
         // Configure the image generator
         setupImageGenerator()

@@ -308,7 +308,7 @@ struct ContentView: View {
             appState.currentProjectURL = packageURL
             appState.currentProject = project
         } catch {
-            print("Failed to create project: \(error)")
+            Log.project.error("Failed to create project: \(error)")
         }
     }
 
@@ -318,7 +318,7 @@ struct ContentView: View {
             appState.currentProjectURL = result.packageURL
             appState.currentProject = result.project
         } catch {
-            print("Failed to load project: \(error)")
+            Log.project.error("Failed to load project: \(error)")
         }
     }
 
@@ -364,7 +364,7 @@ struct ContentView: View {
             appState.currentProjectURL = packageURL
             appState.currentProject = project
         } catch {
-            print("Failed to create project from recording: \(error)")
+            Log.project.error("Failed to create project from recording: \(error)")
         }
     }
 }

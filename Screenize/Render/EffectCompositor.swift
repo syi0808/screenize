@@ -57,7 +57,7 @@ final class EffectCompositor {
 
         // DEBUG: Log first cursor render
         if debugCursorRenderCount == 0 {
-            print("🔍 [DEBUG] EffectCompositor.renderCursor: normalized=(\(cursor.position.x), \(cursor.position.y)), frameSize=\(frameSize), ciPos=(\(posX), \(posY))")
+            Log.export.debug("EffectCompositor.renderCursor: normalized=(\(cursor.position.x), \(cursor.position.y)), frameSize=\(String(describing: frameSize)), ciPos=(\(posX), \(posY))")
         }
         debugCursorRenderCount += 1
 

@@ -89,8 +89,8 @@ final class RecordingCoordinator: ObservableObject {
         captureConfig.capturesAudio = AppState.shared.isSystemAudioEnabled
 
         // DEBUG: Log capture setup details
-        print("🔍 [DEBUG] Recording target: \(target), captureBounds: \(captureBounds)")
-        print("🔍 [DEBUG] captureConfig: \(captureConfig.width)x\(captureConfig.height), shadow: \(captureConfig.capturesShadow)")
+        Log.recording.debug("Recording target: \(String(describing: target)), captureBounds: \(String(describing: self.captureBounds))")
+        Log.recording.debug("captureConfig: \(captureConfig.width)x\(captureConfig.height), shadow: \(captureConfig.capturesShadow)")
         self.captureConfiguration = captureConfig
 
         // Sync nonisolated variables
@@ -125,7 +125,7 @@ final class RecordingCoordinator: ObservableObject {
                 try micRecorder.startRecording(to: micURL, device: AppState.shared.selectedMicrophoneDevice)
                 self.microphoneRecorder = micRecorder
             } catch {
-                print("[RecordingCoordinator] Mic recording failed (non-fatal): \(error)")
+                Log.recording.warning("Mic recording failed (non-fatal): \(error)")
             }
         }
 
@@ -135,7 +135,7 @@ final class RecordingCoordinator: ObservableObject {
         recordingStartTime = Date()
 
         startDurationTimer()
-        print("🎬 [RecordingCoordinator] Started recording via SCRecordingOutput")
+        Log.recording.info("Started recording via SCRecordingOutput")
     }
 
     @available(macOS 15.0, *)
@@ -173,7 +173,7 @@ final class RecordingCoordinator: ObservableObject {
 
         if let url = outputURL {
             session.transition(to: .completed(url))
-            print("🎬 [RecordingCoordinator] Recording finished - source: \(url.path)")
+            Log.recording.info("Recording finished - source: \(url.path)")
         } else {
             session.transition(to: .failed("Recording file save failed"))
         }
@@ -270,7 +270,7 @@ final class RecordingCoordinator: ObservableObject {
             }
 
             let appKitOriginY = screenHeight - window.frame.origin.y - window.frame.height
-            print("🔍 [DEBUG] Window bounds: CG frame=\(window.frame), screenHeight=\(screenHeight), appKitOriginY=\(appKitOriginY)")
+            Log.recording.debug("Window bounds: CG frame=\(String(describing: window.frame)), screenHeight=\(screenHeight), appKitOriginY=\(appKitOriginY)")
             return CGRect(
                 x: window.frame.origin.x,
                 y: appKitOriginY,
@@ -320,7 +320,7 @@ extension RecordingCoordinator: ScreenCaptureDelegate {
     }
 
     nonisolated func captureManager(_ manager: ScreenCaptureManager, didFinishRecordingTo url: URL) {
-        print("🎬 [RecordingCoordinator] Completed recording file: \(url.path)")
+        Log.recording.info("Completed recording file: \(url.path)")
     }
 }
 

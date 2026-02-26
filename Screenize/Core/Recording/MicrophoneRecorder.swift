@@ -88,7 +88,7 @@ final class MicrophoneRecorder: NSObject, @unchecked Sendable {
         self.isPaused = false
 
         session.startRunning()
-        print("[MicrophoneRecorder] Started recording to \(url.lastPathComponent)")
+        Log.recording.info("Microphone started recording to \(url.lastPathComponent)")
     }
 
     /// Stop recording and return the output URL.
@@ -108,7 +108,7 @@ final class MicrophoneRecorder: NSObject, @unchecked Sendable {
         return await withCheckedContinuation { continuation in
             writer.finishWriting {
                 let result = writer.status == .completed ? url : nil
-                print("[MicrophoneRecorder] Stopped recording: \(result?.lastPathComponent ?? "failed")")
+                Log.recording.info("Microphone stopped recording: \(result?.lastPathComponent ?? "failed")")
                 continuation.resume(returning: result)
             }
         }

@@ -72,7 +72,7 @@ final class MouseDataRecorder {
         startUIStateSampling()
 
         isRecording = true
-        print("🖱️ [MouseDataRecorder] Recording started (scaleFactor: \(scaleFactor))")
+        Log.tracking.info("Mouse recording started (scaleFactor: \(scaleFactor))")
     }
 
     func stopRecording() -> MouseRecording {
@@ -119,18 +119,18 @@ final class MouseDataRecorder {
         let keyboards = keyboardHandler?.getKeyboardEvents().count ?? 0
         let drags = dragHandler?.getDragEvents().count ?? 0
 
-        print("🖱️ [MouseDataRecorder] Recording stopped - positions: \(positions.count), clicks: \(clicks), scrolls: \(scrolls), keyboards: \(keyboards), drags: \(drags), UI samples: \(uiStateSamples.count) (scaleFactor: \(scaleFactor))")
+        Log.tracking.info("Mouse recording stopped - positions: \(self.positions.count), clicks: \(clicks), scrolls: \(scrolls), keyboards: \(keyboards), drags: \(drags), UI samples: \(self.uiStateSamples.count) (scaleFactor: \(self.scaleFactor))")
 
-        // DEBUG: Position validation summary
+        // Position validation summary
         if !positions.isEmpty {
             let ys = positions.map { $0.y }
             let xs = positions.map { $0.x }
             let minY = ys.min()!, maxY = ys.max()!, avgY = ys.reduce(0, +) / CGFloat(ys.count)
             let minX = xs.min()!, maxX = xs.max()!, avgX = xs.reduce(0, +) / CGFloat(xs.count)
-            print("🔍 [DEBUG] Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
-            print("🔍 [DEBUG] screenBounds=\(screenBounds) (origin.y=\(screenBounds.origin.y), size=\(screenBounds.size))")
+            Log.tracking.debug("Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
+            Log.tracking.debug("screenBounds=\(String(describing: self.screenBounds)) (origin.y=\(self.screenBounds.origin.y), size=\(String(describing: self.screenBounds.size)))")
             if maxY > screenBounds.height * 1.05 {
-                print("⚠️ [DEBUG] WARNING: Y positions exceed screenBounds.height! Origin conversion likely incorrect.")
+                Log.tracking.warning("Y positions exceed screenBounds.height! Origin conversion likely incorrect.")
             }
         }
 
@@ -256,9 +256,8 @@ final class MouseDataRecorder {
         }
 
         lock.lock()
-        // DEBUG: Log first 3 mouse samples
         if positions.count < 3 {
-            print("🔍 [DEBUG] Mouse sample #\(positions.count): mouseLocation=\(mouseLocation), relative=\(relativePosition), screenBounds=\(screenBounds)")
+            Log.tracking.debug("Mouse sample #\(self.positions.count): mouseLocation=\(String(describing: mouseLocation)), relative=\(String(describing: relativePosition)), screenBounds=\(String(describing: self.screenBounds))")
         }
         positions.append(MousePosition(
             timestamp: timestamp,

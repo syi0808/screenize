@@ -31,7 +31,7 @@ final class KeyboardEventHandler {
         if #available(macOS 14.0, *) {
             if !CGPreflightListenEventAccess() {
                 CGRequestListenEventAccess()
-                print("⌨️ [KeyboardEventHandler] Input Monitoring permission requested – allow it in System Settings and restart the app")
+                Log.tracking.warning("Input Monitoring permission requested - allow it in System Settings and restart the app")
                 return
             }
         }
@@ -54,7 +54,7 @@ final class KeyboardEventHandler {
             },
             userInfo: refcon
         ) else {
-            print("⌨️ [KeyboardEventHandler] Failed to create keyboard event tap – enable Screenize under System Settings > Privacy & Security > Input Monitoring")
+            Log.tracking.error("Failed to create keyboard event tap - enable Screenize under System Settings > Privacy & Security > Input Monitoring")
             return
         }
 
@@ -63,7 +63,7 @@ final class KeyboardEventHandler {
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
-        print("⌨️ [KeyboardEventHandler] Keyboard event tap configured")
+        Log.tracking.info("Keyboard event tap configured")
     }
 
     func stop() {

@@ -119,7 +119,7 @@ struct EditorMainView: View {
                     showExportSheet = false
                 },
                 onComplete: { url in
-                    print("Export completed: \(url)")
+                    Log.export.info("Export completed: \(url)")
                     showExportSheet = false
                 }
             )
@@ -327,7 +327,7 @@ struct EditorMainView: View {
                 viewModel.projectURL = savedURL
                 viewModel.hasUnsavedChanges = false
             } catch {
-                print("Failed to save project: \(error)")
+                Log.project.error("Failed to save project: \(error)")
             }
         }
     }

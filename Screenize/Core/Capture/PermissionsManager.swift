@@ -141,8 +141,7 @@ final class PermissionsManager: ObservableObject {
         screenCapturePermission = granted ? .granted : .denied
 
         if !granted {
-            print("⚠️ [DEBUG] Screen recording permission is required.")
-            print("⚠️ Enable Screenize under System Settings > Privacy & Security > Screen Recording.")
+            Log.permissions.warning("Screen recording permission is required. Enable Screenize under System Settings > Privacy & Security > Screen Recording.")
             openSystemPreferences()
         }
         return granted

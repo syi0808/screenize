@@ -126,7 +126,7 @@ final class VFRRecordingManager: @unchecked Sendable {
         let fps = configuration.frameRate
         let w = configuration.width
         let h = configuration.height
-        print("🎬 [VFRRecordingManager] VFR recording started: target \(fps)fps, \(w)x\(h)")
+        Log.capture.info("VFR recording started: target \(fps)fps, \(w)x\(h)")
     }
 
     /// Stop recording
@@ -145,9 +145,7 @@ final class VFRRecordingManager: @unchecked Sendable {
 
             let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
             let total = frameCount + duplicateCount
-            print("🎬 [VFRRecordingManager] VFR recording ended: \(frameCount) frames written, " +
-                  "\(duplicateCount) duplicates skipped (\(total) total), " +
-                  "\(String(format: "%.2f", duration))s")
+            Log.capture.info("VFR recording ended: \(self.frameCount) frames written, \(self.duplicateCount) duplicates skipped (\(total) total), \(String(format: "%.2f", duration))s")
 
             // Cleanup
             videoWriter = nil
@@ -161,7 +159,7 @@ final class VFRRecordingManager: @unchecked Sendable {
             onRecordingFinished?(url)
             return CFRRecordingResult(videoURL: url, systemAudioURL: sysAudioURL)
         } catch {
-            print("❌ [VFRRecordingManager] Failed to stop recording: \(error)")
+            Log.capture.error("VFR failed to stop recording: \(error)")
             videoWriter?.cancelWriting()
 
             videoWriter = nil
@@ -251,20 +249,20 @@ final class VFRRecordingManager: @unchecked Sendable {
         if debugFrameCount == 0 {
             let bufW = CVPixelBufferGetWidth(pixelBuffer)
             let bufH = CVPixelBufferGetHeight(pixelBuffer)
-            print("🔍 [DEBUG] First frame pixel buffer: \(bufW)x\(bufH)")
+            Log.capture.debug("First frame pixel buffer: \(bufW)x\(bufH)")
 
             if let attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(
                 sampleBuffer, createIfNecessary: false
             ) as? [NSDictionary], let dict = attachmentsArray.first {
                 if let contentRectDict = dict[SCStreamFrameInfo.contentRect] as? NSDictionary,
                    let contentRect = CGRect(dictionaryRepresentation: contentRectDict) {
-                    print("🔍 [DEBUG] contentRect: \(contentRect)")
+                    Log.capture.debug("contentRect: \(String(describing: contentRect))")
                 }
                 if let contentScale = dict[SCStreamFrameInfo.contentScale] as? CGFloat {
-                    print("🔍 [DEBUG] contentScale: \(contentScale)")
+                    Log.capture.debug("contentScale: \(contentScale)")
                 }
                 if let scaleFactor = dict[SCStreamFrameInfo.scaleFactor] as? CGFloat {
-                    print("🔍 [DEBUG] scaleFactor: \(scaleFactor)")
+                    Log.capture.debug("scaleFactor: \(scaleFactor)")
                 }
             }
         }

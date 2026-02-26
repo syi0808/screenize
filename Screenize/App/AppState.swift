@@ -172,9 +172,9 @@ final class AppState: ObservableObject {
                     && window.frame.height >= 50
             }
 
-            print("📺 [AppState] Sources refreshed - displays: \(availableDisplays.count), windows: \(availableWindows.count)")
+            Log.ui.info("Sources refreshed - displays: \(self.availableDisplays.count), windows: \(self.availableWindows.count)")
         } catch {
-            print("❌ [AppState] Failed to refresh sources: \(error)")
+            Log.ui.error("Failed to refresh sources: \(error)")
             errorMessage = "Failed to get available sources: \(error.localizedDescription)"
         }
     }
@@ -469,7 +469,7 @@ final class AppState: ObservableObject {
 
             return (Int(size.width), Int(size.height), frameRate, duration)
         } catch {
-            print("Failed to load video metadata: \(error)")
+            Log.project.error("Failed to load video metadata: \(error)")
             return nil
         }
     }

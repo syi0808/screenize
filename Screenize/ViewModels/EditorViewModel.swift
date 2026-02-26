@@ -309,7 +309,7 @@ final class EditorViewModel: ObservableObject {
         do {
             // 1. Load mouse data source (prefers v4 event streams, falls back to v2)
             guard let mouseDataSource = loadMouseDataSource() else {
-                print("Smart generation skipped: No mouse data available")
+                Log.generator.info("Smart generation skipped: No mouse data available")
                 isLoading = false
                 return
             }
@@ -324,7 +324,7 @@ final class EditorViewModel: ObservableObject {
                     videoURL: project.media.videoURL,
                     progressHandler: { progress in
                         Task { @MainActor in
-                            print("Frame analysis: \(Int(progress.percentage * 100))%")
+                            Log.generator.debug("Frame analysis: \(Int(progress.percentage * 100))%")
                         }
                     }
                 )
@@ -361,13 +361,13 @@ final class EditorViewModel: ObservableObject {
                 keystrokeTrack: selection.contains(.keystroke) ? generated.keystrokeTrack : nil
             )
 
-            print("Smart generation V2 completed for \(selection.count) track type(s)")
+            Log.generator.info("Smart generation V2 completed for \(selection.count) track type(s)")
 
             hasUnsavedChanges = true
             invalidatePreviewCache()
 
         } catch {
-            print("Smart generation failed: \(error.localizedDescription)")
+            Log.generator.error("Smart generation failed: \(error.localizedDescription)")
             errorMessage = "Failed to generate segments: \(error.localizedDescription)"
         }
 

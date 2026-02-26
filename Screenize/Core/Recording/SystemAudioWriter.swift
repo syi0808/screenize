@@ -47,7 +47,7 @@ final class SystemAudioWriter: @unchecked Sendable {
         self.isWriting = true
         self.isPaused = false
 
-        print("[SystemAudioWriter] Started writing to \(url.lastPathComponent)")
+        Log.recording.info("System audio started writing to \(url.lastPathComponent)")
     }
 
     /// Append a system audio sample buffer (called from capture queue).
@@ -84,7 +84,7 @@ final class SystemAudioWriter: @unchecked Sendable {
         return await withCheckedContinuation { continuation in
             writer.finishWriting {
                 let result = writer.status == .completed ? url : nil
-                print("[SystemAudioWriter] Stopped writing: \(result?.lastPathComponent ?? "failed")")
+                Log.recording.info("System audio stopped writing: \(result?.lastPathComponent ?? "failed")")
                 continuation.resume(returning: result)
             }
         }

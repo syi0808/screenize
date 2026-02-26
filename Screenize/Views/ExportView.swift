@@ -561,7 +561,7 @@ struct ExportSheetView: View {
                 await MainActor.run {
                     isExporting = false
                     // Handle the error
-                    print("Export error: \(error)")
+                    Log.export.error("Export error: \(error)")
                 }
             }
         }

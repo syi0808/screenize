@@ -187,8 +187,8 @@ class SmartGeneratorV2 {
         transitions: [TransitionPlan],
         cameraTrack: CameraTrack
     ) {
-        print("[V2-Pipeline] === Diagnostics ===")
-        print("[V2-Pipeline] EventTimeline: \(timeline.events.count) events, \(String(format: "%.1f", timeline.duration))s")
+        Log.generator.debug("=== V2 Pipeline Diagnostics ===")
+        Log.generator.debug("EventTimeline: \(timeline.events.count) events, \(String(format: "%.1f", timeline.duration))s")
 
         // Intent span summary
         var intentCounts: [String: Int] = [:]
@@ -198,7 +198,7 @@ class SmartGeneratorV2 {
         }
         let intentSummary = intentCounts.sorted { $0.key < $1.key }
             .map { "\($0.key):\($0.value)" }.joined(separator: ", ")
-        print("[V2-Pipeline] IntentSpans: \(intentSpans.count) [\(intentSummary)]")
+        Log.generator.debug("IntentSpans: \(intentSpans.count) [\(intentSummary)]")
 
         // Scene summary
         var sceneCounts: [String: Int] = [:]
@@ -208,10 +208,10 @@ class SmartGeneratorV2 {
         }
         let sceneSummary = sceneCounts.sorted { $0.key < $1.key }
             .map { "\($0.key):\($0.value)" }.joined(separator: ", ")
-        print("[V2-Pipeline] Scenes: \(scenes.count) [\(sceneSummary)]")
+        Log.generator.debug("Scenes: \(scenes.count) [\(sceneSummary)]")
 
         // Shot plans detail
-        print("[V2-Pipeline] ShotPlans:")
+        Log.generator.debug("ShotPlans:")
         for (i, plan) in shotPlans.enumerated() {
             let intent = intentLabel(plan.scene.primaryIntent)
             let t = String(format: "t=%.1f-%.1f", plan.scene.startTime, plan.scene.endTime)
@@ -238,15 +238,15 @@ class SmartGeneratorV2 {
             } else {
                 ctxLabel = ""
             }
-            print("[V2-Pipeline]   [\(i)] \(intent) \(t) \(zoom) \(center) \(src) events=\(sceneEvents.count)\(inherited)\(ctxLabel)")
+            Log.generator.debug("  [\(i)] \(intent) \(t) \(zoom) \(center) \(src) events=\(sceneEvents.count)\(inherited)\(ctxLabel)")
 
             // Event type breakdown
             let breakdown = eventBreakdown(sceneEvents)
-            print("[V2-Pipeline]       \(breakdown)")
+            Log.generator.debug("      \(breakdown)")
         }
 
         // Transition summary
-        print("[V2-Pipeline] Transitions: \(transitions.count)")
+        Log.generator.debug("Transitions: \(transitions.count)")
         for (i, trans) in transitions.enumerated() {
             let fromT = String(format: "%.1f", trans.fromScene.endTime)
             let toT = String(format: "%.1f", trans.toScene.startTime)
@@ -261,11 +261,11 @@ class SmartGeneratorV2 {
             case .cut:
                 style = "cut"
             }
-            print("[V2-Pipeline]   [\(i)] t=\(fromT)→\(toT) \(style) easing=\(trans.easing)")
+            Log.generator.debug("  [\(i)] t=\(fromT)→\(toT) \(style) easing=\(String(describing: trans.easing))")
         }
 
         // Camera track summary
-        print("[V2-Pipeline] CameraTrack: \(cameraTrack.segments.count) segments")
+        Log.generator.debug("CameraTrack: \(cameraTrack.segments.count) segments")
         for (i, seg) in cameraTrack.segments.enumerated() {
             let t = String(format: "t=%.2f-%.2f", seg.startTime, seg.endTime)
             let zoomStr = String(format: "zoom=%.2f→%.2f", seg.startTransform.zoom, seg.endTransform.zoom)
@@ -275,9 +275,9 @@ class SmartGeneratorV2 {
                 seg.endTransform.center.x, seg.endTransform.center.y
             )
             let easingStr = "\(seg.interpolation)"
-            print("[V2-Pipeline]   [\(i)] \(t) \(zoomStr) \(posStr) easing=\(easingStr)")
+            Log.generator.debug("  [\(i)] \(t) \(zoomStr) \(posStr) easing=\(easingStr)")
         }
-        print("[V2-Pipeline] === End Diagnostics ===")
+        Log.generator.debug("=== End V2 Pipeline Diagnostics ===")
     }
 
     private static func intentLabel(_ intent: UserIntent) -> String {
