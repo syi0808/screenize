@@ -152,8 +152,11 @@ struct SceneSegmenter {
         from spans: [IntentSpan],
         eventTimeline: EventTimeline
     ) -> CameraScene {
-        let startTime = spans.first!.startTime
-        let endTime = spans.last!.endTime
+        guard let firstSpan = spans.first, let lastSpan = spans.last else {
+            return CameraScene(startTime: 0, endTime: 0, primaryIntent: .idle)
+        }
+        let startTime = firstSpan.startTime
+        let endTime = lastSpan.endTime
         let primary = dominantIntent(of: spans)
         let focusRegions = buildFocusRegions(from: spans)
         let appContext = extractAppContext(
@@ -337,10 +340,10 @@ struct SceneSegmenter {
                     // For simplicity, just skip this scene and extend the next
                     // We handle this by marking it for the next iteration
                     result.append(scene) // Temporarily add; will merge in cleanup
-                } else if !result.isEmpty {
+                } else if let last = result.last {
                     // Absorb into previous regardless
                     result[result.count - 1] = extendScene(
-                        result.last!, to: scene.endTime,
+                        last, to: scene.endTime,
                         mergingRegions: scene.focusRegions
                     )
                 } else {

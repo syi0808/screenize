@@ -131,12 +131,15 @@ final class MouseDataRecorder {
         if !finalPositions.isEmpty {
             let ys = finalPositions.map { $0.y }
             let xs = finalPositions.map { $0.x }
-            let minY = ys.min()!, maxY = ys.max()!, avgY = ys.reduce(0, +) / CGFloat(ys.count)
-            let minX = xs.min()!, maxX = xs.max()!, avgX = xs.reduce(0, +) / CGFloat(xs.count)
-            Log.tracking.debug("Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
-            Log.tracking.debug("screenBounds=\(String(describing: self.screenBounds)) (origin.y=\(self.screenBounds.origin.y), size=\(String(describing: self.screenBounds.size)))")
-            if maxY > screenBounds.height * 1.05 {
-                Log.tracking.warning("Y positions exceed screenBounds.height! Origin conversion likely incorrect.")
+            if let minY = ys.min(), let maxY = ys.max(),
+               let minX = xs.min(), let maxX = xs.max() {
+                let avgY = ys.reduce(0, +) / CGFloat(ys.count)
+                let avgX = xs.reduce(0, +) / CGFloat(xs.count)
+                Log.tracking.debug("Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
+                Log.tracking.debug("screenBounds=\(String(describing: self.screenBounds)) (origin.y=\(self.screenBounds.origin.y), size=\(String(describing: self.screenBounds.size)))")
+                if maxY > screenBounds.height * 1.05 {
+                    Log.tracking.warning("Y positions exceed screenBounds.height! Origin conversion likely incorrect.")
+                }
             }
         }
 

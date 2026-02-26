@@ -290,7 +290,7 @@ struct IntentClassifier {
 
         for i in 1..<leftDownClicks.count {
             let click = leftDownClicks[i]
-            let lastClick = group.last!
+            guard let lastClick = group.last else { continue }
             let timeDelta = click.time - lastClick.time
             let distance = click.position.distance(to: lastClick.position)
 

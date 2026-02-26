@@ -79,31 +79,31 @@ struct GradientStyle: Equatable, RawRepresentable {
     }
 
     static let defaultGradient = Self(
-        colors: [Color(hex: "#667eea")!, Color(hex: "#764ba2")!],
+        colors: [Color(hex: "#667eea") ?? .purple, Color(hex: "#764ba2") ?? .purple],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let sunset = Self(
-        colors: [Color(hex: "#ff6b6b")!, Color(hex: "#feca57")!],
+        colors: [Color(hex: "#ff6b6b") ?? .red, Color(hex: "#feca57") ?? .yellow],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let ocean = Self(
-        colors: [Color(hex: "#667eea")!, Color(hex: "#00d2d3")!],
+        colors: [Color(hex: "#667eea") ?? .blue, Color(hex: "#00d2d3") ?? .cyan],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let forest = Self(
-        colors: [Color(hex: "#11998e")!, Color(hex: "#38ef7d")!],
+        colors: [Color(hex: "#11998e") ?? .green, Color(hex: "#38ef7d") ?? .mint],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let midnight = Self(
-        colors: [Color(hex: "#232526")!, Color(hex: "#414345")!],
+        colors: [Color(hex: "#232526") ?? .gray, Color(hex: "#414345") ?? .gray],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )

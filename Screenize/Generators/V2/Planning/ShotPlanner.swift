@@ -258,10 +258,12 @@ struct ShotPlanner {
         guard !positions.isEmpty else { return .zero }
         let xs = positions.map(\.x)
         let ys = positions.map(\.y)
-        let minX = max(0, xs.min()! - padding)
-        let maxX = min(1, xs.max()! + padding)
-        let minY = max(0, ys.min()! - padding)
-        let maxY = min(1, ys.max()! + padding)
+        guard let xMin = xs.min(), let xMax = xs.max(),
+              let yMin = ys.min(), let yMax = ys.max() else { return .zero }
+        let minX = max(0, xMin - padding)
+        let maxX = min(1, xMax + padding)
+        let minY = max(0, yMin - padding)
+        let maxY = min(1, yMax + padding)
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 

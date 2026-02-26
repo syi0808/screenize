@@ -426,7 +426,7 @@ struct SettingsInspector: View {
     // MARK: - Helpers
 
     private var solidColorPresets: [Color] {
-        [.black, .white, Color(hex: "#1a1a2e")!, Color(hex: "#f5f5f5")!]
+        [.black, .white, Color(hex: "#1a1a2e") ?? .black, Color(hex: "#f5f5f5") ?? .white]
     }
 
     private var currentSolidColor: Color {

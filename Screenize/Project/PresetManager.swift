@@ -47,10 +47,13 @@ final class PresetManager: ObservableObject {
     // MARK: - Persistence
 
     private var presetsFileURL: URL {
-        let appSupport = FileManager.default.urls(
+        guard let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
-        ).first!
+        ).first else {
+            return FileManager.default.temporaryDirectory
+                .appendingPathComponent("Screenize/render_presets.json")
+        }
         let screenizeDir = appSupport.appendingPathComponent("Screenize")
         return screenizeDir.appendingPathComponent("render_presets.json")
     }

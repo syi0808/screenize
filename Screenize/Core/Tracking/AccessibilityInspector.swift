@@ -123,10 +123,14 @@ final class AccessibilityInspector {
         var position = CGPoint.zero
         var size = CGSize.zero
 
-        if let positionValue = positionRef {
+        if let positionValue = positionRef,
+           CFGetTypeID(positionValue) == AXValueGetTypeID() {
+            // swiftlint:disable:next force_cast
             AXValueGetValue(positionValue as! AXValue, .cgPoint, &position)
         }
-        if let sizeValue = sizeRef {
+        if let sizeValue = sizeRef,
+           CFGetTypeID(sizeValue) == AXValueGetTypeID() {
+            // swiftlint:disable:next force_cast
             AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
         }
 
@@ -146,7 +150,9 @@ final class AccessibilityInspector {
         for _ in 0..<20 {  // Search up to 20 levels
             var parentRef: CFTypeRef?
             if AXUIElementCopyAttributeValue(currentElement, kAXParentAttribute as CFString, &parentRef) == .success,
-               let parent = parentRef {
+               let parent = parentRef,
+               CFGetTypeID(parent) == AXUIElementGetTypeID() {
+                // swiftlint:disable:next force_cast
                 currentElement = (parent as! AXUIElement)
 
                 var currentRole: CFTypeRef?
@@ -194,12 +200,14 @@ extension AccessibilityInspector {
         )
 
         guard rangeResult == .success,
-              let rangeValue = selectedRangeRef else {
+              let rangeValue = selectedRangeRef,
+              CFGetTypeID(rangeValue) == AXValueGetTypeID() else {
             return nil
         }
 
         // Extract the CFRange from the AXValue
         var range = CFRange(location: 0, length: 0)
+        // swiftlint:disable:next force_cast
         guard AXValueGetValue(rangeValue as! AXValue, .cfRange, &range) else {
             return nil
         }
@@ -225,12 +233,14 @@ extension AccessibilityInspector {
         )
 
         guard boundsResult == .success,
-              let boundsValue = boundsRef else {
+              let boundsValue = boundsRef,
+              CFGetTypeID(boundsValue) == AXValueGetTypeID() else {
             return nil
         }
 
         // Extract CGRect from the AXValue
         var bounds = CGRect.zero
+        // swiftlint:disable:next force_cast
         guard AXValueGetValue(boundsValue as! AXValue, .cgRect, &bounds) else {
             return nil
         }
@@ -290,22 +300,30 @@ extension AccessibilityInspector {
             &focusedAppRef
         )
 
-        guard let focusedApp = focusedAppRef else { return nil }
+        guard let focusedApp = focusedAppRef,
+              CFGetTypeID(focusedApp) == AXUIElementGetTypeID() else { return nil }
+
+        // swiftlint:disable:next force_cast
+        let focusedAppElement = focusedApp as! AXUIElement
 
         // Get the focused UI element
         var focusedElementRef: CFTypeRef?
         AXUIElementCopyAttributeValue(
-            focusedApp as! AXUIElement,
+            focusedAppElement,
             kAXFocusedUIElementAttribute as CFString,
             &focusedElementRef
         )
 
-        guard let focusedElement = focusedElementRef else { return nil }
+        guard let focusedElement = focusedElementRef,
+              CFGetTypeID(focusedElement) == AXUIElementGetTypeID() else { return nil }
+
+        // swiftlint:disable:next force_cast
+        let focusedUIElement = focusedElement as! AXUIElement
 
         // Check the role
         var roleRef: CFTypeRef?
         AXUIElementCopyAttributeValue(
-            focusedElement as! AXUIElement,
+            focusedUIElement,
             kAXRoleAttribute as CFString,
             &roleRef
         )
@@ -320,7 +338,7 @@ extension AccessibilityInspector {
             return nil
         }
 
-        return getCaretBounds(from: focusedElement as! AXUIElement)
+        return getCaretBounds(from: focusedUIElement)
     }
 }
 
