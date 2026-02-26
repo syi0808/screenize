@@ -67,12 +67,16 @@ final class VideoWriter: @unchecked Sendable {
             kCVPixelBufferHeightKey as String: configuration.height
         ]
 
+        guard let videoInput = videoInput else {
+            throw VideoWriterError.writerNotInitialized
+        }
+
         pixelBufferAdaptor = AVAssetWriterInputPixelBufferAdaptor(
-            assetWriterInput: videoInput!,
+            assetWriterInput: videoInput,
             sourcePixelBufferAttributes: sourcePixelBufferAttributes
         )
 
-        if let videoInput = videoInput, assetWriter?.canAdd(videoInput) == true {
+        if assetWriter?.canAdd(videoInput) == true {
             assetWriter?.add(videoInput)
         }
 
