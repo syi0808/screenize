@@ -496,7 +496,11 @@ struct ShotPlanner {
         for analysis in frameAnalysis {
             guard let saliencyCenter = analysis.saliencyCenter else { continue }
             let dist = abs(analysis.time - sceneMidTime)
-            if best == nil || dist < best!.distance {
+            if let current = best {
+                if dist < current.distance {
+                    best = (dist, saliencyCenter)
+                }
+            } else {
                 best = (dist, saliencyCenter)
             }
         }
