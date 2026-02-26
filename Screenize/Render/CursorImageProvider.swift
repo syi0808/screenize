@@ -15,6 +15,8 @@ final class CursorImageProvider {
     }
 
     private var imageCache: [CacheKey: CIImage] = [:]
+    private var accessOrder: [CacheKey] = []
+    private let maxCacheSize = 64
 
     // MARK: - Design Constants
 
@@ -34,6 +36,8 @@ final class CursorImageProvider {
         let key = CacheKey(style: style, pixelSize: rounded)
 
         if let cached = imageCache[key] {
+            accessOrder.removeAll { $0 == key }
+            accessOrder.append(key)
             return cached
         }
 
@@ -41,7 +45,13 @@ final class CursorImageProvider {
             return nil
         }
 
+        while imageCache.count >= maxCacheSize, let oldest = accessOrder.first {
+            accessOrder.removeFirst()
+            imageCache.removeValue(forKey: oldest)
+        }
+
         imageCache[key] = image
+        accessOrder.append(key)
         return image
     }
 
@@ -73,6 +83,7 @@ final class CursorImageProvider {
     /// Clear the image cache.
     func clearCache() {
         imageCache.removeAll()
+        accessOrder.removeAll()
     }
 
     // MARK: - Private Helpers
