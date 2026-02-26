@@ -23,6 +23,10 @@ struct EditorMainView: View {
     /// Local event monitor for Delete/Backspace key
     @State private var keyMonitor: Any?
 
+    /// Show save error alert
+    @State private var showSaveErrorAlert = false
+    @State private var saveErrorMessage = ""
+
     // MARK: - Initialization
 
     init(project: ScreenizeProject, projectURL: URL? = nil) {
@@ -147,6 +151,11 @@ struct EditorMainView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Do you want to save before starting a new recording?")
+        }
+        .alert("Save Error", isPresented: $showSaveErrorAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveErrorMessage)
         }
         .onReceive(NotificationCenter.default.publisher(for: .editorUndo)) { _ in
             viewModel.undo()
@@ -328,6 +337,8 @@ struct EditorMainView: View {
                 viewModel.hasUnsavedChanges = false
             } catch {
                 Log.project.error("Failed to save project: \(error)")
+                saveErrorMessage = "Failed to save project: \(error.localizedDescription)"
+                showSaveErrorAlert = true
             }
         }
     }

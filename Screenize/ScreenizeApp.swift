@@ -197,6 +197,8 @@ struct ContentView: View {
     @AppStorage("hasCompletedPermissionSetup") private var hasCompletedSetup: Bool = false
     @State private var isCreatingProject: Bool = false
     @State private var showKeyboardShortcuts = false
+    @State private var showErrorAlert = false
+    @State private var errorAlertMessage = ""
 
     /// Determine current shortcut context based on active screen
     private var currentShortcutContext: ShortcutContext {
@@ -286,6 +288,11 @@ struct ContentView: View {
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutHelpView(context: currentShortcutContext)
         }
+        .alert("Error", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorAlertMessage)
+        }
     }
 
     private func openVideo(url: URL) async {
@@ -309,6 +316,8 @@ struct ContentView: View {
             appState.currentProject = project
         } catch {
             Log.project.error("Failed to create project: \(error)")
+            errorAlertMessage = "Failed to open video: \(error.localizedDescription)"
+            showErrorAlert = true
         }
     }
 
@@ -319,6 +328,8 @@ struct ContentView: View {
             appState.currentProject = result.project
         } catch {
             Log.project.error("Failed to load project: \(error)")
+            errorAlertMessage = "Failed to open project: \(error.localizedDescription)"
+            showErrorAlert = true
         }
     }
 
@@ -365,6 +376,8 @@ struct ContentView: View {
             appState.currentProject = project
         } catch {
             Log.project.error("Failed to create project from recording: \(error)")
+            errorAlertMessage = "Failed to create project: \(error.localizedDescription)"
+            showErrorAlert = true
         }
     }
 }

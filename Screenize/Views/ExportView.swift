@@ -35,6 +35,10 @@ struct ExportSheetView: View {
     @State private var customFPS: Int
     @State private var frameRateValidationError: String?
 
+    // Export error state
+    @State private var showExportErrorAlert = false
+    @State private var exportErrorMessage = ""
+
     // MARK: - Initialization
 
     init(
@@ -97,6 +101,11 @@ struct ExportSheetView: View {
             footer
         }
         .frame(width: 400)
+        .alert("Export Error", isPresented: $showExportErrorAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(exportErrorMessage)
+        }
     }
 
     // MARK: - Header
@@ -560,7 +569,8 @@ struct ExportSheetView: View {
             } catch {
                 await MainActor.run {
                     isExporting = false
-                    // Handle the error
+                    exportErrorMessage = "Export failed: \(error.localizedDescription)"
+                    showExportErrorAlert = true
                     Log.export.error("Export error: \(error)")
                 }
             }
