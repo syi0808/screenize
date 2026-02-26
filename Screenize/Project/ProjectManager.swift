@@ -124,16 +124,22 @@ final class ProjectManager: ObservableObject {
 
     /// Save the recent project list
     private func saveRecentProjects() {
-        let encoder = JSONEncoder()
-        if let data = try? encoder.encode(recentProjects) {
+        do {
+            let data = try JSONEncoder().encode(recentProjects)
             UserDefaults.standard.set(data, forKey: recentProjectsKey)
+        } catch {
+            Log.project.error("Failed to encode recent projects: \(error.localizedDescription)")
         }
     }
 
     /// Load the recent project list
     private func loadRecentProjects() {
-        guard let data = UserDefaults.standard.data(forKey: recentProjectsKey),
-              let projects = try? JSONDecoder().decode([RecentProjectInfo].self, from: data) else {
+        guard let data = UserDefaults.standard.data(forKey: recentProjectsKey) else { return }
+        let projects: [RecentProjectInfo]
+        do {
+            projects = try JSONDecoder().decode([RecentProjectInfo].self, from: data)
+        } catch {
+            Log.project.error("Failed to decode recent projects: \(error.localizedDescription)")
             return
         }
 
