@@ -19,6 +19,8 @@ final class EffectCompositor {
     /// Cache for keystroke pill images (displayText -> fully opaque pill CIImage)
     /// Opacity is applied at render time via CIColorMatrix, not baked in
     private var keystrokePillCache: [String: CIImage] = [:]
+    private var keystrokePillAccessOrder: [String] = []
+    private let maxKeystrokePillCacheSize = 32
 
     /// Frame size used for the current keystroke pill cache (invalidated on size change)
     private var keystrokePillCacheFrameSize: CGSize = .zero
@@ -245,18 +247,26 @@ final class EffectCompositor {
         // Invalidate cache if frame size changed (font size depends on frame height)
         if keystrokePillCacheFrameSize != frameSize {
             keystrokePillCache.removeAll()
+            keystrokePillAccessOrder.removeAll()
             keystrokePillCacheFrameSize = frameSize
         }
 
         // Get or create the fully-opaque pill image
         let pillImage: CIImage
         if let cached = keystrokePillCache[keystroke.displayText] {
+            keystrokePillAccessOrder.removeAll { $0 == keystroke.displayText }
+            keystrokePillAccessOrder.append(keystroke.displayText)
             pillImage = cached
         } else {
             guard let rendered = renderPillImage(for: keystroke.displayText, frameSize: frameSize) else {
                 return nil
             }
+            while keystrokePillCache.count >= maxKeystrokePillCacheSize, let oldest = keystrokePillAccessOrder.first {
+                keystrokePillAccessOrder.removeFirst()
+                keystrokePillCache.removeValue(forKey: oldest)
+            }
             keystrokePillCache[keystroke.displayText] = rendered
+            keystrokePillAccessOrder.append(keystroke.displayText)
             pillImage = rendered
         }
 
@@ -352,6 +362,7 @@ final class EffectCompositor {
     /// Clear the keystroke pill cache
     func clearKeystrokePillCache() {
         keystrokePillCache.removeAll()
+        keystrokePillAccessOrder.removeAll()
         keystrokePillCacheFrameSize = .zero
     }
 
