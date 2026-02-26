@@ -307,14 +307,26 @@ final class AppState: ObservableObject {
         if let target = selectedTarget {
             switch target {
             case .display(let display):
+                let backingScale = NSScreen.screens.first(where: {
+                    ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32) == display.displayID
+                })?.backingScaleFactor ?? 2.0
                 return CaptureMeta(
+                    displayID: display.displayID,
                     boundsPt: CGRect(origin: .zero, size: CGSize(width: display.width, height: display.height)),
-                    scaleFactor: CGFloat(display.width) / CGFloat(display.width) * 2.0
+                    scaleFactor: backingScale
                 )
             case .window(let window):
-                return CaptureMeta(boundsPt: window.frame, scaleFactor: 2.0)
-            case .region(let rect, _):
-                return CaptureMeta(boundsPt: rect, scaleFactor: 2.0)
+                let backingScale = NSScreen.main?.backingScaleFactor ?? 2.0
+                return CaptureMeta(boundsPt: window.frame, scaleFactor: backingScale)
+            case .region(let rect, let display):
+                let backingScale = NSScreen.screens.first(where: {
+                    ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32) == display.displayID
+                })?.backingScaleFactor ?? 2.0
+                return CaptureMeta(
+                    displayID: display.displayID,
+                    boundsPt: rect,
+                    scaleFactor: backingScale
+                )
             }
         } else {
             guard let videoMetadata = await extractVideoMetadata(from: videoURL) else { return nil }
