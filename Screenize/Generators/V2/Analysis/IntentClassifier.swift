@@ -213,9 +213,9 @@ struct IntentClassifier {
                 if scrollStart == nil {
                     scrollStart = event.time
                     scrollPosition = event.position
-                } else if event.time - scrollEnd > scrollMergeGap {
+                } else if let start = scrollStart, event.time - scrollEnd > scrollMergeGap {
                     spans.append(IntentSpan(
-                        startTime: scrollStart!,
+                        startTime: start,
                         endTime: scrollEnd,
                         intent: .scrolling,
                         confidence: 0.9,
@@ -318,19 +318,20 @@ struct IntentClassifier {
         guard !group.isEmpty else { return [] }
 
         if group.count >= navigatingMinClicks {
+            guard let firstEvent = group.first, let lastEvent = group.last else { return [] }
             let avgX = group.map(\.position.x).reduce(0, +) / CGFloat(group.count)
             let avgY = group.map(\.position.y).reduce(0, +) / CGFloat(group.count)
             // Use last click's context change for the navigating span
             let change = detectPostClickChange(
-                clickTime: group.last!.time, uiStateSamples: uiStateSamples
+                clickTime: lastEvent.time, uiStateSamples: uiStateSamples
             )
             var span = IntentSpan(
-                startTime: group.first!.time,
-                endTime: group.last!.time + pointSpanDuration,
+                startTime: firstEvent.time,
+                endTime: lastEvent.time + pointSpanDuration,
                 intent: .navigating,
                 confidence: 0.8,
                 focusPosition: NormalizedPoint(x: avgX, y: avgY),
-                focusElement: group.last?.metadata.elementInfo
+                focusElement: lastEvent.metadata.elementInfo
             )
             span.contextChange = change
             return [span]
@@ -385,7 +386,7 @@ struct IntentClassifier {
         var result: [IntentSpan] = [spans[0]]
         for i in 1..<spans.count {
             let span = spans[i]
-            let prev = result.last!
+            guard let prev = result.last else { continue }
             if span.startTime < prev.endTime {
                 // Trim the later span's start to after the earlier span's end
                 let trimmedStart = prev.endTime
