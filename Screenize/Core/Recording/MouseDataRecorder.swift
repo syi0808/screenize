@@ -194,7 +194,9 @@ final class MouseDataRecorder {
         positionTimer = Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { [weak self] _ in
             self?.sampleMousePosition()
         }
-        RunLoop.current.add(positionTimer!, forMode: .common)
+        if let timer = positionTimer {
+            RunLoop.current.add(timer, forMode: .common)
+        }
     }
 
     private func stopPositionSampling() {
@@ -212,7 +214,9 @@ final class MouseDataRecorder {
         uiStateSampleTimer = Timer.scheduledTimer(withTimeInterval: uiStateSampleInterval, repeats: true) { [weak self] _ in
             self?.sampleUIState()
         }
-        RunLoop.current.add(uiStateSampleTimer!, forMode: .common)
+        if let timer = uiStateSampleTimer {
+            RunLoop.current.add(timer, forMode: .common)
+        }
     }
 
     private func stopUIStateSampling() {
