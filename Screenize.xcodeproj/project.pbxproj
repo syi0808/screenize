@@ -144,6 +144,9 @@
 		F0000090296A0001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000090296A0001 /* Assets.xcassets */; };
 		F00000A0296A0001 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A0296A0001 /* AppState.swift */; };
 		F00000A2296A0001 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A2296A0001 /* Log.swift */; };
+		F00000A3296A0001 /* CaptureSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A3296A0001 /* CaptureSettings.swift */; };
+		F00000A4296A0001 /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A4296A0001 /* NavigationState.swift */; };
+		F00000A5296A0001 /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A5296A0001 /* RecordingState.swift */; };
 		F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A1296A0001 /* GlobalHotkeyManager.swift */; };
 		F00000AF296A0001 /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000AF296A0001 /* Coordinates.swift */; };
 		F00000B0296A0001 /* CaptureConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000B0296A0001 /* CaptureConfiguration.swift */; };
@@ -329,6 +332,9 @@
 		F1000091296A0001 /* Screenize.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Screenize.entitlements; sourceTree = "<group>"; };
 		F10000A0296A0001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F10000A2296A0001 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
+		F10000A3296A0001 /* CaptureSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSettings.swift; sourceTree = "<group>"; };
+		F10000A4296A0001 /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
+		F10000A5296A0001 /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
 		F10000A1296A0001 /* GlobalHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyManager.swift; sourceTree = "<group>"; };
 		F10000AF296A0001 /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
 		F10000B0296A0001 /* CaptureConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureConfiguration.swift; sourceTree = "<group>"; };
@@ -803,6 +809,9 @@
 			isa = PBXGroup;
 			children = (
 				F10000A0296A0001 /* AppState.swift */,
+				F10000A3296A0001 /* CaptureSettings.swift */,
+				F10000A4296A0001 /* NavigationState.swift */,
+				F10000A5296A0001 /* RecordingState.swift */,
 				F10000A2296A0001 /* Log.swift */,
 				F10000A1296A0001 /* GlobalHotkeyManager.swift */,
 				2A626F2E2F2A280000510712 /* SparkleController.swift */,
@@ -1118,6 +1127,9 @@
 				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
 				F00000A2296A0001 /* Log.swift in Sources */,
+				F00000A3296A0001 /* CaptureSettings.swift in Sources */,
+				F00000A4296A0001 /* NavigationState.swift in Sources */,
+				F00000A5296A0001 /* RecordingState.swift in Sources */,
 				F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */,
 				2A626F302F2A280000510712 /* SparkleController.swift in Sources */,
 				2A626F312F2A280000510712 /* CheckForUpdatesView.swift in Sources */,

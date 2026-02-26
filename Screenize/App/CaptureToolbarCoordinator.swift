@@ -184,16 +184,16 @@ final class CaptureToolbarCoordinator: ObservableObject {
     private func setupAppStateBindings() {
         guard let appState else { return }
 
-        // Mirror isPaused from AppState
-        appState.$isPaused
+        // Mirror isPaused from RecordingState
+        appState.recording.$isPaused
             .receive(on: DispatchQueue.main)
             .sink { [weak self] paused in
                 self?.isPaused = paused
             }
             .store(in: &cancellables)
 
-        // Mirror recordingDuration from AppState
-        appState.$recordingDuration
+        // Mirror recordingDuration from RecordingState
+        appState.recording.$recordingDuration
             .receive(on: DispatchQueue.main)
             .sink { [weak self] duration in
                 self?.recordingDuration = duration

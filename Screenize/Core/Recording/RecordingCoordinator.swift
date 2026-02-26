@@ -3,6 +3,7 @@ import CoreMedia
 import CoreImage
 import Combine
 import AppKit
+import AVFoundation
 
 @MainActor
 final class RecordingCoordinator: ObservableObject {
@@ -66,7 +67,11 @@ final class RecordingCoordinator: ObservableObject {
     @available(macOS 15.0, *)
     func startRecording(
         target: CaptureTarget,
-        backgroundStyle: BackgroundStyle
+        backgroundStyle: BackgroundStyle,
+        frameRate: Int,
+        isSystemAudioEnabled: Bool,
+        isMicrophoneEnabled: Bool,
+        microphoneDevice: AVCaptureDevice?
     ) async throws {
         guard currentSession == nil else {
             throw RecordingError.alreadyRecording
@@ -84,9 +89,9 @@ final class RecordingCoordinator: ObservableObject {
         // Setup capture configuration
         var captureConfig = CaptureConfiguration.forTarget(
             target,
-            frameRate: AppState.shared.captureFrameRate
+            frameRate: frameRate
         )
-        captureConfig.capturesAudio = AppState.shared.isSystemAudioEnabled
+        captureConfig.capturesAudio = isSystemAudioEnabled
 
         // DEBUG: Log capture setup details
         Log.recording.debug("Recording target: \(String(describing: target)), captureBounds: \(String(describing: self.captureBounds))")
@@ -118,11 +123,11 @@ final class RecordingCoordinator: ObservableObject {
         )
 
         // Start microphone recording if enabled
-        if AppState.shared.isMicrophoneEnabled {
+        if isMicrophoneEnabled {
             let micRecorder = MicrophoneRecorder()
             let micURL = Self.generateMicOutputURL(for: session.outputURL)
             do {
-                try micRecorder.startRecording(to: micURL, device: AppState.shared.selectedMicrophoneDevice)
+                try micRecorder.startRecording(to: micURL, device: microphoneDevice)
                 self.microphoneRecorder = micRecorder
             } catch {
                 Log.recording.warning("Mic recording failed (non-fatal): \(error)")
