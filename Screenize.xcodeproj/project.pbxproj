@@ -19,6 +19,8 @@
 		C4000001296A0001 /* EditorViewModel+SegmentOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4000002296A0001 /* EditorViewModel+SegmentOperations.swift */; };
 		C5000001296A0001 /* TimelineView+Gestures.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5000002296A0001 /* TimelineView+Gestures.swift */; };
 		D4000001296A0001 /* TimelineView+SegmentBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4000002296A0001 /* TimelineView+SegmentBlock.swift */; };
+		D5000001296A0001 /* Segments.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5000002296A0001 /* Segments.swift */; };
+		D6000001296A0001 /* LegacyTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6000002296A0001 /* LegacyTrack.swift */; };
 		AA000001296A0001 /* UnifiedEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000001296A0001 /* UnifiedEvent.swift */; };
 		AA000002296A0001 /* UserIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000002296A0001 /* UserIntent.swift */; };
 		AA000003296A0001 /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000003296A0001 /* Scene.swift */; };
@@ -216,6 +218,8 @@
 		C4000002296A0001 /* EditorViewModel+SegmentOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+SegmentOperations.swift"; sourceTree = "<group>"; };
 		C5000002296A0001 /* TimelineView+Gestures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+Gestures.swift"; sourceTree = "<group>"; };
 		D4000002296A0001 /* TimelineView+SegmentBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+SegmentBlock.swift"; sourceTree = "<group>"; };
+		D5000002296A0001 /* Segments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Segments.swift; sourceTree = "<group>"; };
+		D6000002296A0001 /* LegacyTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyTrack.swift; sourceTree = "<group>"; };
 		AB000001296A0001 /* UnifiedEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedEvent.swift; sourceTree = "<group>"; };
 		AB000002296A0001 /* UserIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIntent.swift; sourceTree = "<group>"; };
 		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
@@ -741,6 +745,8 @@
 				F1000010296A0001 /* EasingCurve.swift */,
 				F1000011296A0001 /* Keyframe.swift */,
 				F1000012296A0001 /* Track.swift */,
+				D5000002296A0001 /* Segments.swift */,
+				D6000002296A0001 /* LegacyTrack.swift */,
 				F1000013296A0001 /* Timeline.swift */,
 			);
 			path = Timeline;
@@ -1133,6 +1139,8 @@
 				F0000010296A0001 /* EasingCurve.swift in Sources */,
 				F0000011296A0001 /* Keyframe.swift in Sources */,
 				F0000012296A0001 /* Track.swift in Sources */,
+				D5000001296A0001 /* Segments.swift in Sources */,
+				D6000001296A0001 /* LegacyTrack.swift in Sources */,
 				F0000013296A0001 /* Timeline.swift in Sources */,
 				F0000020296A0001 /* EvaluatedState.swift in Sources */,
 				F0000022296A0001 /* FrameEvaluator.swift in Sources */,
