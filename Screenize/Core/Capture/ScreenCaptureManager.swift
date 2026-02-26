@@ -73,9 +73,8 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         let vfrManager = VFRRecordingManager(targetFrameRate: configuration.frameRate)
         vfrManager.onRecordingFinished = { [weak self] url in
             self?.recordingFinished.signal()
-            if let url = url {
-                self?.delegate?.captureManager(self!, didFinishRecordingTo: url)
-            }
+            guard let self = self, let url = url else { return }
+            self.delegate?.captureManager(self, didFinishRecordingTo: url)
         }
         try vfrManager.startRecording(to: outputURL, configuration: configuration)
         self.recordingManager = vfrManager
@@ -270,19 +269,19 @@ private final class StreamOutput: NSObject, SCStreamOutput, @unchecked Sendable 
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard sampleBuffer.isValid else { return }
+        guard sampleBuffer.isValid, let manager = delegate else { return }
 
         switch type {
         case .screen:
             // VFR recording: forward frames to VFRRecordingManager
-            delegate?.recordingManager?.receiveFrame(sampleBuffer)
+            manager.recordingManager?.receiveFrame(sampleBuffer)
 
             // Also forward to the delegate (for preview, etc.)
-            delegate?.delegate?.captureManager(delegate!, didOutputVideoSampleBuffer: sampleBuffer)
+            manager.delegate?.captureManager(manager, didOutputVideoSampleBuffer: sampleBuffer)
         case .audio:
             // Forward system audio to VFR recording manager for writing
-            delegate?.recordingManager?.receiveAudioSample(sampleBuffer)
-            delegate?.delegate?.captureManager(delegate!, didOutputAudioSampleBuffer: sampleBuffer)
+            manager.recordingManager?.receiveAudioSample(sampleBuffer)
+            manager.delegate?.captureManager(manager, didOutputAudioSampleBuffer: sampleBuffer)
         case .microphone:
             // Microphone audio - currently unused
             break
