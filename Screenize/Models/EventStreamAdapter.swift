@@ -235,8 +235,8 @@ enum EventStreamLoader {
 
         // Load recording metadata
         let metadataURL = packageURL.appendingPathComponent(interop.recordingMetadataPath)
-        guard let metadataData = try? Data(contentsOf: metadataURL),
-              let metadata = try? decoder.decode(PolyRecordingMetadata.self, from: metadataData) else {
+        guard let metadata: PolyRecordingMetadata = loadStream(from: metadataURL, decoder: decoder) else {
+            Log.project.warning("Failed to load recording metadata from \(metadataURL.lastPathComponent)")
             return nil
         }
 
@@ -244,27 +244,21 @@ enum EventStreamLoader {
         var mouseMoves: [PolyMouseMoveEvent] = []
         if let path = interop.streams.mouseMoves {
             let url = packageURL.appendingPathComponent(path)
-            if let data = try? Data(contentsOf: url) {
-                mouseMoves = (try? decoder.decode([PolyMouseMoveEvent].self, from: data)) ?? []
-            }
+            mouseMoves = loadStream(from: url, decoder: decoder) ?? []
         }
 
         // Load mouse clicks
         var mouseClicks: [PolyMouseClickEvent] = []
         if let path = interop.streams.mouseClicks {
             let url = packageURL.appendingPathComponent(path)
-            if let data = try? Data(contentsOf: url) {
-                mouseClicks = (try? decoder.decode([PolyMouseClickEvent].self, from: data)) ?? []
-            }
+            mouseClicks = loadStream(from: url, decoder: decoder) ?? []
         }
 
         // Load keystrokes
         var keystrokes: [PolyKeystrokeEvent] = []
         if let path = interop.streams.keystrokes {
             let url = packageURL.appendingPathComponent(path)
-            if let data = try? Data(contentsOf: url) {
-                keystrokes = (try? decoder.decode([PolyKeystrokeEvent].self, from: data)) ?? []
-            }
+            keystrokes = loadStream(from: url, decoder: decoder) ?? []
         }
 
         return EventStreamAdapter(
@@ -292,8 +286,7 @@ enum EventStreamLoader {
             meta = metadata
         } else {
             let metadataURL = packageURL.appendingPathComponent(interop.recordingMetadataPath)
-            guard let metadataData = try? Data(contentsOf: metadataURL),
-                  let decoded = try? decoder.decode(PolyRecordingMetadata.self, from: metadataData) else {
+            guard let decoded: PolyRecordingMetadata = loadStream(from: metadataURL, decoder: decoder) else {
                 return []
             }
             meta = decoded
@@ -301,8 +294,7 @@ enum EventStreamLoader {
 
         guard let path = interop.streams.uiStates else { return [] }
         let url = packageURL.appendingPathComponent(path)
-        guard let data = try? Data(contentsOf: url),
-              let events = try? decoder.decode([PolyUIStateEvent].self, from: data) else {
+        guard let events: [PolyUIStateEvent] = loadStream(from: url, decoder: decoder) else {
             return []
         }
 
@@ -358,6 +350,21 @@ enum EventStreamLoader {
                 elementInfo: elementInfo,
                 caretBounds: caretBounds
             )
+        }
+    }
+
+    // MARK: - Stream Loading Helper
+
+    private static func loadStream<T: Decodable>(
+        from url: URL,
+        decoder: JSONDecoder
+    ) -> T? {
+        do {
+            let data = try Data(contentsOf: url)
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            Log.project.warning("Failed to load stream \(url.lastPathComponent): \(error.localizedDescription)")
+            return nil
         }
     }
 }
