@@ -147,12 +147,15 @@ final class PreviewCache {
 
     // MARK: - Private Helpers
 
-    /// Check whether a given index falls within a dirty range
+    /// Check whether a given index falls within a dirty range (binary search on sorted ranges)
     private func isDirty(_ index: Int) -> Bool {
-        for range in dirtyRanges {
-            if range.contains(index) {
-                return true
-            }
+        guard !dirtyRanges.isEmpty else { return false }
+        var lo = 0, hi = dirtyRanges.count - 1
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            if dirtyRanges[mid].contains(index) { return true }
+            if index < dirtyRanges[mid].lowerBound { hi = mid - 1 }
+            else { lo = mid + 1 }
         }
         return false
     }
