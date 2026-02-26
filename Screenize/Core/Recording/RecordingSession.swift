@@ -112,7 +112,11 @@ final class RecordingSession: Identifiable, @unchecked Sendable {
         guard let documentsPath = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first else {
             let home = FileManager.default.homeDirectoryForCurrentUser
             let fallback = home.appendingPathComponent("Movies/Screenize", isDirectory: true)
-            try? FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)
+            do {
+                try FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)
+            } catch {
+                Log.recording.error("Failed to create fallback recordings directory: \(error.localizedDescription)")
+            }
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
             let dateString = dateFormatter.string(from: Date())
@@ -121,7 +125,11 @@ final class RecordingSession: Identifiable, @unchecked Sendable {
         let screenizeFolder = documentsPath.appendingPathComponent("Screenize", isDirectory: true)
         #endif
 
-        try? FileManager.default.createDirectory(at: screenizeFolder, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: screenizeFolder, withIntermediateDirectories: true)
+        } catch {
+            Log.recording.error("Failed to create recordings directory at \(screenizeFolder.path): \(error.localizedDescription)")
+        }
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"

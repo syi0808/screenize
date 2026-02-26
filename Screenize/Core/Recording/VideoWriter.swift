@@ -287,7 +287,11 @@ final class VideoWriter: @unchecked Sendable {
         assetWriter?.cancelWriting()
 
         // Clean up file
-        try? FileManager.default.removeItem(at: outputURL)
+        do {
+            try FileManager.default.removeItem(at: outputURL)
+        } catch {
+            Log.recording.debug("Could not remove cancelled recording file: \(error.localizedDescription)")
+        }
     }
 
     var currentDuration: TimeInterval {
