@@ -32,7 +32,7 @@ private func timelineTrackIcon(for type: TrackType) -> String {
     }
 }
 
-private func timelineIsSegmentInTrimRange(
+func timelineIsSegmentInTrimRange(
     start: TimeInterval,
     end: TimeInterval,
     trimStart: TimeInterval,
@@ -68,14 +68,14 @@ struct TimelineView: View {
     @State private var isDraggingTrimEnd = false
     @State var activeSegmentInteraction: SegmentInteraction?
     @State private var resizeCursorHoverCount = 0
-    @State private var hoveredSegmentID: UUID?
+    @State var hoveredSegmentID: UUID?
 
     private let minPixelsPerSecond: CGFloat = 1
     private let maxPixelsPerSecond: CGFloat = 2000
     let minSegmentDuration: TimeInterval = 0.05
     let snapThresholdInPoints: CGFloat = 8
     private let rulerHeight: CGFloat = 24
-    private let trackHeight: CGFloat = 40
+    let trackHeight: CGFloat = 40
     private let headerWidth: CGFloat = 140
 
     /// Total height of ruler + all track rows (including dividers)
@@ -276,464 +276,18 @@ struct TimelineView: View {
         .coordinateSpace(name: "trackArea")
     }
 
-    @ViewBuilder
-    private func segmentBlocks(for track: AnySegmentTrack) -> some View {
-        switch track {
-        case .camera(let cameraTrack):
-            let ranges = cameraTrack.segments.map {
-                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
-            }
-
-            ForEach(cameraTrack.segments) { segment in
-                segmentBlock(
-                    trackType: .transform,
-                    id: segment.id,
-                    start: segment.startTime,
-                    end: segment.endTime,
-                    ranges: ranges,
-                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
-                )
-            }
-        case .cursor(let cursorTrack):
-            let ranges = cursorTrack.segments.map {
-                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
-            }
-
-            ForEach(cursorTrack.segments) { segment in
-                segmentBlock(
-                    trackType: .cursor,
-                    id: segment.id,
-                    start: segment.startTime,
-                    end: segment.endTime,
-                    ranges: ranges,
-                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime),
-                    cursorStyle: segment.style
-                )
-            }
-        case .keystroke(let keystrokeTrack):
-            let ranges = keystrokeTrack.segments.map {
-                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
-            }
-
-            ForEach(keystrokeTrack.segments) { segment in
-                segmentBlock(
-                    trackType: .keystroke,
-                    id: segment.id,
-                    start: segment.startTime,
-                    end: segment.endTime,
-                    ranges: ranges,
-                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
-                )
-            }
-        case .audio(let audioTrack):
-            let ranges = audioTrack.segments.map {
-                SegmentRange(id: $0.id, start: $0.startTime, end: $0.endTime)
-            }
-
-            ForEach(audioTrack.segments) { segment in
-                segmentBlock(
-                    trackType: .audio,
-                    id: segment.id,
-                    start: segment.startTime,
-                    end: segment.endTime,
-                    ranges: ranges,
-                    editBounds: editBounds(from: ranges, excluding: segment.id, currentStart: segment.startTime, currentEnd: segment.endTime)
-                )
-            }
-        }
-    }
-
-    private func segmentBlock(
-        trackType: TrackType,
-        id: UUID,
-        start: TimeInterval,
-        end: TimeInterval,
-        ranges: [SegmentRange],
-        editBounds: SegmentEditBounds,
-        cursorStyle: CursorStyle? = nil
-    ) -> some View {
-        let resizeSnapTargets = snapTargets(from: ranges, excluding: id)
-        let displayStart = segmentDisplayStart(for: id, fallback: start)
-        let displayEnd = segmentDisplayEnd(for: id, fallback: end)
-        let x = CGFloat(displayStart) * pixelsPerSecond
-        let width = max(6, CGFloat(displayEnd - displayStart) * pixelsPerSecond)
-        let color = DesignColors.trackColor(for: trackType)
-        let isSelected = selection.contains(id)
-        let isHovered = hoveredSegmentID == id
-        let showHandles = isSelected || isHovered
-
-        let adaptiveHandleWidth: CGFloat = {
-            if width < 10 && !isSelected { return 0 }
-            if width < 20 { return max(3, width * 0.15) }
-            if width < 40 { return max(4, min(10, width * 0.2)) }
-            return 10
-        }()
-
-        return ZStack {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(color.opacity(isSelected ? 0.9 : 0.6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .strokeBorder(
-                            Color.white.opacity(isSelected ? 0.5 : (isHovered ? 0.35 : 0.15)),
-                            lineWidth: 1
-                        )
-                )
-
-            // Cursor style indicator
-            if let style = cursorStyle, width > 20 {
-                HStack(spacing: 2) {
-                    Image(systemName: style.sfSymbolName)
-                        .font(.system(size: 8))
-                        .foregroundColor(.white.opacity(0.8))
-                    if width > 60 {
-                        Text(style.displayName)
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(1)
-                    }
-                }
-                .allowsHitTesting(false)
-            }
-
-            // Handles: visible only on hover/selection
-            if showHandles && adaptiveHandleWidth > 0 {
-                HStack(spacing: 0) {
-                    segmentHandleView(
-                        width: adaptiveHandleWidth,
-                        isSelected: isSelected,
-                        segmentWidth: width
-                    )
-                    .contentShape(Rectangle())
-                    .onHover { isHovering in
-                        updateResizeCursor(isHovering)
-                    }
-                    .highPriorityGesture(
-                        resizeGesture(
-                            for: id, trackType: trackType,
-                            start: start, end: end,
-                            mode: .resizeStart,
-                            snapTargets: resizeSnapTargets,
-                            editBounds: editBounds
-                        )
-                    )
-
-                    Spacer(minLength: 0)
-
-                    segmentHandleView(
-                        width: adaptiveHandleWidth,
-                        isSelected: isSelected,
-                        segmentWidth: width
-                    )
-                    .contentShape(Rectangle())
-                    .onHover { isHovering in
-                        updateResizeCursor(isHovering)
-                    }
-                    .highPriorityGesture(
-                        resizeGesture(
-                            for: id, trackType: trackType,
-                            start: start, end: end,
-                            mode: .resizeEnd,
-                            snapTargets: resizeSnapTargets,
-                            editBounds: editBounds
-                        )
-                    )
-                }
-            } else {
-                // Invisible resize hit zones when handles are hidden
-                HStack(spacing: 0) {
-                    Color.clear
-                        .frame(width: max(6, min(10, width * 0.25)))
-                        .contentShape(Rectangle())
-                        .onHover { isHovering in
-                            updateResizeCursor(isHovering)
-                        }
-                        .highPriorityGesture(
-                            resizeGesture(
-                                for: id, trackType: trackType,
-                                start: start, end: end,
-                                mode: .resizeStart,
-                                snapTargets: resizeSnapTargets,
-                                editBounds: editBounds
-                            )
-                        )
-
-                    Spacer(minLength: 0)
-
-                    Color.clear
-                        .frame(width: max(6, min(10, width * 0.25)))
-                        .contentShape(Rectangle())
-                        .onHover { isHovering in
-                            updateResizeCursor(isHovering)
-                        }
-                        .highPriorityGesture(
-                            resizeGesture(
-                                for: id, trackType: trackType,
-                                start: start, end: end,
-                                mode: .resizeEnd,
-                                snapTargets: resizeSnapTargets,
-                                editBounds: editBounds
-                            )
-                        )
-                }
-            }
-        }
-        .frame(width: width, height: 22)
-        .contentShape(Rectangle())
-        .onHover { isHovering in
-            hoveredSegmentID = isHovering ? id : nil
-        }
-        .gesture(
-            moveGesture(
-                for: id,
-                trackType: trackType,
-                start: start,
-                end: end,
-                ranges: ranges
-            )
-        )
-        .onTapGesture {
-            if NSEvent.modifierFlags.contains(.shift) {
-                onSegmentToggleSelect?(trackType, id)
-            } else {
-                onSegmentSelect?(trackType, id)
-            }
-        }
-        .position(x: x + width / 2, y: trackHeight / 2)
-        .opacity(
-            timelineIsSegmentInTrimRange(
-                start: displayStart,
-                end: displayEnd,
-                trimStart: trimStart,
-                trimEnd: trimEnd,
-                duration: duration
-            ) ? 1.0 : 0.3
-        )
-    }
-
-    @ViewBuilder
-    private func segmentHandleView(
-        width: CGFloat,
-        isSelected: Bool,
-        segmentWidth: CGFloat
-    ) -> some View {
-        if segmentWidth < 16 {
-            Rectangle()
-                .fill(Color.white.opacity(isSelected ? 0.8 : 0.5))
-                .frame(width: max(2, width))
-        } else {
-            Rectangle()
-                .fill(Color.white.opacity(isSelected ? 0.22 : 0.12))
-                .frame(width: width)
-                .overlay(
-                    Rectangle()
-                        .fill(Color.white.opacity(isSelected ? 0.7 : 0.35))
-                        .frame(width: 1)
-                )
-        }
-    }
-
-    private func moveGesture(
-        for id: UUID,
-        trackType: TrackType,
-        start: TimeInterval,
-        end: TimeInterval,
-        ranges: [SegmentRange]
-    ) -> some Gesture {
-        DragGesture(minimumDistance: 3, coordinateSpace: .named("trackArea"))
-            .onChanged { value in
-                let isMultiMove = selection.contains(id) && selection.count > 1
-
-                if !isInteracting(with: id, mode: .move) {
-                    let companions = isMultiMove ? collectCompanions(excluding: id) : []
-                    activeSegmentInteraction = SegmentInteraction(
-                        id: id,
-                        mode: .move,
-                        initialStart: start,
-                        initialEnd: end,
-                        previewStart: start,
-                        previewEnd: end,
-                        companions: companions
-                    )
-                }
-
-                guard var interaction = activeSegmentInteraction, interaction.id == id, interaction.mode == .move else {
-                    return
-                }
-
-                let segmentDuration = interaction.initialEnd - interaction.initialStart
-                let rawDelta = Double(value.translation.width / pixelsPerSecond)
-
-                if interaction.companions.isEmpty {
-                    // Single segment move (original logic)
-                    let unclampedStart = interaction.initialStart + rawDelta
-                    let unclampedCenter = unclampedStart + segmentDuration / 2
-
-                    let others = ranges.filter { $0.id != id }.sorted { $0.start < $1.start }
-                    var gapStart: TimeInterval = 0
-                    var gapEnd: TimeInterval = duration
-                    for other in others {
-                        let otherCenter = (other.start + other.end) / 2
-                        if unclampedCenter <= otherCenter {
-                            gapEnd = other.start
-                            break
-                        }
-                        gapStart = other.end
-                    }
-
-                    let dynBounds = SegmentEditBounds(minStart: gapStart, maxEnd: gapEnd)
-                    var proposedStart = max(gapStart, min(gapEnd - segmentDuration, unclampedStart))
-                    proposedStart = max(0, min(duration - segmentDuration, proposedStart))
-                    var proposedEnd = proposedStart + segmentDuration
-
-                    let allSnapTargets = snapTargets(from: ranges, excluding: id)
-                    (proposedStart, proposedEnd) = snappedRange(
-                        start: proposedStart, end: proposedEnd,
-                        mode: .move, snapTargets: allSnapTargets, editBounds: dynBounds
-                    )
-
-                    interaction.previewStart = proposedStart
-                    interaction.previewEnd = proposedEnd
-                    activeSegmentInteraction = interaction
-                } else {
-                    // Multi-segment move: constrain delta across all participants
-                    let selectedIDs = Set(
-                        [interaction.id] + interaction.companions.map(\.id)
-                    )
-
-                    // Compute allowable delta for the primary segment
-                    let primaryRange = allowableDeltaRange(
-                        segmentStart: interaction.initialStart,
-                        segmentEnd: interaction.initialEnd,
-                        segmentID: interaction.id,
-                        trackType: trackType,
-                        selectedIDs: selectedIDs
-                    )
-                    var globalMinDelta = primaryRange.min
-                    var globalMaxDelta = primaryRange.max
-
-                    // Compute allowable delta for each companion
-                    for companion in interaction.companions {
-                        let compRange = allowableDeltaRange(
-                            segmentStart: companion.initialStart,
-                            segmentEnd: companion.initialEnd,
-                            segmentID: companion.id,
-                            trackType: companion.trackType,
-                            selectedIDs: selectedIDs
-                        )
-                        globalMinDelta = max(globalMinDelta, compRange.min)
-                        globalMaxDelta = min(globalMaxDelta, compRange.max)
-                    }
-
-                    // Clamp the raw delta to the intersection of all allowable ranges
-                    let constrainedDelta = max(globalMinDelta, min(globalMaxDelta, rawDelta))
-
-                    // Apply snap on primary segment only
-                    var proposedStart = interaction.initialStart + constrainedDelta
-                    var proposedEnd = proposedStart + segmentDuration
-                    let dynBounds = SegmentEditBounds(
-                        minStart: interaction.initialStart + globalMinDelta,
-                        maxEnd: interaction.initialEnd + globalMaxDelta
-                    )
-                    let allSnapTargets = snapTargets(from: ranges, excluding: id)
-                    (proposedStart, proposedEnd) = snappedRange(
-                        start: proposedStart, end: proposedEnd,
-                        mode: .move, snapTargets: allSnapTargets, editBounds: dynBounds
-                    )
-
-                    // Derive final delta from primary
-                    let finalDelta = proposedStart - interaction.initialStart
-
-                    interaction.previewStart = proposedStart
-                    interaction.previewEnd = proposedEnd
-                    for i in interaction.companions.indices {
-                        let comp = interaction.companions[i]
-                        interaction.companions[i].previewStart = comp.initialStart + finalDelta
-                        interaction.companions[i].previewEnd = comp.initialEnd + finalDelta
-                    }
-                    activeSegmentInteraction = interaction
-                }
-            }
-            .onEnded { _ in
-                let hasCompanions = activeSegmentInteraction?.companions.isEmpty == false
-                commitInteraction(for: id)
-                if !hasCompanions {
-                    onSegmentSelect?(trackType, id)
-                }
-            }
-    }
-
-    private func resizeGesture(
-        for id: UUID,
-        trackType: TrackType,
-        start: TimeInterval,
-        end: TimeInterval,
-        mode: SegmentInteractionMode,
-        snapTargets: [TimeInterval],
-        editBounds: SegmentEditBounds
-    ) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .named("trackArea"))
-            .onChanged { value in
-                if !isInteracting(with: id, mode: mode) {
-                    activeSegmentInteraction = SegmentInteraction(
-                        id: id,
-                        mode: mode,
-                        initialStart: start,
-                        initialEnd: end,
-                        previewStart: start,
-                        previewEnd: end
-                    )
-                }
-
-                guard var interaction = activeSegmentInteraction, interaction.id == id, interaction.mode == mode else {
-                    return
-                }
-
-                let deltaTime = Double(value.translation.width / pixelsPerSecond)
-                var proposedStart = interaction.initialStart
-                var proposedEnd = interaction.initialEnd
-
-                switch mode {
-                case .resizeStart:
-                    proposedStart = interaction.initialStart + deltaTime
-                    proposedStart = max(editBounds.minStart, min(interaction.initialEnd - minSegmentDuration, proposedStart))
-                case .resizeEnd:
-                    proposedEnd = interaction.initialEnd + deltaTime
-                    proposedEnd = min(editBounds.maxEnd, max(interaction.initialStart + minSegmentDuration, proposedEnd))
-                case .move:
-                    break
-                }
-
-                (proposedStart, proposedEnd) = snappedRange(
-                    start: proposedStart,
-                    end: proposedEnd,
-                    mode: mode,
-                    snapTargets: snapTargets,
-                    editBounds: editBounds
-                )
-
-                interaction.previewStart = proposedStart
-                interaction.previewEnd = proposedEnd
-                activeSegmentInteraction = interaction
-            }
-            .onEnded { _ in
-                commitInteraction(for: id)
-                onSegmentSelect?(trackType, id)
-            }
-    }
-
 }
 
 // MARK: - Snapping & Interaction Helpers
 
 extension TimelineView {
 
-    private func isInteracting(with id: UUID, mode: SegmentInteractionMode) -> Bool {
+    func isInteracting(with id: UUID, mode: SegmentInteractionMode) -> Bool {
         guard let interaction = activeSegmentInteraction else { return false }
         return interaction.id == id && interaction.mode == mode
     }
 
-    private func segmentDisplayStart(for id: UUID, fallback: TimeInterval) -> TimeInterval {
+    func segmentDisplayStart(for id: UUID, fallback: TimeInterval) -> TimeInterval {
         guard let interaction = activeSegmentInteraction else { return fallback }
         if interaction.id == id { return interaction.previewStart }
         if let companion = interaction.companions.first(where: { $0.id == id }) {
@@ -742,7 +296,7 @@ extension TimelineView {
         return fallback
     }
 
-    private func segmentDisplayEnd(for id: UUID, fallback: TimeInterval) -> TimeInterval {
+    func segmentDisplayEnd(for id: UUID, fallback: TimeInterval) -> TimeInterval {
         guard let interaction = activeSegmentInteraction else { return fallback }
         if interaction.id == id { return interaction.previewEnd }
         if let companion = interaction.companions.first(where: { $0.id == id }) {
@@ -754,7 +308,7 @@ extension TimelineView {
     // snappedRange, commitInteraction, snapTargets, editBounds
     // are in TimelineView+MultiMove.swift
 
-    private func updateResizeCursor(_ isHovering: Bool) {
+    func updateResizeCursor(_ isHovering: Bool) {
         #if os(macOS)
         if isHovering {
             if resizeCursorHoverCount == 0 {
