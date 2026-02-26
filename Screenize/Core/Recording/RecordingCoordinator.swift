@@ -45,14 +45,24 @@ final class RecordingCoordinator: ObservableObject {
     ])
 
     // MARK: - Thread-Safe State (for Capture Callbacks)
-    // Note: ScreenCaptureDelegate methods run on the capture queue,
-    // so nonisolated (unsafe) usage allows bypassing MainActor isolation.
+    // ScreenCaptureDelegate methods run on the capture queue.
+    // nonisolated(unsafe) bypasses actor isolation; captureStateLock provides runtime safety.
 
+    private nonisolated(unsafe) let captureStateLock = NSLock()
     nonisolated(unsafe) private var _captureSession: RecordingSession?
     nonisolated(unsafe) private var _captureIsPaused: Bool = false
 
-    nonisolated var captureSession: RecordingSession? { _captureSession }
-    nonisolated var captureIsPaused: Bool { _captureIsPaused }
+    nonisolated var captureSession: RecordingSession? {
+        captureStateLock.lock()
+        defer { captureStateLock.unlock() }
+        return _captureSession
+    }
+
+    nonisolated var captureIsPaused: Bool {
+        captureStateLock.lock()
+        defer { captureStateLock.unlock() }
+        return _captureIsPaused
+    }
 
     // MARK: - Computed State
 
@@ -98,9 +108,11 @@ final class RecordingCoordinator: ObservableObject {
         Log.recording.debug("captureConfig: \(captureConfig.width)x\(captureConfig.height), shadow: \(captureConfig.capturesShadow)")
         self.captureConfiguration = captureConfig
 
-        // Sync nonisolated variables
+        // Sync capture state for delegate callbacks
+        captureStateLock.lock()
         _captureSession = session
         _captureIsPaused = false
+        captureStateLock.unlock()
 
         // Setup and start capture with SCRecordingOutput
         captureManager = ScreenCaptureManager()
@@ -151,9 +163,11 @@ final class RecordingCoordinator: ObservableObject {
         isRecording = false
         isPaused = false
 
-        // Clean up nonisolated variables
+        // Clean up capture state
+        captureStateLock.lock()
         _captureIsPaused = true
         _captureSession = nil
+        captureStateLock.unlock()
 
         stopDurationTimer()
 
@@ -190,7 +204,9 @@ final class RecordingCoordinator: ObservableObject {
     func pauseRecording() {
         guard isRecording, !isPaused else { return }
         isPaused = true
+        captureStateLock.lock()
         _captureIsPaused = true
+        captureStateLock.unlock()
         stopDurationTimer()
         mouseDataRecorder?.pauseRecording()
         microphoneRecorder?.pause()
@@ -199,7 +215,9 @@ final class RecordingCoordinator: ObservableObject {
     func resumeRecording() {
         guard isRecording, isPaused else { return }
         isPaused = false
+        captureStateLock.lock()
         _captureIsPaused = false
+        captureStateLock.unlock()
         startDurationTimer()
         mouseDataRecorder?.resumeRecording()
         microphoneRecorder?.resume()
