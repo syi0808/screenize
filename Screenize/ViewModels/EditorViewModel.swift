@@ -375,7 +375,8 @@ final class EditorViewModel: ObservableObject {
             updateTimeline(
                 cameraTrack: selection.contains(.transform) ? generated.cameraTrack : nil,
                 cursorTrack: selection.contains(.cursor) ? generated.cursorTrack : nil,
-                keystrokeTrack: selection.contains(.keystroke) ? generated.keystrokeTrack : nil
+                keystrokeTrack: selection.contains(.keystroke) ? generated.keystrokeTrack : nil,
+                continuousTransforms: selection.contains(.transform) ? generated.continuousTransforms : nil
             )
 
             Log.generator.info("Smart generation V2 completed for \(selection.count) track type(s)")
@@ -418,7 +419,8 @@ final class EditorViewModel: ObservableObject {
     private func updateTimeline(
         cameraTrack: CameraTrack? = nil,
         cursorTrack: CursorTrackV2? = nil,
-        keystrokeTrack: KeystrokeTrackV2? = nil
+        keystrokeTrack: KeystrokeTrackV2? = nil,
+        continuousTransforms: [TimedTransform]? = nil
     ) {
         if let cameraTrack = cameraTrack {
             if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) {
@@ -427,6 +429,9 @@ final class EditorViewModel: ObservableObject {
                 project.timeline.tracks.insert(.camera(cameraTrack), at: 0)
             }
         }
+
+        // Store continuous transforms (nil clears any previous continuous path)
+        project.timeline.continuousTransforms = continuousTransforms
 
         if let cursorTrack = cursorTrack {
             if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) {
@@ -509,6 +514,7 @@ final class EditorViewModel: ObservableObject {
         switch trackType {
         case .transform:
             addTransformSegment(at: time)
+            project.timeline.continuousTransforms = nil
         case .cursor:
             addCursorSegment(at: time)
         case .keystroke:
@@ -604,6 +610,7 @@ final class EditorViewModel: ObservableObject {
         switch trackType {
         case .transform:
             deleteTransformSegment(id)
+            project.timeline.continuousTransforms = nil
         case .cursor:
             deleteCursorSegment(id)
         case .keystroke:
@@ -743,6 +750,7 @@ final class EditorViewModel: ObservableObject {
                 segment.endTime = clampedEnd
                 guard track.updateSegment(segment) else { return false }
                 project.timeline.tracks[trackIndex] = .camera(track)
+                project.timeline.continuousTransforms = nil
                 return true
 
             case .cursor(var track):
@@ -815,6 +823,7 @@ final class EditorViewModel: ObservableObject {
             }
         }
 
+        project.timeline.continuousTransforms = nil
         selection.clear()
         hasUnsavedChanges = true
         invalidatePreviewCache()
@@ -922,6 +931,7 @@ final class EditorViewModel: ObservableObject {
 
     /// Notify that a segment changed (called from the inspector)
     func notifySegmentChanged() {
+        project.timeline.continuousTransforms = nil
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }

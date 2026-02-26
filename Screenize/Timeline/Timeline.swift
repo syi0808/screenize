@@ -14,16 +14,22 @@ struct Timeline: Codable, Equatable {
     /// Trim end time on source timeline; nil means `duration`.
     var trimEnd: TimeInterval?
 
+    /// Pre-computed continuous camera path from physics simulation.
+    /// When set, FrameEvaluator uses this instead of CameraTrack segments.
+    var continuousTransforms: [TimedTransform]?
+
     init(
         tracks: [AnySegmentTrack] = [],
         duration: TimeInterval = 0,
         trimStart: TimeInterval = 0,
-        trimEnd: TimeInterval? = nil
+        trimEnd: TimeInterval? = nil,
+        continuousTransforms: [TimedTransform]? = nil
     ) {
         self.tracks = tracks
         self.duration = duration
         self.trimStart = trimStart
         self.trimEnd = trimEnd
+        self.continuousTransforms = continuousTransforms
     }
 
     // MARK: - Trim

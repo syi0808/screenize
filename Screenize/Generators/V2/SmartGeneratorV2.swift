@@ -321,6 +321,8 @@ struct GeneratedTimeline {
     let cameraTrack: CameraTrack
     let cursorTrack: CursorTrackV2
     let keystrokeTrack: KeystrokeTrackV2
+    /// Pre-computed continuous camera path (set by ContinuousCameraGenerator, nil for segment-based).
+    var continuousTransforms: [TimedTransform]?
 }
 
 /// Settings for the V2 smart generation pipeline.

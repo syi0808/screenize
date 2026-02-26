@@ -5,14 +5,15 @@ import CoreGraphics
 ///
 /// Unlike SmartGeneratorV2 which uses discrete segments + transitions,
 /// this generator produces a single continuous camera path via physics simulation.
+/// The resulting `TimedTransform[]` is stored on the Timeline and evaluated
+/// directly by FrameEvaluator — no lossy segment conversion.
 ///
 /// Pipeline:
 /// 1. Pre-smooth mouse data
 /// 2. Build EventTimeline + classify intents (reuses existing V2 infrastructure)
 /// 3. WaypointGenerator: IntentSpan[] → CameraWaypoint[]
 /// 4. SpringDamperSimulator: waypoints → continuous TimedTransform[] at 60Hz
-/// 5. ContinuousTrackEmitter: samples → CameraTrack (non-overlapping segments)
-/// 6. Apply zoom intensity + emit cursor/keystroke tracks
+/// 5. Apply zoom intensity to samples + emit cursor/keystroke tracks
 class ContinuousCameraGenerator {
 
     /// Generate a complete timeline using continuous camera physics.
@@ -58,26 +59,25 @@ class ContinuousCameraGenerator {
         )
 
         // Step 5: Simulate continuous camera path
-        let samples = SpringDamperSimulator.simulate(
+        let rawSamples = SpringDamperSimulator.simulate(
             waypoints: waypoints,
             duration: duration,
             settings: settings
         )
 
-        // Step 6: Convert samples to camera track
-        let rawCameraTrack = ContinuousTrackEmitter.emit(from: samples)
-
-        // Step 7: Apply post-hoc zoom intensity
-        let cameraTrack = Self.applyZoomIntensity(
-            rawCameraTrack, intensity: settings.zoomIntensity
+        // Step 6: Apply post-hoc zoom intensity directly to samples
+        let samples = Self.applyZoomIntensity(
+            to: rawSamples, intensity: settings.zoomIntensity
         )
+
+        // Step 7: Create a display-only CameraTrack (single segment for timeline UI)
+        let displayTrack = Self.createDisplayTrack(from: samples, duration: duration)
 
         #if DEBUG
         Self.dumpDiagnostics(
             intentSpans: intentSpans,
             waypoints: waypoints,
             sampleCount: samples.count,
-            cameraTrack: cameraTrack,
             duration: duration
         )
         #endif
@@ -94,39 +94,49 @@ class ContinuousCameraGenerator {
         )
 
         return GeneratedTimeline(
-            cameraTrack: cameraTrack,
+            cameraTrack: displayTrack,
             cursorTrack: cursorTrack,
-            keystrokeTrack: keystrokeTrack
+            keystrokeTrack: keystrokeTrack,
+            continuousTransforms: samples
         )
     }
 
-    // MARK: - Zoom Intensity
+    // MARK: - Zoom Intensity (Samples)
 
-    /// Scale all zoom values by intensity factor.
+    /// Scale zoom values in continuous samples by intensity factor.
     /// Formula: newZoom = 1.0 + (originalZoom - 1.0) * intensity
     private static func applyZoomIntensity(
-        _ track: CameraTrack, intensity: CGFloat
-    ) -> CameraTrack {
-        guard abs(intensity - 1.0) > 0.001 else { return track }
-        let scaled = track.segments.map { seg -> CameraSegment in
-            var s = seg
-            s.startTransform = scaleTransformZoom(
-                seg.startTransform, intensity: intensity
+        to samples: [TimedTransform], intensity: CGFloat
+    ) -> [TimedTransform] {
+        guard abs(intensity - 1.0) > 0.001 else { return samples }
+        return samples.map { sample in
+            let newZoom = max(1.0, 1.0 + (sample.transform.zoom - 1.0) * intensity)
+            let clamped = ShotPlanner.clampCenter(sample.transform.center, zoom: newZoom)
+            return TimedTransform(
+                time: sample.time,
+                transform: TransformValue(zoom: newZoom, center: clamped)
             )
-            s.endTransform = scaleTransformZoom(
-                seg.endTransform, intensity: intensity
-            )
-            return s
         }
-        return CameraTrack(segments: scaled)
     }
 
-    private static func scaleTransformZoom(
-        _ t: TransformValue, intensity: CGFloat
-    ) -> TransformValue {
-        let newZoom = max(1.0, 1.0 + (t.zoom - 1.0) * intensity)
-        let clamped = ShotPlanner.clampCenter(t.center, zoom: newZoom)
-        return TransformValue(zoom: newZoom, center: clamped)
+    // MARK: - Display Track
+
+    /// Create a single-segment CameraTrack for timeline UI visualization.
+    /// FrameEvaluator ignores this when continuousTransforms is set.
+    private static func createDisplayTrack(
+        from samples: [TimedTransform],
+        duration: TimeInterval
+    ) -> CameraTrack {
+        guard let first = samples.first, let last = samples.last else {
+            return CameraTrack(segments: [])
+        }
+        let segment = CameraSegment(
+            startTime: first.time,
+            endTime: max(first.time + 0.001, last.time > 0 ? last.time : duration),
+            startTransform: first.transform,
+            endTransform: last.transform
+        )
+        return CameraTrack(segments: [segment])
     }
 
     // MARK: - Diagnostics
@@ -136,7 +146,6 @@ class ContinuousCameraGenerator {
         intentSpans: [IntentSpan],
         waypoints: [CameraWaypoint],
         sampleCount: Int,
-        cameraTrack: CameraTrack,
         duration: TimeInterval
     ) {
         print("[ContinuousCamera] === Diagnostics ===")
@@ -149,13 +158,7 @@ class ContinuousCameraGenerator {
             let center = String(format: "center=(%.2f,%.2f)", wp.targetCenter.x, wp.targetCenter.y)
             print("[ContinuousCamera]   [\(i)] \(t) \(zoom) \(center) urgency=\(wp.urgency)")
         }
-        print("[ContinuousCamera] Samples: \(sampleCount)")
-        print("[ContinuousCamera] CameraTrack: \(cameraTrack.segments.count) segments")
-        for (i, seg) in cameraTrack.segments.enumerated() {
-            let t = String(format: "t=%.2f-%.2f", seg.startTime, seg.endTime)
-            let zoomStr = String(format: "zoom=%.2f->%.2f", seg.startTransform.zoom, seg.endTransform.zoom)
-            print("[ContinuousCamera]   [\(i)] \(t) \(zoomStr)")
-        }
+        print("[ContinuousCamera] Samples: \(sampleCount) (direct rendering, no segments)")
         print("[ContinuousCamera] === End Diagnostics ===")
     }
     #endif

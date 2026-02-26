@@ -23,7 +23,7 @@ struct SimulatedTransitionSegment {
 }
 
 /// Transform value at a specific time.
-struct TimedTransform {
+struct TimedTransform: Codable, Equatable {
     let time: TimeInterval
     let transform: TransformValue
 }
