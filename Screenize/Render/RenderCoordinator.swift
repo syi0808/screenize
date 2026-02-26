@@ -280,7 +280,11 @@ final class RenderCoordinator: @unchecked Sendable {
 
         // Reposition frame reader on render queue
         renderQueue.async {
-            try? reader?.seek(to: time)
+            do {
+                try reader?.seek(to: time)
+            } catch {
+                Log.export.warning("Frame reader seek failed at \(String(format: "%.2f", time))s: \(error.localizedDescription)")
+            }
         }
     }
 
