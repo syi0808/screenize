@@ -102,13 +102,19 @@ final class MouseDataRecorder {
         clickHandler?.finalizePendingClicks()
         dragHandler?.finalizePendingDrag(screenBounds: screenBounds)
 
+        // Lock to safely capture final arrays (timer callback may still be in-flight)
+        lock.lock()
+        let finalPositions = positions
+        let finalUISamples = uiStateSamples
+        lock.unlock()
+
         let recording = MouseRecording(
-            positions: positions,
+            positions: finalPositions,
             clicks: clickHandler?.getClicks() ?? [],
             scrollEvents: scrollHandler?.getScrollEvents() ?? [],
             keyboardEvents: keyboardHandler?.getKeyboardEvents() ?? [],
             dragEvents: dragHandler?.getDragEvents() ?? [],
-            uiStateSamples: uiStateSamples,
+            uiStateSamples: finalUISamples,
             screenBounds: screenBounds,
             recordingDuration: duration,
             scaleFactor: scaleFactor
@@ -119,12 +125,12 @@ final class MouseDataRecorder {
         let keyboards = keyboardHandler?.getKeyboardEvents().count ?? 0
         let drags = dragHandler?.getDragEvents().count ?? 0
 
-        Log.tracking.info("Mouse recording stopped - positions: \(self.positions.count), clicks: \(clicks), scrolls: \(scrolls), keyboards: \(keyboards), drags: \(drags), UI samples: \(self.uiStateSamples.count) (scaleFactor: \(self.scaleFactor))")
+        Log.tracking.info("Mouse recording stopped - positions: \(finalPositions.count), clicks: \(clicks), scrolls: \(scrolls), keyboards: \(keyboards), drags: \(drags), UI samples: \(finalUISamples.count) (scaleFactor: \(self.scaleFactor))")
 
         // Position validation summary
-        if !positions.isEmpty {
-            let ys = positions.map { $0.y }
-            let xs = positions.map { $0.x }
+        if !finalPositions.isEmpty {
+            let ys = finalPositions.map { $0.y }
+            let xs = finalPositions.map { $0.x }
             let minY = ys.min()!, maxY = ys.max()!, avgY = ys.reduce(0, +) / CGFloat(ys.count)
             let minX = xs.min()!, maxX = xs.max()!, avgX = xs.reduce(0, +) / CGFloat(xs.count)
             Log.tracking.debug("Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
@@ -181,6 +187,7 @@ final class MouseDataRecorder {
     // MARK: - Position Sampling
 
     private func startPositionSampling() {
+        positionTimer?.invalidate()
         positionTimer = Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { [weak self] _ in
             self?.sampleMousePosition()
         }
@@ -195,6 +202,7 @@ final class MouseDataRecorder {
     // MARK: - UI State Sampling (for Smart Zoom)
 
     private func startUIStateSampling() {
+        uiStateSampleTimer?.invalidate()
         // Collect the first sample immediately
         sampleUIState()
 
