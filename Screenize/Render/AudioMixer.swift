@@ -16,6 +16,9 @@ final class AudioMixer {
         AVEncoderBitRateKey: 128_000
     ]
 
+    /// Shared export queue for audio writing operations
+    private let exportQueue = DispatchQueue(label: "com.screenize.audio-export", qos: .userInitiated)
+
     /// PCM decompression settings for reading source audio
     private static let decompressionSettings: [String: Any] = [
         AVFormatIDKey: kAudioFormatLinearPCM,
@@ -56,7 +59,7 @@ final class AudioMixer {
             throw AudioMixerError.readerStartFailed(reader.error)
         }
 
-        let exportQueue = DispatchQueue(label: "com.screenize.audio-export", qos: .userInitiated)
+
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var didResume = false
@@ -152,7 +155,7 @@ final class AudioMixer {
             throw AudioMixerError.readerStartFailed(micReader.error)
         }
 
-        let exportQueue = DispatchQueue(label: "com.screenize.audio-mix", qos: .userInitiated)
+
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var didResume = false
