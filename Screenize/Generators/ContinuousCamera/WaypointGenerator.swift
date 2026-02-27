@@ -129,18 +129,14 @@ struct WaypointGenerator {
     // MARK: - Center Computation
 
     /// Compute target center for an intent span.
+    /// All intents use span.focusPosition — IntentClassifier already sets the
+    /// correct position for idle (inherited from nearest neighbor) and switching
+    /// (mouse position at switch time).
     private static func computeCenter(
         for span: IntentSpan,
         zoom: CGFloat
     ) -> NormalizedPoint {
-        switch span.intent {
-        case .idle, .switching:
-            return ShotPlanner.clampCenter(
-                NormalizedPoint(x: 0.5, y: 0.5), zoom: zoom
-            )
-        default:
-            return ShotPlanner.clampCenter(span.focusPosition, zoom: zoom)
-        }
+        return ShotPlanner.clampCenter(span.focusPosition, zoom: zoom)
     }
 
     // MARK: - Idle Resolution

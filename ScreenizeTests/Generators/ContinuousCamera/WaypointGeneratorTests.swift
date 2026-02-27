@@ -152,6 +152,59 @@ final class WaypointGeneratorTests: XCTestCase {
         }
     }
 
+    // MARK: - Idle/Switching Use focusPosition (Not Center)
+
+    func test_generate_idleSpan_usesFocusPositionNotCenter() {
+        let spans = [
+            makeIntentSpan(
+                start: 0, end: 3,
+                intent: .typing(context: .codeEditor),
+                focus: NormalizedPoint(x: 0.8, y: 0.2)
+            ),
+            makeIntentSpan(
+                start: 3, end: 8, intent: .idle,
+                focus: NormalizedPoint(x: 0.8, y: 0.2)
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+        let idleWP = waypoints.first { if case .idle = $0.source { return true }; return false }
+        XCTAssertNotNil(idleWP)
+        if let wp = idleWP {
+            XCTAssertNotEqual(wp.targetCenter.x, 0.5, accuracy: 0.01,
+                              "Idle should not drift to center X")
+            XCTAssertNotEqual(wp.targetCenter.y, 0.5, accuracy: 0.01,
+                              "Idle should not drift to center Y")
+        }
+    }
+
+    func test_generate_switchingSpan_usesFocusPositionNotCenter() {
+        let spans = [
+            makeIntentSpan(
+                start: 0, end: 2, intent: .switching,
+                focus: NormalizedPoint(x: 0.3, y: 0.7)
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+        let switchWP = waypoints.first { $0.urgency == .immediate }
+        XCTAssertNotNil(switchWP)
+        if let wp = switchWP {
+            XCTAssertEqual(wp.targetCenter.x, 0.3, accuracy: 0.01)
+            XCTAssertEqual(wp.targetCenter.y, 0.7, accuracy: 0.01)
+        }
+    }
+
     // MARK: - Center Clamping
 
     func test_generate_extremePosition_centerIsClamped() {
