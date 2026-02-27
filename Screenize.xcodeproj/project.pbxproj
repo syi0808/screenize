@@ -118,6 +118,10 @@
 		F0000013296A0001 /* Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000013296A0001 /* Timeline.swift */; };
 		F0000020296A0001 /* EvaluatedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000020296A0001 /* EvaluatedState.swift */; };
 		F0000022296A0001 /* FrameEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000022296A0001 /* FrameEvaluator.swift */; };
+		FE0000A1296A0001 /* FrameEvaluator+Transform.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A1296A0001 /* FrameEvaluator+Transform.swift */; };
+		FE0000A2296A0001 /* FrameEvaluator+Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A2296A0001 /* FrameEvaluator+Cursor.swift */; };
+		FE0000A3296A0001 /* FrameEvaluator+Keystroke.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A3296A0001 /* FrameEvaluator+Keystroke.swift */; };
+		FE0000A4296A0001 /* FrameEvaluator+ClickState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A4296A0001 /* FrameEvaluator+ClickState.swift */; };
 		F0000023296A0001 /* RenderContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000023296A0001 /* RenderContext.swift */; };
 		F0000024296A0001 /* TransformApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000024296A0001 /* TransformApplicator.swift */; };
 		F0000025296A0001 /* EffectCompositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000025296A0001 /* EffectCompositor.swift */; };
@@ -329,6 +333,10 @@
 		F1000013296A0001 /* Timeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timeline.swift; sourceTree = "<group>"; };
 		F1000020296A0001 /* EvaluatedState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvaluatedState.swift; sourceTree = "<group>"; };
 		F1000022296A0001 /* FrameEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameEvaluator.swift; sourceTree = "<group>"; };
+		FE1000A1296A0001 /* FrameEvaluator+Transform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+Transform.swift"; sourceTree = "<group>"; };
+		FE1000A2296A0001 /* FrameEvaluator+Cursor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+Cursor.swift"; sourceTree = "<group>"; };
+		FE1000A3296A0001 /* FrameEvaluator+Keystroke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+Keystroke.swift"; sourceTree = "<group>"; };
+		FE1000A4296A0001 /* FrameEvaluator+ClickState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+ClickState.swift"; sourceTree = "<group>"; };
 		F1000023296A0001 /* RenderContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderContext.swift; sourceTree = "<group>"; };
 		F1000024296A0001 /* TransformApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformApplicator.swift; sourceTree = "<group>"; };
 		F1000025296A0001 /* EffectCompositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectCompositor.swift; sourceTree = "<group>"; };
@@ -775,6 +783,10 @@
 			children = (
 				F1000020296A0001 /* EvaluatedState.swift */,
 				F1000022296A0001 /* FrameEvaluator.swift */,
+				FE1000A1296A0001 /* FrameEvaluator+Transform.swift */,
+				FE1000A2296A0001 /* FrameEvaluator+Cursor.swift */,
+				FE1000A3296A0001 /* FrameEvaluator+Keystroke.swift */,
+				FE1000A4296A0001 /* FrameEvaluator+ClickState.swift */,
 				F1000023296A0001 /* RenderContext.swift */,
 				F1000024296A0001 /* TransformApplicator.swift */,
 				F1000025296A0001 /* EffectCompositor.swift */,
@@ -1171,6 +1183,10 @@
 				F0000013296A0001 /* Timeline.swift in Sources */,
 				F0000020296A0001 /* EvaluatedState.swift in Sources */,
 				F0000022296A0001 /* FrameEvaluator.swift in Sources */,
+				FE0000A1296A0001 /* FrameEvaluator+Transform.swift in Sources */,
+				FE0000A2296A0001 /* FrameEvaluator+Cursor.swift in Sources */,
+				FE0000A3296A0001 /* FrameEvaluator+Keystroke.swift in Sources */,
+				FE0000A4296A0001 /* FrameEvaluator+ClickState.swift in Sources */,
 				F0000023296A0001 /* RenderContext.swift in Sources */,
 				F0000024296A0001 /* TransformApplicator.swift in Sources */,
 				F0000025296A0001 /* EffectCompositor.swift in Sources */,
