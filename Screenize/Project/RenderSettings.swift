@@ -402,13 +402,13 @@ enum OutputColorSpace: String, Codable, CaseIterable {
     var cgColorSpace: CGColorSpace {
         switch self {
         case .auto, .sRGB:
-            return CGColorSpace(name: CGColorSpace.sRGB)!
+            return .screenizeSRGB
         case .displayP3:
-            return CGColorSpace(name: CGColorSpace.displayP3)!
+            return .screenizeP3
         case .bt709:
-            return CGColorSpace(name: CGColorSpace.itur_709)!
+            return .screenizeBT709
         case .bt2020:
-            return CGColorSpace(name: CGColorSpace.itur_2020)!
+            return .screenizeBT2020
         }
     }
 

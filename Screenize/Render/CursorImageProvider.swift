@@ -123,7 +123,7 @@ final class CursorImageProvider {
             height: height,
             bitsPerComponent: 8,
             bytesPerRow: width * 4,
-            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            space: .screenizeSRGB,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         )
     }

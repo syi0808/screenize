@@ -153,8 +153,7 @@ struct CameraTrackEmitter {
             )]
         }
 
-        let first = samples.first!
-        let last = samples.last!
+        guard let first = samples.first, let last = samples.last else { return [] }
 
         // Static hold: same transforms → single segment with adjusted times
         if samples.count == 2 && first.transform == last.transform {

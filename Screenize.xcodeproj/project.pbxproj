@@ -163,6 +163,7 @@
 		F00000A5296A0001 /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A5296A0001 /* RecordingState.swift */; };
 		F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A1296A0001 /* GlobalHotkeyManager.swift */; };
 		F00000AF296A0001 /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000AF296A0001 /* Coordinates.swift */; };
+		FD0000B5296A0001 /* ColorSpaceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1000B5296A0001 /* ColorSpaceConstants.swift */; };
 		F00000B0296A0001 /* CaptureConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000B0296A0001 /* CaptureConfiguration.swift */; };
 		F00000B1296A0001 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000B1296A0001 /* PermissionsManager.swift */; };
 		F00000B2296A0001 /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000B2296A0001 /* ScreenCaptureManager.swift */; };
@@ -374,6 +375,7 @@
 		F10000A5296A0001 /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
 		F10000A1296A0001 /* GlobalHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyManager.swift; sourceTree = "<group>"; };
 		F10000AF296A0001 /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
+		FD1000B5296A0001 /* ColorSpaceConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSpaceConstants.swift; sourceTree = "<group>"; };
 		F10000B0296A0001 /* CaptureConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureConfiguration.swift; sourceTree = "<group>"; };
 		F10000B1296A0001 /* PermissionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsManager.swift; sourceTree = "<group>"; };
 		F10000B2296A0001 /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
@@ -909,6 +911,7 @@
 			isa = PBXGroup;
 			children = (
 				F10000AF296A0001 /* Coordinates.swift */,
+				FD1000B5296A0001 /* ColorSpaceConstants.swift */,
 				F20000B1296A0001 /* Capture */,
 				F20000D5296A0001 /* EventMonitoring */,
 				F20000C0296A0001 /* Recording */,
@@ -1243,6 +1246,7 @@
 				D1000003296A0001 /* CaptureOverlayController.swift in Sources */,
 				D1000004296A0001 /* CaptureToolbarCoordinator.swift in Sources */,
 				F00000AF296A0001 /* Coordinates.swift in Sources */,
+				FD0000B5296A0001 /* ColorSpaceConstants.swift in Sources */,
 				F00000B0296A0001 /* CaptureConfiguration.swift in Sources */,
 				F00000B1296A0001 /* PermissionsManager.swift in Sources */,
 				F00000B2296A0001 /* ScreenCaptureManager.swift in Sources */,

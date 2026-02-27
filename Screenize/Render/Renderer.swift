@@ -224,7 +224,7 @@ final class Renderer {
 
         guard let buffer = pixelBuffer else { return nil }
 
-        let colorSpace = outputColorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
+        let colorSpace = outputColorSpace ?? .screenizeSRGB
 
         // Render the CIImage into the CVPixelBuffer
         context.ciContext.render(
@@ -262,7 +262,7 @@ final class Renderer {
             to: targetTexture,
             commandBuffer: nil,
             bounds: CGRect(origin: .zero, size: context.outputSize),
-            colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!
+            colorSpace: .screenizeSRGB
         )
         return true
     }

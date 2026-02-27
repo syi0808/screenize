@@ -85,13 +85,13 @@ struct ContinuousTrackEmitter {
                 transitionToNext: .cut
             )
             segments.append(segment)
-        } else if segments.isEmpty {
+        } else if segments.isEmpty, let first = samples.first, let last = samples.last {
             // All samples are identical — emit a single hold segment
             segments.append(CameraSegment(
-                startTime: samples.first!.time,
-                endTime: samples.last!.time,
-                startTransform: samples.first!.transform,
-                endTransform: samples.last!.transform,
+                startTime: first.time,
+                endTime: last.time,
+                startTransform: first.transform,
+                endTransform: last.transform,
                 interpolation: .linear,
                 mode: .manual,
                 transitionToNext: .cut

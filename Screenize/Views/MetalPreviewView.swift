@@ -123,7 +123,7 @@ final class MetalDisplayView: NSView {
         // Wrap the source texture as CIImage (GPU-resident, zero-copy)
         // CIImage(mtlTexture:) flips Y to match CIImage convention (bottom-left origin)
         guard let sourceImage = CIImage(mtlTexture: texture, options: [
-            .colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!
+            .colorSpace: CGColorSpace.screenizeSRGB
         ]) else { return }
 
         // Compute aspect-fit transform
@@ -154,7 +154,7 @@ final class MetalDisplayView: NSView {
             to: drawable.texture,
             commandBuffer: commandBuffer,
             bounds: CGRect(origin: .zero, size: CGSize(width: drawableW, height: drawableH)),
-            colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!
+            colorSpace: .screenizeSRGB
         )
 
         commandBuffer.present(drawable)
