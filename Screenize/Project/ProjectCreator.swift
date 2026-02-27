@@ -37,7 +37,11 @@ struct ProjectCreator {
         if let micRelPath = packageInfo.micAudioRelativePath {
             let micURL = packageInfo.packageURL.appendingPathComponent(micRelPath)
             let micAsset = AVAsset(url: micURL)
-            micAudioDuration = try? await CMTimeGetSeconds(micAsset.load(.duration))
+            do {
+                micAudioDuration = try await CMTimeGetSeconds(micAsset.load(.duration))
+            } catch {
+                Log.project.warning("Failed to load mic audio duration: \(error.localizedDescription)")
+            }
         }
 
         // Load system audio duration if available
@@ -45,7 +49,11 @@ struct ProjectCreator {
         if let sysRelPath = packageInfo.systemAudioRelativePath {
             let sysURL = packageInfo.packageURL.appendingPathComponent(sysRelPath)
             let sysAsset = AVAsset(url: sysURL)
-            systemAudioDuration = try? await CMTimeGetSeconds(sysAsset.load(.duration))
+            do {
+                systemAudioDuration = try await CMTimeGetSeconds(sysAsset.load(.duration))
+            } catch {
+                Log.project.warning("Failed to load system audio duration: \(error.localizedDescription)")
+            }
         }
 
         // Create a default timeline

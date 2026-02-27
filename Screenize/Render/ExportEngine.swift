@@ -133,69 +133,12 @@ final class ExportEngine: ObservableObject {
 
             // 6. Configure the video writer
             let outputFrameRate = project.renderSettings.outputFrameRate.value(sourceFrameRate: frameRate)
-
-            if FileManager.default.fileExists(atPath: outputURL.path) {
-                try FileManager.default.removeItem(at: outputURL)
-            }
-
-            let writer = try AVAssetWriter(outputURL: outputURL, fileType: project.renderSettings.codec.avFileType)
-
-            let videoSettings = createVideoSettings(
-                size: outputSize,
-                codec: project.renderSettings.codec,
-                quality: project.renderSettings.quality,
-                frameRate: outputFrameRate,
-                colorSpace: project.renderSettings.outputColorSpace
+            let writerCtx = try await configureWriter(
+                project: project, outputURL: outputURL,
+                outputSize: outputSize, sourceFrameRate: frameRate
             )
 
-            let writerInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
-            writerInput.expectsMediaDataInRealTime = false
-
-            let adaptor = AVAssetWriterInputPixelBufferAdaptor(
-                assetWriterInput: writerInput,
-                sourcePixelBufferAttributes: [
-                    kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-                    kCVPixelBufferWidthKey as String: Int(outputSize.width),
-                    kCVPixelBufferHeightKey as String: Int(outputSize.height),
-                    kCVPixelBufferMetalCompatibilityKey as String: true,
-                    kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
-                ]
-            )
-
-            writer.add(writerInput)
-
-            // 6b. Configure audio writer input (if audio sources exist)
-            let systemAudioURL = project.media.systemAudioURL
-            let micAudioURL = project.media.micAudioURL
-            let hasSystemAudio: Bool
-            if let sysURL = systemAudioURL, project.renderSettings.includeSystemAudio {
-                hasSystemAudio = await Self.hasAudioTrack(url: sysURL)
-            } else {
-                hasSystemAudio = false
-            }
-            let hasMicAudio: Bool
-            if project.renderSettings.includeMicrophoneAudio, let micURL = micAudioURL {
-                hasMicAudio = await Self.hasAudioTrack(url: micURL)
-            } else {
-                hasMicAudio = false
-            }
-
-            var audioWriterInput: AVAssetWriterInput?
-            if hasSystemAudio || hasMicAudio {
-                let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: AudioMixer.outputSettings)
-                audioInput.expectsMediaDataInRealTime = false
-                writer.add(audioInput)
-                audioWriterInput = audioInput
-            }
-
-            // 7. Start the writer
-            guard writer.startWriting() else {
-                throw ExportEngineError.writerStartFailed(writer.error)
-            }
-
-            writer.startSession(atSourceTime: .zero)
-
-            // 8. Process frames
+            // 7. Process frames
             guard let evaluator = evaluator, let renderer = renderer else {
                 throw ExportEngineError.writerFailed
             }
@@ -207,10 +150,10 @@ final class ExportEngine: ObservableObject {
                 : project.renderSettings.outputColorSpace.cgColorSpace
 
             let framesWritten = try await processFrames(
-                writer: writer,
+                writer: writerCtx.writer,
                 reader: sequentialReader,
-                writerInput: writerInput,
-                adaptor: adaptor,
+                writerInput: writerCtx.writerInput,
+                adaptor: writerCtx.adaptor,
                 evaluator: evaluator,
                 renderer: renderer,
                 trimStart: trimStart,
@@ -222,49 +165,23 @@ final class ExportEngine: ObservableObject {
 
             Log.export.info("Export completed - \(framesWritten) frames")
 
-            // 9. Write audio
-            if let audioInput = audioWriterInput {
-                await MainActor.run { progress = .encoding }
-
-                let systemVolume = project.renderSettings.systemAudioVolume
-                let micVolume = project.renderSettings.microphoneAudioVolume
-
-                if hasSystemAudio && hasMicAudio, let sysURL = systemAudioURL, let micURL = micAudioURL {
-                    try await audioMixer.mixAndWrite(
-                        systemAudioURL: sysURL,
-                        micAudioURL: micURL,
-                        writerInput: audioInput,
-                        trimStart: trimStart,
-                        trimEnd: trimEnd,
-                        systemVolume: systemVolume,
-                        micVolume: micVolume
-                    )
-                } else if hasSystemAudio, let sysURL = systemAudioURL {
-                    try await audioMixer.writePassthrough(
-                        audioURL: sysURL,
-                        writerInput: audioInput,
-                        trimStart: trimStart,
-                        trimEnd: trimEnd,
-                        volume: systemVolume
-                    )
-                } else if hasMicAudio, let micURL = micAudioURL {
-                    try await audioMixer.writePassthrough(
-                        audioURL: micURL,
-                        writerInput: audioInput,
-                        trimStart: trimStart,
-                        trimEnd: trimEnd,
-                        volume: micVolume
-                    )
-                }
+            // 8. Write audio
+            if let audioInput = writerCtx.audioWriterInput {
+                try await writeAudio(
+                    project: project, audioInput: audioInput,
+                    hasSystemAudio: writerCtx.hasSystemAudio,
+                    hasMicAudio: writerCtx.hasMicAudio,
+                    trimStart: trimStart, trimEnd: trimEnd
+                )
             }
 
-            // 10. Finalizing
+            // 9. Finalize
             await MainActor.run { progress = .finalizing }
 
-            await writer.finishWriting()
+            await writerCtx.writer.finishWriting()
 
-            if writer.status == .failed {
-                throw writer.error ?? ExportEngineError.writerFailed
+            if writerCtx.writer.status == .failed {
+                throw writerCtx.writer.error ?? ExportEngineError.writerFailed
             }
 
             // Handle cancellation during finalization
@@ -310,6 +227,131 @@ final class ExportEngine: ObservableObject {
         progress = .idle
         statistics = nil
         isCancelled = false
+    }
+
+    // MARK: - Writer Configuration
+
+    /// Context holding all writer-related objects for a video export session.
+    private struct WriterContext {
+        let writer: AVAssetWriter
+        let writerInput: AVAssetWriterInput
+        let adaptor: AVAssetWriterInputPixelBufferAdaptor
+        let audioWriterInput: AVAssetWriterInput?
+        let hasSystemAudio: Bool
+        let hasMicAudio: Bool
+    }
+
+    /// Configure AVAssetWriter with video and optional audio inputs.
+    private func configureWriter(
+        project: ScreenizeProject,
+        outputURL: URL,
+        outputSize: CGSize,
+        sourceFrameRate: Double
+    ) async throws -> WriterContext {
+        let outputFrameRate = project.renderSettings.outputFrameRate.value(sourceFrameRate: sourceFrameRate)
+
+        if FileManager.default.fileExists(atPath: outputURL.path) {
+            try FileManager.default.removeItem(at: outputURL)
+        }
+
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: project.renderSettings.codec.avFileType)
+
+        let videoSettings = createVideoSettings(
+            size: outputSize,
+            codec: project.renderSettings.codec,
+            quality: project.renderSettings.quality,
+            frameRate: outputFrameRate,
+            colorSpace: project.renderSettings.outputColorSpace
+        )
+
+        let writerInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
+        writerInput.expectsMediaDataInRealTime = false
+
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: writerInput,
+            sourcePixelBufferAttributes: [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                kCVPixelBufferWidthKey as String: Int(outputSize.width),
+                kCVPixelBufferHeightKey as String: Int(outputSize.height),
+                kCVPixelBufferMetalCompatibilityKey as String: true,
+                kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any]
+            ]
+        )
+
+        writer.add(writerInput)
+
+        // Detect audio tracks
+        let systemAudioURL = project.media.systemAudioURL
+        let micAudioURL = project.media.micAudioURL
+
+        let hasSystemAudio: Bool
+        if let sysURL = systemAudioURL, project.renderSettings.includeSystemAudio {
+            hasSystemAudio = await Self.hasAudioTrack(url: sysURL)
+        } else {
+            hasSystemAudio = false
+        }
+
+        let hasMicAudio: Bool
+        if project.renderSettings.includeMicrophoneAudio, let micURL = micAudioURL {
+            hasMicAudio = await Self.hasAudioTrack(url: micURL)
+        } else {
+            hasMicAudio = false
+        }
+
+        var audioWriterInput: AVAssetWriterInput?
+        if hasSystemAudio || hasMicAudio {
+            let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: AudioMixer.outputSettings)
+            audioInput.expectsMediaDataInRealTime = false
+            writer.add(audioInput)
+            audioWriterInput = audioInput
+        }
+
+        guard writer.startWriting() else {
+            throw ExportEngineError.writerStartFailed(writer.error)
+        }
+        writer.startSession(atSourceTime: .zero)
+
+        return WriterContext(
+            writer: writer, writerInput: writerInput, adaptor: adaptor,
+            audioWriterInput: audioWriterInput,
+            hasSystemAudio: hasSystemAudio, hasMicAudio: hasMicAudio
+        )
+    }
+
+    /// Write audio tracks (mix or passthrough) to the export writer.
+    private func writeAudio(
+        project: ScreenizeProject,
+        audioInput: AVAssetWriterInput,
+        hasSystemAudio: Bool,
+        hasMicAudio: Bool,
+        trimStart: TimeInterval,
+        trimEnd: TimeInterval
+    ) async throws {
+        await MainActor.run { progress = .encoding }
+
+        let systemAudioURL = project.media.systemAudioURL
+        let micAudioURL = project.media.micAudioURL
+        let systemVolume = project.renderSettings.systemAudioVolume
+        let micVolume = project.renderSettings.microphoneAudioVolume
+
+        if hasSystemAudio && hasMicAudio, let sysURL = systemAudioURL, let micURL = micAudioURL {
+            try await audioMixer.mixAndWrite(
+                systemAudioURL: sysURL, micAudioURL: micURL,
+                writerInput: audioInput,
+                trimStart: trimStart, trimEnd: trimEnd,
+                systemVolume: systemVolume, micVolume: micVolume
+            )
+        } else if hasSystemAudio, let sysURL = systemAudioURL {
+            try await audioMixer.writePassthrough(
+                audioURL: sysURL, writerInput: audioInput,
+                trimStart: trimStart, trimEnd: trimEnd, volume: systemVolume
+            )
+        } else if hasMicAudio, let micURL = micAudioURL {
+            try await audioMixer.writePassthrough(
+                audioURL: micURL, writerInput: audioInput,
+                trimStart: trimStart, trimEnd: trimEnd, volume: micVolume
+            )
+        }
     }
 
     // MARK: - Frame Processing

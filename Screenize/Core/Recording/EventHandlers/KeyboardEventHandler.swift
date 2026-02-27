@@ -118,22 +118,16 @@ final class KeyboardEventHandler {
             modifiers: modifiers
         )
 
-        lock.lock()
-        keyboardEvents.append(keyboardEvent)
-        lock.unlock()
+        lock.withLock { keyboardEvents.append(keyboardEvent) }
     }
 
     // MARK: - Results
 
     func getKeyboardEvents() -> [KeyboardEvent] {
-        lock.lock()
-        defer { lock.unlock() }
-        return keyboardEvents
+        lock.withLock { keyboardEvents }
     }
 
     func reset() {
-        lock.lock()
-        defer { lock.unlock() }
-        keyboardEvents.removeAll()
+        lock.withLock { keyboardEvents.removeAll() }
     }
 }

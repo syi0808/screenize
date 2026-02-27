@@ -98,7 +98,11 @@ struct CursorFollowController: CameraController {
             )
 
             #if DEBUG
-            let msg = String(format: "[V2-CursorFollow] t=%.2f dist=%.3f dur=%.2fs (%.2f,%.2f)→(%.2f,%.2f)", event.time, distance, panDuration, currentCenter.x, currentCenter.y, newCenter.x, newCenter.y)
+            let msg = String(
+                format: "[V2-CursorFollow] t=%.2f dist=%.3f dur=%.2fs (%.2f,%.2f)→(%.2f,%.2f)",
+                event.time, distance, panDuration,
+                currentCenter.x, currentCenter.y, newCenter.x, newCenter.y
+            )
             Log.generator.debug("\(msg)")
             #endif
 

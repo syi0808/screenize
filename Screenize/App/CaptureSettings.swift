@@ -43,7 +43,11 @@ final class CaptureSettings: ObservableObject {
         // Request permission if missing
         if !CGPreflightScreenCaptureAccess() {
             CGRequestScreenCaptureAccess()
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 500_000_000)
+            } catch {
+                Log.permissions.debug("Permission wait sleep cancelled: \(error.localizedDescription)")
+            }
 
             if !CGPreflightScreenCaptureAccess() {
                 return

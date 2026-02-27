@@ -103,10 +103,9 @@ final class MouseDataRecorder {
         dragHandler?.finalizePendingDrag(screenBounds: screenBounds)
 
         // Lock to safely capture final arrays (timer callback may still be in-flight)
-        lock.lock()
-        let finalPositions = positions
-        let finalUISamples = uiStateSamples
-        lock.unlock()
+        let (finalPositions, finalUISamples) = lock.withLock {
+            (positions, uiStateSamples)
+        }
 
         let recording = MouseRecording(
             positions: finalPositions,
@@ -248,9 +247,7 @@ final class MouseDataRecorder {
             caretBounds: caretBounds
         )
 
-        lock.lock()
-        uiStateSamples.append(sample)
-        lock.unlock()
+        lock.withLock { uiStateSamples.append(sample) }
     }
 
     private func sampleMousePosition() {
@@ -270,17 +267,17 @@ final class MouseDataRecorder {
             velocity = sqrt(dx * dx + dy * dy) / CGFloat(dt)
         }
 
-        lock.lock()
-        if positions.count < 3 {
-            Log.tracking.debug("Mouse sample #\(self.positions.count): mouseLocation=\(String(describing: mouseLocation)), relative=\(String(describing: relativePosition)), screenBounds=\(String(describing: self.screenBounds))")
+        lock.withLock {
+            if positions.count < 3 {
+                Log.tracking.debug("Mouse sample #\(self.positions.count): mouseLocation=\(String(describing: mouseLocation)), relative=\(String(describing: relativePosition)), screenBounds=\(String(describing: self.screenBounds))")
+            }
+            positions.append(MousePosition(
+                timestamp: timestamp,
+                x: relativePosition.x,
+                y: relativePosition.y,
+                velocity: velocity
+            ))
         }
-        positions.append(MousePosition(
-            timestamp: timestamp,
-            x: relativePosition.x,
-            y: relativePosition.y,
-            velocity: velocity
-        ))
-        lock.unlock()
 
         lastPosition = mouseLocation
         lastPositionTime = currentTime

@@ -3,6 +3,7 @@ import Sparkle
 
 /// Sparkle updater controller wrapper
 /// ObservableObject for using Sparkle within SwiftUI
+@MainActor
 final class SparkleController: ObservableObject {
 
     // MARK: - Properties

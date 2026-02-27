@@ -53,15 +53,11 @@ final class RecordingCoordinator: ObservableObject {
     nonisolated(unsafe) private var _captureIsPaused: Bool = false
 
     nonisolated var captureSession: RecordingSession? {
-        captureStateLock.lock()
-        defer { captureStateLock.unlock() }
-        return _captureSession
+        captureStateLock.withLock { _captureSession }
     }
 
     nonisolated var captureIsPaused: Bool {
-        captureStateLock.lock()
-        defer { captureStateLock.unlock() }
-        return _captureIsPaused
+        captureStateLock.withLock { _captureIsPaused }
     }
 
     // MARK: - Computed State
@@ -109,10 +105,10 @@ final class RecordingCoordinator: ObservableObject {
         self.captureConfiguration = captureConfig
 
         // Sync capture state for delegate callbacks
-        captureStateLock.lock()
-        _captureSession = session
-        _captureIsPaused = false
-        captureStateLock.unlock()
+        captureStateLock.withLock {
+            _captureSession = session
+            _captureIsPaused = false
+        }
 
         // Setup and start capture with SCRecordingOutput
         captureManager = ScreenCaptureManager()
@@ -164,10 +160,10 @@ final class RecordingCoordinator: ObservableObject {
         isPaused = false
 
         // Clean up capture state
-        captureStateLock.lock()
-        _captureIsPaused = true
-        _captureSession = nil
-        captureStateLock.unlock()
+        captureStateLock.withLock {
+            _captureIsPaused = true
+            _captureSession = nil
+        }
 
         stopDurationTimer()
 
@@ -204,9 +200,7 @@ final class RecordingCoordinator: ObservableObject {
     func pauseRecording() {
         guard isRecording, !isPaused else { return }
         isPaused = true
-        captureStateLock.lock()
-        _captureIsPaused = true
-        captureStateLock.unlock()
+        captureStateLock.withLock { _captureIsPaused = true }
         stopDurationTimer()
         mouseDataRecorder?.pauseRecording()
         microphoneRecorder?.pause()
@@ -215,9 +209,7 @@ final class RecordingCoordinator: ObservableObject {
     func resumeRecording() {
         guard isRecording, isPaused else { return }
         isPaused = false
-        captureStateLock.lock()
-        _captureIsPaused = false
-        captureStateLock.unlock()
+        captureStateLock.withLock { _captureIsPaused = false }
         startDurationTimer()
         mouseDataRecorder?.resumeRecording()
         microphoneRecorder?.resume()
