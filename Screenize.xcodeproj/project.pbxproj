@@ -129,6 +129,9 @@
 		F0000027296A0001 /* PreviewCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000027296A0001 /* PreviewCache.swift */; };
 		F0000028296A0001 /* VideoFrameExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000028296A0001 /* VideoFrameExtractor.swift */; };
 		F0000029296A0001 /* PreviewEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000029296A0001 /* PreviewEngine.swift */; };
+		FE0000B1296A0001 /* PreviewEngine+Setup.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000B1296A0001 /* PreviewEngine+Setup.swift */; };
+		FE0000B2296A0001 /* PreviewEngine+Playback.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000B2296A0001 /* PreviewEngine+Playback.swift */; };
+		FE0000B3296A0001 /* PreviewEngine+Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000B3296A0001 /* PreviewEngine+Timeline.swift */; };
 		F000002A296A0001 /* ExportProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002A296A0001 /* ExportProgress.swift */; };
 		F000002B296A0001 /* ExportEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002B296A0001 /* ExportEngine.swift */; };
 		D8000001296A0001 /* ExportEngine+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8000002296A0001 /* ExportEngine+Helpers.swift */; };
@@ -344,6 +347,9 @@
 		F1000027296A0001 /* PreviewCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewCache.swift; sourceTree = "<group>"; };
 		F1000028296A0001 /* VideoFrameExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoFrameExtractor.swift; sourceTree = "<group>"; };
 		F1000029296A0001 /* PreviewEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewEngine.swift; sourceTree = "<group>"; };
+		FE1000B1296A0001 /* PreviewEngine+Setup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewEngine+Setup.swift"; sourceTree = "<group>"; };
+		FE1000B2296A0001 /* PreviewEngine+Playback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewEngine+Playback.swift"; sourceTree = "<group>"; };
+		FE1000B3296A0001 /* PreviewEngine+Timeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewEngine+Timeline.swift"; sourceTree = "<group>"; };
 		F100002A296A0001 /* ExportProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportProgress.swift; sourceTree = "<group>"; };
 		F100002B296A0001 /* ExportEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportEngine.swift; sourceTree = "<group>"; };
 		D8000002296A0001 /* ExportEngine+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportEngine+Helpers.swift"; sourceTree = "<group>"; };
@@ -796,6 +802,9 @@
 				F1000027296A0001 /* PreviewCache.swift */,
 				F1000028296A0001 /* VideoFrameExtractor.swift */,
 				F1000029296A0001 /* PreviewEngine.swift */,
+				FE1000B1296A0001 /* PreviewEngine+Setup.swift */,
+				FE1000B2296A0001 /* PreviewEngine+Playback.swift */,
+				FE1000B3296A0001 /* PreviewEngine+Timeline.swift */,
 				F100002A296A0001 /* ExportProgress.swift */,
 				F100002B296A0001 /* ExportEngine.swift */,
 				D8000002296A0001 /* ExportEngine+Helpers.swift */,
@@ -1196,6 +1205,9 @@
 				F0000027296A0001 /* PreviewCache.swift in Sources */,
 				F0000028296A0001 /* VideoFrameExtractor.swift in Sources */,
 				F0000029296A0001 /* PreviewEngine.swift in Sources */,
+				FE0000B1296A0001 /* PreviewEngine+Setup.swift in Sources */,
+				FE0000B2296A0001 /* PreviewEngine+Playback.swift in Sources */,
+				FE0000B3296A0001 /* PreviewEngine+Timeline.swift in Sources */,
 				F000002A296A0001 /* ExportProgress.swift in Sources */,
 				F000002B296A0001 /* ExportEngine.swift in Sources */,
 				D8000001296A0001 /* ExportEngine+Helpers.swift in Sources */,

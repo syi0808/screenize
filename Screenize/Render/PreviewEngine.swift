@@ -14,15 +14,15 @@ final class PreviewEngine: ObservableObject {
     // MARK: - Published Properties
 
     /// Current frame texture (GPU-resident, displayed via MetalPreviewView)
-    @Published private(set) var currentTexture: MTLTexture?
+    @Published var currentTexture: MTLTexture?
 
     /// Display generation counter (incremented on every texture delivery)
     /// Forces SwiftUI to call MetalPreviewView.updateNSView even when the
     /// same MTLTexture reference is reused from the texture pool
-    @Published private(set) var displayGeneration: Int = 0
+    @Published var displayGeneration: Int = 0
 
     /// Whether playback is active
-    @Published private(set) var isPlaying: Bool = false
+    @Published var isPlaying: Bool = false
 
     /// Current time (seconds)
     @Published var currentTime: TimeInterval = 0 {
@@ -35,56 +35,56 @@ final class PreviewEngine: ObservableObject {
     }
 
     /// Whether loading is in progress
-    @Published private(set) var isLoading: Bool = true
+    @Published var isLoading: Bool = true
 
     /// Error message
-    @Published private(set) var errorMessage: String?
+    @Published var errorMessage: String?
 
     /// Last render error (for UI display)
-    @Published private(set) var lastRenderError: RenderError?
+    @Published var lastRenderError: RenderError?
 
     /// Cumulative render error count
-    @Published private(set) var renderErrorCount: Int = 0
+    @Published var renderErrorCount: Int = 0
 
     // MARK: - Properties
 
     /// Render coordinator (background rendering)
-    private let renderCoordinator: RenderCoordinator
+    let renderCoordinator: RenderCoordinator
 
     /// Display link driver (vsync-driven playback)
-    private let displayLinkDriver: DisplayLinkDriver
+    let displayLinkDriver: DisplayLinkDriver
 
     /// Scrub controller (coalesces scrub requests)
-    private let scrubController: ScrubController
+    let scrubController: ScrubController
 
     /// Audio preview player (synchronized AVPlayer-based audio)
-    private let audioPlayer = AudioPreviewPlayer()
+    let audioPlayer = AudioPreviewPlayer()
 
     /// Sequential frame reader for playback
-    private var sequentialReader: SequentialFrameReader?
+    var sequentialReader: SequentialFrameReader?
 
     /// Random-access frame extractor for scrubbing
-    private var frameExtractor: VideoFrameExtractor?
+    var frameExtractor: VideoFrameExtractor?
 
     /// Total duration
-    private(set) var duration: TimeInterval = 0
+    var duration: TimeInterval = 0
 
     /// Frame rate
-    private(set) var frameRate: Double = 60
+    var frameRate: Double = 60
 
     /// Trim start time
-    private var trimStart: TimeInterval = 0
+    var trimStart: TimeInterval = 0
 
     /// Trim end time (uses duration if nil)
-    private var trimEnd: TimeInterval?
+    var trimEnd: TimeInterval?
 
     /// Effective trim start time
-    private var effectiveTrimStart: TimeInterval {
+    var effectiveTrimStart: TimeInterval {
         max(0, trimStart)
     }
 
     /// Effective trim end time
-    private var effectiveTrimEnd: TimeInterval {
+    var effectiveTrimEnd: TimeInterval {
         min(duration, trimEnd ?? duration)
     }
 
@@ -94,28 +94,28 @@ final class PreviewEngine: ObservableObject {
     }
 
     /// Preview scale (for performance)
-    private let previewScale: CGFloat
+    let previewScale: CGFloat
 
     /// Render generation (incremented on seek to invalidate stale renders)
-    private var renderGeneration: Int = 0
+    var renderGeneration: Int = 0
 
     /// Whether a seek operation is in progress (prevents didSet re-entry)
-    private var isSeeking: Bool = false
+    var isSeeking: Bool = false
 
     /// Project reference (for timeline updates)
-    private var project: ScreenizeProject?
+    var project: ScreenizeProject?
 
     /// Raw mouse position data
-    private var rawMousePositions: [RenderMousePosition] = []
+    var rawMousePositions: [RenderMousePosition] = []
 
     /// Smoothed mouse position data (spring-based or legacy interpolated)
-    private var smoothedMousePositions: [RenderMousePosition] = []
+    var smoothedMousePositions: [RenderMousePosition] = []
 
     /// Last spring config used for interpolation (to detect changes)
-    private var lastSpringConfig: SpringCursorConfig?
+    var lastSpringConfig: SpringCursorConfig?
 
     /// Click event data (reused during timeline updates)
-    private var renderClickEvents: [RenderClickEvent] = []
+    var renderClickEvents: [RenderClickEvent] = []
 
     // MARK: - Initialization
 
@@ -128,390 +128,11 @@ final class PreviewEngine: ObservableObject {
         setupCallbacks()
     }
 
-    // MARK: - Callback Setup
-
-    private func setupCallbacks() {
-        // DisplayLink: called from background thread on every vsync
-        displayLinkDriver.onFrame = { [weak self] targetVideoTime in
-            guard let self = self else { return }
-
-            self.renderCoordinator.requestPlaybackFrame(at: targetVideoTime) { [weak self] texture, actualTime in
-                guard let self = self else { return }
-
-                DispatchQueue.main.async {
-                    // Stop at trim end
-                    if actualTime >= self.effectiveTrimEnd {
-                        self.pause()
-                        self.isSeeking = true
-                        self.currentTime = self.effectiveTrimEnd
-                        self.isSeeking = false
-                        return
-                    }
-
-                    if let texture = texture {
-                        self.currentTexture = texture
-                        self.displayGeneration += 1
-                    }
-                    self.isSeeking = true
-                    self.currentTime = actualTime
-                    self.isSeeking = false
-
-                    // Signal frame delivered so DisplayLink can fire next tick
-                    self.displayLinkDriver.markFrameDelivered()
-                }
-            }
-        }
-
-        // ScrubController: request rendering on the render coordinator
-        scrubController.onRenderRequest = { [weak self] time, generation, completion in
-            guard let self = self else {
-                completion(nil)
-                return
-            }
-            self.renderCoordinator.requestScrubFrame(
-                at: time, generation: generation, completion: completion
-            )
-        }
-
-        // ScrubController: deliver texture to main thread
-        scrubController.onFrameReady = { [weak self] texture, _ in
-            guard let self = self else { return }
-            if let texture = texture {
-                self.currentTexture = texture
-                self.displayGeneration += 1
-                if self.isLoading {
-                    self.isLoading = false
-                }
-            }
-        }
-    }
-
-    // MARK: - Setup
-
-    /// Initialize with a project
-    func setup(with project: ScreenizeProject) async {
-        isLoading = true
-        errorMessage = nil
-
-        self.project = project
-
-        do {
-            // Configure the random-access frame extractor
-            let extractor = try await VideoFrameExtractor(url: project.media.videoURL)
-            frameExtractor = extractor
-
-            // Set base properties
-            duration = extractor.duration
-            frameRate = extractor.frameRate
-
-            // Configure trim range
-            trimStart = project.timeline.effectiveTrimStart
-            trimEnd = project.timeline.trimEnd
-
-            // Load raw mouse data
-            let rawResult = MouseDataConverter.loadAndConvert(from: project)
-            rawMousePositions = rawResult.positions
-            renderClickEvents = rawResult.clicks
-
-            // Load smoothed mouse data (spring-based or legacy interpolation)
-            let springConfig = project.timeline.cursorTrackV2?.springConfig
-            let smoothedResult = MouseDataConverter.loadAndConvertWithInterpolation(
-                from: project,
-                frameRate: extractor.frameRate,
-                springConfig: springConfig
-            )
-            smoothedMousePositions = smoothedResult.positions
-            lastSpringConfig = springConfig
-
-            // Build the render pipeline (Evaluator + Renderer)
-            let pipeline = RenderPipelineFactory.createPreviewPipeline(
-                project: project,
-                rawMousePositions: rawMousePositions,
-                smoothedMousePositions: smoothedMousePositions,
-                clickEvents: renderClickEvents,
-                frameRate: frameRate,
-                sourceSize: extractor.videoSize,
-                scale: previewScale
-            )
-
-            // Create sequential frame reader for playback
-            let reader = try await SequentialFrameReader(
-                url: project.media.videoURL,
-                ringBufferSize: 8
-            )
-            try reader.startReading(from: effectiveTrimStart)
-            sequentialReader = reader
-
-            // Configure the render coordinator with CFR frame reader (fills VFR gaps)
-            let cfrReader = CFRFrameReader(source: reader)
-            renderCoordinator.setup(
-                frameReader: cfrReader,
-                frameExtractor: extractor,
-                evaluator: pipeline.evaluator,
-                renderer: pipeline.renderer,
-                frameRate: frameRate
-            )
-
-            // Set up audio preview player
-            await audioPlayer.setup(
-                systemAudioURL: project.media.systemAudioURL,
-                micAudioURL: project.media.micAudioURL,
-                renderSettings: project.renderSettings
-            )
-            await audioPlayer.seek(to: effectiveTrimStart)
-
-            // Render the first frame (at trim start)
-            isSeeking = true
-            currentTime = effectiveTrimStart
-            isSeeking = false
-            scrubController.scrub(to: effectiveTrimStart)
-
-        } catch {
-            errorMessage = error.localizedDescription
-            isLoading = false
-        }
-    }
-
-    // MARK: - Playback Control
-
-    /// Start playback
-    func play() {
-        guard !isPlaying else { return }
-
-        // When starting playback at the trim end, jump to the trim start
-        if currentTime >= effectiveTrimEnd {
-            isSeeking = true
-            currentTime = effectiveTrimStart
-            isSeeking = false
-        }
-
-        // If the time is before the trim start, clamp to the trim start
-        if currentTime < effectiveTrimStart {
-            isSeeking = true
-            currentTime = effectiveTrimStart
-            isSeeking = false
-        }
-
-        // Reposition the sequential reader to current time
-        renderCoordinator.seek(to: currentTime)
-
-        isPlaying = true
-
-        // Start vsync-driven playback
-        displayLinkDriver.start(fromVideoTime: currentTime, frameRate: frameRate)
-
-        // Start audio playback locked to the same mach-time anchor
-        audioPlayer.play(
-            fromVideoTime: displayLinkDriver.playbackAnchorVideoTime,
-            hostTime: displayLinkDriver.playbackAnchorMachTime
-        )
-    }
-
-    /// Pause playback
-    func pause() {
-        isPlaying = false
-        displayLinkDriver.stop()
-        audioPlayer.pause()
-    }
-
-    /// Toggle playback/pause
-    func togglePlayback() {
-        if isPlaying {
-            pause()
-        } else {
-            play()
-        }
-    }
-
-    /// Seek to a specific time (clamped to trim range)
-    func seek(to time: TimeInterval) async {
-        let clampedTime = max(effectiveTrimStart, min(effectiveTrimEnd, time))
-
-        isSeeking = true
-        renderGeneration += 1
-        frameExtractor?.cancelAllPendingRequests()
-        renderCoordinator.seek(to: clampedTime)
-        currentTime = clampedTime
-        isSeeking = false
-
-        if !isPlaying {
-            scrubController.scrub(to: clampedTime)
-            Task { await audioPlayer.seek(to: clampedTime) }
-        } else {
-            // During playback, update the display link anchor
-            displayLinkDriver.updateAnchor(videoTime: clampedTime)
-            audioPlayer.play(
-                fromVideoTime: displayLinkDriver.playbackAnchorVideoTime,
-                hostTime: displayLinkDriver.playbackAnchorMachTime
-            )
-        }
-    }
-
-    /// Jump to the start (trim start)
-    func seekToStart() async {
-        await seek(to: effectiveTrimStart)
-    }
-
-    /// Jump to the end (trim end)
-    func seekToEnd() async {
-        await seek(to: effectiveTrimEnd)
-    }
-
-    // MARK: - Timeline Update
-
-    /// Invalidate the cache when the timeline changes
-    func invalidateCache(from startTime: TimeInterval, to endTime: TimeInterval) {
-        renderCoordinator.invalidateCache(from: startTime, to: endTime)
-
-        // If the current frame falls within a dirty range, re-render
-        if currentTime >= startTime && currentTime <= endTime {
-            scrubController.scrub(to: currentTime)
-        }
-    }
-
-    /// Invalidate a specific time range and update the evaluator
-    /// More efficient than invalidateAllCache when only a portion of the timeline changed
-    func invalidateRange(with timeline: Timeline, from startTime: TimeInterval, to endTime: TimeInterval) {
-        guard let project = project else { return }
-
-        // Recreate the evaluator with the updated timeline
-        let newEvaluator = RenderPipelineFactory.createEvaluator(
-            timeline: timeline,
-            project: project,
-            rawMousePositions: rawMousePositions,
-            smoothedMousePositions: smoothedMousePositions,
-            clickEvents: renderClickEvents,
-            frameRate: frameRate
-        )
-
-        renderCoordinator.updateEvaluator(newEvaluator)
-        renderCoordinator.invalidateCache(from: startTime, to: endTime)
-
-        // Re-render if the current frame falls within the dirty range
-        if currentTime >= startTime && currentTime <= endTime {
-            scrubController.scrub(to: currentTime)
-        }
-    }
-
-    /// Invalidate the entire cache
-    /// - Parameter timeline: Updated timeline (nil only clears the cache)
-    func invalidateAllCache(with timeline: Timeline? = nil) {
-        if let timeline = timeline {
-            updateTimeline(timeline)
-        } else {
-            renderCoordinator.invalidateAllCache()
-            scrubController.scrub(to: currentTime)
-        }
-    }
-
-    /// Update the trim range
-    func updateTrimRange(start: TimeInterval, end: TimeInterval?) {
-        self.trimStart = start
-        self.trimEnd = end
-
-        // Adjust if the current time falls outside the trim range
-        isSeeking = true
-        if currentTime < effectiveTrimStart {
-            currentTime = effectiveTrimStart
-        } else if currentTime > effectiveTrimEnd {
-            currentTime = effectiveTrimEnd
-        }
-        isSeeking = false
-
-        // Re-render the current frame
-        scrubController.scrub(to: currentTime)
-    }
-
-    /// Recreate the evaluator when the timeline updates
-    /// - Parameter timeline: New timeline
-    func updateTimeline(_ timeline: Timeline) {
-        guard let project = project else { return }
-
-        // Re-interpolate mouse positions if spring config changed
-        let newSpringConfig = timeline.cursorTrackV2?.springConfig
-        if newSpringConfig != lastSpringConfig {
-            let smoothedResult = MouseDataConverter.loadAndConvertWithInterpolation(
-                from: project,
-                frameRate: frameRate,
-                springConfig: newSpringConfig
-            )
-            smoothedMousePositions = smoothedResult.positions
-            lastSpringConfig = newSpringConfig
-        }
-
-        // Create a new evaluator (reuse stored mouse data)
-        let newEvaluator = RenderPipelineFactory.createEvaluator(
-            timeline: timeline,
-            project: project,
-            rawMousePositions: rawMousePositions,
-            smoothedMousePositions: smoothedMousePositions,
-            clickEvents: renderClickEvents,
-            frameRate: frameRate
-        )
-
-        renderCoordinator.updateEvaluator(newEvaluator)
-        renderCoordinator.invalidateAllCache()
-
-        // Re-render the current frame
-        scrubController.scrub(to: currentTime)
-    }
-
-    /// Rebuild the renderer and evaluator when render settings change
-    /// - Parameter renderSettings: New render settings
-    func updateRenderSettings(_ renderSettings: RenderSettings) {
-        guard let extractor = frameExtractor else { return }
-
-        // Update the project's render settings BEFORE capturing the local copy
-        // (ScreenizeProject is a struct, so guard let captures a snapshot)
-        self.project?.renderSettings = renderSettings
-
-        guard let project = project else { return }
-
-        // Recreate the evaluator (isWindowMode may change)
-        let newEvaluator = RenderPipelineFactory.createEvaluator(
-            project: project,
-            rawMousePositions: rawMousePositions,
-            smoothedMousePositions: smoothedMousePositions,
-            clickEvents: renderClickEvents,
-            frameRate: frameRate
-        )
-
-        // Recreate the renderer
-        let newRenderer = RenderPipelineFactory.createPreviewRenderer(
-            renderSettings: renderSettings,
-            captureMeta: project.captureMeta,
-            sourceSize: extractor.videoSize,
-            scale: previewScale
-        )
-
-        renderCoordinator.updateEvaluator(newEvaluator)
-        renderCoordinator.updateRenderer(newRenderer)
-        renderCoordinator.invalidateAllCache()
-
-        // Update audio volumes
-        audioPlayer.updateVolumes(renderSettings: renderSettings)
-
-        // Re-render the current frame
-        scrubController.scrub(to: currentTime)
-    }
-
     // MARK: - Error Handling
 
     /// Dismiss the render error banner
     func clearRenderError() {
         lastRenderError = nil
-    }
-
-    // MARK: - Cleanup
-
-    func cleanup() {
-        pause()
-        audioPlayer.cleanup()
-        scrubController.cancel()
-        renderCoordinator.cleanup()
-        sequentialReader?.stopReading()
-        frameExtractor?.cancelAllPendingRequests()
-        currentTexture = nil
     }
 }
 
