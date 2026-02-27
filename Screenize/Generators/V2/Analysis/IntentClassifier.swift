@@ -145,27 +145,131 @@ struct IntentClassifier {
         timeline: EventTimeline,
         uiStateSamples: [UIStateSample]
     ) -> IntentSpan {
-        // Use original keystroke time for focus position (before anticipation shift)
-        let focusPos = timeline.lastMousePosition(before: start)
-            ?? NormalizedPoint(x: 0.5, y: 0.5)
-
-        let nearestSample = uiStateSamples
-            .min(by: { abs($0.timestamp - start) < abs($1.timestamp - start) })
-
+        // Use original keystroke time for focus position (before anticipation shift).
+        // Prefer caret/cursor signal from nearest UI sample when available.
+        let nearestSample = nearestUISample(at: start, in: uiStateSamples)
+        let focusPos = typingFocusPosition(
+            typingStart: start,
+            timeline: timeline,
+            nearestSample: nearestSample
+        )
+        let typingContext = inferTypingContext(
+            typingStart: start,
+            typingEnd: end,
+            timeline: timeline,
+            nearestSample: nearestSample
+        )
         let confidence: Float = keyCount > 3 ? 0.9 : (keyCount > 1 ? 0.7 : 0.5)
-
         // Shift start time backward so the camera transition completes before
         // actual typing begins, giving a natural anticipation feel.
         let anticipatedStart = max(0, start - typingAnticipation)
-
         return IntentSpan(
             startTime: anticipatedStart,
             endTime: end,
-            intent: .typing(context: .textField),
+            intent: .typing(context: typingContext),
             confidence: confidence,
             focusPosition: focusPos,
             focusElement: nearestSample?.elementInfo
         )
+    }
+
+    private static func nearestUISample(
+        at time: TimeInterval,
+        in samples: [UIStateSample]
+    ) -> UIStateSample? {
+        samples.min(by: { abs($0.timestamp - time) < abs($1.timestamp - time) })
+    }
+
+    private static func typingFocusPosition(
+        typingStart: TimeInterval,
+        timeline: EventTimeline,
+        nearestSample: UIStateSample?
+    ) -> NormalizedPoint {
+        if let caret = nearestSample?.caretBounds,
+           let normalizedCaret = normalizedFrameIfPossible(caret) {
+            return NormalizedPoint(
+                x: normalizedCaret.midX,
+                y: normalizedCaret.midY
+            )
+        }
+        if let sample = nearestSample {
+            let cursor = sample.cursorPosition
+            if (0...1).contains(cursor.x), (0...1).contains(cursor.y) {
+                return NormalizedPoint(x: cursor.x, y: cursor.y)
+            }
+        }
+        return timeline.lastMousePosition(before: typingStart)
+            ?? NormalizedPoint(x: 0.5, y: 0.5)
+    }
+
+    private static func inferTypingContext(
+        typingStart: TimeInterval,
+        typingEnd: TimeInterval,
+        timeline: EventTimeline,
+        nearestSample: UIStateSample?
+    ) -> TypingContext {
+        let role = nearestSample?.elementInfo?.role.lowercased() ?? ""
+        let subrole = nearestSample?.elementInfo?.subrole?.lowercased() ?? ""
+        let appName = nearestSample?.elementInfo?.applicationName?.lowercased() ?? ""
+
+        let rangeStart = max(0, typingStart - 0.5)
+        let rangeEnd = min(timeline.duration, typingEnd + 0.5)
+        let nearbyEvents = timeline.events(in: rangeStart...rangeEnd)
+        let bundleID = nearbyEvents.first {
+            $0.metadata.appBundleID != nil
+        }?.metadata.appBundleID?.lowercased() ?? ""
+        if role == "axtextfield" || role == "axsearchfield"
+            || role == "axsecuretextfield" || role == "axcombobox" {
+            return .textField
+        }
+        if containsAnyKeyword(
+            in: [bundleID, appName],
+            keywords: [
+                "terminal", "iterm", "warp", "alacritty", "wezterm", "hyper"
+            ]
+        ) {
+            return .terminal
+        }
+        if containsAnyKeyword(
+            in: [bundleID, appName],
+            keywords: [
+                "xcode", "visual studio code", "vscode", "code", "codium",
+                "cursor", "zed", "sublime", "nova", "jetbrains", "intellij",
+                "pycharm", "goland", "clion", "rider"
+            ]
+        ) {
+            return .codeEditor
+        }
+        if role == "axtextarea" {
+            if containsAnyKeyword(
+                in: [bundleID, appName, subrole],
+                keywords: [
+                    "word", "pages", "writer", "notes", "notion", "craft",
+                    "obsidian", "rich", "document"
+                ]
+            ) {
+                return .richTextEditor
+            }
+            return .codeEditor
+        }
+        return .textField
+    }
+
+    private static func normalizedFrameIfPossible(_ frame: CGRect) -> CGRect? {
+        guard frame.maxX <= 1.1 && frame.maxY <= 1.1
+            && frame.minX >= -0.1 && frame.minY >= -0.1 else {
+            return nil
+        }
+        return frame
+    }
+
+    private static func containsAnyKeyword(
+        in values: [String],
+        keywords: [String]
+    ) -> Bool {
+        values.contains { value in
+            keywords.contains { value.contains($0) }
+        }
     }
 
     // MARK: - Dragging Detection

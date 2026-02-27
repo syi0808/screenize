@@ -62,6 +62,10 @@ struct ContinuousCameraSettings {
     ]
     /// Physics tick rate (Hz).
     var tickRate: Double = 60.0
+    /// Minimum interval between typing detail waypoints derived from caret data.
+    var typingDetailMinInterval: TimeInterval = 0.2
+    /// Minimum spatial movement to emit a typing detail waypoint.
+    var typingDetailMinDistance: CGFloat = 0.025
     /// Minimum zoom level (1.0 = no zoom).
     var minZoom: CGFloat = 1.0
     /// Maximum zoom level.

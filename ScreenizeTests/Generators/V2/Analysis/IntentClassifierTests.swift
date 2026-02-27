@@ -1,4 +1,5 @@
 import XCTest
+import CoreGraphics
 @testable import Screenize
 
 final class IntentClassifierTests: XCTestCase {
@@ -31,6 +32,15 @@ final class IntentClassifierTests: XCTestCase {
     private func classify(_ mouseData: MockMouseDataSource) -> [IntentSpan] {
         let timeline = EventTimeline.build(from: mouseData)
         return IntentClassifier.classify(events: timeline, uiStateSamples: [])
+    }
+
+    private func firstTypingContext(in spans: [IntentSpan]) -> TypingContext? {
+        for span in spans {
+            if case .typing(let context) = span.intent {
+                return context
+            }
+        }
+        return nil
     }
 
     // MARK: - Empty Input
@@ -142,6 +152,76 @@ final class IntentClassifierTests: XCTestCase {
         XCTAssertFalse(singleSpans.isEmpty)
         XCTAssertFalse(manySpans.isEmpty)
         XCTAssertGreaterThan(manySpans[0].confidence, singleSpans[0].confidence)
+    }
+
+    func test_classify_typingWithCodeEditorElement_classifiesCodeEditor() {
+        let keys = [makeKeyDown(at: 1.0), makeKeyDown(at: 1.2)]
+        let positions = [
+            MousePositionData(
+                time: 0.9,
+                position: NormalizedPoint(x: 0.4, y: 0.6),
+                appBundleID: "com.apple.dt.Xcode"
+            ),
+            MousePositionData(
+                time: 1.1,
+                position: NormalizedPoint(x: 0.42, y: 0.62),
+                appBundleID: "com.apple.dt.Xcode"
+            )
+        ]
+        let sample = UIStateSample(
+            timestamp: 1.0,
+            cursorPosition: CGPoint(x: 0.4, y: 0.6),
+            elementInfo: UIElementInfo(
+                role: "AXTextArea",
+                subrole: nil,
+                frame: CGRect(x: 0.35, y: 0.55, width: 0.3, height: 0.2),
+                title: nil,
+                isClickable: true,
+                applicationName: "Xcode"
+            ),
+            caretBounds: CGRect(x: 0.41, y: 0.61, width: 0.01, height: 0.02)
+        )
+        let mouseData = MockMouseDataSource(
+            duration: 5.0,
+            positions: positions,
+            keyboardEvents: keys
+        )
+
+        let timeline = EventTimeline.build(
+            from: mouseData,
+            uiStateSamples: [sample]
+        )
+        let spans = IntentClassifier.classify(
+            events: timeline,
+            uiStateSamples: [sample]
+        )
+
+        XCTAssertEqual(firstTypingContext(in: spans), .codeEditor)
+    }
+
+    func test_classify_typingWithTerminalBundleID_classifiesTerminal() {
+        let keys = [makeKeyDown(at: 1.0), makeKeyDown(at: 1.2)]
+        let positions = [
+            MousePositionData(
+                time: 0.9,
+                position: NormalizedPoint(x: 0.55, y: 0.45),
+                appBundleID: "com.googlecode.iterm2"
+            ),
+            MousePositionData(
+                time: 1.1,
+                position: NormalizedPoint(x: 0.56, y: 0.46),
+                appBundleID: "com.googlecode.iterm2"
+            )
+        ]
+        let mouseData = MockMouseDataSource(
+            duration: 5.0,
+            positions: positions,
+            keyboardEvents: keys
+        )
+        let timeline = EventTimeline.build(from: mouseData)
+        let spans = IntentClassifier.classify(events: timeline, uiStateSamples: [])
+
+        XCTAssertEqual(firstTypingContext(in: spans), .terminal)
     }
 
     // MARK: - Clicking Detection

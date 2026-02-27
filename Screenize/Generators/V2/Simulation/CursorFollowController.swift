@@ -58,16 +58,38 @@ struct CursorFollowController: CameraController {
 
         // Get events in scene range
         let sceneEvents = timeline.events(in: scene.startTime...scene.endTime)
+        let useCaretTracking: Bool
+        if case .typing = scene.primaryIntent {
+            useCaretTracking = sceneEvents.contains {
+                eventHasCaretData($0)
+            }
+        } else {
+            useCaretTracking = false
+        }
 
-        // During typing, only pan for mouse moves and clicks.
-        // keyDown/uiStateChange events carry caret positions that differ from
-        // mouse position, causing the camera to ping-pong between the two.
+        // During typing, prefer caret-driven events when caret metadata exists.
+        // If caret data is unavailable, fall back to mouse movement.
         let panTriggerEvents: [UnifiedEvent]
         if case .typing = scene.primaryIntent {
-            panTriggerEvents = sceneEvents.filter { event in
-                switch event.kind {
-                case .mouseMove, .click: return true
-                default: return false
+            if useCaretTracking {
+                panTriggerEvents = sceneEvents.filter { event in
+                    switch event.kind {
+                    case .keyDown, .uiStateChange, .click:
+                        return true
+                    case .mouseMove:
+                        return eventHasCaretData(event)
+                    default:
+                        return false
+                    }
+                }
+            } else {
+                panTriggerEvents = sceneEvents.filter { event in
+                    switch event.kind {
+                    case .mouseMove, .click:
+                        return true
+                    default:
+                        return false
+                    }
                 }
             }
         } else {
@@ -78,9 +100,11 @@ struct CursorFollowController: CameraController {
         var previousTracked: (time: TimeInterval, position: NormalizedPoint)?
 
         for event in panTriggerEvents {
-            let trackedPosition = extractTrackedPosition(
-                event: event, screenBounds: settings.screenBounds
-            )
+            guard let trackedPosition = extractTrackedPosition(
+                event: event,
+                screenBounds: settings.screenBounds,
+                preferCaret: useCaretTracking
+            ) else { continue }
             let checkPosition = predictedPosition(
                 current: trackedPosition, eventTime: event.time, previous: previousTracked
             )
@@ -139,13 +163,80 @@ struct CursorFollowController: CameraController {
 
     // MARK: - Helpers
 
-    /// Use mouse position for follow panning. ShotPlanner already computes
-    /// the initial center from caret bounds; the follow controller only needs
-    /// to react to intentional mouse movement.
+    /// Resolve tracked position for follow panning.
+    /// For typing scenes, caret data is preferred when available.
     private func extractTrackedPosition(
-        event: UnifiedEvent, screenBounds: CGSize
-    ) -> NormalizedPoint {
+        event: UnifiedEvent,
+        screenBounds: CGSize,
+        preferCaret: Bool
+    ) -> NormalizedPoint? {
+        if preferCaret {
+            if let caret = caretBounds(in: event),
+               let center = normalizedCenter(
+                from: caret, screenBounds: screenBounds
+               ) {
+                return center
+            }
+
+            switch event.kind {
+            case .keyDown, .uiStateChange:
+                return nil
+            default:
+                break
+            }
+        }
+
         return event.position
+    }
+
+    private func eventHasCaretData(_ event: UnifiedEvent) -> Bool {
+        caretBounds(in: event) != nil
+    }
+
+    private func caretBounds(in event: UnifiedEvent) -> CGRect? {
+        if let bounds = event.metadata.caretBounds {
+            return bounds
+        }
+        if case .uiStateChange(let sample) = event.kind {
+            return sample.caretBounds
+        }
+        return nil
+    }
+
+    private func normalizedCenter(
+        from frame: CGRect,
+        screenBounds: CGSize
+    ) -> NormalizedPoint? {
+        guard let normalized = normalizeFrame(frame, screenBounds: screenBounds) else {
+            return nil
+        }
+        return NormalizedPoint(x: normalized.midX, y: normalized.midY)
+    }
+
+    private func normalizeFrame(
+        _ frame: CGRect,
+        screenBounds: CGSize
+    ) -> CGRect? {
+        if frame.maxX <= 1.1 && frame.maxY <= 1.1
+            && frame.minX >= -0.1 && frame.minY >= -0.1 {
+            return frame
+        }
+
+        guard screenBounds.width > 0, screenBounds.height > 0 else {
+            return nil
+        }
+
+        let normalized = CGRect(
+            x: frame.origin.x / screenBounds.width,
+            y: frame.origin.y / screenBounds.height,
+            width: frame.width / screenBounds.width,
+            height: frame.height / screenBounds.height
+        )
+        guard normalized.origin.x >= -0.1 && normalized.origin.x <= 1.1
+            && normalized.origin.y >= -0.1 && normalized.origin.y <= 1.1 else {
+            return nil
+        }
+        return normalized
     }
 
     private func predictedPosition(

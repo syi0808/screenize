@@ -1,4 +1,5 @@
 import XCTest
+import CoreGraphics
 @testable import Screenize
 
 final class WaypointGeneratorTests: XCTestCase {
@@ -205,6 +206,105 @@ final class WaypointGeneratorTests: XCTestCase {
         }
     }
 
+    func test_generate_withEventTimeline_prefersShotPlannerCenter() {
+        let spans = [
+            makeIntentSpan(
+                start: 0,
+                end: 2,
+                intent: .clicking,
+                focus: NormalizedPoint(x: 0.2, y: 0.2)
+            )
+        ]
+        let timeline = EventTimeline(
+            events: [
+                makeClickEvent(
+                    time: 0.6,
+                    position: NormalizedPoint(x: 0.8, y: 0.78)
+                ),
+                makeClickEvent(
+                    time: 1.2,
+                    position: NormalizedPoint(x: 0.82, y: 0.8)
+                )
+            ],
+            duration: 2.0
+        )
+
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: timeline,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+
+        let clickWP = waypoints.first {
+            if case .clicking = $0.source { return true }
+            return false
+        }
+        XCTAssertNotNil(clickWP)
+        if let wp = clickWP {
+            XCTAssertGreaterThan(
+                wp.targetCenter.x,
+                0.6,
+                "Center should follow event activity instead of span.focusPosition"
+            )
+            XCTAssertGreaterThan(wp.targetCenter.y, 0.6)
+        }
+    }
+
+    func test_generate_typingWithCaretMovement_addsDetailWaypoints() {
+        let spans = [
+            makeIntentSpan(
+                start: 0,
+                end: 4,
+                intent: .typing(context: .codeEditor),
+                focus: NormalizedPoint(x: 0.3, y: 0.4)
+            )
+        ]
+        let timeline = EventTimeline(
+            events: [
+                makeTypingEvent(
+                    time: 0.4,
+                    position: NormalizedPoint(x: 0.3, y: 0.4),
+                    caretCenter: NormalizedPoint(x: 0.3, y: 0.4)
+                ),
+                makeTypingEvent(
+                    time: 1.4,
+                    position: NormalizedPoint(x: 0.8, y: 0.8),
+                    caretCenter: NormalizedPoint(x: 0.8, y: 0.8)
+                ),
+                makeTypingEvent(
+                    time: 2.4,
+                    position: NormalizedPoint(x: 0.82, y: 0.82),
+                    caretCenter: NormalizedPoint(x: 0.82, y: 0.82)
+                )
+            ],
+            duration: 4.0
+        )
+
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: timeline,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+
+        let typingWaypoints = waypoints.filter {
+            if case .typing = $0.source { return true }
+            return false
+        }
+        XCTAssertGreaterThan(
+            typingWaypoints.count,
+            1,
+            "Typing with caret movement should emit detail waypoints"
+        )
+        let hasLateCaretWaypoint = typingWaypoints.contains {
+            $0.time > 1.0 && $0.targetCenter.x > 0.6 && $0.targetCenter.y > 0.6
+        }
+        XCTAssertTrue(hasLateCaretWaypoint)
+    }
+
     // MARK: - Center Clamping
 
     func test_generate_extremePosition_centerIsClamped() {
@@ -306,6 +406,50 @@ final class WaypointGeneratorTests: XCTestCase {
             confidence: 1.0,
             focusPosition: focus,
             focusElement: nil
+        )
+    }
+
+    private func makeClickEvent(
+        time: TimeInterval,
+        position: NormalizedPoint
+    ) -> UnifiedEvent {
+        UnifiedEvent(
+            time: time,
+            kind: .click(
+                ClickEventData(
+                    time: time,
+                    position: position,
+                    clickType: .leftDown
+                )
+            ),
+            position: position,
+            metadata: EventMetadata()
+        )
+    }
+
+    private func makeTypingEvent(
+        time: TimeInterval,
+        position: NormalizedPoint,
+        caretCenter: NormalizedPoint
+    ) -> UnifiedEvent {
+        let key = KeyboardEventData(
+            time: time,
+            keyCode: 0,
+            eventType: .keyDown,
+            modifiers: KeyboardEventData.ModifierFlags(rawValue: 0),
+            character: "a"
+        )
+        let caret = CGRect(
+            x: caretCenter.x - 0.005,
+            y: caretCenter.y - 0.01,
+            width: 0.01,
+            height: 0.02
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .keyDown(key),
+            position: position,
+            metadata: EventMetadata(caretBounds: caret)
         )
     }
 }

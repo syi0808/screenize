@@ -51,6 +51,42 @@ final class CursorFollowControllerTests: XCTestCase {
         }
     }
 
+    func test_simulate_typingKeyDownCaretEvents_triggersPanWithoutMouseMoves() {
+        let controller = CursorFollowController()
+        let events = [
+            makeKeyDownEvent(
+                time: 1.0,
+                caretCenter: NormalizedPoint(x: 0.3, y: 0.4)
+            ),
+            makeKeyDownEvent(
+                time: 2.2,
+                caretCenter: NormalizedPoint(x: 0.85, y: 0.8)
+            )
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(
+            scene: scene,
+            zoom: 2.0,
+            center: NormalizedPoint(x: 0.3, y: 0.4)
+        )
+        let settings = makeSettings(
+            events: events,
+            screenBounds: CGSize(width: 1920, height: 1080)
+        )
+
+        let samples = controller.simulate(
+            scene: scene,
+            shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(),
+            settings: settings
+        )
+
+        XCTAssertGreaterThan(samples.count, 2)
+        let lastCenter = samples.last?.transform.center ?? NormalizedPoint(x: 0.3, y: 0.4)
+        XCTAssertGreaterThan(lastCenter.x, 0.4)
+        XCTAssertGreaterThan(lastCenter.y, 0.45)
+    }
+
     // MARK: - Caret Moves Outside Viewport
 
     func test_simulate_caretMovesOutsideViewport_pansToCaret() {
@@ -333,6 +369,31 @@ final class CursorFollowControllerTests: XCTestCase {
             kind: .mouseMove,
             position: position,
             metadata: EventMetadata()
+        )
+    }
+
+    private func makeKeyDownEvent(
+        time: TimeInterval,
+        caretCenter: NormalizedPoint
+    ) -> UnifiedEvent {
+        let keyData = KeyboardEventData(
+            time: time,
+            keyCode: 0,
+            eventType: .keyDown,
+            modifiers: KeyboardEventData.ModifierFlags(rawValue: 0),
+            character: "a"
+        )
+        let caretRect = CGRect(
+            x: caretCenter.x - 0.005,
+            y: caretCenter.y - 0.01,
+            width: 0.01,
+            height: 0.02
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .keyDown(keyData),
+            position: caretCenter,
+            metadata: EventMetadata(caretBounds: caretRect)
         )
     }
 }
