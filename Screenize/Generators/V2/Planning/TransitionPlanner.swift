@@ -65,7 +65,12 @@ struct TransitionPlanner {
         let zoomDiff = abs(from.idealZoom - to.idealZoom)
         let effectiveGentleThreshold: CGFloat
         if zoomDiff < settings.sameZoomTolerance {
-            effectiveGentleThreshold = settings.gentlePanThreshold * settings.sameZoomDistanceMultiplier
+            // Same-zoom extension helps avoid unnecessary zoom-out/in at wide shots.
+            // At high viewer zoom, keep threshold tight to avoid long "slide" transitions.
+            let sameZoomBoost = max(0, min(1, (1.8 - viewerZoom) / 0.8))
+            let adaptiveMultiplier = 1
+                + (settings.sameZoomDistanceMultiplier - 1) * sameZoomBoost
+            effectiveGentleThreshold = settings.gentlePanThreshold * adaptiveMultiplier
         } else {
             effectiveGentleThreshold = settings.gentlePanThreshold
         }

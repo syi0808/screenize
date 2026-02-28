@@ -51,7 +51,7 @@ struct WaypointGenerator {
             )
         }
 
-        // Second pass: emit waypoints and typing detail anchors.
+        // Second pass: emit entry waypoints and in-span detail anchors.
         for (index, span) in intentSpans.enumerated() {
             let transform: TransformValue
             if case .idle = span.intent {
@@ -76,24 +76,37 @@ struct WaypointGenerator {
                     )
             }
 
+            let baseUrgency = urgency(for: span.intent)
+            let entryTime = max(
+                0,
+                span.startTime - entryLeadTime(for: baseUrgency)
+            )
             let waypoint = CameraWaypoint(
-                time: span.startTime,
+                time: entryTime,
                 targetZoom: transform.zoom,
                 targetCenter: transform.center,
-                urgency: urgency(for: span.intent),
+                urgency: baseUrgency,
                 source: span.intent
             )
             waypoints.append(waypoint)
 
-            if case .typing = span.intent,
-               let timeline = eventTimeline {
-                waypoints.append(contentsOf: typingDetailWaypoints(
-                    for: span,
-                    baseTransform: transform,
-                    eventTimeline: timeline,
-                    screenBounds: screenBounds,
-                    settings: settings
-                ))
+            if let timeline = eventTimeline {
+                if case .typing = span.intent {
+                    waypoints.append(contentsOf: typingDetailWaypoints(
+                        for: span,
+                        baseTransform: transform,
+                        eventTimeline: timeline,
+                        screenBounds: screenBounds,
+                        settings: settings
+                    ))
+                } else {
+                    waypoints.append(contentsOf: activityDetailWaypoints(
+                        for: span,
+                        baseTransform: transform,
+                        eventTimeline: timeline,
+                        settings: settings
+                    ))
+                }
             }
         }
 
@@ -113,6 +126,20 @@ struct WaypointGenerator {
             return .immediate
         case .idle, .reading:
             return .lazy
+        }
+    }
+
+    /// Move high-urgency targets slightly earlier so the camera starts before the action.
+    private static func entryLeadTime(for urgency: WaypointUrgency) -> TimeInterval {
+        switch urgency {
+        case .immediate:
+            return 0.24
+        case .high:
+            return 0.16
+        case .normal:
+            return 0.08
+        case .lazy:
+            return 0.0
         }
     }
 
@@ -298,6 +325,87 @@ struct WaypointGenerator {
         }
 
         return results
+    }
+
+    private static func activityDetailWaypoints(
+        for span: IntentSpan,
+        baseTransform: TransformValue,
+        eventTimeline: EventTimeline,
+        settings: ContinuousCameraSettings
+    ) -> [CameraWaypoint] {
+        let anchors = detailAnchorEvents(
+            for: span.intent,
+            events: eventTimeline.events(in: span.startTime...span.endTime)
+        )
+        guard !anchors.isEmpty else { return [] }
+
+        let minInterval = max(0.12, settings.typingDetailMinInterval * 0.75)
+        let minDistance = max(0.02, settings.typingDetailMinDistance * 0.8)
+        let urgency = urgency(for: span.intent)
+
+        var results: [CameraWaypoint] = []
+        var lastTime = span.startTime
+        var lastCenter = baseTransform.center
+
+        for (index, anchor) in anchors.enumerated() {
+            let center = ShotPlanner.clampCenter(
+                anchor.position,
+                zoom: baseTransform.zoom
+            )
+            let delta = anchor.time - lastTime
+            let distance = center.distance(to: lastCenter)
+            let isBoundaryAnchor = index == 0 || index == anchors.count - 1
+            guard isBoundaryAnchor || (delta >= minInterval && distance >= minDistance)
+            else {
+                continue
+            }
+
+            results.append(CameraWaypoint(
+                time: anchor.time,
+                targetZoom: baseTransform.zoom,
+                targetCenter: center,
+                urgency: urgency,
+                source: span.intent
+            ))
+            lastTime = anchor.time
+            lastCenter = center
+        }
+
+        return results
+    }
+
+    private static func detailAnchorEvents(
+        for intent: UserIntent,
+        events: [UnifiedEvent]
+    ) -> [(time: TimeInterval, position: NormalizedPoint)] {
+        switch intent {
+        case .clicking, .navigating:
+            return events.compactMap { event in
+                if case .click(let click) = event.kind,
+                   click.clickType == .leftDown {
+                    return (event.time, event.position)
+                }
+                return nil
+            }
+        case .dragging:
+            return events.compactMap { event in
+                switch event.kind {
+                case .dragStart, .dragEnd:
+                    return (event.time, event.position)
+                default:
+                    return nil
+                }
+            }
+        case .scrolling:
+            return events.compactMap { event in
+                if case .scroll = event.kind {
+                    return (event.time, event.position)
+                }
+                return nil
+            }
+        default:
+            return []
+        }
     }
 
     private static func caretBounds(in event: UnifiedEvent) -> CGRect? {

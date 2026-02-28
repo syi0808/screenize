@@ -53,14 +53,12 @@ struct StaticHoldController: CameraController {
             return samples
         }
 
-        // Track mouse moves and clicks within the scene
+        // Track intent-relevant events within the scene
         let sceneEvents = timeline.events(in: scene.startTime...scene.endTime)
-        let moveEvents = sceneEvents.filter { event in
-            switch event.kind {
-            case .mouseMove, .click: return true
-            default: return false
-            }
-        }
+        let moveEvents = panTriggerEvents(
+            for: scene.primaryIntent,
+            from: sceneEvents
+        )
 
         var lastPanTime: TimeInterval = -.greatestFiniteMagnitude
 
@@ -119,5 +117,44 @@ struct StaticHoldController: CameraController {
         }
 
         return samples
+    }
+
+    private func panTriggerEvents(
+        for intent: UserIntent,
+        from events: [UnifiedEvent]
+    ) -> [UnifiedEvent] {
+        switch intent {
+        case .clicking, .navigating:
+            let clickAnchors = events.filter { event in
+                if case .click(let click) = event.kind {
+                    return click.clickType == .leftDown
+                }
+                return false
+            }
+            if !clickAnchors.isEmpty {
+                return clickAnchors
+            }
+        case .scrolling:
+            let scrollAnchors = events.filter { event in
+                if case .scroll = event.kind { return true }
+                return false
+            }
+            if !scrollAnchors.isEmpty {
+                return scrollAnchors
+            }
+        case .reading, .idle, .switching:
+            return []
+        default:
+            break
+        }
+
+        return events.filter { event in
+            switch event.kind {
+            case .mouseMove, .click:
+                return true
+            default:
+                return false
+            }
+        }
     }
 }

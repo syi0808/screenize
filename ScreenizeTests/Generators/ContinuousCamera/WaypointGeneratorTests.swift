@@ -305,6 +305,83 @@ final class WaypointGeneratorTests: XCTestCase {
         XCTAssertTrue(hasLateCaretWaypoint)
     }
 
+    func test_generate_clickingWithMultipleClicks_addsDetailWaypoints() {
+        let spans = [
+            makeIntentSpan(
+                start: 1.0,
+                end: 4.0,
+                intent: .clicking,
+                focus: NormalizedPoint(x: 0.25, y: 0.25)
+            )
+        ]
+        let timeline = EventTimeline(
+            events: [
+                makeClickEvent(
+                    time: 1.2,
+                    position: NormalizedPoint(x: 0.22, y: 0.25)
+                ),
+                makeClickEvent(
+                    time: 2.1,
+                    position: NormalizedPoint(x: 0.58, y: 0.62)
+                ),
+                makeClickEvent(
+                    time: 3.2,
+                    position: NormalizedPoint(x: 0.78, y: 0.70)
+                )
+            ],
+            duration: 4.0
+        )
+
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: timeline,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+
+        let clickWaypoints = waypoints.filter {
+            if case .clicking = $0.source { return true }
+            return false
+        }
+        XCTAssertGreaterThan(clickWaypoints.count, 1)
+        let hasLateClickAnchor = clickWaypoints.contains {
+            $0.time > 3.0 && $0.targetCenter.x > 0.62 && $0.targetCenter.y > 0.60
+        }
+        XCTAssertTrue(hasLateClickAnchor)
+    }
+
+    func test_generate_typingWaypoint_startsBeforeSpanForAnticipation() {
+        let spans = [
+            makeIntentSpan(
+                start: 2.0,
+                end: 4.0,
+                intent: .typing(context: .codeEditor),
+                focus: NormalizedPoint(x: 0.55, y: 0.5)
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+
+        let typingWaypoint = waypoints.first {
+            if case .typing = $0.source { return true }
+            return false
+        }
+        XCTAssertNotNil(typingWaypoint)
+        if let typingWaypoint {
+            XCTAssertLessThan(
+                typingWaypoint.time,
+                2.0,
+                "Typing waypoint should be placed before span start"
+            )
+        }
+    }
+
     // MARK: - Center Clamping
 
     func test_generate_extremePosition_centerIsClamped() {

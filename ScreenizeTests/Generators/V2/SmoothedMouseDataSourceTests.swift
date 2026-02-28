@@ -11,7 +11,11 @@ final class SmoothedMouseDataSourceTests: XCTestCase {
             clickType: .leftDown
         )
         let kbd = KeyboardEventData(
-            time: 2.0, keyCode: 0, eventType: .keyDown, character: "a"
+            time: 2.0,
+            keyCode: 0,
+            eventType: .keyDown,
+            modifiers: [],
+            character: "a"
         )
         let drag = DragEventData(
             startTime: 3.0, endTime: 4.0,

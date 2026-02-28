@@ -42,7 +42,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
     }
 
     func test_simulate_startPosition_matchesFirstWaypoint() {
-        let wp = makeWaypoint(time: 0, zoom: 1.5, x: 0.3, y: 0.7, urgency: .normal)
+        let wp = makeWaypoint(time: 0, zoom: 1.5, x: 0.4, y: 0.6, urgency: .normal)
         let result = SpringDamperSimulator.simulate(
             waypoints: [wp], duration: 1.0, settings: defaultSettings
         )
@@ -51,8 +51,8 @@ final class SpringDamperSimulatorTests: XCTestCase {
             return
         }
         XCTAssertEqual(first.transform.zoom, 1.5, accuracy: 0.001)
-        XCTAssertEqual(first.transform.center.x, 0.3, accuracy: 0.001)
-        XCTAssertEqual(first.transform.center.y, 0.7, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.x, 0.4, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.y, 0.6, accuracy: 0.001)
     }
 
     // MARK: - No Overshoot (Critically Damped / Overdamped)
@@ -144,6 +144,37 @@ final class SpringDamperSimulatorTests: XCTestCase {
             XCTAssertLessThan(highDist, lazyDist,
                               "High urgency should converge faster than lazy")
         }
+    }
+
+    func test_simulate_immediateWaypoint_snapsWithoutLag() {
+        let wp1 = makeWaypoint(
+            time: 0,
+            zoom: 1.0,
+            x: 0.5,
+            y: 0.5,
+            urgency: .lazy
+        )
+        let wp2 = makeWaypoint(
+            time: 1.0,
+            zoom: 2.2,
+            x: 0.72,
+            y: 0.72,
+            urgency: .immediate
+        )
+
+        let result = SpringDamperSimulator.simulate(
+            waypoints: [wp1, wp2],
+            duration: 2.0,
+            settings: defaultSettings
+        )
+
+        guard let sampleAfterSwitch = result.first(where: { $0.time >= 1.0 }) else {
+            XCTFail("Expected sample after switch waypoint")
+            return
+        }
+        XCTAssertEqual(sampleAfterSwitch.transform.zoom, 2.2, accuracy: 0.001)
+        XCTAssertEqual(sampleAfterSwitch.transform.center.x, 0.72, accuracy: 0.001)
+        XCTAssertEqual(sampleAfterSwitch.transform.center.y, 0.72, accuracy: 0.001)
     }
 
     // MARK: - Center Clamping

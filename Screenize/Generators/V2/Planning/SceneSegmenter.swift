@@ -384,7 +384,8 @@ struct SceneSegmenter {
             endTime: newEnd,
             primaryIntent: scene.primaryIntent,
             focusRegions: scene.focusRegions + additionalRegions,
-            appContext: scene.appContext
+            appContext: scene.appContext,
+            contextChange: scene.contextChange
         )
     }
 }

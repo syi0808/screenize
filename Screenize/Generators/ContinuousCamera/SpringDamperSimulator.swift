@@ -32,6 +32,7 @@ struct SpringDamperSimulator {
             positionY: first.targetCenter.y,
             zoom: first.targetZoom
         )
+        clampState(&state, settings: settings)
 
         var results: [TimedTransform] = []
         let estimatedCount = Int(duration * settings.tickRate) + 1
@@ -48,16 +49,42 @@ struct SpringDamperSimulator {
 
         var waypointIndex = 0
         var t = dt
+        let activationTolerance = dt * 0.5
 
         while t <= duration + dt * 0.5 {
             // Advance to current active waypoint (last one with time <= t)
+            var activatedImmediate = false
             while waypointIndex + 1 < waypoints.count
-                    && waypoints[waypointIndex + 1].time <= t {
+                    && waypoints[waypointIndex + 1].time <= t + activationTolerance {
                 waypointIndex += 1
+                activatedImmediate = activatedImmediate
+                    || waypoints[waypointIndex].urgency == .immediate
             }
 
             let activeWP = waypoints[waypointIndex]
-            let urgencyMult = settings.urgencyMultipliers[activeWP.urgency] ?? 1.0
+
+            // Switching/app-change waypoints should feel like a hard cut.
+            if activatedImmediate {
+                state.positionX = activeWP.targetCenter.x
+                state.positionY = activeWP.targetCenter.y
+                state.zoom = activeWP.targetZoom
+                state.velocityX = 0
+                state.velocityY = 0
+                state.velocityZoom = 0
+                clampState(&state, settings: settings)
+                results.append(transformSample(from: state, at: t))
+                t += dt
+                continue
+            }
+
+            let lookAheadTarget = anticipatoryTarget(
+                active: activeWP,
+                next: waypointIndex + 1 < waypoints.count
+                    ? waypoints[waypointIndex + 1]
+                    : nil,
+                currentTime: t
+            )
+            let urgencyMult = settings.urgencyMultipliers[lookAheadTarget.urgency] ?? 1.0
 
             // Compute effective spring parameters
             let posOmega = 2.0 * .pi / max(0.001, settings.positionResponse * urgencyMult)
@@ -68,17 +95,17 @@ struct SpringDamperSimulator {
             // Spring step for each axis
             let (newX, newVX) = springStep(
                 current: state.positionX, velocity: state.velocityX,
-                target: activeWP.targetCenter.x,
+                target: lookAheadTarget.center.x,
                 omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
             )
             let (newY, newVY) = springStep(
                 current: state.positionY, velocity: state.velocityY,
-                target: activeWP.targetCenter.y,
+                target: lookAheadTarget.center.y,
                 omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
             )
             let (newZ, newVZ) = springStep(
                 current: state.zoom, velocity: state.velocityZoom,
-                target: activeWP.targetZoom,
+                target: lookAheadTarget.zoom,
                 omega: zoomOmega, zeta: zoomDamping, dt: CGFloat(dt)
             )
 
@@ -99,6 +126,51 @@ struct SpringDamperSimulator {
     }
 
     // MARK: - Helpers
+
+    private static func anticipatoryTarget(
+        active: CameraWaypoint,
+        next: CameraWaypoint?,
+        currentTime: TimeInterval
+    ) -> (zoom: CGFloat, center: NormalizedPoint, urgency: WaypointUrgency) {
+        guard let next else {
+            return (active.targetZoom, active.targetCenter, active.urgency)
+        }
+        guard next.urgency != .immediate else {
+            // App switching should cut at the activation time, not pre-pan.
+            return (active.targetZoom, active.targetCenter, active.urgency)
+        }
+
+        let lead = anticipationLeadTime(for: next.urgency)
+        let start = next.time - lead
+        guard currentTime >= start, currentTime < next.time, lead > 0.0001 else {
+            return (active.targetZoom, active.targetCenter, active.urgency)
+        }
+
+        let alpha = CGFloat((currentTime - start) / lead)
+        let blendedZoom = active.targetZoom
+            + (next.targetZoom - active.targetZoom) * alpha
+        let blendedCenter = active.targetCenter.interpolated(
+            to: next.targetCenter,
+            amount: alpha
+        )
+        let blendedUrgency = max(active.urgency, next.urgency)
+        return (blendedZoom, blendedCenter, blendedUrgency)
+    }
+
+    private static func anticipationLeadTime(
+        for urgency: WaypointUrgency
+    ) -> TimeInterval {
+        switch urgency {
+        case .immediate:
+            return 0.24
+        case .high:
+            return 0.16
+        case .normal:
+            return 0.10
+        case .lazy:
+            return 0.0
+        }
+    }
 
     /// Clamp camera state to valid bounds, zeroing velocity on clamped axes.
     private static func clampState(

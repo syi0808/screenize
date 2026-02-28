@@ -85,15 +85,13 @@ struct ShotPlanner {
     // MARK: - Idle Scene Resolution
 
     /// Idle scenes inherit center from nearest non-idle neighbor with zoom decayed toward 1.0.
-    /// Leading idles (before first non-idle) stay at zoom 1.0 as an establishing shot.
-    /// Trailing idles inherit from previous non-idle with decay.
+    /// This is applied in both directions so short leading idles don't snap to (0.5, 0.5)
+    /// right before the first action.
     private static func resolveIdleScenes(_ plans: inout [ShotPlan], settings: ShotSettings) {
         guard plans.count > 1 else { return }
         let decay = settings.idleZoomDecay
 
-        let firstNonIdleIndex = plans.firstIndex { $0.scene.primaryIntent != .idle }
-
-        // Forward pass: idle inherits from previous non-idle
+        // Forward pass: idle inherits from previous non-idle.
         var lastNonIdleIndex: Int?
         for i in 0..<plans.count {
             if plans[i].scene.primaryIntent != .idle {
@@ -103,23 +101,19 @@ struct ShotPlanner {
             }
         }
 
-        // Backward pass: only for trailing idles after last non-idle that had no forward source.
-        // Leading idles (before first non-idle) stay at zoom 1.0 center (0.5, 0.5)
-        // as an establishing shot — do NOT inherit from next non-idle.
-        if let firstNI = firstNonIdleIndex {
-            var nextNonIdleIndex: Int?
-            for i in stride(from: plans.count - 1, through: 0, by: -1) {
-                if plans[i].scene.primaryIntent != .idle {
-                    nextNonIdleIndex = i
-                } else if i >= firstNI, lastNonIdleIndex == nil {
-                    // Trailing idles with no forward source
-                    if let next = nextNonIdleIndex {
-                        plans[i] = plans[i].inheriting(
-                            from: plans[next], decayFactor: decay
-                        )
-                    }
-                }
-                // Leading idles (i < firstNI): deliberately left unchanged at zoom 1.0
+        // Backward pass: fill untouched idles from the next non-idle.
+        // This specifically handles leading idles (before the first action).
+        var nextNonIdleIndex: Int?
+        for i in stride(from: plans.count - 1, through: 0, by: -1) {
+            if plans[i].scene.primaryIntent != .idle {
+                nextNonIdleIndex = i
+                continue
+            }
+
+            guard let next = nextNonIdleIndex else { continue }
+            let untouchedIdle = abs(plans[i].idealZoom - settings.idleZoom) < 0.0001
+            if untouchedIdle {
+                plans[i] = plans[i].inheriting(from: plans[next], decayFactor: decay)
             }
         }
     }
@@ -312,7 +306,15 @@ struct ShotPlanner {
     ) -> NormalizedPoint {
         switch scene.primaryIntent {
         case .idle, .switching:
-            return NormalizedPoint(x: 0.5, y: 0.5)
+            // Idle/switching centers come from scene activity/focus metadata.
+            // Hardcoding to center causes visible snaps in real recordings.
+            return computeActivityCenter(
+                scene: scene,
+                zoom: zoom,
+                eventTimeline: eventTimeline,
+                frameAnalysis: frameAnalysis,
+                settings: settings
+            )
 
         case .typing:
             return computeTypingCenter(

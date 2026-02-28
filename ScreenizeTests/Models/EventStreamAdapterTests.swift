@@ -32,7 +32,16 @@ final class EventStreamAdapterTests: XCTestCase {
     ) -> PolyMouseClickEvent {
         PolyMouseClickEvent(
             type: "mouseDown", processTimeMs: ms, unixTimeMs: 0,
-            x: x, y: y, button: "left", cursorId: nil, activeModifiers: []
+            x: x, y: y, button: "left", cursorId: nil, activeModifiers: [],
+            elementRole: nil,
+            elementSubrole: nil,
+            elementTitle: nil,
+            elementAppName: nil,
+            elementFrameX: nil,
+            elementFrameY: nil,
+            elementFrameW: nil,
+            elementFrameH: nil,
+            elementIsClickable: nil
         )
     }
 
@@ -41,7 +50,16 @@ final class EventStreamAdapterTests: XCTestCase {
     ) -> PolyMouseClickEvent {
         PolyMouseClickEvent(
             type: "mouseUp", processTimeMs: ms, unixTimeMs: 0,
-            x: x, y: y, button: "left", cursorId: nil, activeModifiers: []
+            x: x, y: y, button: "left", cursorId: nil, activeModifiers: [],
+            elementRole: nil,
+            elementSubrole: nil,
+            elementTitle: nil,
+            elementAppName: nil,
+            elementFrameX: nil,
+            elementFrameY: nil,
+            elementFrameW: nil,
+            elementFrameH: nil,
+            elementIsClickable: nil
         )
     }
 
@@ -355,12 +373,30 @@ final class EventStreamAdapterTests: XCTestCase {
             PolyMouseClickEvent(
                 type: "mouseDown", processTimeMs: sessionStart + 1000,
                 unixTimeMs: 0, x: 100, y: 100, button: "right",
-                cursorId: nil, activeModifiers: []
+                cursorId: nil, activeModifiers: [],
+                elementRole: nil,
+                elementSubrole: nil,
+                elementTitle: nil,
+                elementAppName: nil,
+                elementFrameX: nil,
+                elementFrameY: nil,
+                elementFrameW: nil,
+                elementFrameH: nil,
+                elementIsClickable: nil
             ),
             PolyMouseClickEvent(
                 type: "mouseUp", processTimeMs: sessionStart + 2000,
                 unixTimeMs: 0, x: 600, y: 600, button: "right",
-                cursorId: nil, activeModifiers: []
+                cursorId: nil, activeModifiers: [],
+                elementRole: nil,
+                elementSubrole: nil,
+                elementTitle: nil,
+                elementAppName: nil,
+                elementFrameX: nil,
+                elementFrameY: nil,
+                elementFrameW: nil,
+                elementFrameH: nil,
+                elementIsClickable: nil
             ),
         ]
         let moves = [

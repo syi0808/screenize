@@ -501,7 +501,8 @@ struct IntentClassifier {
                         intent: span.intent,
                         confidence: span.confidence,
                         focusPosition: span.focusPosition,
-                        focusElement: span.focusElement
+                        focusElement: span.focusElement,
+                        contextChange: span.contextChange
                     ))
                 }
                 // If trimming removes the span entirely, skip it
@@ -532,10 +533,16 @@ struct IntentClassifier {
             if gapEnd - gapStart > 0.01 {
                 let canContinue: Bool
                 if gapEnd - gapStart <= continuationGapThreshold && !result.isEmpty {
-                    let lastPos = result[result.count - 1].focusPosition
+                    let previousSpan = result[result.count - 1]
+                    let lastPos = previousSpan.focusPosition
                     let nextPos = span.focusPosition
                     let distance = lastPos.distance(to: nextPos)
-                    canContinue = distance < continuationMaxDistance
+                    let compatible = intentsCompatibleForContinuation(
+                        previous: previousSpan.intent,
+                        next: span.intent
+                    )
+                    canContinue = compatible
+                        && distance < continuationMaxDistance
                 } else {
                     canContinue = false
                 }
@@ -549,7 +556,8 @@ struct IntentClassifier {
                         intent: result[lastIdx].intent,
                         confidence: result[lastIdx].confidence,
                         focusPosition: result[lastIdx].focusPosition,
-                        focusElement: result[lastIdx].focusElement
+                        focusElement: result[lastIdx].focusElement,
+                        contextChange: result[lastIdx].contextChange
                     )
                 } else {
                     // Gap too large (temporal or spatial): insert idle span
@@ -574,6 +582,27 @@ struct IntentClassifier {
         }
 
         return result
+    }
+
+    private static func intentsCompatibleForContinuation(
+        previous: UserIntent,
+        next: UserIntent
+    ) -> Bool {
+        switch (previous, next) {
+        case (.typing(let lhsCtx), .typing(let rhsCtx)):
+            return lhsCtx == rhsCtx
+        case (.clicking, .clicking),
+             (.clicking, .navigating),
+             (.navigating, .clicking),
+             (.navigating, .navigating):
+            return true
+        case (.dragging, .dragging),
+             (.scrolling, .scrolling),
+             (.reading, .reading):
+            return true
+        default:
+            return false
+        }
     }
 
     // MARK: - Helpers

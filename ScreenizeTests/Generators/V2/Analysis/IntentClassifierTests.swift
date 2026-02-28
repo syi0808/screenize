@@ -550,6 +550,45 @@ final class IntentClassifierTests: XCTestCase {
         )
     }
 
+    func test_classify_shortGapDifferentIntents_insertsIdleSpan() {
+        // Clicking and typing with a short spatially-close gap should still insert idle
+        // because they are different intent families.
+        let clicks = [
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+        ]
+        let keys = [
+            makeKeyDown(at: 2.2, character: "a"),
+            makeKeyDown(at: 2.4, character: "b")
+        ]
+        let mouseData = MockMouseDataSource(
+            duration: 6.0,
+            positions: [
+                MousePositionData(
+                    time: 1.0,
+                    position: NormalizedPoint(x: 0.5, y: 0.5)
+                ),
+                MousePositionData(
+                    time: 2.2,
+                    position: NormalizedPoint(x: 0.5, y: 0.5)
+                )
+            ],
+            clicks: clicks,
+            keyboardEvents: keys
+        )
+        let spans = classify(mouseData)
+        let idleSpans = spans.filter { span in
+            if case .idle = span.intent { return true }
+            return false
+        }
+        let idleBetweenClickAndTyping = idleSpans.contains {
+            $0.startTime >= 1.45 && $0.endTime <= 1.85
+        }
+        XCTAssertTrue(
+            idleBetweenClickAndTyping,
+            "Different intents should not be merged across short gaps"
+        )
+    }
+
     // MARK: - Typing Anticipation
 
     func test_classify_typingSpan_startTimeShiftedByAnticipation() {

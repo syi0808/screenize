@@ -73,6 +73,40 @@ final class StaticHoldControllerTests: XCTestCase {
         XCTAssertFalse(samples.isEmpty)
     }
 
+    func test_simulate_clickingPrefersClickAnchorsOverMouseMoves() {
+        let events = [
+            makeMouseMoveEvent(time: 1.0, position: NormalizedPoint(x: 0.92, y: 0.88)),
+            makeClickEvent(time: 2.0, position: NormalizedPoint(x: 0.22, y: 0.25))
+        ]
+        var settings = SimulationSettings()
+        settings.eventTimeline = EventTimeline(events: events, duration: 5.0)
+
+        let scene = makeScene(start: 0, end: 5)
+        let shotPlan = makeShotPlan(
+            scene: scene,
+            zoom: 2.0,
+            center: NormalizedPoint(x: 0.5, y: 0.5)
+        )
+        let mockData = MockMouseDataSource(duration: 5.0)
+
+        let samples = controller.simulate(
+            scene: scene,
+            shotPlan: shotPlan,
+            mouseData: mockData,
+            settings: settings
+        )
+
+        guard let last = samples.last else {
+            XCTFail("Expected samples")
+            return
+        }
+        XCTAssertLessThan(
+            last.transform.center.x,
+            0.5,
+            "Clicking scenes should follow click anchors instead of stray mouse moves"
+        )
+    }
+
     // MARK: - Helpers
 
     private func makeScene(
@@ -91,6 +125,35 @@ final class StaticHoldControllerTests: XCTestCase {
             shotType: .medium(zoom: zoom),
             idealZoom: zoom,
             idealCenter: center
+        )
+    }
+
+    private func makeMouseMoveEvent(
+        time: TimeInterval,
+        position: NormalizedPoint
+    ) -> UnifiedEvent {
+        UnifiedEvent(
+            time: time,
+            kind: .mouseMove,
+            position: position,
+            metadata: EventMetadata()
+        )
+    }
+
+    private func makeClickEvent(
+        time: TimeInterval,
+        position: NormalizedPoint
+    ) -> UnifiedEvent {
+        let click = ClickEventData(
+            time: time,
+            position: position,
+            clickType: .leftDown
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .click(click),
+            position: position,
+            metadata: EventMetadata()
         )
     }
 }
