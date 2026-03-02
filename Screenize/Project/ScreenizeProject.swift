@@ -5,7 +5,7 @@ import CoreGraphics
 /// Contains recorded media and timeline editing data
 struct ScreenizeProject: Codable, Identifiable {
     let id: UUID
-    var version: Int = 2
+    var version: Int = 5
     var name: String
     var createdAt: Date
     var modifiedAt: Date
@@ -38,7 +38,7 @@ struct ScreenizeProject: Codable, Identifiable {
         interop: InteropBlock? = nil
     ) {
         self.id = id
-        self.version = 4
+        self.version = 5
         self.name = name
         self.createdAt = Date()
         self.modifiedAt = Date()
@@ -76,11 +76,6 @@ struct ScreenizeProject: Codable, Identifiable {
     /// Package extension for .screenize packages
     static let packageExtension = "screenize"
 
-    // MARK: - Legacy (remove in next minor version)
-
-    /// Legacy project file extension
-    static let legacyFileExtension = "fsproj"
-
     // MARK: - Computed Properties
 
     /// Total duration
@@ -88,13 +83,13 @@ struct ScreenizeProject: Codable, Identifiable {
         media.duration
     }
 
-    /// Total frame count
+    /// Total frame count (approximate for VFR videos)
     var totalFrames: Int {
         Int(media.duration * media.frameRate)
     }
 
-    /// backgroundEnabled triggers window mode rendering (applies to both window and display capture)
+    /// Window capture uses window mode rendering (padding, corner radius, shadow, inset)
     var isWindowMode: Bool {
-        renderSettings.backgroundEnabled
+        captureMeta.displayID == nil
     }
 }

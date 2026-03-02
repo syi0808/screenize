@@ -8,7 +8,7 @@ struct PermissionSetupWizardView: View {
     @StateObject private var viewModel = PermissionWizardViewModel()
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: Spacing.xxxl) {
             Spacer()
 
             header
@@ -20,8 +20,8 @@ struct PermissionSetupWizardView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 40)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .padding(.horizontal, Spacing.xxxxl)
+        .background(DesignColors.windowBackground)
         .onAppear {
             viewModel.startPolling()
         }
@@ -33,14 +33,13 @@ struct PermissionSetupWizardView: View {
     // MARK: - Header
 
     private var header: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.md) {
             Image(systemName: "film.stack")
                 .font(.system(size: 48))
                 .foregroundColor(.accentColor)
 
             Text("Welcome to Screenize")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                .font(Typography.displayLarge)
 
             Text("A few permissions are needed to get started")
                 .font(.title3)
@@ -61,8 +60,8 @@ struct PermissionSetupWizardView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
+            RoundedRectangle(cornerRadius: CornerRadius.xxl)
+                .fill(DesignColors.controlBackground)
         )
         .frame(maxWidth: 520)
     }
@@ -70,21 +69,21 @@ struct PermissionSetupWizardView: View {
     private func permissionRow(_ step: PermissionStep) -> some View {
         let status = viewModel.status(for: step)
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: Spacing.md) {
             Image(systemName: step.icon)
                 .font(.system(size: 20))
                 .foregroundColor(.accentColor)
                 .frame(width: 32)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(step.title)
-                    .font(.headline)
+                    .font(Typography.heading)
                 Text(step.description)
-                    .font(.caption)
+                    .font(Typography.caption)
                     .foregroundColor(.secondary)
                 if step.requiresRestart && status != .granted {
                     Text("May require restart after enabling")
-                        .font(.caption2)
+                        .font(Typography.footnote)
                         .foregroundColor(.orange)
                 }
             }
@@ -103,9 +102,11 @@ struct PermissionSetupWizardView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .animation(.easeInOut(duration: 0.2), value: status == .granted)
+        .padding(.horizontal, Spacing.lg)
+        .padding(.vertical, Spacing.md)
+        .motionSafeAnimation(AnimationTokens.standard, value: status == .granted)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(step.title), \(status == .granted ? "granted" : "not granted")")
     }
 
     // MARK: - Get Started Button

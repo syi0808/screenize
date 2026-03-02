@@ -3,6 +3,7 @@ import CoreMedia
 import CoreImage
 import Combine
 import AppKit
+import AVFoundation
 
 @MainActor
 final class RecordingCoordinator: ObservableObject {
@@ -21,6 +22,7 @@ final class RecordingCoordinator: ObservableObject {
 
     private var captureManager: ScreenCaptureManager?
     private var mouseDataRecorder: MouseDataRecorder?
+    private var microphoneRecorder: MicrophoneRecorder?
 
     private var durationTimer: Timer?
     private var recordingStartTime: Date?
@@ -32,6 +34,8 @@ final class RecordingCoordinator: ObservableObject {
     private(set) var recordingStartDate: Date?
     private(set) var processTimeStartMs: Int64 = 0
     private(set) var lastMouseRecording: MouseRecording?
+    private(set) var lastMicAudioURL: URL?
+    private(set) var lastSystemAudioURL: URL?
 
     private let ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
@@ -41,14 +45,20 @@ final class RecordingCoordinator: ObservableObject {
     ])
 
     // MARK: - Thread-Safe State (for Capture Callbacks)
-    // Note: ScreenCaptureDelegate methods run on the capture queue,
-    // so nonisolated (unsafe) usage allows bypassing MainActor isolation.
+    // ScreenCaptureDelegate methods run on the capture queue.
+    // nonisolated(unsafe) bypasses actor isolation; captureStateLock provides runtime safety.
 
+    private nonisolated(unsafe) let captureStateLock = NSLock()
     nonisolated(unsafe) private var _captureSession: RecordingSession?
     nonisolated(unsafe) private var _captureIsPaused: Bool = false
 
-    nonisolated var captureSession: RecordingSession? { _captureSession }
-    nonisolated var captureIsPaused: Bool { _captureIsPaused }
+    nonisolated var captureSession: RecordingSession? {
+        captureStateLock.withLock { _captureSession }
+    }
+
+    nonisolated var captureIsPaused: Bool {
+        captureStateLock.withLock { _captureIsPaused }
+    }
 
     // MARK: - Computed State
 
@@ -64,7 +74,10 @@ final class RecordingCoordinator: ObservableObject {
     func startRecording(
         target: CaptureTarget,
         backgroundStyle: BackgroundStyle,
-        zoomSettings: ZoomSettings
+        frameRate: Int,
+        isSystemAudioEnabled: Bool,
+        isMicrophoneEnabled: Bool,
+        microphoneDevice: AVCaptureDevice?
     ) async throws {
         guard currentSession == nil else {
             throw RecordingError.alreadyRecording
@@ -80,16 +93,22 @@ final class RecordingCoordinator: ObservableObject {
         self.captureBounds = calculateCaptureBounds(for: target)
 
         // Setup capture configuration
-        let captureConfig = CaptureConfiguration.forTarget(target)
+        var captureConfig = CaptureConfiguration.forTarget(
+            target,
+            frameRate: frameRate
+        )
+        captureConfig.capturesAudio = isSystemAudioEnabled
 
         // DEBUG: Log capture setup details
-        print("🔍 [DEBUG] Recording target: \(target), captureBounds: \(captureBounds)")
-        print("🔍 [DEBUG] captureConfig: \(captureConfig.width)x\(captureConfig.height), shadow: \(captureConfig.capturesShadow)")
+        Log.recording.debug("Recording target: \(String(describing: target)), captureBounds: \(String(describing: self.captureBounds))")
+        Log.recording.debug("captureConfig: \(captureConfig.width)x\(captureConfig.height), shadow: \(captureConfig.capturesShadow)")
         self.captureConfiguration = captureConfig
 
-        // Sync nonisolated variables
-        _captureSession = session
-        _captureIsPaused = false
+        // Sync capture state for delegate callbacks
+        captureStateLock.withLock {
+            _captureSession = session
+            _captureIsPaused = false
+        }
 
         // Setup and start capture with SCRecordingOutput
         captureManager = ScreenCaptureManager()
@@ -105,7 +124,23 @@ final class RecordingCoordinator: ObservableObject {
         recordingStartDate = Date()
         processTimeStartMs = Int64(ProcessInfo.processInfo.systemUptime * 1000)
         mouseDataRecorder = MouseDataRecorder()
-        mouseDataRecorder?.startRecording(screenBounds: captureBounds, scaleFactor: captureConfig.scaleFactor)
+        mouseDataRecorder?.startRecording(
+            screenBounds: captureBounds,
+            scaleFactor: captureConfig.scaleFactor,
+            captureFrameRate: captureConfig.frameRate
+        )
+
+        // Start microphone recording if enabled
+        if isMicrophoneEnabled {
+            let micRecorder = MicrophoneRecorder()
+            let micURL = Self.generateMicOutputURL(for: session.outputURL)
+            do {
+                try micRecorder.startRecording(to: micURL, device: microphoneDevice)
+                self.microphoneRecorder = micRecorder
+            } catch {
+                Log.recording.warning("Mic recording failed (non-fatal): \(error)")
+            }
+        }
 
         session.transition(to: .recording)
         isRecording = true
@@ -113,7 +148,7 @@ final class RecordingCoordinator: ObservableObject {
         recordingStartTime = Date()
 
         startDurationTimer()
-        print("🎬 [RecordingCoordinator] Started recording via SCRecordingOutput")
+        Log.recording.info("Started recording via SCRecordingOutput")
     }
 
     @available(macOS 15.0, *)
@@ -124,31 +159,36 @@ final class RecordingCoordinator: ObservableObject {
         isRecording = false
         isPaused = false
 
-        // Clean up nonisolated variables
-        _captureIsPaused = true
-        _captureSession = nil
+        // Clean up capture state
+        captureStateLock.withLock {
+            _captureIsPaused = true
+            _captureSession = nil
+        }
 
         stopDurationTimer()
 
-        // Save mouse data
+        // Collect mouse data (written to package later by EventStreamWriter)
         if let mouseRecording = mouseDataRecorder?.stopRecording() {
             lastMouseRecording = mouseRecording
-            let mouseDataURL = MouseDataRecorder.mouseDataURL(for: session.outputURL)
-            do {
-                try mouseRecording.save(to: mouseDataURL)
-                print("🖱️ [RecordingCoordinator] Saved mouse data: \(mouseDataURL.path)")
-            } catch {
-                print("⚠️ [RecordingCoordinator] Failed to save mouse data: \(error)")
-            }
         }
         mouseDataRecorder = nil
 
+        // Stop microphone recording
+        if let micURL = await microphoneRecorder?.stopRecording() {
+            lastMicAudioURL = micURL
+        }
+        microphoneRecorder = nil
+
         // Stop SCRecordingOutput recording
-        let outputURL = await captureManager?.stopRecording()
+        let result = await captureManager?.stopRecording()
+        let outputURL = result?.videoURL
+        if let sysAudioURL = result?.systemAudioURL {
+            lastSystemAudioURL = sysAudioURL
+        }
 
         if let url = outputURL {
             session.transition(to: .completed(url))
-            print("🎬 [RecordingCoordinator] Recording finished - source: \(url.path)")
+            Log.recording.info("Recording finished - source: \(url.path)")
         } else {
             session.transition(to: .failed("Recording file save failed"))
         }
@@ -160,17 +200,26 @@ final class RecordingCoordinator: ObservableObject {
     func pauseRecording() {
         guard isRecording, !isPaused else { return }
         isPaused = true
-        _captureIsPaused = true
+        captureStateLock.withLock { _captureIsPaused = true }
         stopDurationTimer()
         mouseDataRecorder?.pauseRecording()
+        microphoneRecorder?.pause()
     }
 
     func resumeRecording() {
         guard isRecording, isPaused else { return }
         isPaused = false
-        _captureIsPaused = false
+        captureStateLock.withLock { _captureIsPaused = false }
         startDurationTimer()
         mouseDataRecorder?.resumeRecording()
+        microphoneRecorder?.resume()
+    }
+
+    /// Generate the microphone audio sidecar URL from the video output URL.
+    private static func generateMicOutputURL(for videoURL: URL) -> URL {
+        let dir = videoURL.deletingLastPathComponent()
+        let name = videoURL.deletingPathExtension().lastPathComponent
+        return dir.appendingPathComponent("\(name)_mic.m4a")
     }
 
     private func startDurationTimer() {
@@ -236,7 +285,7 @@ final class RecordingCoordinator: ObservableObject {
             }
 
             let appKitOriginY = screenHeight - window.frame.origin.y - window.frame.height
-            print("🔍 [DEBUG] Window bounds: CG frame=\(window.frame), screenHeight=\(screenHeight), appKitOriginY=\(appKitOriginY)")
+            Log.recording.debug("Window bounds: CG frame=\(String(describing: window.frame)), screenHeight=\(screenHeight), appKitOriginY=\(appKitOriginY)")
             return CGRect(
                 x: window.frame.origin.x,
                 y: appKitOriginY,
@@ -286,7 +335,7 @@ extension RecordingCoordinator: ScreenCaptureDelegate {
     }
 
     nonisolated func captureManager(_ manager: ScreenCaptureManager, didFinishRecordingTo url: URL) {
-        print("🎬 [RecordingCoordinator] Completed recording file: \(url.path)")
+        Log.recording.info("Completed recording file: \(url.path)")
     }
 }
 

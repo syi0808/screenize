@@ -44,6 +44,10 @@ struct EventStreamWriter {
             encoder: encoder, to: recordingDir, events: recording.keyboardEvents,
             processTimeStartMs: processTimeStartMs, unixStartMs: unixStartMs
         )
+        try writeUIStates(
+            encoder: encoder, to: recordingDir, samples: recording.uiStateSamples,
+            processTimeStartMs: processTimeStartMs, unixStartMs: unixStartMs
+        )
     }
 
     // MARK: - Private
@@ -102,13 +106,23 @@ struct EventStreamWriter {
         var result: [PolyMouseClickEvent] = []
         for click in clicks {
             let button = (click.type == .left) ? "left" : "right"
+            let elem = click.targetElement
             let downMs = Int64(click.timestamp * 1000)
             result.append(PolyMouseClickEvent(
                 type: "mouseDown",
                 processTimeMs: processTimeStartMs + downMs, unixTimeMs: unixStartMs + downMs,
                 x: Double(click.x) * scaleFactor,
                 y: Double(height - click.y) * scaleFactor,
-                button: button, cursorId: nil, activeModifiers: []
+                button: button, cursorId: nil, activeModifiers: [],
+                elementRole: elem?.role,
+                elementSubrole: elem?.subrole,
+                elementTitle: elem?.title,
+                elementAppName: elem?.applicationName,
+                elementFrameX: elem.map { Double($0.frame.origin.x) },
+                elementFrameY: elem.map { Double($0.frame.origin.y) },
+                elementFrameW: elem.map { Double($0.frame.width) },
+                elementFrameH: elem.map { Double($0.frame.height) },
+                elementIsClickable: elem?.isClickable
             ))
             let upMs = Int64(click.endTimestamp * 1000)
             result.append(PolyMouseClickEvent(
@@ -116,7 +130,16 @@ struct EventStreamWriter {
                 processTimeMs: processTimeStartMs + upMs, unixTimeMs: unixStartMs + upMs,
                 x: Double(click.x) * scaleFactor,
                 y: Double(height - click.y) * scaleFactor,
-                button: button, cursorId: nil, activeModifiers: []
+                button: button, cursorId: nil, activeModifiers: [],
+                elementRole: elem?.role,
+                elementSubrole: elem?.subrole,
+                elementTitle: elem?.title,
+                elementAppName: elem?.applicationName,
+                elementFrameX: elem.map { Double($0.frame.origin.x) },
+                elementFrameY: elem.map { Double($0.frame.origin.y) },
+                elementFrameW: elem.map { Double($0.frame.width) },
+                elementFrameH: elem.map { Double($0.frame.height) },
+                elementIsClickable: elem?.isClickable
             ))
         }
         try encoder.encode(result).write(
@@ -134,12 +157,44 @@ struct EventStreamWriter {
                 type: event.type == .keyDown ? "keyDown" : "keyUp",
                 processTimeMs: processTimeStartMs + offsetMs,
                 unixTimeMs: unixStartMs + offsetMs,
+                keyCode: event.keyCode,
                 character: event.character, isARepeat: false,
                 activeModifiers: ActiveModifiersConverter.toStrings(from: event.modifiers)
             )
         }
         try encoder.encode(keystrokes).write(
             to: dir.appendingPathComponent("keystrokes-0.json"), options: .atomic
+        )
+    }
+
+    private static func writeUIStates(
+        encoder: JSONEncoder, to dir: URL, samples: [UIStateSample],
+        processTimeStartMs: Int64, unixStartMs: Int64
+    ) throws {
+        let events: [PolyUIStateEvent] = samples.map { sample in
+            let offsetMs = Int64(sample.timestamp * 1000)
+            return PolyUIStateEvent(
+                processTimeMs: processTimeStartMs + offsetMs,
+                unixTimeMs: unixStartMs + offsetMs,
+                cursorX: Double(sample.cursorPosition.x),
+                cursorY: Double(sample.cursorPosition.y),
+                elementRole: sample.elementInfo?.role,
+                elementSubrole: sample.elementInfo?.subrole,
+                elementTitle: sample.elementInfo?.title,
+                elementAppName: sample.elementInfo?.applicationName,
+                elementFrameX: sample.elementInfo.map { Double($0.frame.origin.x) },
+                elementFrameY: sample.elementInfo.map { Double($0.frame.origin.y) },
+                elementFrameW: sample.elementInfo.map { Double($0.frame.width) },
+                elementFrameH: sample.elementInfo.map { Double($0.frame.height) },
+                elementIsClickable: sample.elementInfo?.isClickable,
+                caretX: sample.caretBounds.map { Double($0.origin.x) },
+                caretY: sample.caretBounds.map { Double($0.origin.y) },
+                caretW: sample.caretBounds.map { Double($0.width) },
+                caretH: sample.caretBounds.map { Double($0.height) }
+            )
+        }
+        try encoder.encode(events).write(
+            to: dir.appendingPathComponent("uistates-0.json"), options: .atomic
         )
     }
 }

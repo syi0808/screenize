@@ -79,31 +79,31 @@ struct GradientStyle: Equatable, RawRepresentable {
     }
 
     static let defaultGradient = Self(
-        colors: [Color(hex: "#667eea")!, Color(hex: "#764ba2")!],
+        colors: [Color(hex: "#667eea") ?? .purple, Color(hex: "#764ba2") ?? .purple],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let sunset = Self(
-        colors: [Color(hex: "#ff6b6b")!, Color(hex: "#feca57")!],
+        colors: [Color(hex: "#ff6b6b") ?? .red, Color(hex: "#feca57") ?? .yellow],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let ocean = Self(
-        colors: [Color(hex: "#667eea")!, Color(hex: "#00d2d3")!],
+        colors: [Color(hex: "#667eea") ?? .blue, Color(hex: "#00d2d3") ?? .cyan],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let forest = Self(
-        colors: [Color(hex: "#11998e")!, Color(hex: "#38ef7d")!],
+        colors: [Color(hex: "#11998e") ?? .green, Color(hex: "#38ef7d") ?? .mint],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let midnight = Self(
-        colors: [Color(hex: "#232526")!, Color(hex: "#414345")!],
+        colors: [Color(hex: "#232526") ?? .gray, Color(hex: "#414345") ?? .gray],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
@@ -155,28 +155,4 @@ extension GradientStyle: Codable {
     }
 }
 
-extension Color {
-    init?(hex: String) {
-        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
-
-        var rgb: UInt64 = 0
-        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
-
-        let r = Double((rgb & 0xFF0000) >> 16) / 255.0
-        let g = Double((rgb & 0x00FF00) >> 8) / 255.0
-        let b = Double(rgb & 0x0000FF) / 255.0
-
-        self.init(red: r, green: g, blue: b)
-    }
-
-    var hexString: String {
-        guard let components = NSColor(self).cgColor.components, components.count >= 3 else {
-            return "#000000"
-        }
-        let r = Int(components[0] * 255)
-        let g = Int(components[1] * 255)
-        let b = Int(components[2] * 255)
-        return String(format: "#%02X%02X%02X", r, g, b)
-    }
-}
+// Color+Hex extension is now defined in DesignSystem/DesignColors.swift

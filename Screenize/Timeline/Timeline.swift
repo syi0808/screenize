@@ -1,78 +1,67 @@
 import Foundation
-import CoreGraphics
 
-/// Timeline
-/// Contains multiple tracks, each holding keyframes
+/// Segment-based timeline model.
 struct Timeline: Codable, Equatable {
-    /// List of tracks
-    var tracks: [AnyTrack]
+    /// Segment tracks for editor/rendering.
+    var tracks: [AnySegmentTrack]
 
-    /// Total timeline duration (seconds)
+    /// Total timeline duration in seconds.
     var duration: TimeInterval
 
-    /// Trim start time (based on the original video timeline)
+    /// Trim start time on source timeline.
     var trimStart: TimeInterval
 
-    /// Trim end time (based on the original video timeline; nil uses duration)
+    /// Trim end time on source timeline; nil means `duration`.
     var trimEnd: TimeInterval?
 
-    init(tracks: [AnyTrack] = [], duration: TimeInterval = 0, trimStart: TimeInterval = 0, trimEnd: TimeInterval? = nil) {
+    /// Pre-computed continuous camera path from physics simulation.
+    /// When set, FrameEvaluator uses this instead of CameraTrack segments.
+    var continuousTransforms: [TimedTransform]?
+
+    init(
+        tracks: [AnySegmentTrack] = [],
+        duration: TimeInterval = 0,
+        trimStart: TimeInterval = 0,
+        trimEnd: TimeInterval? = nil,
+        continuousTransforms: [TimedTransform]? = nil
+    ) {
         self.tracks = tracks
         self.duration = duration
         self.trimStart = trimStart
         self.trimEnd = trimEnd
+        self.continuousTransforms = continuousTransforms
     }
 
-    // MARK: - Trim Properties
+    // MARK: - Trim
 
-    /// Valid trim start time
     var effectiveTrimStart: TimeInterval {
         max(0, min(trimStart, duration))
     }
 
-    /// Valid trim end time
     var effectiveTrimEnd: TimeInterval {
         min(duration, trimEnd ?? duration)
     }
 
-    /// Length of the trimmed segment
     var trimmedDuration: TimeInterval {
         max(0, effectiveTrimEnd - effectiveTrimStart)
     }
 
-    /// Whether trimming is applied
     var isTrimmed: Bool {
         effectiveTrimStart > 0 || effectiveTrimEnd < duration
     }
 
-    /// Check if a time falls within the trim range
     func isTimeInTrimRange(_ time: TimeInterval) -> Bool {
         time >= effectiveTrimStart && time <= effectiveTrimEnd
     }
 
-    // MARK: - Codable
+    // MARK: - Default
 
-    private enum CodingKeys: String, CodingKey {
-        case tracks, duration, trimStart, trimEnd
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        tracks = try container.decode([AnyTrack].self, forKey: .tracks)
-        duration = try container.decode(TimeInterval.self, forKey: .duration)
-        // Backward compatibility: trimStart/trimEnd may be missing
-        trimStart = try container.decodeIfPresent(TimeInterval.self, forKey: .trimStart) ?? 0
-        trimEnd = try container.decodeIfPresent(TimeInterval.self, forKey: .trimEnd)
-    }
-
-    /// Create a timeline initialized with default tracks
     static func withDefaultTracks(duration: TimeInterval, trimStart: TimeInterval = 0, trimEnd: TimeInterval? = nil) -> Self {
         Self(
             tracks: [
-                .transform(TransformTrack()),
-                .ripple(RippleTrack()),
-                .cursor(CursorTrack()),
-                .keystroke(KeystrokeTrack())
+                .camera(CameraTrack()),
+                .cursor(CursorTrackV2()),
+                .keystroke(KeystrokeTrackV2()),
             ],
             duration: duration,
             trimStart: trimStart,
@@ -82,46 +71,24 @@ struct Timeline: Codable, Equatable {
 
     // MARK: - Track Access
 
-    /// Transform track (first)
-    var transformTrack: TransformTrack? {
+    var cameraTrack: CameraTrack? {
         get {
-            for case .transform(let track) in tracks {
+            for case .camera(let track) in tracks {
                 return track
             }
             return nil
         }
         set {
-            if let newTrack = newValue {
-                if let index = tracks.firstIndex(where: { $0.trackType == .transform }) {
-                    tracks[index] = .transform(newTrack)
-                } else {
-                    tracks.insert(.transform(newTrack), at: 0)
-                }
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: { $0.trackType == .transform }) {
+                tracks[index] = .camera(newValue)
+            } else {
+                tracks.insert(.camera(newValue), at: 0)
             }
         }
     }
 
-    /// Ripple track (first)
-    var rippleTrack: RippleTrack? {
-        get {
-            for case .ripple(let track) in tracks {
-                return track
-            }
-            return nil
-        }
-        set {
-            if let newTrack = newValue {
-                if let index = tracks.firstIndex(where: { $0.trackType == .ripple }) {
-                    tracks[index] = .ripple(newTrack)
-                } else {
-                    tracks.append(.ripple(newTrack))
-                }
-            }
-        }
-    }
-
-    /// Cursor track (first)
-    var cursorTrack: CursorTrack? {
+    var cursorTrackV2: CursorTrackV2? {
         get {
             for case .cursor(let track) in tracks {
                 return track
@@ -129,18 +96,16 @@ struct Timeline: Codable, Equatable {
             return nil
         }
         set {
-            if let newTrack = newValue {
-                if let index = tracks.firstIndex(where: { $0.trackType == .cursor }) {
-                    tracks[index] = .cursor(newTrack)
-                } else {
-                    tracks.append(.cursor(newTrack))
-                }
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: { $0.trackType == .cursor }) {
+                tracks[index] = .cursor(newValue)
+            } else {
+                tracks.append(.cursor(newValue))
             }
         }
     }
 
-    /// Keystroke track (first)
-    var keystrokeTrack: KeystrokeTrack? {
+    var keystrokeTrackV2: KeystrokeTrackV2? {
         get {
             for case .keystroke(let track) in tracks {
                 return track
@@ -148,94 +113,93 @@ struct Timeline: Codable, Equatable {
             return nil
         }
         set {
-            if let newTrack = newValue {
-                if let index = tracks.firstIndex(where: { $0.trackType == .keystroke }) {
-                    tracks[index] = .keystroke(newTrack)
-                } else {
-                    tracks.append(.keystroke(newTrack))
-                }
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: { $0.trackType == .keystroke }) {
+                tracks[index] = .keystroke(newValue)
+            } else {
+                tracks.append(.keystroke(newValue))
             }
         }
     }
 
-    // MARK: - Track Management
-
-    /// Add a track
-    mutating func addTrack(_ track: AnyTrack) {
-        tracks.append(track)
-    }
-
-    /// Remove a track
-    mutating func removeTrack(id: UUID) {
-        tracks.removeAll { $0.id == id }
-    }
-
-    /// Find a track
-    func track(id: UUID) -> AnyTrack? {
-        tracks.first { $0.id == id }
-    }
-
-    /// Update a track
-    mutating func updateTrack(_ track: AnyTrack) {
-        if let index = tracks.firstIndex(where: { $0.id == track.id }) {
-            tracks[index] = track
+    var audioTrack: AudioTrack? {
+        get {
+            for case .audio(let track) in tracks {
+                return track
+            }
+            return nil
         }
-    }
-
-    // MARK: - Keyframe Query
-
-    /// Total keyframe count
-    var totalKeyframeCount: Int {
-        var count = 0
-        for track in tracks {
-            switch track {
-            case .transform(let t):
-                count += t.keyframes.count
-            case .ripple(let t):
-                count += t.keyframes.count
-            case .cursor(let t):
-                count += t.styleKeyframes?.count ?? 0
-            case .keystroke(let t):
-                count += t.keyframes.count
+        set {
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: { $0.trackType == .audio }) {
+                tracks[index] = .audio(newValue)
+            } else {
+                tracks.append(.audio(newValue))
             }
         }
-        return count
     }
 
-    /// Check if keyframes exist within a time range
-    func hasKeyframes(in range: ClosedRange<TimeInterval>) -> Bool {
-        for track in tracks {
-            switch track {
-            case .transform(let t):
-                if t.keyframes.contains(where: { range.contains($0.time) }) {
-                    return true
-                }
-            case .ripple(let t):
-                if t.keyframes.contains(where: { range.contains($0.time) }) {
-                    return true
-                }
-            case .cursor(let t):
-                if let keyframes = t.styleKeyframes,
-                   keyframes.contains(where: { range.contains($0.time) }) {
-                    return true
-                }
-            case .keystroke(let t):
-                if t.keyframes.contains(where: { range.contains($0.time) }) {
-                    return true
-                }
+    var micAudioTrack: AudioTrack? {
+        get {
+            for case .audio(let track) in tracks where track.audioSource == .microphone {
+                return track
+            }
+            return nil
+        }
+        set {
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: {
+                if case .audio(let t) = $0, t.audioSource == .microphone { return true }
+                return false
+            }) {
+                tracks[index] = .audio(newValue)
+            } else {
+                tracks.append(.audio(newValue))
             }
         }
-        return false
+    }
+
+    var systemAudioTrack: AudioTrack? {
+        get {
+            for case .audio(let track) in tracks where track.audioSource == .system {
+                return track
+            }
+            return nil
+        }
+        set {
+            guard let newValue else { return }
+            if let index = tracks.firstIndex(where: {
+                if case .audio(let t) = $0, t.audioSource == .system { return true }
+                return false
+            }) {
+                tracks[index] = .audio(newValue)
+            } else {
+                tracks.append(.audio(newValue))
+            }
+        }
     }
 
     // MARK: - Validation
 
-    /// Determine if the timeline is empty
-    var isEmpty: Bool {
-        totalKeyframeCount == 0
+    var totalSegmentCount: Int {
+        tracks.reduce(into: 0) { count, track in
+            switch track {
+            case .camera(let cameraTrack):
+                count += cameraTrack.segmentCount
+            case .cursor(let cursorTrack):
+                count += cursorTrack.segmentCount
+            case .keystroke(let keystrokeTrack):
+                count += keystrokeTrack.segmentCount
+            case .audio(let audioTrack):
+                count += audioTrack.segmentCount
+            }
+        }
     }
 
-    /// Determine if the timeline is valid
+    var isEmpty: Bool {
+        totalSegmentCount == 0
+    }
+
     var isValid: Bool {
         duration > 0
     }

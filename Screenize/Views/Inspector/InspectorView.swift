@@ -1,442 +1,276 @@
 import SwiftUI
 
-/// Inspector tab types
 enum InspectorTab: String, CaseIterable {
     case settings = "Settings"
-    case keyframe = "Keyframe"
+    case segment = "Segment"
 }
 
-/// Inspector main view
-/// Edit properties of the selected keyframe or track
+/// Segment inspector view.
 struct InspectorView: View {
 
-    // MARK: - Properties
-
-    /// Timeline (for editing keyframes)
     @Binding var timeline: Timeline
-
-    /// Selected keyframe ID
-    @Binding var selectedKeyframeID: UUID?
-
-    /// Selected track type
-    @Binding var selectedTrackType: TrackType?
-
-    /// Render settings (for window styling)
+    @Binding var selection: SegmentSelection
     @Binding var renderSettings: RenderSettings
-
-    /// Window mode flag
     var isWindowMode: Bool
+    var onSegmentChange: (() -> Void)?
+    var onDeleteSegment: ((UUID, TrackType) -> Void)?
 
-    /// Change callback
-    var onKeyframeChange: (() -> Void)?
-
-    /// Keyframe deletion callback
-    var onDeleteKeyframe: ((UUID, TrackType) -> Void)?
-
-    /// Currently selected tab
-    @State private var selectedTab: InspectorTab = .keyframe
-
-    // MARK: - Body
+    @State private var selectedTab: InspectorTab = .segment
 
     var body: some View {
         VStack(spacing: 0) {
-            // Tab selection (window mode only)
             if isWindowMode {
-                tabPicker
+                Picker("Inspector Tab", selection: $selectedTab) {
+                    ForEach(InspectorTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+
                 Divider()
             }
 
-            // Content per tab
             if isWindowMode && selectedTab == .settings {
                 ScrollView {
-                    SettingsInspector(
-                        settings: $renderSettings,
-                        timeline: $timeline,
-                        onChange: onKeyframeChange
-                    )
+                    SettingsInspector(settings: $renderSettings, timeline: $timeline, onChange: onSegmentChange)
                 }
             } else {
-                // Inspector content (keyframe editing)
-                inspectorContent
+                segmentInspector
             }
         }
         .frame(minWidth: 260, idealWidth: 280, maxWidth: 320)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(DesignColors.windowBackground)
     }
 
-    // MARK: - Tab Picker
-
-    private var tabPicker: some View {
-        Picker("Inspector Tab", selection: $selectedTab) {
-            ForEach(InspectorTab.allCases, id: \.self) { tab in
-                Text(tab.rawValue).tag(tab)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-    }
-
-    // MARK: - Content
-
-    @ViewBuilder
-    private var inspectorContent: some View {
-        if let keyframeID = selectedKeyframeID,
-           let trackType = selectedTrackType {
-            // When a keyframe is selected
-            keyframeInspector(for: keyframeID, trackType: trackType)
-        } else {
-            // When nothing is selected
-            emptyState
-        }
-    }
-
-    // MARK: - Keyframe Inspector
-
-    @ViewBuilder
-    private func keyframeInspector(for keyframeID: UUID, trackType: TrackType) -> some View {
+    private var segmentInspector: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                switch trackType {
-                case .transform:
-                    if let binding = transformKeyframeBinding(for: keyframeID) {
-                        TransformInspector(
-                            keyframe: binding,
-                            onChange: onKeyframeChange
-                        )
-                    } else {
-                        keyframeNotFound
-                    }
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                Text("Segment")
+                    .font(Typography.heading)
 
-                case .ripple:
-                    if let binding = rippleKeyframeBinding(for: keyframeID) {
-                        RippleInspector(
-                            keyframe: binding,
-                            onChange: onKeyframeChange
-                        )
-                    } else {
-                        keyframeNotFound
-                    }
+                if let selected = selection.single {
+                    LabeledContent("Track") { Text(trackName(selected.trackType)) }
 
-                case .cursor:
-                    if let binding = cursorKeyframeBinding(for: keyframeID) {
-                        CursorInspector(
-                            keyframe: binding,
-                            onChange: onKeyframeChange
-                        )
-                    } else {
-                        keyframeNotFound
-                    }
-
-                case .keystroke:
-                    if let binding = keystrokeKeyframeBinding(for: keyframeID) {
-                        KeystrokeInspector(
-                            keyframe: binding,
-                            onChange: onKeyframeChange
-                        )
-                    } else {
-                        keyframeNotFound
-                    }
-
-                case .audio:
-                    // Implement when audio tracks are supported in the future
-                    emptyState
-                }
-
-                Divider()
-                    .padding(.vertical, 8)
-
-                // Delete button
-                deleteButton(for: keyframeID, trackType: trackType)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 12)
-            }
-        }
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: "sidebar.right")
-                .font(.system(size: 40))
-                .foregroundColor(.secondary.opacity(0.5))
-
-            Text("No Selection")
-                .font(.headline)
-                .foregroundColor(.secondary)
-
-            Text("Select a track or keyframe to view and edit its properties")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-
-            Spacer()
-        }
-        .padding()
-    }
-
-    // MARK: - Keyframe Not Found
-
-    private var keyframeNotFound: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40))
-                .foregroundColor(.orange.opacity(0.5))
-
-            Text("Keyframe Not Found")
-                .font(.headline)
-                .foregroundColor(.secondary)
-
-            Text("The selected keyframe could not be found")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-
-            Spacer()
-        }
-        .padding()
-    }
-
-    // MARK: - Delete Button
-
-    private func deleteButton(for keyframeID: UUID, trackType: TrackType) -> some View {
-        Button(role: .destructive) {
-            onDeleteKeyframe?(keyframeID, trackType)
-        } label: {
-            HStack {
-                Image(systemName: "trash")
-                Text("Delete Keyframe")
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
-    }
-
-    // MARK: - Helpers
-
-    // MARK: - Keyframe Bindings
-
-    private func transformKeyframeBinding(for id: UUID) -> Binding<TransformKeyframe>? {
-        // Initial validation (ensure the keyframe exists)
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .transform }),
-              case .transform(let track) = timeline.tracks[trackIndex],
-              track.keyframes.contains(where: { $0.id == id }) else {
-            return nil
-        }
-
-        return Binding(
-            get: {
-                // Re-find the index by ID each time
-                if case .transform(let track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    return track.keyframes[keyframeIndex]
-                }
-                return TransformKeyframe(time: 0, zoom: 1.0, centerX: 0.5, centerY: 0.5)
-            },
-            set: { newValue in
-                // Re-find the index by ID each time
-                if case .transform(var track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex] = newValue
-                    self.timeline.tracks[trackIndex] = .transform(track)
-                }
-            }
-        )
-    }
-
-    private func rippleKeyframeBinding(for id: UUID) -> Binding<RippleKeyframe>? {
-        // Initial validation (ensure the keyframe exists)
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .ripple }),
-              case .ripple(let track) = timeline.tracks[trackIndex],
-              track.keyframes.contains(where: { $0.id == id }) else {
-            return nil
-        }
-
-        return Binding(
-            get: {
-                // Re-find the index by ID each time
-                if case .ripple(let track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    return track.keyframes[keyframeIndex]
-                }
-                return RippleKeyframe(time: 0, x: 0.5, y: 0.5)
-            },
-            set: { newValue in
-                // Re-find the index by ID each time
-                if case .ripple(var track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex] = newValue
-                    self.timeline.tracks[trackIndex] = .ripple(track)
-                }
-            }
-        )
-    }
-
-    private func cursorKeyframeBinding(for id: UUID) -> Binding<CursorStyleKeyframe>? {
-        // Initial validation (ensure the keyframe exists)
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
-              case .cursor(let track) = timeline.tracks[trackIndex],
-              let keyframes = track.styleKeyframes,
-              keyframes.contains(where: { $0.id == id }) else {
-            return nil
-        }
-
-        return Binding(
-            get: {
-                // Re-find the index by ID each time
-                if case .cursor(let track) = self.timeline.tracks[trackIndex],
-                   let keyframes = track.styleKeyframes,
-                   let keyframeIndex = keyframes.firstIndex(where: { $0.id == id }) {
-                    return keyframes[keyframeIndex]
-                }
-                return CursorStyleKeyframe(time: 0, style: .arrow, visible: true, scale: 1.0)
-            },
-            set: { newValue in
-                // Re-find the index by ID each time
-                if case .cursor(var track) = self.timeline.tracks[trackIndex],
-                   var keyframes = track.styleKeyframes,
-                   let keyframeIndex = keyframes.firstIndex(where: { $0.id == id }) {
-                    keyframes[keyframeIndex] = newValue
-                    track = CursorTrack(
-                        id: track.id,
-                        name: track.name,
-                        isEnabled: track.isEnabled,
-                        defaultStyle: track.defaultStyle,
-                        defaultScale: track.defaultScale,
-                        defaultVisible: track.defaultVisible,
-                        styleKeyframes: keyframes
-                    )
-                    self.timeline.tracks[trackIndex] = .cursor(track)
-                }
-            }
-        )
-    }
-
-    private func keystrokeKeyframeBinding(for id: UUID) -> Binding<KeystrokeKeyframe>? {
-        // Initial validation (ensure the keyframe exists)
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }),
-              case .keystroke(let track) = timeline.tracks[trackIndex],
-              track.keyframes.contains(where: { $0.id == id }) else {
-            return nil
-        }
-
-        return Binding(
-            get: {
-                // Re-find the index by ID each time
-                if case .keystroke(let track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    return track.keyframes[keyframeIndex]
-                }
-                return KeystrokeKeyframe(time: 0, displayText: "")
-            },
-            set: { newValue in
-                // Re-find the index by ID each time
-                if case .keystroke(var track) = self.timeline.tracks[trackIndex],
-                   let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex] = newValue
-                    self.timeline.tracks[trackIndex] = .keystroke(track)
-                }
-            }
-        )
-    }
-}
-
-// MARK: - Preview
-
-#Preview {
-    struct PreviewWrapper: View {
-        @State private var timeline = Timeline(
-            tracks: [
-                AnyTrack(TransformTrack(
-                    id: UUID(),
-                    name: "Transform",
-                    isEnabled: true,
-                    keyframes: [
-                        TransformKeyframe(time: 0, zoom: 1.0, centerX: 0.5, centerY: 0.5),
-                        TransformKeyframe(time: 2, zoom: 2.0, centerX: 0.3, centerY: 0.4),
-                    ]
-                )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: [
-                        RippleKeyframe(time: 1, x: 0.3, y: 0.4),
-                    ]
-                )),
-                AnyTrack(CursorTrack(
-                    id: UUID(),
-                    name: "Cursor",
-                    isEnabled: true
-                )),
-            ],
-            duration: 10
-        )
-
-        @State private var selectedKeyframeID: UUID?
-        @State private var selectedTrackType: TrackType? = .transform
-        @State private var renderSettings = RenderSettings()
-
-        var body: some View {
-            HStack(spacing: 0) {
-                // Selection buttons
-                VStack {
-                    Button("Select Transform KF") {
-                        selectedTrackType = .transform
-                        if let track = timeline.transformTrack {
-                            selectedKeyframeID = track.keyframes.first?.id
-                        }
-                    }
-
-                    Button("Select Ripple KF") {
-                        selectedTrackType = .ripple
-                        if let track = timeline.rippleTrack {
-                            selectedKeyframeID = track.keyframes.first?.id
-                        }
-                    }
-
-                    Button("Select Track Only") {
-                        selectedTrackType = .cursor
-                        selectedKeyframeID = nil
-                    }
-
-                    Button("Clear Selection") {
-                        selectedTrackType = nil
-                        selectedKeyframeID = nil
+                    switch selected.trackType {
+                    case .transform:
+                        cameraSection(segmentID: selected.id)
+                    case .cursor:
+                        cursorSection(segmentID: selected.id)
+                    case .keystroke:
+                        keystrokeSection(segmentID: selected.id)
+                    case .audio:
+                        audioSection(segmentID: selected.id)
                     }
 
                     Divider()
 
-                    Toggle("Window Mode", isOn: .constant(true))
-                }
-                .padding()
-
-                Divider()
-
-                // Inspector
-                InspectorView(
-                    timeline: $timeline,
-                    selectedKeyframeID: $selectedKeyframeID,
-                    selectedTrackType: $selectedTrackType,
-                    renderSettings: $renderSettings,
-                    isWindowMode: true,
-                    onKeyframeChange: {
-                        print("Keyframe changed")
-                    },
-                    onDeleteKeyframe: { id, type in
-                        print("Delete keyframe \(id) from \(type)")
+                    Button(role: .destructive) {
+                        onDeleteSegment?(selected.id, selected.trackType)
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete Segment")
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                )
+                    .buttonStyle(.bordered)
+                } else if selection.count > 1 {
+                    DesignEmptyState(
+                        icon: "rectangle.stack",
+                        title: "\(selection.count) Segments Selected"
+                    )
+                    .padding(.top, Spacing.xxxl - Spacing.sm)
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        let selected = selection.segments
+                        for ident in selected {
+                            onDeleteSegment?(ident.id, ident.trackType)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete \(selection.count) Segments")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                } else {
+                    DesignEmptyState(
+                        icon: "sidebar.right",
+                        title: "No Selection",
+                        subtitle: "Select a segment on the timeline to inspect it."
+                    )
+                    .padding(.top, Spacing.xxxl - Spacing.sm)
+                }
             }
-            .frame(width: 500, height: 600)
+            .padding(Spacing.md)
         }
     }
 
-    return PreviewWrapper()
+    // MARK: - Cursor Section
+
+    @ViewBuilder
+    private func cursorSection(segmentID: UUID) -> some View {
+        if let binding = cursorSegmentBinding(for: segmentID) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Cursor")
+                    .font(.subheadline.weight(.medium))
+
+                timeRangeFields(
+                    start: Binding(
+                        get: { binding.wrappedValue.startTime },
+                        set: { binding.wrappedValue.startTime = $0 }
+                    ),
+                    end: Binding(
+                        get: { binding.wrappedValue.endTime },
+                        set: { binding.wrappedValue.endTime = $0 }
+                    )
+                )
+
+                Picker("Style", selection: Binding(
+                    get: { binding.wrappedValue.style },
+                    set: { binding.wrappedValue.style = $0 }
+                )) {
+                    ForEach(CursorStyle.allCases, id: \.self) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+
+                Toggle("Visible", isOn: Binding(
+                    get: { binding.wrappedValue.visible },
+                    set: { binding.wrappedValue.visible = $0 }
+                ))
+
+                LabeledContent("Scale") {
+                    Slider(value: Binding(
+                        get: { Double(binding.wrappedValue.scale) },
+                        set: { binding.wrappedValue.scale = CGFloat($0) }
+                    ), in: 0.5...5)
+                }
+            }
+        } else {
+            Text("Cursor segment not found")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Keystroke Section
+
+    @ViewBuilder
+    private func keystrokeSection(segmentID: UUID) -> some View {
+        if let binding = keystrokeSegmentBinding(for: segmentID) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Keystroke")
+                    .font(.subheadline.weight(.medium))
+
+                timeRangeFields(
+                    start: Binding(
+                        get: { binding.wrappedValue.startTime },
+                        set: { binding.wrappedValue.startTime = $0 }
+                    ),
+                    end: Binding(
+                        get: { binding.wrappedValue.endTime },
+                        set: { binding.wrappedValue.endTime = $0 }
+                    )
+                )
+
+                TextField("Display Text", text: Binding(
+                    get: { binding.wrappedValue.displayText },
+                    set: { binding.wrappedValue.displayText = $0 }
+                ))
+                .textFieldStyle(.roundedBorder)
+
+                LabeledContent("Fade In") {
+                    Slider(value: Binding(
+                        get: { binding.wrappedValue.fadeInDuration },
+                        set: { binding.wrappedValue.fadeInDuration = $0 }
+                    ), in: 0...1)
+                }
+
+                LabeledContent("Fade Out") {
+                    Slider(value: Binding(
+                        get: { binding.wrappedValue.fadeOutDuration },
+                        set: { binding.wrappedValue.fadeOutDuration = $0 }
+                    ), in: 0...1.5)
+                }
+            }
+        } else {
+            Text("Keystroke segment not found")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Audio Section
+
+    @ViewBuilder
+    private func audioSection(segmentID: UUID) -> some View {
+        if let binding = audioSegmentBinding(for: segmentID) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Audio")
+                    .font(.subheadline.weight(.medium))
+
+                timeRangeFields(
+                    start: Binding(
+                        get: { binding.wrappedValue.startTime },
+                        set: { binding.wrappedValue.startTime = $0 }
+                    ),
+                    end: Binding(
+                        get: { binding.wrappedValue.endTime },
+                        set: { binding.wrappedValue.endTime = $0 }
+                    )
+                )
+
+                LabeledContent("Volume") {
+                    HStack(spacing: 8) {
+                        Slider(value: Binding(
+                            get: { Double(binding.wrappedValue.volume) },
+                            set: { binding.wrappedValue.volume = Float($0) }
+                        ), in: 0...1)
+                        Text("\(Int(binding.wrappedValue.volume * 100))%")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                }
+
+                Toggle("Muted", isOn: Binding(
+                    get: { binding.wrappedValue.isMuted },
+                    set: { binding.wrappedValue.isMuted = $0 }
+                ))
+            }
+        } else {
+            Text("Audio segment not found")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Shared Helpers
+
+    func timeRangeFields(start: Binding<TimeInterval>, end: Binding<TimeInterval>) -> some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Start")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("0.0", value: start, format: .number.precision(.fractionLength(2)))
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("End")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("0.0", value: end, format: .number.precision(.fractionLength(2)))
+                    .textFieldStyle(.roundedBorder)
+            }
+        }
+    }
+
 }

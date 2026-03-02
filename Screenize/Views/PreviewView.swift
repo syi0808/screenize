@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreGraphics
+import Metal
 
 /// Video preview view
 struct PreviewView: View {
@@ -53,11 +54,16 @@ struct PreviewView: View {
                 // Background
                 Color.black
 
-                // Video frame
-                if let frame = previewEngine.currentFrame {
-                    frameView(frame, in: videoSize)
+                // Video frame (GPU-resident Metal texture)
+                if previewEngine.currentTexture != nil {
+                    MetalPreviewView(
+                        texture: previewEngine.currentTexture,
+                        generation: previewEngine.displayGeneration
+                    )
                 } else if previewEngine.isLoading {
                     loadingView
+                } else if let errorMessage = previewEngine.errorMessage {
+                    errorView(errorMessage)
                 } else {
                     placeholderView
                 }
@@ -73,15 +79,17 @@ struct PreviewView: View {
                 }
             }
             .frame(width: videoSize.width, height: videoSize.height)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                RoundedRectangle(cornerRadius: CornerRadius.lg)
+                    .stroke(Color.secondary.opacity(DesignOpacity.light), lineWidth: 1)
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Video Preview")
             .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withMotionSafeAnimation(AnimationTokens.standard) {
                     showControls.toggle()
                 }
                 resetControlsTimer()
@@ -95,37 +103,50 @@ struct PreviewView: View {
         }
     }
 
-    // MARK: - Frame View
-
-    private func frameView(_ frame: CGImage, in size: CGSize) -> some View {
-        Image(frame, scale: 1, label: Text("Preview"))
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-    }
-
     // MARK: - Loading View
 
     private var loadingView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.md) {
             ProgressView()
                 .scaleEffect(1.5)
 
             Text("Loading preview...")
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Error View
+
+    private func errorView(_ message: String) -> some View {
+        VStack(spacing: Spacing.md) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 48))
+                .foregroundColor(.red.opacity(0.7))
+
+            Text("Preview failed")
+                .font(Typography.captionMedium)
+                .foregroundColor(.secondary)
+
+            Text(message)
+                .font(Typography.footnote)
+                .foregroundColor(.secondary.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .padding(.horizontal, Spacing.xxl)
         }
     }
 
     // MARK: - Placeholder View
 
     private var placeholderView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Spacing.md) {
             Image(systemName: "film")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary.opacity(0.5))
 
             Text("No preview available")
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundColor(.secondary)
         }
     }
@@ -152,24 +173,25 @@ struct PreviewView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.white)
+                    .accessibilityLabel(isPlaying ? "Pause" : "Play")
 
                     // Current time display
                     Text(formatTime(currentTime))
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(Typography.mono)
                         .foregroundColor(.white)
 
                     Text("/")
                         .foregroundColor(.white.opacity(0.5))
 
                     Text(formatTime(previewEngine.duration))
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(Typography.mono)
                         .foregroundColor(.white.opacity(0.7))
 
                     Spacer()
 
                     // Frame display
                     Text("Frame \(previewEngine.currentFrameNumber)")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(Typography.monoSmall)
                         .foregroundColor(.white.opacity(0.5))
                 }
                 .padding(.horizontal, 12)
@@ -192,12 +214,12 @@ struct PreviewView: View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 // Background
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: CornerRadius.xs)
                     .fill(Color.white.opacity(0.3))
                     .frame(height: 4)
 
                 // Progress fill
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: CornerRadius.xs)
                     .fill(Color.accentColor)
                     .frame(width: geometry.size.width * previewEngine.progress, height: 4)
 
@@ -223,6 +245,8 @@ struct PreviewView: View {
         }
         .frame(height: 20)
         .padding(.horizontal, 12)
+        .accessibilityLabel("Playback progress")
+        .accessibilityValue("\(Int(previewEngine.progress * 100)) percent")
     }
 
     // MARK: - Helpers
@@ -244,7 +268,7 @@ struct PreviewView: View {
         }
 
         controlsHideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-            withAnimation(.easeInOut(duration: 0.3)) {
+            withMotionSafeAnimation(AnimationTokens.gentle) {
                 showControls = false
             }
         }
@@ -258,7 +282,7 @@ struct PreviewView: View {
                     .foregroundColor(.yellow)
 
                 Text("Render error at frame \(error.frameIndex)")
-                    .font(.caption.bold())
+                    .font(Typography.captionMedium)
                     .foregroundColor(.white)
 
                 Spacer()
@@ -270,10 +294,11 @@ struct PreviewView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss error")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.red.opacity(0.85))
+            .background(DesignColors.destructive.opacity(DesignOpacity.intense))
             .cornerRadius(6)
             .padding(.horizontal, 12)
             .padding(.top, 8)
@@ -306,12 +331,12 @@ struct MiniPreviewView: View {
             }
 
             Text(formatTime(time))
-                .font(.system(size: 10, design: .monospaced))
+                .font(Typography.monoSmall)
                 .foregroundColor(.secondary)
         }
         .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: CornerRadius.lg)
                 .fill(Color(nsColor: .windowBackgroundColor))
                 .shadow(color: .black.opacity(0.2), radius: 8)
         )

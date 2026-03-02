@@ -28,8 +28,8 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
 
     private var recordingURL: URL?
 
-    // CFR recording manager (locked at 60fps)
-    fileprivate var cfrRecordingManager: CFRRecordingManager?
+    // VFR recording manager
+    fileprivate var recordingManager: VFRRecordingManager?
 
     // Used to wait safely for recording finalization to complete
     private let recordingFinished = RecordingFinishSignal()
@@ -38,7 +38,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         super.init()
     }
 
-    // MARK: - Start recording (CFR locked at 60fps)
+    // MARK: - Start recording (VFR)
 
     @available(macOS 15.0, *)
     func startRecording(
@@ -69,26 +69,25 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
             try stream.addStreamOutput(output, type: .audio, sampleHandlerQueue: captureQueue)
         }
 
-        // CFR recording: capture at a fixed 60fps rate
-        let cfrManager = CFRRecordingManager()
-        cfrManager.onRecordingFinished = { [weak self] url in
+        // VFR recording: write frames at their actual ScreenCaptureKit timestamps
+        let vfrManager = VFRRecordingManager(targetFrameRate: configuration.frameRate)
+        vfrManager.onRecordingFinished = { [weak self] url in
             self?.recordingFinished.signal()
-            if let url = url {
-                self?.delegate?.captureManager(self!, didFinishRecordingTo: url)
-            }
+            guard let self = self, let url = url else { return }
+            self.delegate?.captureManager(self, didFinishRecordingTo: url)
         }
-        try cfrManager.startRecording(to: outputURL, configuration: configuration)
-        self.cfrRecordingManager = cfrManager
+        try vfrManager.startRecording(to: outputURL, configuration: configuration)
+        self.recordingManager = vfrManager
 
         recordingFinished.reset()
         try await stream.startCapture()
         isCapturing = true
 
-        print("🎬 [ScreenCaptureManager] CFR recording started (60fps): \(outputURL.path)")
+        Log.capture.info("VFR recording started (\(configuration.frameRate)fps target): \(outputURL.path)")
     }
 
     @available(macOS 15.0, *)
-    func stopRecording() async -> URL? {
+    func stopRecording() async -> CFRRecordingResult? {
         guard isCapturing, let stream = stream else { return nil }
 
         do {
@@ -99,12 +98,12 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
 
             try await stream.stopCapture()
         } catch {
-            print("❌ [ScreenCaptureManager] Error stopping recording: \(error)")
+            Log.capture.error("Error stopping recording: \(error)")
         }
 
-        // End CFR recording
-        let finalURL = await cfrRecordingManager?.stopRecording()
-        self.cfrRecordingManager = nil
+        // End VFR recording
+        let result = await recordingManager?.stopRecording()
+        self.recordingManager = nil
 
         self.stream = nil
         self.streamOutput = nil
@@ -112,8 +111,8 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         self.recordingURL = nil
         isCapturing = false
 
-        print("🎬 [ScreenCaptureManager] CFR recording stopped: \(finalURL?.path ?? "nil")")
-        return finalURL
+        Log.capture.info("VFR recording stopped: \(result?.videoURL?.path ?? "nil")")
+        return result
     }
 
     // MARK: - Preview-only capture (no recording)
@@ -150,7 +149,7 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         do {
             try await stream.stopCapture()
         } catch {
-            print("Error stopping capture: \(error)")
+            Log.capture.error("Error stopping capture: \(error)")
         }
 
         self.stream = nil
@@ -217,10 +216,21 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
             )
 
         case .window(let window):
-            guard let scWindow = content.windows.first(where: { $0.windowID == window.windowID }) else {
+            // Use display-based capture with sourceRect instead of desktopIndependentWindow
+            // to avoid macOS injecting the purple recording indicator into captured frames.
+            // The target window is brought to front before recording starts.
+            let windowCenter = CGPoint(x: window.frame.midX, y: window.frame.midY)
+            guard let scDisplay = content.displays.first(where: { display in
+                let bounds = CGDisplayBounds(display.displayID)
+                return bounds.contains(windowCenter)
+            }) else {
                 throw CaptureError.targetNotFound
             }
-            return SCContentFilter(desktopIndependentWindow: scWindow)
+            return SCContentFilter(
+                display: scDisplay,
+                excludingApplications: excludedApps,
+                exceptingWindows: []
+            )
 
         case .region(_, let display):
             guard let scDisplay = content.displays.first(where: { $0.displayID == display.displayID }) else {
@@ -259,17 +269,19 @@ private final class StreamOutput: NSObject, SCStreamOutput, @unchecked Sendable 
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard sampleBuffer.isValid else { return }
+        guard sampleBuffer.isValid, let manager = delegate else { return }
 
         switch type {
         case .screen:
-            // CFR recording mode: forward frames to CFRRecordingManager
-            delegate?.cfrRecordingManager?.receiveFrame(sampleBuffer)
+            // VFR recording: forward frames to VFRRecordingManager
+            manager.recordingManager?.receiveFrame(sampleBuffer)
 
             // Also forward to the delegate (for preview, etc.)
-            delegate?.delegate?.captureManager(delegate!, didOutputVideoSampleBuffer: sampleBuffer)
+            manager.delegate?.captureManager(manager, didOutputVideoSampleBuffer: sampleBuffer)
         case .audio:
-            delegate?.delegate?.captureManager(delegate!, didOutputAudioSampleBuffer: sampleBuffer)
+            // Forward system audio to VFR recording manager for writing
+            manager.recordingManager?.receiveAudioSample(sampleBuffer)
+            manager.delegate?.captureManager(manager, didOutputAudioSampleBuffer: sampleBuffer)
         case .microphone:
             // Microphone audio - currently unused
             break

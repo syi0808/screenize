@@ -77,8 +77,8 @@ final class WindowTransformApplicator {
         let screenCenterY = outputSize.height / 2
 
         // Point inside the scaled window targeted by the center values
-        let windowPointX = transform.centerX * scaledWidth
-        let windowPointY = transform.centerY * scaledHeight
+        let windowPointX = transform.center.x * scaledWidth
+        let windowPointY = transform.center.y * scaledHeight
 
         // Window origin = screen center minus the window point
         // This aligns the window point with the screen center
@@ -149,12 +149,47 @@ final class WindowTransformApplicator {
         let screenCenterX = outputSize.width / 2
         let screenCenterY = outputSize.height / 2
 
-        let windowPointX = transform.centerX * scaledSize.width
-        let windowPointY = transform.centerY * scaledSize.height
+        let windowPointX = transform.center.x * scaledSize.width
+        let windowPointY = transform.center.y * scaledSize.height
 
         return CGPoint(
             x: screenCenterX - windowPointX,
             y: screenCenterY - windowPointY
+        )
+    }
+
+    /// Convert a source-normalized point to output pixel coordinates in window mode.
+    /// - Parameters:
+    ///   - point: Normalized position in source frame (0-1, bottom-left origin)
+    ///   - transform: Current transform state
+    ///   - sourceSize: Source frame size (after window inset adjustment, if any)
+    ///   - outputSize: Output frame size
+    ///   - padding: Window padding
+    /// - Returns: Position in output pixel coordinates (bottom-left origin)
+    func sourcePointToOutputPoint(
+        _ point: NormalizedPoint,
+        transform: TransformState,
+        sourceSize: CGSize,
+        outputSize: CGSize,
+        padding: CGFloat
+    ) -> CGPoint {
+        let scaledSize = calculateScaledSize(
+            sourceSize: sourceSize,
+            outputSize: outputSize,
+            padding: padding,
+            zoom: transform.zoom
+        )
+
+        let origin = calculateWindowOrigin(
+            transform: transform,
+            sourceSize: sourceSize,
+            outputSize: outputSize,
+            padding: padding
+        )
+
+        return CGPoint(
+            x: origin.x + point.x * scaledSize.width,
+            y: origin.y + point.y * scaledSize.height
         )
     }
 }

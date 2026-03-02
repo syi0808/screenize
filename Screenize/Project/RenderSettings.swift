@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 import AVFoundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Rendering settings
 struct RenderSettings: Codable {
@@ -16,6 +17,15 @@ struct RenderSettings: Codable {
 
     /// Output quality
     var quality: ExportQuality = .high
+
+    /// Export format (video or GIF)
+    var exportFormat: ExportFormat = .video
+
+    /// GIF-specific settings (used when exportFormat == .gif)
+    var gifSettings: GIFSettings = .default
+
+    /// Output color space
+    var outputColorSpace: OutputColorSpace = .auto
 
     /// Enable background (for window mode)
     var backgroundEnabled: Bool = false
@@ -36,10 +46,38 @@ struct RenderSettings: Codable {
     var padding: CGFloat = 40.0
 
     /// Window inset (for trimming borders)
-    var windowInset: CGFloat = 12.0
+    var windowInset: CGFloat = 0.0
 
     /// Motion blur settings
     var motionBlur: MotionBlurSettings = .default
+
+    /// System audio volume (0.0–1.0)
+    var systemAudioVolume: Float = 1.0
+
+    /// Microphone audio volume (0.0–1.0)
+    var microphoneAudioVolume: Float = 1.0
+
+    /// Include system audio in export
+    var includeSystemAudio: Bool = true
+
+    /// Include microphone audio in export
+    var includeMicrophoneAudio: Bool = true
+
+    /// File extension for the current export format
+    var fileExtension: String {
+        switch exportFormat {
+        case .video: return codec.fileExtension
+        case .gif: return "gif"
+        }
+    }
+
+    /// UTType for the current export format
+    var exportUTType: UTType {
+        switch exportFormat {
+        case .video: return codec.utType
+        case .gif: return .gif
+        }
+    }
 
     init(
         outputResolution: OutputResolution = .original,
@@ -62,6 +100,9 @@ struct RenderSettings: Codable {
         case outputFrameRate
         case codec
         case quality
+        case exportFormat
+        case gifSettings
+        case outputColorSpace
         case backgroundEnabled
         case backgroundStyle
         case cornerRadius
@@ -70,6 +111,10 @@ struct RenderSettings: Codable {
         case padding
         case windowInset
         case motionBlur
+        case systemAudioVolume
+        case microphoneAudioVolume
+        case includeSystemAudio
+        case includeMicrophoneAudio
     }
 
     init(from decoder: Decoder) throws {
@@ -79,15 +124,21 @@ struct RenderSettings: Codable {
         outputFrameRate = try container.decodeIfPresent(OutputFrameRate.self, forKey: .outputFrameRate) ?? .original
         codec = try container.decodeIfPresent(VideoCodec.self, forKey: .codec) ?? .hevc
         quality = try container.decodeIfPresent(ExportQuality.self, forKey: .quality) ?? .high
+        exportFormat = try container.decodeIfPresent(ExportFormat.self, forKey: .exportFormat) ?? .video
+        gifSettings = try container.decodeIfPresent(GIFSettings.self, forKey: .gifSettings) ?? .default
+        outputColorSpace = try container.decodeIfPresent(OutputColorSpace.self, forKey: .outputColorSpace) ?? .auto
         backgroundEnabled = try container.decodeIfPresent(Bool.self, forKey: .backgroundEnabled) ?? false
         backgroundStyle = try container.decodeIfPresent(BackgroundStyle.self, forKey: .backgroundStyle) ?? .gradient(.defaultGradient)
         cornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .cornerRadius) ?? 22.0
         shadowRadius = try container.decodeIfPresent(CGFloat.self, forKey: .shadowRadius) ?? 40.0
         shadowOpacity = try container.decodeIfPresent(Float.self, forKey: .shadowOpacity) ?? 0.7
         padding = try container.decodeIfPresent(CGFloat.self, forKey: .padding) ?? 40.0
-        windowInset = try container.decodeIfPresent(CGFloat.self, forKey: .windowInset) ?? 12.0
-        // Older projects might not have the motionBlur field, so use the default
+        windowInset = try container.decodeIfPresent(CGFloat.self, forKey: .windowInset) ?? 0.0
         motionBlur = try container.decodeIfPresent(MotionBlurSettings.self, forKey: .motionBlur) ?? .default
+        systemAudioVolume = try container.decodeIfPresent(Float.self, forKey: .systemAudioVolume) ?? 1.0
+        microphoneAudioVolume = try container.decodeIfPresent(Float.self, forKey: .microphoneAudioVolume) ?? 1.0
+        includeSystemAudio = try container.decodeIfPresent(Bool.self, forKey: .includeSystemAudio) ?? true
+        includeMicrophoneAudio = try container.decodeIfPresent(Bool.self, forKey: .includeMicrophoneAudio) ?? true
     }
 }
 
@@ -132,6 +183,16 @@ enum OutputResolution: Codable, Equatable, Hashable {
 
     /// Preset list (used by the picker)
     static let allCases: [Self] = [.original, .uhd4k, .qhd1440, .fhd1080, .hd720]
+
+    /// Validate and create a custom resolution with even, positive dimensions
+    static func validatedCustom(width: Int, height: Int) -> OutputResolution? {
+        guard width >= 2, height >= 2, width <= 7680, height <= 4320 else {
+            return nil
+        }
+        let evenWidth = width.isMultiple(of: 2) ? width : width + 1
+        let evenHeight = height.isMultiple(of: 2) ? height : height + 1
+        return .custom(width: evenWidth, height: evenHeight)
+    }
 }
 
 // MARK: - Output Frame Rate
@@ -161,9 +222,17 @@ enum OutputFrameRate: Codable, Equatable, Hashable {
     static let fps24 = Self.fixed(24)
     static let fps30 = Self.fixed(30)
     static let fps60 = Self.fixed(60)
+    static let fps120 = Self.fixed(120)
+    static let fps240 = Self.fixed(240)
 
     /// Preset list (used by the picker)
-    static let allCases: [Self] = [.original, .fps24, .fps30, .fps60]
+    static let allCases: [Self] = [.original, .fps24, .fps30, .fps60, .fps120, .fps240]
+
+    /// Validate a custom frame rate value (1-240 fps)
+    static func validatedCustom(fps: Int) -> OutputFrameRate? {
+        guard fps >= 1, fps <= 240 else { return nil }
+        return .fixed(fps)
+    }
 }
 
 // MARK: - Video Codec
@@ -196,6 +265,20 @@ enum VideoCodec: String, Codable, CaseIterable {
         switch self {
         case .h264, .hevc: return "mp4"
         case .proRes422, .proRes4444: return "mov"
+        }
+    }
+
+    var avFileType: AVFileType {
+        switch self {
+        case .h264, .hevc: return .mp4
+        case .proRes422, .proRes4444: return .mov
+        }
+    }
+
+    var utType: UTType {
+        switch self {
+        case .h264, .hevc: return .mpeg4Movie
+        case .proRes422, .proRes4444: return .quickTimeMovie
         }
     }
 }
@@ -232,5 +315,135 @@ enum ExportQuality: String, Codable, CaseIterable {
         let pixels = size.width * size.height
         let baseBitRate = pixels * bitRateMultiplier
         return Int(baseBitRate)
+    }
+}
+
+// MARK: - Export Format
+
+/// Export format type
+enum ExportFormat: String, Codable, CaseIterable {
+    case video = "video"
+    case gif = "gif"
+
+    var displayName: String {
+        switch self {
+        case .video: return "Video"
+        case .gif: return "GIF"
+        }
+    }
+}
+
+// MARK: - GIF Settings
+
+/// Settings for GIF export
+struct GIFSettings: Codable, Equatable {
+    /// Frame rate for GIF output (typically 10-20 fps)
+    var frameRate: Int = 15
+
+    /// Loop count (0 = infinite loop)
+    var loopCount: Int = 0
+
+    /// Maximum width in pixels (height scales proportionally)
+    var maxWidth: Int = 640
+
+    // MARK: - Presets
+
+    static let `default` = Self()
+    static let compact = Self(frameRate: 10, loopCount: 0, maxWidth: 480)
+    static let balanced = Self(frameRate: 15, loopCount: 0, maxWidth: 640)
+    static let highQuality = Self(frameRate: 20, loopCount: 0, maxWidth: 960)
+
+    // MARK: - Computed
+
+    /// Calculate effective output size, scaling down if source exceeds maxWidth
+    func effectiveSize(sourceSize: CGSize) -> CGSize {
+        guard sourceSize.width > CGFloat(maxWidth) else { return sourceSize }
+        let scale = CGFloat(maxWidth) / sourceSize.width
+        let w = CGFloat(maxWidth)
+        let h = (sourceSize.height * scale).rounded(.down)
+        let evenHeight = Int(h) % 2 == 0 ? Int(h) : Int(h) + 1
+        return CGSize(width: Int(w), height: evenHeight)
+    }
+
+    /// GIF frame delay in seconds
+    var frameDelay: Double {
+        1.0 / Double(max(1, frameRate))
+    }
+
+    /// Estimated file size in bytes (rough heuristic)
+    func estimatedFileSize(duration: TimeInterval) -> Int64 {
+        let frameCount = Int(duration * Double(frameRate))
+        let bytesPerFrame: Int64 = Int64(maxWidth) * 40
+        return Int64(frameCount) * bytesPerFrame
+    }
+}
+
+// MARK: - Output Color Space
+
+/// Color space for video export
+enum OutputColorSpace: String, Codable, CaseIterable {
+    case auto = "auto"
+    case sRGB = "srgb"
+    case displayP3 = "displayP3"
+    case bt709 = "bt709"
+    case bt2020 = "bt2020"
+
+    var displayName: String {
+        switch self {
+        case .auto: return "Auto (sRGB)"
+        case .sRGB: return "sRGB"
+        case .displayP3: return "Display P3"
+        case .bt709: return "BT.709"
+        case .bt2020: return "BT.2020"
+        }
+    }
+
+    /// CGColorSpace for CIContext rendering
+    var cgColorSpace: CGColorSpace {
+        switch self {
+        case .auto, .sRGB:
+            return .screenizeSRGB
+        case .displayP3:
+            return .screenizeP3
+        case .bt709:
+            return .screenizeBT709
+        case .bt2020:
+            return .screenizeBT2020
+        }
+    }
+
+    /// AVFoundation color primaries
+    var avColorPrimaries: String {
+        switch self {
+        case .auto, .sRGB, .bt709:
+            return AVVideoColorPrimaries_ITU_R_709_2
+        case .displayP3:
+            return AVVideoColorPrimaries_P3_D65
+        case .bt2020:
+            return AVVideoColorPrimaries_ITU_R_2020
+        }
+    }
+
+    /// AVFoundation transfer function
+    var avTransferFunction: String {
+        return AVVideoTransferFunction_ITU_R_709_2
+    }
+
+    /// AVFoundation YCbCr matrix
+    var avYCbCrMatrix: String {
+        switch self {
+        case .auto, .sRGB, .bt709, .displayP3:
+            return AVVideoYCbCrMatrix_ITU_R_709_2
+        case .bt2020:
+            return AVVideoYCbCrMatrix_ITU_R_2020
+        }
+    }
+
+    /// Whether this color space is wide gamut
+    var isWideGamut: Bool {
+        switch self {
+        case .displayP3, .bt2020: return true
+        case .auto, .sRGB, .bt709: return false
+        }
     }
 }

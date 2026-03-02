@@ -1,6 +1,5 @@
 import Foundation
 import CoreGraphics
-import SwiftUI
 
 // MARK: - Keyframe Protocol
 
@@ -26,20 +25,6 @@ struct TransformKeyframe: TimedKeyframe, Equatable {
     var center: NormalizedPoint      // 0.0–1.0 (normalized, top-left origin)
     var easing: EasingCurve          // Interpolation mode to the next keyframe
 
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use center.x instead")
-    var centerX: CGFloat {
-        get { center.x }
-        set { center = NormalizedPoint(x: newValue, y: center.y) }
-    }
-
-    @available(*, deprecated, message: "Use center.y instead")
-    var centerY: CGFloat {
-        get { center.y }
-        set { center = NormalizedPoint(x: center.x, y: newValue) }
-    }
-
     // MARK: - Initialization
 
     init(
@@ -56,24 +41,6 @@ struct TransformKeyframe: TimedKeyframe, Equatable {
         self.easing = easing
     }
 
-    /// Legacy initializer
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        zoom: CGFloat = 1.0,
-        centerX: CGFloat = 0.5,
-        centerY: CGFloat = 0.5,
-        easing: EasingCurve = .springDefault
-    ) {
-        self.init(
-            id: id,
-            time: time,
-            zoom: zoom,
-            center: NormalizedPoint(x: centerX, y: centerY),
-            easing: easing
-        )
-    }
-
     /// Identity keyframe (no zoom, centered)
     static func identity(at time: TimeInterval) -> Self {
         Self(time: time, zoom: 1.0, center: .center)
@@ -85,30 +52,9 @@ struct TransformKeyframe: TimedKeyframe, Equatable {
 }
 
 /// Transform value (for interpolation)
-struct TransformValue: Interpolatable, Equatable {
+struct TransformValue: Codable, Interpolatable, Equatable {
     let zoom: CGFloat
     let center: NormalizedPoint
-
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use center.x instead")
-    var centerX: CGFloat { center.x }
-
-    @available(*, deprecated, message: "Use center.y instead")
-    var centerY: CGFloat { center.y }
-
-    // MARK: - Initialization
-
-    init(zoom: CGFloat, center: NormalizedPoint) {
-        self.zoom = zoom
-        self.center = center
-    }
-
-    /// Legacy initializer
-    init(zoom: CGFloat, centerX: CGFloat, centerY: CGFloat) {
-        self.zoom = zoom
-        self.center = NormalizedPoint(x: centerX, y: centerY)
-    }
 
     func interpolated(to target: Self, amount: CGFloat) -> Self {
         Self(
@@ -161,122 +107,6 @@ extension TransformKeyframe {
     }
 }
 
-// MARK: - Ripple Keyframe
-
-/// Ripple colors
-enum RippleColor: Codable, Equatable, Hashable {
-    case leftClick      // Blue
-    case rightClick     // Orange
-    case custom(r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat)
-
-    var cgColor: CGColor {
-        switch self {
-        case .leftClick:
-            return CGColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.6)
-        case .rightClick:
-            return CGColor(red: 1.0, green: 0.5, blue: 0.2, alpha: 0.6)
-        case .custom(let r, let g, let b, let a):
-            return CGColor(red: r, green: g, blue: b, alpha: a)
-        }
-    }
-
-    /// SwiftUI Color
-    var color: Color {
-        Color(cgColor)
-    }
-
-    /// Preset colors (custom excluded)
-    static let presetColors: [Self] = [.leftClick, .rightClick]
-}
-
-/// Ripple effect keyframe
-struct RippleKeyframe: TimedKeyframe, Equatable {
-    let id: UUID
-    var time: TimeInterval           // Measured in seconds
-    var position: NormalizedPoint    // 0.0–1.0 (normalized, top-left origin)
-    var intensity: CGFloat           // 0.0–1.0
-    var duration: TimeInterval       // Duration of the ripple
-    var color: RippleColor
-    var easing: EasingCurve          // Easing for the ripple animation
-
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use position.x instead")
-    var x: CGFloat {
-        get { position.x }
-        set { position = NormalizedPoint(x: newValue, y: position.y) }
-    }
-
-    @available(*, deprecated, message: "Use position.y instead")
-    var y: CGFloat {
-        get { position.y }
-        set { position = NormalizedPoint(x: position.x, y: newValue) }
-    }
-
-    // MARK: - Initialization
-
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        position: NormalizedPoint,
-        intensity: CGFloat = 0.8,
-        duration: TimeInterval = 0.4,
-        color: RippleColor = .leftClick,
-        easing: EasingCurve = .springBouncy
-    ) {
-        self.id = id
-        self.time = time
-        self.position = position.clamped()
-        self.intensity = Self.clamp(intensity)
-        self.duration = max(0.1, duration)
-        self.color = color
-        self.easing = easing
-    }
-
-    /// Legacy initializer
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        x: CGFloat,
-        y: CGFloat,
-        intensity: CGFloat = 0.8,
-        duration: TimeInterval = 0.4,
-        color: RippleColor = .leftClick,
-        easing: EasingCurve = .springBouncy
-    ) {
-        self.init(
-            id: id,
-            time: time,
-            position: NormalizedPoint(x: x, y: y),
-            intensity: intensity,
-            duration: duration,
-            color: color,
-            easing: easing
-        )
-    }
-
-    /// End time of the ripple
-    var endTime: TimeInterval {
-        time + duration
-    }
-
-    /// Check if the ripple is active at the given time
-    func isActive(at currentTime: TimeInterval) -> Bool {
-        currentTime >= time && currentTime <= endTime
-    }
-
-    /// Progress of the ripple at the given time (0.0–1.0)
-    func progress(at currentTime: TimeInterval) -> CGFloat {
-        guard isActive(at: currentTime), duration > 0 else { return 0 }
-        let elapsed = currentTime - time
-        return CGFloat(elapsed / duration)
-    }
-
-    private static func clamp(_ value: CGFloat) -> CGFloat {
-        max(0, min(1, value))
-    }
-}
-
 // MARK: - Cursor Style Keyframe (future extension)
 
 /// Cursor styles
@@ -300,94 +130,45 @@ enum CursorStyle: String, Codable, CaseIterable {
         case .contextMenu: return "Context Menu"
         }
     }
+
+    var sfSymbolName: String {
+        switch self {
+        case .arrow: return "cursorarrow"
+        case .pointer: return "hand.point.up.left"
+        case .iBeam: return "character.cursor.ibeam"
+        case .crosshair: return "plus"
+        case .openHand: return "hand.raised"
+        case .closedHand: return "hand.raised.fill"
+        case .contextMenu: return "contextualmenu.and.cursorarrow"
+        }
+    }
 }
 
 /// Cursor style keyframe (for future extension)
 struct CursorStyleKeyframe: TimedKeyframe, Equatable {
     let id: UUID
     var time: TimeInterval
-    var position: NormalizedPoint?   // nil uses the original mouse data
     var style: CursorStyle
     var visible: Bool
     var scale: CGFloat
-    var velocity: CGFloat?           // Velocity (used for motion blur intensity, normalized per second)
-    var movementDirection: CGFloat?  // Movement direction (radians, for motion blur)
     var easing: EasingCurve
-
-    // MARK: - Computed Properties (backward compatibility)
-
-    @available(*, deprecated, message: "Use position?.x instead")
-    var x: CGFloat? {
-        get { position?.x }
-        set {
-            if let newValue = newValue {
-                position = NormalizedPoint(x: newValue, y: position?.y ?? 0.5)
-            } else {
-                position = nil
-            }
-        }
-    }
-
-    @available(*, deprecated, message: "Use position?.y instead")
-    var y: CGFloat? {
-        get { position?.y }
-        set {
-            if let newValue = newValue {
-                position = NormalizedPoint(x: position?.x ?? 0.5, y: newValue)
-            } else {
-                position = nil
-            }
-        }
-    }
 
     // MARK: - Initialization
 
     init(
         id: UUID = UUID(),
         time: TimeInterval,
-        position: NormalizedPoint? = nil,
         style: CursorStyle = .arrow,
         visible: Bool = true,
         scale: CGFloat = 2.5,
-        velocity: CGFloat? = nil,
-        movementDirection: CGFloat? = nil,
         easing: EasingCurve = .springSnappy
     ) {
         self.id = id
         self.time = time
-        self.position = position?.clamped()
         self.style = style
         self.visible = visible
         self.scale = max(0.5, scale)
-        self.velocity = velocity
-        self.movementDirection = movementDirection
         self.easing = easing
-    }
-
-    /// Legacy initializer (explicit x and y)
-    init(
-        id: UUID = UUID(),
-        time: TimeInterval,
-        x: CGFloat,
-        y: CGFloat,
-        style: CursorStyle = .arrow,
-        visible: Bool = true,
-        scale: CGFloat = 2.5,
-        velocity: CGFloat? = nil,
-        movementDirection: CGFloat? = nil,
-        easing: EasingCurve = .springSnappy
-    ) {
-        self.init(
-            id: id,
-            time: time,
-            position: NormalizedPoint(x: x, y: y),
-            style: style,
-            visible: visible,
-            scale: scale,
-            velocity: velocity,
-            movementDirection: movementDirection,
-            easing: easing
-        )
     }
 }
 

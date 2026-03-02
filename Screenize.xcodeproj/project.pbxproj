@@ -11,6 +11,113 @@
 		2A626F302F2A280000510712 /* SparkleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A626F2E2F2A280000510712 /* SparkleController.swift */; };
 		2A626F312F2A280000510712 /* CheckForUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */; };
 		98E0A84D3D3B09D78BC641AD /* VideoFrameAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A2A0AC4BE1F8D342436D05 /* VideoFrameAnalyzer.swift */; };
+		A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A0296A0001 /* PermissionWizardViewModel.swift */; };
+		A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A1296A0001 /* PermissionSetupWizardView.swift */; };
+		A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A3296A0001 /* PermissionStatusBadge.swift */; };
+		A2000001296A0001 /* EditorViewModel+Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002296A0001 /* EditorViewModel+Clipboard.swift */; };
+		AA000001296A0001 /* UnifiedEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000001296A0001 /* UnifiedEvent.swift */; };
+		AA000002296A0001 /* UserIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000002296A0001 /* UserIntent.swift */; };
+		AA000003296A0001 /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000003296A0001 /* Scene.swift */; };
+		AA000004296A0001 /* ShotPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000004296A0001 /* ShotPlan.swift */; };
+		AA000005296A0001 /* TransitionPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000005296A0001 /* TransitionPlan.swift */; };
+		AA000006296A0001 /* SimulatedPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000006296A0001 /* SimulatedPath.swift */; };
+		AA000007296A0001 /* SmartGeneratorV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000007296A0001 /* SmartGeneratorV2.swift */; };
+		AD000010296A0001 /* EventTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100010296A0001 /* EventTimeline.swift */; };
+		AD000011296A0001 /* IntentClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100011296A0001 /* IntentClassifier.swift */; };
+		AD000021296A0001 /* MockMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100021296A0001 /* MockMouseDataSource.swift */; };
+		AD000022296A0001 /* EventTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100022296A0001 /* EventTimelineTests.swift */; };
+		AD000023296A0001 /* IntentClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100023296A0001 /* IntentClassifierTests.swift */; };
+		AE000001296A0001 /* SceneSegmenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100001296A0001 /* SceneSegmenter.swift */; };
+		AE000002296A0001 /* ShotPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100002296A0001 /* ShotPlanner.swift */; };
+		AE000003296A0001 /* TransitionPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100003296A0001 /* TransitionPlanner.swift */; };
+		AF000001296A0001 /* SceneSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100001296A0001 /* SceneSegmenterTests.swift */; };
+		AF000002296A0001 /* ShotPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100002296A0001 /* ShotPlannerTests.swift */; };
+		AF000003296A0001 /* TransitionPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100003296A0001 /* TransitionPlannerTests.swift */; };
+		B0000001296A0001 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100001296A0001 /* CameraController.swift */; };
+		B0000002296A0001 /* StaticHoldController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100002296A0001 /* StaticHoldController.swift */; };
+		B0000003296A0001 /* CameraSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100003296A0001 /* CameraSimulator.swift */; };
+		B0000004296A0001 /* CursorFollowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100004296A0001 /* CursorFollowController.swift */; };
+		B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100001296A0001 /* StaticHoldControllerTests.swift */; };
+		B1000002296A0001 /* CameraSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100002296A0001 /* CameraSimulatorTests.swift */; };
+		B1000003296A0001 /* CursorFollowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100003296A0001 /* CursorFollowControllerTests.swift */; };
+		B1000010296A0001 /* TimelineView+MultiMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100010296A0001 /* TimelineView+MultiMove.swift */; };
+		B2000001296A0001 /* CameraTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100001296A0001 /* CameraTrackEmitter.swift */; };
+		B2000002296A0001 /* CursorTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100002296A0001 /* CursorTrackEmitter.swift */; };
+		B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100003296A0001 /* KeystrokeTrackEmitter.swift */; };
+		B2000004296A0001 /* SegmentOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100004296A0001 /* SegmentOptimizer.swift */; };
+		B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100001296A0001 /* CameraTrackEmitterTests.swift */; };
+		B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100002296A0001 /* CursorTrackEmitterTests.swift */; };
+		B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */; };
+		B3000004296A0001 /* SegmentOptimizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100004296A0001 /* SegmentOptimizerTests.swift */; };
+		B5000001296A0001 /* EasingCurveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5100001296A0001 /* EasingCurveTests.swift */; };
+		B6000001296A0001 /* PathSmoother.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100001296A0001 /* PathSmoother.swift */; };
+		B6000002296A0001 /* HoldEnforcer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100002296A0001 /* HoldEnforcer.swift */; };
+		B6000003296A0001 /* TransitionRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100003296A0001 /* TransitionRefiner.swift */; };
+		B6000004296A0001 /* SegmentMerger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100004296A0001 /* SegmentMerger.swift */; };
+		B7000001296A0001 /* PathSmootherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100001296A0001 /* PathSmootherTests.swift */; };
+		B7000002296A0001 /* HoldEnforcerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100002296A0001 /* HoldEnforcerTests.swift */; };
+		B7000003296A0001 /* TransitionRefinerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100003296A0001 /* TransitionRefinerTests.swift */; };
+		B7000004296A0001 /* SegmentMergerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100004296A0001 /* SegmentMergerTests.swift */; };
+		C0000001296A0001 /* InspectorView+CameraSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0100001296A0001 /* InspectorView+CameraSection.swift */; };
+		C1000001296A0001 /* InspectorView+SegmentBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1100001296A0001 /* InspectorView+SegmentBindings.swift */; };
+		C2000001296A0001 /* CursorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2100001296A0001 /* CursorImageProvider.swift */; };
+		C3000001296A0001 /* EditorViewModel+SmartGeneration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3000002296A0001 /* EditorViewModel+SmartGeneration.swift */; };
+		C4000001296A0001 /* EditorViewModel+SegmentOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4000002296A0001 /* EditorViewModel+SegmentOperations.swift */; };
+		C5000001296A0001 /* TimelineView+Gestures.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5000002296A0001 /* TimelineView+Gestures.swift */; };
+		C6000001296A0001 /* MainWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6100001296A0001 /* MainWelcomeView.swift */; };
+		C7000001296A0001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7100001296A0001 /* ContentView.swift */; };
+		C8000001296A0001 /* EventStreamAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8100001296A0001 /* EventStreamAdapterTests.swift */; };
+		C9000001296A0001 /* DisplayLinkDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100001296A0001 /* DisplayLinkDriver.swift */; };
+		C9000002296A0001 /* SequentialFrameReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100002296A0001 /* SequentialFrameReader.swift */; };
+		C9000003296A0001 /* ScrubController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100003296A0001 /* ScrubController.swift */; };
+		C9000004296A0001 /* RenderCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9100004296A0001 /* RenderCoordinator.swift */; };
+		CA000001296A0001 /* PreviewTextureCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA100001296A0001 /* PreviewTextureCache.swift */; };
+		CA000002296A0001 /* MetalPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA100002296A0001 /* MetalPreviewView.swift */; };
+		CB000001296A0001 /* ExportView+Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB100001296A0001 /* ExportView+Settings.swift */; };
+		CC000001296A0001 /* GeneratorPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC100001296A0001 /* GeneratorPanelView.swift */; };
+		D1000001296A0001 /* CaptureMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100001296A0001 /* CaptureMode.swift */; };
+		D1000002296A0001 /* CaptureToolbarPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100002296A0001 /* CaptureToolbarPanel.swift */; };
+		D1000003296A0001 /* CaptureOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100003296A0001 /* CaptureOverlayController.swift */; };
+		D1000004296A0001 /* CaptureToolbarCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1100004296A0001 /* CaptureToolbarCoordinator.swift */; };
+		D2000001296A0001 /* MicrophoneRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000002296A0001 /* MicrophoneRecorder.swift */; };
+		D2000001SYSAUDIO /* SystemAudioWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000002SYSAUDIO /* SystemAudioWriter.swift */; };
+		D2000003296A0001 /* AudioMixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000004296A0001 /* AudioMixer.swift */; };
+		D2100001296A0001 /* GIFEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200001296A0001 /* GIFEncoder.swift */; };
+		D2100002296A0001 /* GIFSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200002296A0001 /* GIFSettingsTests.swift */; };
+		D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200003296A0001 /* RenderSettingsGIFTests.swift */; };
+		D2100004296A0001 /* GIFEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200004296A0001 /* GIFEncoderTests.swift */; };
+		D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100001296A0001 /* SmoothedMouseDataSource.swift */; };
+		D3000001VFRRECMG /* VFRRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3000002VFRRECMG /* VFRRecordingManager.swift */; };
+		D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */; };
+		D4000001296A0001 /* TimelineView+SegmentBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4000002296A0001 /* TimelineView+SegmentBlock.swift */; };
+		D4000001CFRFREAD /* CFRFrameReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4100001CFRFREAD /* CFRFrameReader.swift */; };
+		D5000001296A0001 /* Segments.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5000002296A0001 /* Segments.swift */; };
+		D6000001296A0001 /* LegacyTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6000002296A0001 /* LegacyTrack.swift */; };
+		D8000001296A0001 /* ExportEngine+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8000002296A0001 /* ExportEngine+Helpers.swift */; };
+		E0000001296A0001 /* AudioPreviewPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000001296A0001 /* AudioPreviewPlayer.swift */; };
+		E2000001296A0001 /* SpringCursorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3000001296A0001 /* SpringCursorSimulator.swift */; };
+		E6000001296A0001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000001296A0001 /* Spacing.swift */; };
+		E6000002296A0001 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000002296A0001 /* Typography.swift */; };
+		E6000003296A0001 /* DesignColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000003296A0001 /* DesignColors.swift */; };
+		E6000004296A0001 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000004296A0001 /* CornerRadius.swift */; };
+		E6000005296A0001 /* DesignOpacity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000005296A0001 /* DesignOpacity.swift */; };
+		E6000006296A0001 /* AnimationTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000006296A0001 /* AnimationTokens.swift */; };
+		E6000007296A0001 /* Accessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000007296A0001 /* Accessibility.swift */; };
+		E6000010296A0001 /* ScreenizeButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000010296A0001 /* ScreenizeButtonStyles.swift */; };
+		E6000011296A0001 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000011296A0001 /* SectionHeader.swift */; };
+		E6000012296A0001 /* SliderWithField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000012296A0001 /* SliderWithField.swift */; };
+		E6000013296A0001 /* SheetHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000013296A0001 /* SheetHeader.swift */; };
+		E6000014296A0001 /* DesignEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000014296A0001 /* DesignEmptyState.swift */; };
+		E6000015296A0001 /* TimeCodeLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000015296A0001 /* TimeCodeLabel.swift */; };
+		E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100001296A0001 /* ContinuousCameraTypes.swift */; };
+		E7000002296A0001 /* WaypointGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100002296A0001 /* WaypointGenerator.swift */; };
+		E7000003296A0001 /* SpringDamperSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100003296A0001 /* SpringDamperSimulator.swift */; };
+		E7000004296A0001 /* ContinuousTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100004296A0001 /* ContinuousTrackEmitter.swift */; };
+		E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100005296A0001 /* ContinuousCameraGenerator.swift */; };
+		E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100011296A0001 /* WaypointGeneratorTests.swift */; };
+		E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100012296A0001 /* SpringDamperSimulatorTests.swift */; };
+		E7000013296A0001 /* ContinuousTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100013296A0001 /* ContinuousTrackEmitterTests.swift */; };
+		E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */; };
 		F0000001296A0001 /* ScreenizeProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000001296A0001 /* ScreenizeProject.swift */; };
 		F0000002296A0001 /* MediaAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000002296A0001 /* MediaAsset.swift */; };
 		F0000003296A0001 /* CaptureMeta.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000003296A0001 /* CaptureMeta.swift */; };
@@ -20,13 +127,11 @@
 		F0000007296A0001 /* RenderSettingsPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000007296A0001 /* RenderSettingsPreset.swift */; };
 		F0000008296A0001 /* PresetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000008296A0001 /* PresetManager.swift */; };
 		F0000009296A0001 /* PackageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000009296A0001 /* PackageManager.swift */; };
-		F000000A296A0001 /* LegacyProjectMigrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100000A296A0001 /* LegacyProjectMigrator.swift */; };
 		F0000010296A0001 /* EasingCurve.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000010296A0001 /* EasingCurve.swift */; };
 		F0000011296A0001 /* Keyframe.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000011296A0001 /* Keyframe.swift */; };
 		F0000012296A0001 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000012296A0001 /* Track.swift */; };
 		F0000013296A0001 /* Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000013296A0001 /* Timeline.swift */; };
 		F0000020296A0001 /* EvaluatedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000020296A0001 /* EvaluatedState.swift */; };
-		F0000021296A0001 /* KeyframeInterpolator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000021296A0001 /* KeyframeInterpolator.swift */; };
 		F0000022296A0001 /* FrameEvaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000022296A0001 /* FrameEvaluator.swift */; };
 		F0000023296A0001 /* RenderContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000023296A0001 /* RenderContext.swift */; };
 		F0000024296A0001 /* TransformApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000024296A0001 /* TransformApplicator.swift */; };
@@ -43,15 +148,9 @@
 		F000002F296A0001 /* WindowEffectApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002F296A0001 /* WindowEffectApplicator.swift */; };
 		F0000030296A0001 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000030296A0001 /* TimeRulerView.swift */; };
 		F0000031296A0001 /* PlayheadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000031296A0001 /* PlayheadView.swift */; };
-		F0000032296A0001 /* KeyframeMarkerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000032296A0001 /* KeyframeMarkerView.swift */; };
-		F0000033296A0001 /* TrackRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000033296A0001 /* TrackRowView.swift */; };
 		F0000034296A0001 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000034296A0001 /* TimelineView.swift */; };
 		F0000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */; };
 		F0000036296A0001 /* TrimHandleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000036296A0001 /* TrimHandleView.swift */; };
-		F0000040296A0001 /* EasingPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000040296A0001 /* EasingPicker.swift */; };
-		F0000041296A0001 /* TransformInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000041296A0001 /* TransformInspector.swift */; };
-		F0000042296A0001 /* RippleInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000042296A0001 /* RippleInspector.swift */; };
-		F0000043296A0001 /* CursorInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000043296A0001 /* CursorInspector.swift */; };
 		F0000044296A0001 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000044296A0001 /* InspectorView.swift */; };
 		F0000045296A0001 /* SettingsInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000045296A0001 /* SettingsInspector.swift */; };
 		F0000046296A0001 /* PresetPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000046296A0001 /* PresetPickerView.swift */; };
@@ -62,19 +161,15 @@
 		F0000060296A0001 /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000060296A0001 /* EditorViewModel.swift */; };
 		F0000061296A0001 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000061296A0001 /* UndoStack.swift */; };
 		F0000070296A0001 /* KeyframeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000070296A0001 /* KeyframeGenerator.swift */; };
-		F0000074296A0001 /* RippleGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000074296A0001 /* RippleGenerator.swift */; };
-		F0000075296A0001 /* CursorInterpolationGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000075296A0001 /* CursorInterpolationGenerator.swift */; };
-		F0000076296A0001 /* ClickCursorGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000076296A0001 /* ClickCursorGenerator.swift */; };
-		F0000077296A0001 /* SmartZoomGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000077296A0001 /* SmartZoomGenerator.swift */; };
-		F0000078296A0001 /* ZoomContextAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000078296A0001 /* ZoomContextAnalyzer.swift */; };
-		F0000079296A0001 /* MouseDataCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000079296A0001 /* MouseDataCleaner.swift */; };
-		F000007A296A0001 /* KeystrokeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100007A296A0001 /* KeystrokeGenerator.swift */; };
-		F000007B296A0001 /* KeystrokeInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100007B296A0001 /* KeystrokeInspector.swift */; };
 		F0000080296A0001 /* EditorEntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000080296A0001 /* EditorEntryPoint.swift */; };
 		F0000081296A0001 /* ScreenizeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000081296A0001 /* ScreenizeApp.swift */; };
 		F0000090296A0001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000090296A0001 /* Assets.xcassets */; };
 		F00000A0296A0001 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A0296A0001 /* AppState.swift */; };
 		F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A1296A0001 /* GlobalHotkeyManager.swift */; };
+		F00000A2296A0001 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A2296A0001 /* Log.swift */; };
+		F00000A3296A0001 /* CaptureSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A3296A0001 /* CaptureSettings.swift */; };
+		F00000A4296A0001 /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A4296A0001 /* NavigationState.swift */; };
+		F00000A5296A0001 /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A5296A0001 /* RecordingState.swift */; };
 		F00000AF296A0001 /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000AF296A0001 /* Coordinates.swift */; };
 		F00000B0296A0001 /* CaptureConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000B0296A0001 /* CaptureConfiguration.swift */; };
 		F00000B1296A0001 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000B1296A0001 /* PermissionsManager.swift */; };
@@ -87,15 +182,10 @@
 		F00000D0296A0001 /* AccessibilityInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D0296A0001 /* AccessibilityInspector.swift */; };
 		F00000D1296A0001 /* ClickDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D1296A0001 /* ClickDetector.swift */; };
 		F00000D2296A0001 /* MouseTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D2296A0001 /* MouseTracker.swift */; };
-		F00000D3296A0001 /* ZoomCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000D3296A0001 /* ZoomCalculator.swift */; };
 		F00000E0296A0001 /* BackgroundStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E0296A0001 /* BackgroundStyle.swift */; };
 		F00000E1296A0001 /* CaptureTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E1296A0001 /* CaptureTarget.swift */; };
 		F00000E2296A0001 /* MouseEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E2296A0001 /* MouseEvent.swift */; };
-		F00000E3296A0001 /* ZoomSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E3296A0001 /* ZoomSettings.swift */; };
 		F00000E4296A0001 /* ClickType.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000E4296A0001 /* ClickType.swift */; };
-		F00000F0296A0001 /* RecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F0296A0001 /* RecordingView.swift */; };
-		F00000F1296A0001 /* SourcePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F1296A0001 /* SourcePickerView.swift */; };
-		F00000F2296A0001 /* RecordingPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F2296A0001 /* RecordingPreviewView.swift */; };
 		F00000F3296A0001 /* CountdownPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F3296A0001 /* CountdownPanel.swift */; };
 		F00000F4296A0001 /* RecordingFloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000F4296A0001 /* RecordingFloatingPanel.swift */; };
 		F0000100296A0001 /* WindowModeRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000100296A0001 /* WindowModeRenderer.swift */; };
@@ -107,27 +197,146 @@
 		F0000106296A0001 /* ScrollEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000106296A0001 /* ScrollEventHandler.swift */; };
 		F0000107296A0001 /* KeyboardEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000107296A0001 /* KeyboardEventHandler.swift */; };
 		F0000108296A0001 /* DragEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000108296A0001 /* DragEventHandler.swift */; };
-		F0000200296A0001 /* ActivityCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000200296A0001 /* ActivityCollector.swift */; };
-		F0000201296A0001 /* SessionClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000201296A0001 /* SessionClusterer.swift */; };
-		F0000202296A0001 /* ZoomLevelCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000202296A0001 /* ZoomLevelCalculator.swift */; };
-		F0000203296A0001 /* SessionCenterResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000203296A0001 /* SessionCenterResolver.swift */; };
-		A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A0296A0001 /* PermissionWizardViewModel.swift */; };
-		A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A1296A0001 /* PermissionSetupWizardView.swift */; };
-		A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A3296A0001 /* PermissionStatusBadge.swift */; };
 		F0A00001296A0001 /* EventStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00001296A0001 /* EventStream.swift */; };
 		F0A00002296A0001 /* RecordingMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00002296A0001 /* RecordingMetadata.swift */; };
 		F0A00003296A0001 /* EventStreamAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00003296A0001 /* EventStreamAdapter.swift */; };
 		F0A00004296A0001 /* InteropBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00004296A0001 /* InteropBlock.swift */; };
 		F0A00005296A0001 /* EventStreamWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A00005296A0001 /* EventStreamWriter.swift */; };
+		F7000001296A0001 /* CursorImageProvider+HandCursors.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7100001296A0001 /* CursorImageProvider+HandCursors.swift */; };
+		FD0000B5296A0001 /* ColorSpaceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1000B5296A0001 /* ColorSpaceConstants.swift */; };
+		FE0000A1296A0001 /* FrameEvaluator+Transform.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A1296A0001 /* FrameEvaluator+Transform.swift */; };
+		FE0000A2296A0001 /* FrameEvaluator+Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A2296A0001 /* FrameEvaluator+Cursor.swift */; };
+		FE0000A3296A0001 /* FrameEvaluator+Keystroke.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A3296A0001 /* FrameEvaluator+Keystroke.swift */; };
+		FE0000A4296A0001 /* FrameEvaluator+ClickState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000A4296A0001 /* FrameEvaluator+ClickState.swift */; };
+		FE0000B1296A0001 /* PreviewEngine+Setup.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000B1296A0001 /* PreviewEngine+Setup.swift */; };
+		FE0000B2296A0001 /* PreviewEngine+Playback.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000B2296A0001 /* PreviewEngine+Playback.swift */; };
+		FE0000B3296A0001 /* PreviewEngine+Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000B3296A0001 /* PreviewEngine+Timeline.swift */; };
+		FE0000C1296A0001 /* ExportEngine+VideoExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000C1296A0001 /* ExportEngine+VideoExport.swift */; };
+		FE0000C2296A0001 /* ExportEngine+GIFExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1000C2296A0001 /* ExportEngine+GIFExport.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		AD800020296A0001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F3000000296A0001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0C00000296A0001;
+			remoteInfo = Screenize;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		2A626F2E2F2A280000510712 /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
+		2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
 		A11000A0296A0001 /* PermissionWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionWizardViewModel.swift; sourceTree = "<group>"; };
 		A11000A1296A0001 /* PermissionSetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionSetupWizardView.swift; sourceTree = "<group>"; };
 		A11000A3296A0001 /* PermissionStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusBadge.swift; sourceTree = "<group>"; };
-		2A626F2E2F2A280000510712 /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
-		2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
+		A2000002296A0001 /* EditorViewModel+Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+Clipboard.swift"; sourceTree = "<group>"; };
+		AB000001296A0001 /* UnifiedEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedEvent.swift; sourceTree = "<group>"; };
+		AB000002296A0001 /* UserIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIntent.swift; sourceTree = "<group>"; };
+		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
+		AB000004296A0001 /* ShotPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlan.swift; sourceTree = "<group>"; };
+		AB000005296A0001 /* TransitionPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlan.swift; sourceTree = "<group>"; };
+		AB000006296A0001 /* SimulatedPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatedPath.swift; sourceTree = "<group>"; };
+		AB000007296A0001 /* SmartGeneratorV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGeneratorV2.swift; sourceTree = "<group>"; };
+		AD100010296A0001 /* EventTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeline.swift; sourceTree = "<group>"; };
+		AD100011296A0001 /* IntentClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifier.swift; sourceTree = "<group>"; };
+		AD100020296A0001 /* ScreenizeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScreenizeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD100021296A0001 /* MockMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMouseDataSource.swift; sourceTree = "<group>"; };
+		AD100022296A0001 /* EventTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimelineTests.swift; sourceTree = "<group>"; };
+		AD100023296A0001 /* IntentClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifierTests.swift; sourceTree = "<group>"; };
+		AE100001296A0001 /* SceneSegmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenter.swift; sourceTree = "<group>"; };
+		AE100002296A0001 /* ShotPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlanner.swift; sourceTree = "<group>"; };
+		AE100003296A0001 /* TransitionPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlanner.swift; sourceTree = "<group>"; };
+		AF100001296A0001 /* SceneSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenterTests.swift; sourceTree = "<group>"; };
+		AF100002296A0001 /* ShotPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlannerTests.swift; sourceTree = "<group>"; };
+		AF100003296A0001 /* TransitionPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlannerTests.swift; sourceTree = "<group>"; };
+		B0100001296A0001 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
+		B0100002296A0001 /* StaticHoldController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldController.swift; sourceTree = "<group>"; };
+		B0100003296A0001 /* CameraSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulator.swift; sourceTree = "<group>"; };
+		B0100004296A0001 /* CursorFollowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorFollowController.swift; sourceTree = "<group>"; };
+		B1100001296A0001 /* StaticHoldControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldControllerTests.swift; sourceTree = "<group>"; };
+		B1100002296A0001 /* CameraSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulatorTests.swift; sourceTree = "<group>"; };
+		B1100003296A0001 /* CursorFollowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorFollowControllerTests.swift; sourceTree = "<group>"; };
+		B1100010296A0001 /* TimelineView+MultiMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+MultiMove.swift"; sourceTree = "<group>"; };
+		B2100001296A0001 /* CameraTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitter.swift; sourceTree = "<group>"; };
+		B2100002296A0001 /* CursorTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitter.swift; sourceTree = "<group>"; };
+		B2100003296A0001 /* KeystrokeTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitter.swift; sourceTree = "<group>"; };
+		B2100004296A0001 /* SegmentOptimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentOptimizer.swift; sourceTree = "<group>"; };
+		B3100001296A0001 /* CameraTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitterTests.swift; sourceTree = "<group>"; };
+		B3100002296A0001 /* CursorTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitterTests.swift; sourceTree = "<group>"; };
+		B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitterTests.swift; sourceTree = "<group>"; };
+		B3100004296A0001 /* SegmentOptimizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentOptimizerTests.swift; sourceTree = "<group>"; };
+		B5100001296A0001 /* EasingCurveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingCurveTests.swift; sourceTree = "<group>"; };
+		B6100001296A0001 /* PathSmoother.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathSmoother.swift; sourceTree = "<group>"; };
+		B6100002296A0001 /* HoldEnforcer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldEnforcer.swift; sourceTree = "<group>"; };
+		B6100003296A0001 /* TransitionRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRefiner.swift; sourceTree = "<group>"; };
+		B6100004296A0001 /* SegmentMerger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentMerger.swift; sourceTree = "<group>"; };
+		B7100001296A0001 /* PathSmootherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathSmootherTests.swift; sourceTree = "<group>"; };
+		B7100002296A0001 /* HoldEnforcerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldEnforcerTests.swift; sourceTree = "<group>"; };
+		B7100003296A0001 /* TransitionRefinerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRefinerTests.swift; sourceTree = "<group>"; };
+		B7100004296A0001 /* SegmentMergerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentMergerTests.swift; sourceTree = "<group>"; };
+		C0100001296A0001 /* InspectorView+CameraSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InspectorView+CameraSection.swift"; sourceTree = "<group>"; };
+		C1100001296A0001 /* InspectorView+SegmentBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InspectorView+SegmentBindings.swift"; sourceTree = "<group>"; };
+		C2100001296A0001 /* CursorImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorImageProvider.swift; sourceTree = "<group>"; };
+		C3000002296A0001 /* EditorViewModel+SmartGeneration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+SmartGeneration.swift"; sourceTree = "<group>"; };
+		C4000002296A0001 /* EditorViewModel+SegmentOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+SegmentOperations.swift"; sourceTree = "<group>"; };
+		C5000002296A0001 /* TimelineView+Gestures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+Gestures.swift"; sourceTree = "<group>"; };
+		C6100001296A0001 /* MainWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWelcomeView.swift; sourceTree = "<group>"; };
+		C7100001296A0001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C7A2A0AC4BE1F8D342436D05 /* VideoFrameAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoFrameAnalyzer.swift; sourceTree = "<group>"; };
+		C8100001296A0001 /* EventStreamAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamAdapterTests.swift; sourceTree = "<group>"; };
+		C9100001296A0001 /* DisplayLinkDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayLinkDriver.swift; sourceTree = "<group>"; };
+		C9100002296A0001 /* SequentialFrameReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequentialFrameReader.swift; sourceTree = "<group>"; };
+		C9100003296A0001 /* ScrubController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrubController.swift; sourceTree = "<group>"; };
+		C9100004296A0001 /* RenderCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderCoordinator.swift; sourceTree = "<group>"; };
+		CA100001296A0001 /* PreviewTextureCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTextureCache.swift; sourceTree = "<group>"; };
+		CA100002296A0001 /* MetalPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalPreviewView.swift; sourceTree = "<group>"; };
+		CB100001296A0001 /* ExportView+Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportView+Settings.swift"; sourceTree = "<group>"; };
+		CC100001296A0001 /* GeneratorPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratorPanelView.swift; sourceTree = "<group>"; };
+		D1100001296A0001 /* CaptureMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureMode.swift; sourceTree = "<group>"; };
+		D1100002296A0001 /* CaptureToolbarPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureToolbarPanel.swift; sourceTree = "<group>"; };
+		D1100003296A0001 /* CaptureOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOverlayController.swift; sourceTree = "<group>"; };
+		D1100004296A0001 /* CaptureToolbarCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureToolbarCoordinator.swift; sourceTree = "<group>"; };
+		D2000002296A0001 /* MicrophoneRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneRecorder.swift; sourceTree = "<group>"; };
+		D2000002SYSAUDIO /* SystemAudioWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioWriter.swift; sourceTree = "<group>"; };
+		D2000004296A0001 /* AudioMixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMixer.swift; sourceTree = "<group>"; };
+		D2200001296A0001 /* GIFEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoder.swift; sourceTree = "<group>"; };
+		D2200002296A0001 /* GIFSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFSettingsTests.swift; sourceTree = "<group>"; };
+		D2200003296A0001 /* RenderSettingsGIFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettingsGIFTests.swift; sourceTree = "<group>"; };
+		D2200004296A0001 /* GIFEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoderTests.swift; sourceTree = "<group>"; };
+		D3000002VFRRECMG /* VFRRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFRRecordingManager.swift; sourceTree = "<group>"; };
+		D3100001296A0001 /* SmoothedMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSource.swift; sourceTree = "<group>"; };
+		D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSourceTests.swift; sourceTree = "<group>"; };
+		D4000002296A0001 /* TimelineView+SegmentBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+SegmentBlock.swift"; sourceTree = "<group>"; };
+		D4100001CFRFREAD /* CFRFrameReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CFRFrameReader.swift; sourceTree = "<group>"; };
+		D5000002296A0001 /* Segments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Segments.swift; sourceTree = "<group>"; };
+		D6000002296A0001 /* LegacyTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyTrack.swift; sourceTree = "<group>"; };
+		D8000002296A0001 /* ExportEngine+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportEngine+Helpers.swift"; sourceTree = "<group>"; };
+		E1000001296A0001 /* AudioPreviewPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPreviewPlayer.swift; sourceTree = "<group>"; };
+		E3000001296A0001 /* SpringCursorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringCursorSimulator.swift; sourceTree = "<group>"; };
+		E5000001296A0001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		E5000002296A0001 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		E5000003296A0001 /* DesignColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignColors.swift; sourceTree = "<group>"; };
+		E5000004296A0001 /* CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
+		E5000005296A0001 /* DesignOpacity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignOpacity.swift; sourceTree = "<group>"; };
+		E5000006296A0001 /* AnimationTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimationTokens.swift; sourceTree = "<group>"; };
+		E5000007296A0001 /* Accessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Accessibility.swift; sourceTree = "<group>"; };
+		E5000010296A0001 /* ScreenizeButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeButtonStyles.swift; sourceTree = "<group>"; };
+		E5000011296A0001 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
+		E5000012296A0001 /* SliderWithField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderWithField.swift; sourceTree = "<group>"; };
+		E5000013296A0001 /* SheetHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetHeader.swift; sourceTree = "<group>"; };
+		E5000014296A0001 /* DesignEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignEmptyState.swift; sourceTree = "<group>"; };
+		E5000015296A0001 /* TimeCodeLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCodeLabel.swift; sourceTree = "<group>"; };
+		E7100001296A0001 /* ContinuousCameraTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraTypes.swift; sourceTree = "<group>"; };
+		E7100002296A0001 /* WaypointGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGenerator.swift; sourceTree = "<group>"; };
+		E7100003296A0001 /* SpringDamperSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulator.swift; sourceTree = "<group>"; };
+		E7100004296A0001 /* ContinuousTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousTrackEmitter.swift; sourceTree = "<group>"; };
+		E7100005296A0001 /* ContinuousCameraGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGenerator.swift; sourceTree = "<group>"; };
+		E7100011296A0001 /* WaypointGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGeneratorTests.swift; sourceTree = "<group>"; };
+		E7100012296A0001 /* SpringDamperSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulatorTests.swift; sourceTree = "<group>"; };
+		E7100013296A0001 /* ContinuousTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousTrackEmitterTests.swift; sourceTree = "<group>"; };
+		E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGeneratorTests.swift; sourceTree = "<group>"; };
 		F0A00000296A0001 /* Screenize.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Screenize.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1000001296A0001 /* ScreenizeProject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeProject.swift; sourceTree = "<group>"; };
 		F1000002296A0001 /* MediaAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaAsset.swift; sourceTree = "<group>"; };
@@ -138,13 +347,11 @@
 		F1000007296A0001 /* RenderSettingsPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettingsPreset.swift; sourceTree = "<group>"; };
 		F1000008296A0001 /* PresetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetManager.swift; sourceTree = "<group>"; };
 		F1000009296A0001 /* PackageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageManager.swift; sourceTree = "<group>"; };
-		F100000A296A0001 /* LegacyProjectMigrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyProjectMigrator.swift; sourceTree = "<group>"; };
 		F1000010296A0001 /* EasingCurve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingCurve.swift; sourceTree = "<group>"; };
 		F1000011296A0001 /* Keyframe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keyframe.swift; sourceTree = "<group>"; };
 		F1000012296A0001 /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
 		F1000013296A0001 /* Timeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timeline.swift; sourceTree = "<group>"; };
 		F1000020296A0001 /* EvaluatedState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvaluatedState.swift; sourceTree = "<group>"; };
-		F1000021296A0001 /* KeyframeInterpolator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeInterpolator.swift; sourceTree = "<group>"; };
 		F1000022296A0001 /* FrameEvaluator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameEvaluator.swift; sourceTree = "<group>"; };
 		F1000023296A0001 /* RenderContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderContext.swift; sourceTree = "<group>"; };
 		F1000024296A0001 /* TransformApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformApplicator.swift; sourceTree = "<group>"; };
@@ -161,15 +368,9 @@
 		F100002F296A0001 /* WindowEffectApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowEffectApplicator.swift; sourceTree = "<group>"; };
 		F1000030296A0001 /* TimeRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
 		F1000031296A0001 /* PlayheadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayheadView.swift; sourceTree = "<group>"; };
-		F1000032296A0001 /* KeyframeMarkerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeMarkerView.swift; sourceTree = "<group>"; };
-		F1000033296A0001 /* TrackRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackRowView.swift; sourceTree = "<group>"; };
 		F1000034296A0001 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizontalScrollViewWithVerticalWheel.swift; sourceTree = "<group>"; };
 		F1000036296A0001 /* TrimHandleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrimHandleView.swift; sourceTree = "<group>"; };
-		F1000040296A0001 /* EasingPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingPicker.swift; sourceTree = "<group>"; };
-		F1000041296A0001 /* TransformInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformInspector.swift; sourceTree = "<group>"; };
-		F1000042296A0001 /* RippleInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippleInspector.swift; sourceTree = "<group>"; };
-		F1000043296A0001 /* CursorInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorInspector.swift; sourceTree = "<group>"; };
 		F1000044296A0001 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		F1000045296A0001 /* SettingsInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsInspector.swift; sourceTree = "<group>"; };
 		F1000046296A0001 /* PresetPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetPickerView.swift; sourceTree = "<group>"; };
@@ -180,20 +381,16 @@
 		F1000060296A0001 /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
 		F1000061296A0001 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		F1000070296A0001 /* KeyframeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyframeGenerator.swift; sourceTree = "<group>"; };
-		F1000074296A0001 /* RippleGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippleGenerator.swift; sourceTree = "<group>"; };
-		F1000075296A0001 /* CursorInterpolationGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorInterpolationGenerator.swift; sourceTree = "<group>"; };
-		F1000076296A0001 /* ClickCursorGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickCursorGenerator.swift; sourceTree = "<group>"; };
-		F1000077296A0001 /* SmartZoomGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartZoomGenerator.swift; sourceTree = "<group>"; };
-		F1000078296A0001 /* ZoomContextAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomContextAnalyzer.swift; sourceTree = "<group>"; };
-		F1000079296A0001 /* MouseDataCleaner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseDataCleaner.swift; sourceTree = "<group>"; };
-		F100007A296A0001 /* KeystrokeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeGenerator.swift; sourceTree = "<group>"; };
-		F100007B296A0001 /* KeystrokeInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeInspector.swift; sourceTree = "<group>"; };
 		F1000080296A0001 /* EditorEntryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorEntryPoint.swift; sourceTree = "<group>"; };
 		F1000081296A0001 /* ScreenizeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeApp.swift; sourceTree = "<group>"; };
 		F1000090296A0001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F1000091296A0001 /* Screenize.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Screenize.entitlements; sourceTree = "<group>"; };
 		F10000A0296A0001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F10000A1296A0001 /* GlobalHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyManager.swift; sourceTree = "<group>"; };
+		F10000A2296A0001 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
+		F10000A3296A0001 /* CaptureSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSettings.swift; sourceTree = "<group>"; };
+		F10000A4296A0001 /* NavigationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationState.swift; sourceTree = "<group>"; };
+		F10000A5296A0001 /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
 		F10000AF296A0001 /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
 		F10000B0296A0001 /* CaptureConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureConfiguration.swift; sourceTree = "<group>"; };
 		F10000B1296A0001 /* PermissionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsManager.swift; sourceTree = "<group>"; };
@@ -206,15 +403,10 @@
 		F10000D0296A0001 /* AccessibilityInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityInspector.swift; sourceTree = "<group>"; };
 		F10000D1296A0001 /* ClickDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickDetector.swift; sourceTree = "<group>"; };
 		F10000D2296A0001 /* MouseTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseTracker.swift; sourceTree = "<group>"; };
-		F10000D3296A0001 /* ZoomCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomCalculator.swift; sourceTree = "<group>"; };
 		F10000E0296A0001 /* BackgroundStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundStyle.swift; sourceTree = "<group>"; };
 		F10000E1296A0001 /* CaptureTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureTarget.swift; sourceTree = "<group>"; };
 		F10000E2296A0001 /* MouseEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseEvent.swift; sourceTree = "<group>"; };
-		F10000E3296A0001 /* ZoomSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomSettings.swift; sourceTree = "<group>"; };
 		F10000E4296A0001 /* ClickType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickType.swift; sourceTree = "<group>"; };
-		F10000F0296A0001 /* RecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingView.swift; sourceTree = "<group>"; };
-		F10000F1296A0001 /* SourcePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourcePickerView.swift; sourceTree = "<group>"; };
-		F10000F2296A0001 /* RecordingPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPreviewView.swift; sourceTree = "<group>"; };
 		F10000F3296A0001 /* CountdownPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountdownPanel.swift; sourceTree = "<group>"; };
 		F10000F4296A0001 /* RecordingFloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingFloatingPanel.swift; sourceTree = "<group>"; };
 		F1000100296A0001 /* WindowModeRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowModeRenderer.swift; sourceTree = "<group>"; };
@@ -226,18 +418,32 @@
 		F1000106296A0001 /* ScrollEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEventHandler.swift; sourceTree = "<group>"; };
 		F1000107296A0001 /* KeyboardEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEventHandler.swift; sourceTree = "<group>"; };
 		F1000108296A0001 /* DragEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragEventHandler.swift; sourceTree = "<group>"; };
-		F1000200296A0001 /* ActivityCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityCollector.swift; sourceTree = "<group>"; };
-		F1000201296A0001 /* SessionClusterer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionClusterer.swift; sourceTree = "<group>"; };
-		F1000202296A0001 /* ZoomLevelCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomLevelCalculator.swift; sourceTree = "<group>"; };
-		F1000203296A0001 /* SessionCenterResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCenterResolver.swift; sourceTree = "<group>"; };
 		F1A00001296A0001 /* EventStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStream.swift; sourceTree = "<group>"; };
 		F1A00002296A0001 /* RecordingMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingMetadata.swift; sourceTree = "<group>"; };
 		F1A00003296A0001 /* EventStreamAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamAdapter.swift; sourceTree = "<group>"; };
 		F1A00004296A0001 /* InteropBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteropBlock.swift; sourceTree = "<group>"; };
 		F1A00005296A0001 /* EventStreamWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStreamWriter.swift; sourceTree = "<group>"; };
+		F7100001296A0001 /* CursorImageProvider+HandCursors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CursorImageProvider+HandCursors.swift"; sourceTree = "<group>"; };
+		FD1000B5296A0001 /* ColorSpaceConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSpaceConstants.swift; sourceTree = "<group>"; };
+		FE1000A1296A0001 /* FrameEvaluator+Transform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+Transform.swift"; sourceTree = "<group>"; };
+		FE1000A2296A0001 /* FrameEvaluator+Cursor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+Cursor.swift"; sourceTree = "<group>"; };
+		FE1000A3296A0001 /* FrameEvaluator+Keystroke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+Keystroke.swift"; sourceTree = "<group>"; };
+		FE1000A4296A0001 /* FrameEvaluator+ClickState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameEvaluator+ClickState.swift"; sourceTree = "<group>"; };
+		FE1000B1296A0001 /* PreviewEngine+Setup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewEngine+Setup.swift"; sourceTree = "<group>"; };
+		FE1000B2296A0001 /* PreviewEngine+Playback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewEngine+Playback.swift"; sourceTree = "<group>"; };
+		FE1000B3296A0001 /* PreviewEngine+Timeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewEngine+Timeline.swift"; sourceTree = "<group>"; };
+		FE1000C1296A0001 /* ExportEngine+VideoExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportEngine+VideoExport.swift"; sourceTree = "<group>"; };
+		FE1000C2296A0001 /* ExportEngine+GIFExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportEngine+GIFExport.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AD400021296A0001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F0B00000296A0001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -257,10 +463,278 @@
 			path = Analysis;
 			sourceTree = "<group>";
 		};
+		A12000A0296A0001 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				A11000A1296A0001 /* PermissionSetupWizardView.swift */,
+				A11000A3296A0001 /* PermissionStatusBadge.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		AC000001296A0001 /* V2 */ = {
+			isa = PBXGroup;
+			children = (
+				AC000002296A0001 /* Types */,
+				AD200010296A0001 /* Analysis */,
+				AE200001296A0001 /* Planning */,
+				B0200001296A0001 /* Simulation */,
+				B6200001296A0001 /* PostProcessing */,
+				B2200001296A0001 /* Emission */,
+				AB000007296A0001 /* SmartGeneratorV2.swift */,
+				D3100001296A0001 /* SmoothedMouseDataSource.swift */,
+			);
+			path = V2;
+			sourceTree = "<group>";
+		};
+		AC000002296A0001 /* Types */ = {
+			isa = PBXGroup;
+			children = (
+				AB000001296A0001 /* UnifiedEvent.swift */,
+				AB000002296A0001 /* UserIntent.swift */,
+				AB000003296A0001 /* Scene.swift */,
+				AB000004296A0001 /* ShotPlan.swift */,
+				AB000005296A0001 /* TransitionPlan.swift */,
+				AB000006296A0001 /* SimulatedPath.swift */,
+			);
+			path = Types;
+			sourceTree = "<group>";
+		};
+		AD200010296A0001 /* Analysis */ = {
+			isa = PBXGroup;
+			children = (
+				AD100010296A0001 /* EventTimeline.swift */,
+				AD100011296A0001 /* IntentClassifier.swift */,
+			);
+			path = Analysis;
+			sourceTree = "<group>";
+		};
+		AD200020296A0001 /* ScreenizeTests */ = {
+			isa = PBXGroup;
+			children = (
+				AD200021296A0001 /* Helpers */,
+				AD200022296A0001 /* Generators */,
+				C8200001296A0001 /* Models */,
+				B5200001296A0001 /* Timeline */,
+				D2300001296A0001 /* Project */,
+				D2300002296A0001 /* Render */,
+			);
+			path = ScreenizeTests;
+			sourceTree = "<group>";
+		};
+		AD200021296A0001 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				AD100021296A0001 /* MockMouseDataSource.swift */,
+			);
+			path = Helpers;
+			sourceTree = "<group>";
+		};
+		AD200022296A0001 /* Generators */ = {
+			isa = PBXGroup;
+			children = (
+				AD200023296A0001 /* V2 */,
+				E7200002296A0001 /* ContinuousCamera */,
+			);
+			path = Generators;
+			sourceTree = "<group>";
+		};
+		AD200023296A0001 /* V2 */ = {
+			isa = PBXGroup;
+			children = (
+				AD200024296A0001 /* Analysis */,
+				AF200001296A0001 /* Planning */,
+				B1200001296A0001 /* Simulation */,
+				B7200001296A0001 /* PostProcessing */,
+				B3200001296A0001 /* Emission */,
+				D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */,
+			);
+			path = V2;
+			sourceTree = "<group>";
+		};
+		AD200024296A0001 /* Analysis */ = {
+			isa = PBXGroup;
+			children = (
+				AD100022296A0001 /* EventTimelineTests.swift */,
+				AD100023296A0001 /* IntentClassifierTests.swift */,
+			);
+			path = Analysis;
+			sourceTree = "<group>";
+		};
+		AE200001296A0001 /* Planning */ = {
+			isa = PBXGroup;
+			children = (
+				AE100001296A0001 /* SceneSegmenter.swift */,
+				AE100002296A0001 /* ShotPlanner.swift */,
+				AE100003296A0001 /* TransitionPlanner.swift */,
+			);
+			path = Planning;
+			sourceTree = "<group>";
+		};
+		AF200001296A0001 /* Planning */ = {
+			isa = PBXGroup;
+			children = (
+				AF100001296A0001 /* SceneSegmenterTests.swift */,
+				AF100002296A0001 /* ShotPlannerTests.swift */,
+				AF100003296A0001 /* TransitionPlannerTests.swift */,
+			);
+			path = Planning;
+			sourceTree = "<group>";
+		};
+		B0200001296A0001 /* Simulation */ = {
+			isa = PBXGroup;
+			children = (
+				B0100001296A0001 /* CameraController.swift */,
+				B0100002296A0001 /* StaticHoldController.swift */,
+				B0100004296A0001 /* CursorFollowController.swift */,
+				B0100003296A0001 /* CameraSimulator.swift */,
+			);
+			path = Simulation;
+			sourceTree = "<group>";
+		};
+		B1200001296A0001 /* Simulation */ = {
+			isa = PBXGroup;
+			children = (
+				B1100001296A0001 /* StaticHoldControllerTests.swift */,
+				B1100003296A0001 /* CursorFollowControllerTests.swift */,
+				B1100002296A0001 /* CameraSimulatorTests.swift */,
+			);
+			path = Simulation;
+			sourceTree = "<group>";
+		};
+		B2200001296A0001 /* Emission */ = {
+			isa = PBXGroup;
+			children = (
+				B2100001296A0001 /* CameraTrackEmitter.swift */,
+				B2100002296A0001 /* CursorTrackEmitter.swift */,
+				B2100003296A0001 /* KeystrokeTrackEmitter.swift */,
+				B2100004296A0001 /* SegmentOptimizer.swift */,
+			);
+			path = Emission;
+			sourceTree = "<group>";
+		};
+		B3200001296A0001 /* Emission */ = {
+			isa = PBXGroup;
+			children = (
+				B3100001296A0001 /* CameraTrackEmitterTests.swift */,
+				B3100002296A0001 /* CursorTrackEmitterTests.swift */,
+				B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */,
+				B3100004296A0001 /* SegmentOptimizerTests.swift */,
+			);
+			path = Emission;
+			sourceTree = "<group>";
+		};
+		B5200001296A0001 /* Timeline */ = {
+			isa = PBXGroup;
+			children = (
+				B5100001296A0001 /* EasingCurveTests.swift */,
+			);
+			path = Timeline;
+			sourceTree = "<group>";
+		};
+		B6200001296A0001 /* PostProcessing */ = {
+			isa = PBXGroup;
+			children = (
+				B6100001296A0001 /* PathSmoother.swift */,
+				B6100002296A0001 /* HoldEnforcer.swift */,
+				B6100003296A0001 /* TransitionRefiner.swift */,
+				B6100004296A0001 /* SegmentMerger.swift */,
+			);
+			path = PostProcessing;
+			sourceTree = "<group>";
+		};
+		B7200001296A0001 /* PostProcessing */ = {
+			isa = PBXGroup;
+			children = (
+				B7100001296A0001 /* PathSmootherTests.swift */,
+				B7100002296A0001 /* HoldEnforcerTests.swift */,
+				B7100003296A0001 /* TransitionRefinerTests.swift */,
+				B7100004296A0001 /* SegmentMergerTests.swift */,
+			);
+			path = PostProcessing;
+			sourceTree = "<group>";
+		};
+		C8200001296A0001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C8100001296A0001 /* EventStreamAdapterTests.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		D2300001296A0001 /* Project */ = {
+			isa = PBXGroup;
+			children = (
+				D2200002296A0001 /* GIFSettingsTests.swift */,
+				D2200003296A0001 /* RenderSettingsGIFTests.swift */,
+			);
+			path = Project;
+			sourceTree = "<group>";
+		};
+		D2300002296A0001 /* Render */ = {
+			isa = PBXGroup;
+			children = (
+				D2200004296A0001 /* GIFEncoderTests.swift */,
+			);
+			path = Render;
+			sourceTree = "<group>";
+		};
+		E5100000296A0001 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				E5000001296A0001 /* Spacing.swift */,
+				E5000002296A0001 /* Typography.swift */,
+				E5000003296A0001 /* DesignColors.swift */,
+				E5000004296A0001 /* CornerRadius.swift */,
+				E5000005296A0001 /* DesignOpacity.swift */,
+				E5000007296A0001 /* Accessibility.swift */,
+				E5000006296A0001 /* AnimationTokens.swift */,
+				E5100001296A0001 /* Components */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		E5100001296A0001 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				E5000010296A0001 /* ScreenizeButtonStyles.swift */,
+				E5000011296A0001 /* SectionHeader.swift */,
+				E5000012296A0001 /* SliderWithField.swift */,
+				E5000013296A0001 /* SheetHeader.swift */,
+				E5000014296A0001 /* DesignEmptyState.swift */,
+				E5000015296A0001 /* TimeCodeLabel.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		E7200001296A0001 /* ContinuousCamera */ = {
+			isa = PBXGroup;
+			children = (
+				E7100001296A0001 /* ContinuousCameraTypes.swift */,
+				E7100002296A0001 /* WaypointGenerator.swift */,
+				E7100003296A0001 /* SpringDamperSimulator.swift */,
+				E7100004296A0001 /* ContinuousTrackEmitter.swift */,
+				E7100005296A0001 /* ContinuousCameraGenerator.swift */,
+			);
+			path = ContinuousCamera;
+			sourceTree = "<group>";
+		};
+		E7200002296A0001 /* ContinuousCamera */ = {
+			isa = PBXGroup;
+			children = (
+				E7100011296A0001 /* WaypointGeneratorTests.swift */,
+				E7100012296A0001 /* SpringDamperSimulatorTests.swift */,
+				E7100013296A0001 /* ContinuousTrackEmitterTests.swift */,
+				E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */,
+			);
+			path = ContinuousCamera;
+			sourceTree = "<group>";
+		};
 		F2000000296A0001 = {
 			isa = PBXGroup;
 			children = (
 				F2000001296A0001 /* Screenize */,
+				AD200020296A0001 /* ScreenizeTests */,
 				F2000002296A0001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -282,6 +756,7 @@
 				F1000090296A0001 /* Assets.xcassets */,
 				F1000091296A0001 /* Screenize.entitlements */,
 				1A210DB0FB901E8551815099 /* Analysis */,
+				E5100000296A0001 /* DesignSystem */,
 			);
 			path = Screenize;
 			sourceTree = "<group>";
@@ -290,6 +765,7 @@
 			isa = PBXGroup;
 			children = (
 				F0A00000296A0001 /* Screenize.app */,
+				AD100020296A0001 /* ScreenizeTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -306,7 +782,6 @@
 				F1000005296A0001 /* ProjectManager.swift */,
 				F1000006296A0001 /* ProjectCreator.swift */,
 				F1000009296A0001 /* PackageManager.swift */,
-				F100000A296A0001 /* LegacyProjectMigrator.swift */,
 				F1A00004296A0001 /* InteropBlock.swift */,
 			);
 			path = Project;
@@ -318,6 +793,8 @@
 				F1000010296A0001 /* EasingCurve.swift */,
 				F1000011296A0001 /* Keyframe.swift */,
 				F1000012296A0001 /* Track.swift */,
+				D5000002296A0001 /* Segments.swift */,
+				D6000002296A0001 /* LegacyTrack.swift */,
 				F1000013296A0001 /* Timeline.swift */,
 			);
 			path = Timeline;
@@ -327,17 +804,30 @@
 			isa = PBXGroup;
 			children = (
 				F1000020296A0001 /* EvaluatedState.swift */,
-				F1000021296A0001 /* KeyframeInterpolator.swift */,
 				F1000022296A0001 /* FrameEvaluator.swift */,
+				FE1000A1296A0001 /* FrameEvaluator+Transform.swift */,
+				FE1000A2296A0001 /* FrameEvaluator+Cursor.swift */,
+				FE1000A3296A0001 /* FrameEvaluator+Keystroke.swift */,
+				FE1000A4296A0001 /* FrameEvaluator+ClickState.swift */,
 				F1000023296A0001 /* RenderContext.swift */,
 				F1000024296A0001 /* TransformApplicator.swift */,
 				F1000025296A0001 /* EffectCompositor.swift */,
+				C2100001296A0001 /* CursorImageProvider.swift */,
+				F7100001296A0001 /* CursorImageProvider+HandCursors.swift */,
 				F1000026296A0001 /* Renderer.swift */,
 				F1000027296A0001 /* PreviewCache.swift */,
 				F1000028296A0001 /* VideoFrameExtractor.swift */,
 				F1000029296A0001 /* PreviewEngine.swift */,
+				FE1000B1296A0001 /* PreviewEngine+Setup.swift */,
+				FE1000B2296A0001 /* PreviewEngine+Playback.swift */,
+				FE1000B3296A0001 /* PreviewEngine+Timeline.swift */,
 				F100002A296A0001 /* ExportProgress.swift */,
 				F100002B296A0001 /* ExportEngine.swift */,
+				D8000002296A0001 /* ExportEngine+Helpers.swift */,
+				FE1000C1296A0001 /* ExportEngine+VideoExport.swift */,
+				FE1000C2296A0001 /* ExportEngine+GIFExport.swift */,
+				D2200001296A0001 /* GIFEncoder.swift */,
+				D2000004296A0001 /* AudioMixer.swift */,
 				F100002C296A0001 /* MotionBlurSettings.swift */,
 				F100002D296A0001 /* BackgroundRenderer.swift */,
 				F100002E296A0001 /* WindowTransformApplicator.swift */,
@@ -346,6 +836,14 @@
 				F1000101296A0001 /* MouseDataConverter.swift */,
 				F1000102296A0001 /* RenderPipelineFactory.swift */,
 				F1000103296A0001 /* MousePositionInterpolator.swift */,
+				E3000001296A0001 /* SpringCursorSimulator.swift */,
+				E1000001296A0001 /* AudioPreviewPlayer.swift */,
+				C9100001296A0001 /* DisplayLinkDriver.swift */,
+				C9100002296A0001 /* SequentialFrameReader.swift */,
+				D4100001CFRFREAD /* CFRFrameReader.swift */,
+				C9100003296A0001 /* ScrubController.swift */,
+				C9100004296A0001 /* RenderCoordinator.swift */,
+				CA100001296A0001 /* PreviewTextureCache.swift */,
 			);
 			path = Render;
 			sourceTree = "<group>";
@@ -358,21 +856,17 @@
 				F20000F0296A0001 /* Recording */,
 				A12000A0296A0001 /* Onboarding */,
 				F1000050296A0001 /* PreviewView.swift */,
+				CA100002296A0001 /* MetalPreviewView.swift */,
 				F1000051296A0001 /* ExportView.swift */,
+				CB100001296A0001 /* ExportView+Settings.swift */,
 				F1000052296A0001 /* EditorMainView.swift */,
+				CC100001296A0001 /* GeneratorPanelView.swift */,
+				C7100001296A0001 /* ContentView.swift */,
+				C6100001296A0001 /* MainWelcomeView.swift */,
 				F1000053296A0001 /* KeyboardShortcutHelpView.swift */,
 				2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		A12000A0296A0001 /* Onboarding */ = {
-			isa = PBXGroup;
-			children = (
-				A11000A1296A0001 /* PermissionSetupWizardView.swift */,
-				A11000A3296A0001 /* PermissionStatusBadge.swift */,
-			);
-			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		F2000041296A0001 /* Timeline */ = {
@@ -380,9 +874,10 @@
 			children = (
 				F1000030296A0001 /* TimeRulerView.swift */,
 				F1000031296A0001 /* PlayheadView.swift */,
-				F1000032296A0001 /* KeyframeMarkerView.swift */,
-				F1000033296A0001 /* TrackRowView.swift */,
 				F1000034296A0001 /* TimelineView.swift */,
+				B1100010296A0001 /* TimelineView+MultiMove.swift */,
+				C5000002296A0001 /* TimelineView+Gestures.swift */,
+				D4000002296A0001 /* TimelineView+SegmentBlock.swift */,
 				F1000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift */,
 				F1000036296A0001 /* TrimHandleView.swift */,
 			);
@@ -392,12 +887,9 @@
 		F2000042296A0001 /* Inspector */ = {
 			isa = PBXGroup;
 			children = (
-				F1000040296A0001 /* EasingPicker.swift */,
-				F1000041296A0001 /* TransformInspector.swift */,
-				F1000042296A0001 /* RippleInspector.swift */,
-				F1000043296A0001 /* CursorInspector.swift */,
-				F100007B296A0001 /* KeystrokeInspector.swift */,
 				F1000044296A0001 /* InspectorView.swift */,
+				C0100001296A0001 /* InspectorView+CameraSection.swift */,
+				C1100001296A0001 /* InspectorView+SegmentBindings.swift */,
 				F1000045296A0001 /* SettingsInspector.swift */,
 				F1000046296A0001 /* PresetPickerView.swift */,
 			);
@@ -408,6 +900,9 @@
 			isa = PBXGroup;
 			children = (
 				F1000060296A0001 /* EditorViewModel.swift */,
+				A2000002296A0001 /* EditorViewModel+Clipboard.swift */,
+				C3000002296A0001 /* EditorViewModel+SmartGeneration.swift */,
+				C4000002296A0001 /* EditorViewModel+SegmentOperations.swift */,
 				F1000061296A0001 /* UndoStack.swift */,
 				A11000A0296A0001 /* PermissionWizardViewModel.swift */,
 			);
@@ -418,14 +913,8 @@
 			isa = PBXGroup;
 			children = (
 				F1000070296A0001 /* KeyframeGenerator.swift */,
-				F1000074296A0001 /* RippleGenerator.swift */,
-				F1000075296A0001 /* CursorInterpolationGenerator.swift */,
-				F1000076296A0001 /* ClickCursorGenerator.swift */,
-				F1000077296A0001 /* SmartZoomGenerator.swift */,
-				F1000078296A0001 /* ZoomContextAnalyzer.swift */,
-				F1000079296A0001 /* MouseDataCleaner.swift */,
-				F100007A296A0001 /* KeystrokeGenerator.swift */,
-				F2000200296A0001 /* SmartZoom */,
+				AC000001296A0001 /* V2 */,
+				E7200001296A0001 /* ContinuousCamera */,
 			);
 			path = Generators;
 			sourceTree = "<group>";
@@ -434,8 +923,13 @@
 			isa = PBXGroup;
 			children = (
 				F10000A0296A0001 /* AppState.swift */,
+				F10000A3296A0001 /* CaptureSettings.swift */,
+				F10000A4296A0001 /* NavigationState.swift */,
+				F10000A5296A0001 /* RecordingState.swift */,
+				F10000A2296A0001 /* Log.swift */,
 				F10000A1296A0001 /* GlobalHotkeyManager.swift */,
 				2A626F2E2F2A280000510712 /* SparkleController.swift */,
+				D1100004296A0001 /* CaptureToolbarCoordinator.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -444,6 +938,7 @@
 			isa = PBXGroup;
 			children = (
 				F10000AF296A0001 /* Coordinates.swift */,
+				FD1000B5296A0001 /* ColorSpaceConstants.swift */,
 				F20000B1296A0001 /* Capture */,
 				F20000D5296A0001 /* EventMonitoring */,
 				F20000C0296A0001 /* Recording */,
@@ -471,6 +966,9 @@
 				F10000C2296A0001 /* RecordingSession.swift */,
 				F10000C3296A0001 /* VideoWriter.swift */,
 				F10000CF296A0001 /* CFRRecordingManager.swift */,
+				D3000002VFRRECMG /* VFRRecordingManager.swift */,
+				D2000002296A0001 /* MicrophoneRecorder.swift */,
+				D2000002SYSAUDIO /* SystemAudioWriter.swift */,
 				F1A00005296A0001 /* EventStreamWriter.swift */,
 			);
 			path = Recording;
@@ -493,7 +991,6 @@
 				F10000D0296A0001 /* AccessibilityInspector.swift */,
 				F10000D1296A0001 /* ClickDetector.swift */,
 				F10000D2296A0001 /* MouseTracker.swift */,
-				F10000D3296A0001 /* ZoomCalculator.swift */,
 			);
 			path = Tracking;
 			sourceTree = "<group>";
@@ -512,11 +1009,11 @@
 				F10000E0296A0001 /* BackgroundStyle.swift */,
 				F10000E1296A0001 /* CaptureTarget.swift */,
 				F10000E2296A0001 /* MouseEvent.swift */,
-				F10000E3296A0001 /* ZoomSettings.swift */,
 				F10000E4296A0001 /* ClickType.swift */,
 				F1A00001296A0001 /* EventStream.swift */,
 				F1A00002296A0001 /* RecordingMetadata.swift */,
 				F1A00003296A0001 /* EventStreamAdapter.swift */,
+				D1100001296A0001 /* CaptureMode.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -524,29 +1021,34 @@
 		F20000F0296A0001 /* Recording */ = {
 			isa = PBXGroup;
 			children = (
-				F10000F0296A0001 /* RecordingView.swift */,
-				F10000F1296A0001 /* SourcePickerView.swift */,
-				F10000F2296A0001 /* RecordingPreviewView.swift */,
 				F10000F3296A0001 /* CountdownPanel.swift */,
 				F10000F4296A0001 /* RecordingFloatingPanel.swift */,
+				D1100002296A0001 /* CaptureToolbarPanel.swift */,
+				D1100003296A0001 /* CaptureOverlayController.swift */,
 			);
 			path = Recording;
-			sourceTree = "<group>";
-		};
-		F2000200296A0001 /* SmartZoom */ = {
-			isa = PBXGroup;
-			children = (
-				F1000200296A0001 /* ActivityCollector.swift */,
-				F1000201296A0001 /* SessionClusterer.swift */,
-				F1000202296A0001 /* ZoomLevelCalculator.swift */,
-				F1000203296A0001 /* SessionCenterResolver.swift */,
-			);
-			path = SmartZoom;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AD300020296A0001 /* ScreenizeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD600020296A0001 /* Build configuration list for PBXNativeTarget "ScreenizeTests" */;
+			buildPhases = (
+				AD400020296A0001 /* Sources */,
+				AD400021296A0001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AD700020296A0001 /* PBXTargetDependency */,
+			);
+			name = ScreenizeTests;
+			productName = ScreenizeTests;
+			productReference = AD100020296A0001 /* ScreenizeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		F0C00000296A0001 /* Screenize */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F0D00000296A0001 /* Build configuration list for PBXNativeTarget "Screenize" */;
@@ -577,6 +1079,10 @@
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
+					AD300020296A0001 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = F0C00000296A0001;
+					};
 					F0C00000296A0001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
@@ -600,6 +1106,7 @@
 			projectRoot = "";
 			targets = (
 				F0C00000296A0001 /* Screenize */,
+				AD300020296A0001 /* ScreenizeTests */,
 			);
 		};
 /* End PBXProject section */
@@ -616,10 +1123,62 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AD400020296A0001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AD000021296A0001 /* MockMouseDataSource.swift in Sources */,
+				AD000022296A0001 /* EventTimelineTests.swift in Sources */,
+				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
+				C8000001296A0001 /* EventStreamAdapterTests.swift in Sources */,
+				AF000001296A0001 /* SceneSegmenterTests.swift in Sources */,
+				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
+				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,
+				B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */,
+				B1000003296A0001 /* CursorFollowControllerTests.swift in Sources */,
+				B1000002296A0001 /* CameraSimulatorTests.swift in Sources */,
+				B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */,
+				B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */,
+				B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */,
+				B5000001296A0001 /* EasingCurveTests.swift in Sources */,
+				B7000001296A0001 /* PathSmootherTests.swift in Sources */,
+				B7000002296A0001 /* HoldEnforcerTests.swift in Sources */,
+				B7000003296A0001 /* TransitionRefinerTests.swift in Sources */,
+				B7000004296A0001 /* SegmentMergerTests.swift in Sources */,
+				B3000004296A0001 /* SegmentOptimizerTests.swift in Sources */,
+				D2100002296A0001 /* GIFSettingsTests.swift in Sources */,
+				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
+				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
+				D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */,
+				E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */,
+				E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */,
+				E7000013296A0001 /* ContinuousTrackEmitterTests.swift in Sources */,
+				E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F0E00000296A0001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2000001296A0001 /* EditorViewModel+Clipboard.swift in Sources */,
+				C3000001296A0001 /* EditorViewModel+SmartGeneration.swift in Sources */,
+				C4000001296A0001 /* EditorViewModel+SegmentOperations.swift in Sources */,
+				C5000001296A0001 /* TimelineView+Gestures.swift in Sources */,
+				D4000001296A0001 /* TimelineView+SegmentBlock.swift in Sources */,
+				E6000001296A0001 /* Spacing.swift in Sources */,
+				E6000002296A0001 /* Typography.swift in Sources */,
+				E6000003296A0001 /* DesignColors.swift in Sources */,
+				E6000004296A0001 /* CornerRadius.swift in Sources */,
+				E6000005296A0001 /* DesignOpacity.swift in Sources */,
+				E6000006296A0001 /* AnimationTokens.swift in Sources */,
+				E6000007296A0001 /* Accessibility.swift in Sources */,
+				E6000010296A0001 /* ScreenizeButtonStyles.swift in Sources */,
+				E6000011296A0001 /* SectionHeader.swift in Sources */,
+				E6000012296A0001 /* SliderWithField.swift in Sources */,
+				E6000013296A0001 /* SheetHeader.swift in Sources */,
+				E6000014296A0001 /* DesignEmptyState.swift in Sources */,
+				E6000015296A0001 /* TimeCodeLabel.swift in Sources */,
 				F0000081296A0001 /* ScreenizeApp.swift in Sources */,
 				F0000080296A0001 /* EditorEntryPoint.swift in Sources */,
 				F0000001296A0001 /* ScreenizeProject.swift in Sources */,
@@ -631,23 +1190,36 @@
 				F0000007296A0001 /* RenderSettingsPreset.swift in Sources */,
 				F0000008296A0001 /* PresetManager.swift in Sources */,
 				F0000009296A0001 /* PackageManager.swift in Sources */,
-				F000000A296A0001 /* LegacyProjectMigrator.swift in Sources */,
 				F0000010296A0001 /* EasingCurve.swift in Sources */,
 				F0000011296A0001 /* Keyframe.swift in Sources */,
 				F0000012296A0001 /* Track.swift in Sources */,
+				D5000001296A0001 /* Segments.swift in Sources */,
+				D6000001296A0001 /* LegacyTrack.swift in Sources */,
 				F0000013296A0001 /* Timeline.swift in Sources */,
 				F0000020296A0001 /* EvaluatedState.swift in Sources */,
-				F0000021296A0001 /* KeyframeInterpolator.swift in Sources */,
 				F0000022296A0001 /* FrameEvaluator.swift in Sources */,
+				FE0000A1296A0001 /* FrameEvaluator+Transform.swift in Sources */,
+				FE0000A2296A0001 /* FrameEvaluator+Cursor.swift in Sources */,
+				FE0000A3296A0001 /* FrameEvaluator+Keystroke.swift in Sources */,
+				FE0000A4296A0001 /* FrameEvaluator+ClickState.swift in Sources */,
 				F0000023296A0001 /* RenderContext.swift in Sources */,
 				F0000024296A0001 /* TransformApplicator.swift in Sources */,
 				F0000025296A0001 /* EffectCompositor.swift in Sources */,
+				C2000001296A0001 /* CursorImageProvider.swift in Sources */,
+				F7000001296A0001 /* CursorImageProvider+HandCursors.swift in Sources */,
 				F0000026296A0001 /* Renderer.swift in Sources */,
 				F0000027296A0001 /* PreviewCache.swift in Sources */,
 				F0000028296A0001 /* VideoFrameExtractor.swift in Sources */,
 				F0000029296A0001 /* PreviewEngine.swift in Sources */,
+				FE0000B1296A0001 /* PreviewEngine+Setup.swift in Sources */,
+				FE0000B2296A0001 /* PreviewEngine+Playback.swift in Sources */,
+				FE0000B3296A0001 /* PreviewEngine+Timeline.swift in Sources */,
 				F000002A296A0001 /* ExportProgress.swift in Sources */,
 				F000002B296A0001 /* ExportEngine.swift in Sources */,
+				D8000001296A0001 /* ExportEngine+Helpers.swift in Sources */,
+				FE0000C1296A0001 /* ExportEngine+VideoExport.swift in Sources */,
+				FE0000C2296A0001 /* ExportEngine+GIFExport.swift in Sources */,
+				D2100001296A0001 /* GIFEncoder.swift in Sources */,
 				F000002C296A0001 /* MotionBlurSettings.swift in Sources */,
 				F000002D296A0001 /* BackgroundRenderer.swift in Sources */,
 				F000002E296A0001 /* WindowTransformApplicator.swift in Sources */,
@@ -656,58 +1228,76 @@
 				F0000101296A0001 /* MouseDataConverter.swift in Sources */,
 				F0000102296A0001 /* RenderPipelineFactory.swift in Sources */,
 				F0000103296A0001 /* MousePositionInterpolator.swift in Sources */,
+				E2000001296A0001 /* SpringCursorSimulator.swift in Sources */,
+				E0000001296A0001 /* AudioPreviewPlayer.swift in Sources */,
+				C9000001296A0001 /* DisplayLinkDriver.swift in Sources */,
+				C9000002296A0001 /* SequentialFrameReader.swift in Sources */,
+				D4000001CFRFREAD /* CFRFrameReader.swift in Sources */,
+				C9000003296A0001 /* ScrubController.swift in Sources */,
+				C9000004296A0001 /* RenderCoordinator.swift in Sources */,
+				CA000001296A0001 /* PreviewTextureCache.swift in Sources */,
+				CA000002296A0001 /* MetalPreviewView.swift in Sources */,
 				F0000030296A0001 /* TimeRulerView.swift in Sources */,
 				F0000031296A0001 /* PlayheadView.swift in Sources */,
-				F0000032296A0001 /* KeyframeMarkerView.swift in Sources */,
-				F0000033296A0001 /* TrackRowView.swift in Sources */,
 				F0000034296A0001 /* TimelineView.swift in Sources */,
+				B1000010296A0001 /* TimelineView+MultiMove.swift in Sources */,
 				F0000035296A0001 /* HorizontalScrollViewWithVerticalWheel.swift in Sources */,
 				F0000036296A0001 /* TrimHandleView.swift in Sources */,
-				F0000040296A0001 /* EasingPicker.swift in Sources */,
-				F0000041296A0001 /* TransformInspector.swift in Sources */,
-				F0000042296A0001 /* RippleInspector.swift in Sources */,
-				F0000043296A0001 /* CursorInspector.swift in Sources */,
-				F000007B296A0001 /* KeystrokeInspector.swift in Sources */,
 				F0000044296A0001 /* InspectorView.swift in Sources */,
+				C0000001296A0001 /* InspectorView+CameraSection.swift in Sources */,
+				C1000001296A0001 /* InspectorView+SegmentBindings.swift in Sources */,
 				F0000045296A0001 /* SettingsInspector.swift in Sources */,
 				F0000046296A0001 /* PresetPickerView.swift in Sources */,
 				F0000050296A0001 /* PreviewView.swift in Sources */,
 				F0000051296A0001 /* ExportView.swift in Sources */,
+				CB000001296A0001 /* ExportView+Settings.swift in Sources */,
 				F0000052296A0001 /* EditorMainView.swift in Sources */,
+				CC000001296A0001 /* GeneratorPanelView.swift in Sources */,
+				C7000001296A0001 /* ContentView.swift in Sources */,
+				C6000001296A0001 /* MainWelcomeView.swift in Sources */,
 				F0000053296A0001 /* KeyboardShortcutHelpView.swift in Sources */,
 				F0000060296A0001 /* EditorViewModel.swift in Sources */,
 				F0000061296A0001 /* UndoStack.swift in Sources */,
 				F0000070296A0001 /* KeyframeGenerator.swift in Sources */,
-				F0000074296A0001 /* RippleGenerator.swift in Sources */,
-				F0000075296A0001 /* CursorInterpolationGenerator.swift in Sources */,
-				F0000076296A0001 /* ClickCursorGenerator.swift in Sources */,
-				F0000077296A0001 /* SmartZoomGenerator.swift in Sources */,
-				F0000078296A0001 /* ZoomContextAnalyzer.swift in Sources */,
-				F0000079296A0001 /* MouseDataCleaner.swift in Sources */,
-				F000007A296A0001 /* KeystrokeGenerator.swift in Sources */,
-				F0000200296A0001 /* ActivityCollector.swift in Sources */,
-				F0000201296A0001 /* SessionClusterer.swift in Sources */,
-				F0000202296A0001 /* ZoomLevelCalculator.swift in Sources */,
-				F0000203296A0001 /* SessionCenterResolver.swift in Sources */,
+				AA000001296A0001 /* UnifiedEvent.swift in Sources */,
+				AA000002296A0001 /* UserIntent.swift in Sources */,
+				AA000003296A0001 /* Scene.swift in Sources */,
+				AA000004296A0001 /* ShotPlan.swift in Sources */,
+				AA000005296A0001 /* TransitionPlan.swift in Sources */,
+				AA000006296A0001 /* SimulatedPath.swift in Sources */,
+				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
+				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
+				F00000A2296A0001 /* Log.swift in Sources */,
+				F00000A3296A0001 /* CaptureSettings.swift in Sources */,
+				F00000A4296A0001 /* NavigationState.swift in Sources */,
+				F00000A5296A0001 /* RecordingState.swift in Sources */,
 				F00000A1296A0001 /* GlobalHotkeyManager.swift in Sources */,
 				2A626F302F2A280000510712 /* SparkleController.swift in Sources */,
 				2A626F312F2A280000510712 /* CheckForUpdatesView.swift in Sources */,
 				F00000F3296A0001 /* CountdownPanel.swift in Sources */,
 				F00000F4296A0001 /* RecordingFloatingPanel.swift in Sources */,
+				D1000001296A0001 /* CaptureMode.swift in Sources */,
+				D1000002296A0001 /* CaptureToolbarPanel.swift in Sources */,
+				D1000003296A0001 /* CaptureOverlayController.swift in Sources */,
+				D1000004296A0001 /* CaptureToolbarCoordinator.swift in Sources */,
 				F00000AF296A0001 /* Coordinates.swift in Sources */,
+				FD0000B5296A0001 /* ColorSpaceConstants.swift in Sources */,
 				F00000B0296A0001 /* CaptureConfiguration.swift in Sources */,
 				F00000B1296A0001 /* PermissionsManager.swift in Sources */,
 				F00000B2296A0001 /* ScreenCaptureManager.swift in Sources */,
 				F00000C0296A0001 /* MouseDataRecorder.swift in Sources */,
 				F00000C1296A0001 /* RecordingCoordinator.swift in Sources */,
 				F00000C2296A0001 /* RecordingSession.swift in Sources */,
+				D2000001296A0001 /* MicrophoneRecorder.swift in Sources */,
+				D2000003296A0001 /* AudioMixer.swift in Sources */,
+				D2000001SYSAUDIO /* SystemAudioWriter.swift in Sources */,
 				F00000CF296A0001 /* CFRRecordingManager.swift in Sources */,
+				D3000001VFRRECMG /* VFRRecordingManager.swift in Sources */,
 				F00000C3296A0001 /* VideoWriter.swift in Sources */,
 				F00000D0296A0001 /* AccessibilityInspector.swift in Sources */,
 				F00000D1296A0001 /* ClickDetector.swift in Sources */,
 				F00000D2296A0001 /* MouseTracker.swift in Sources */,
-				F00000D3296A0001 /* ZoomCalculator.swift in Sources */,
 				F0000104296A0001 /* EventMonitorManager.swift in Sources */,
 				F0000105296A0001 /* ClickEventHandler.swift in Sources */,
 				F0000106296A0001 /* ScrollEventHandler.swift in Sources */,
@@ -716,11 +1306,7 @@
 				F00000E0296A0001 /* BackgroundStyle.swift in Sources */,
 				F00000E1296A0001 /* CaptureTarget.swift in Sources */,
 				F00000E2296A0001 /* MouseEvent.swift in Sources */,
-				F00000E3296A0001 /* ZoomSettings.swift in Sources */,
 				F00000E4296A0001 /* ClickType.swift in Sources */,
-				F00000F0296A0001 /* RecordingView.swift in Sources */,
-				F00000F1296A0001 /* SourcePickerView.swift in Sources */,
-				F00000F2296A0001 /* RecordingPreviewView.swift in Sources */,
 				98E0A84D3D3B09D78BC641AD /* VideoFrameAnalyzer.swift in Sources */,
 				A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */,
 				A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */,
@@ -730,12 +1316,78 @@
 				F0A00003296A0001 /* EventStreamAdapter.swift in Sources */,
 				F0A00004296A0001 /* InteropBlock.swift in Sources */,
 				F0A00005296A0001 /* EventStreamWriter.swift in Sources */,
+				AD000010296A0001 /* EventTimeline.swift in Sources */,
+				AD000011296A0001 /* IntentClassifier.swift in Sources */,
+				AE000001296A0001 /* SceneSegmenter.swift in Sources */,
+				AE000002296A0001 /* ShotPlanner.swift in Sources */,
+				AE000003296A0001 /* TransitionPlanner.swift in Sources */,
+				B0000001296A0001 /* CameraController.swift in Sources */,
+				B0000002296A0001 /* StaticHoldController.swift in Sources */,
+				B0000004296A0001 /* CursorFollowController.swift in Sources */,
+				B0000003296A0001 /* CameraSimulator.swift in Sources */,
+				B2000001296A0001 /* CameraTrackEmitter.swift in Sources */,
+				B2000002296A0001 /* CursorTrackEmitter.swift in Sources */,
+				B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */,
+				B6000001296A0001 /* PathSmoother.swift in Sources */,
+				B6000002296A0001 /* HoldEnforcer.swift in Sources */,
+				B6000003296A0001 /* TransitionRefiner.swift in Sources */,
+				B6000004296A0001 /* SegmentMerger.swift in Sources */,
+				B2000004296A0001 /* SegmentOptimizer.swift in Sources */,
+				E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */,
+				E7000002296A0001 /* WaypointGenerator.swift in Sources */,
+				E7000003296A0001 /* SpringDamperSimulator.swift in Sources */,
+				E7000004296A0001 /* ContinuousTrackEmitter.swift in Sources */,
+				E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		AD700020296A0001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F0C00000296A0001 /* Screenize */;
+			targetProxy = AD800020296A0001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		AD500020296A0001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PDRAQZHYD3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenize.ScreenizeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Screenize.app/Contents/MacOS/Screenize";
+			};
+			name = Debug;
+		};
+		AD500021296A0001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PDRAQZHYD3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.screenize.ScreenizeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Screenize.app/Contents/MacOS/Screenize";
+			};
+			name = Release;
+		};
 		F4000000296A0001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -860,6 +1512,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Screenize/Screenize.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -876,6 +1530,7 @@
 				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.screenize.Screenize;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -887,6 +1542,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Screenize/Screenize.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -903,6 +1560,7 @@
 				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.screenize.Screenize;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -911,6 +1569,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AD600020296A0001 /* Build configuration list for PBXNativeTarget "ScreenizeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD500020296A0001 /* Debug */,
+				AD500021296A0001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		F0D00000296A0001 /* Build configuration list for PBXNativeTarget "Screenize" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

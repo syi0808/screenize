@@ -60,14 +60,14 @@ final class ClickEventHandler {
         let accessibilityPoint = CGPoint(x: position.x, y: screenHeight - position.y)
         let targetElement = accessibilityInspector.elementAt(screenPoint: accessibilityPoint)
 
-        lock.lock()
-        pendingClicks[clickId] = PendingClick(
-            start: timestamp,
-            position: relativePosition,
-            type: clickType,
-            targetElement: targetElement
-        )
-        lock.unlock()
+        lock.withLock {
+            pendingClicks[clickId] = PendingClick(
+                start: timestamp,
+                position: relativePosition,
+                type: clickType,
+                targetElement: targetElement
+            )
+        }
 
         // Set a timeout for short clicks (auto finalize after 1 second)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
@@ -89,75 +89,71 @@ final class ClickEventHandler {
             return
         }
 
-        lock.lock()
-        // Find the oldest pending click of that type
-        if let (id, pending) = pendingClicks.first(where: { $0.value.type == clickType }) {
-            let duration = timestamp - pending.start
-            let clickEvent = MouseClickEvent(
-                timestamp: pending.start,
-                x: pending.position.x,
-                y: pending.position.y,
-                type: clickType,
-                duration: max(0.05, duration),  // Minimum 50ms
-                targetElement: pending.targetElement
-            )
-            clicks.append(clickEvent)
-            pendingClicks.removeValue(forKey: id)
+        lock.withLock {
+            // Find the oldest pending click of that type
+            if let (id, pending) = pendingClicks.first(where: { $0.value.type == clickType }) {
+                let duration = timestamp - pending.start
+                let clickEvent = MouseClickEvent(
+                    timestamp: pending.start,
+                    x: pending.position.x,
+                    y: pending.position.y,
+                    type: clickType,
+                    duration: max(0.05, duration),  // Minimum 50ms
+                    targetElement: pending.targetElement
+                )
+                clicks.append(clickEvent)
+                pendingClicks.removeValue(forKey: id)
+            }
         }
-        lock.unlock()
     }
 
     // MARK: - Finalization
 
     private func finalizePendingClick(id: UUID) {
-        lock.lock()
-        defer { lock.unlock() }
+        lock.withLock {
+            guard let pending = pendingClicks[id] else { return }
 
-        guard let pending = pendingClicks[id] else { return }
-
-        let clickEvent = MouseClickEvent(
-            timestamp: pending.start,
-            x: pending.position.x,
-            y: pending.position.y,
-            type: pending.type,
-            duration: 0.1,  // Default duration
-            targetElement: pending.targetElement
-        )
-        clicks.append(clickEvent)
-        pendingClicks.removeValue(forKey: id)
-    }
-
-    func finalizePendingClicks() {
-        lock.lock()
-        defer { lock.unlock() }
-
-        for (_, pending) in pendingClicks {
             let clickEvent = MouseClickEvent(
                 timestamp: pending.start,
                 x: pending.position.x,
                 y: pending.position.y,
                 type: pending.type,
-            duration: 0.1,
+                duration: 0.1,  // Default duration
                 targetElement: pending.targetElement
             )
             clicks.append(clickEvent)
+            pendingClicks.removeValue(forKey: id)
         }
-        pendingClicks.removeAll()
+    }
+
+    func finalizePendingClicks() {
+        lock.withLock {
+            for (_, pending) in pendingClicks {
+                let clickEvent = MouseClickEvent(
+                    timestamp: pending.start,
+                    x: pending.position.x,
+                    y: pending.position.y,
+                    type: pending.type,
+                    duration: 0.1,
+                    targetElement: pending.targetElement
+                )
+                clicks.append(clickEvent)
+            }
+            pendingClicks.removeAll()
+        }
     }
 
     // MARK: - Results
 
     func getClicks() -> [MouseClickEvent] {
-        lock.lock()
-        defer { lock.unlock() }
-        return clicks
+        lock.withLock { clicks }
     }
 
     func reset() {
-        lock.lock()
-        defer { lock.unlock() }
-        clicks.removeAll()
-        pendingClicks.removeAll()
+        lock.withLock {
+            clicks.removeAll()
+            pendingClicks.removeAll()
+        }
     }
 
     // MARK: - Coordinate Conversion

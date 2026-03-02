@@ -8,34 +8,41 @@ final class FrameEvaluator {
     // MARK: - Properties
 
     /// Timeline
-    private let timeline: Timeline
+    let timeline: Timeline
 
-    /// Mouse position data (for cursor rendering)
-    private let mousePositions: [RenderMousePosition]
+    /// Raw mouse position data
+    let rawMousePositions: [RenderMousePosition]
+
+    /// Smoothed mouse position data (Catmull-Rom interpolated)
+    let smoothedMousePositions: [RenderMousePosition]
 
     /// Click event data (for cursor state)
-    private let clickEvents: [RenderClickEvent]
-
-    /// Keyframe interpolator
-    private let interpolator: KeyframeInterpolator
+    let clickEvents: [RenderClickEvent]
 
     /// Frame rate
-    private let frameRate: Double
+    let frameRate: Double
 
     /// Scale factor
-    private let scaleFactor: CGFloat
+    let scaleFactor: CGFloat
 
     /// Screen bounds (in pixels)
-    private let screenBoundsPixel: CGSize
+    let screenBoundsPixel: CGSize
 
     /// Flag for window mode (disables center clamping in window mode)
-    private let isWindowMode: Bool
+    let isWindowMode: Bool
+
+    /// Effective mouse positions based on smooth cursor toggle
+    var mousePositions: [RenderMousePosition] {
+        let useSmoothCursor = timeline.cursorTrackV2?.useSmoothCursor ?? true
+        return useSmoothCursor ? smoothedMousePositions : rawMousePositions
+    }
 
     // MARK: - Initialization
 
     init(
         timeline: Timeline,
-        mousePositions: [RenderMousePosition] = [],
+        rawMousePositions: [RenderMousePosition] = [],
+        smoothedMousePositions: [RenderMousePosition] = [],
         clickEvents: [RenderClickEvent] = [],
         frameRate: Double = 60.0,
         scaleFactor: CGFloat = 1.0,
@@ -43,9 +50,9 @@ final class FrameEvaluator {
         isWindowMode: Bool = false
     ) {
         self.timeline = timeline
-        self.mousePositions = mousePositions
+        self.rawMousePositions = rawMousePositions
+        self.smoothedMousePositions = smoothedMousePositions
         self.clickEvents = clickEvents
-        self.interpolator = KeyframeInterpolator()
         self.frameRate = frameRate
         self.scaleFactor = scaleFactor
         self.screenBoundsPixel = screenBoundsPixel
@@ -60,427 +67,23 @@ final class FrameEvaluator {
     func evaluate(at time: TimeInterval) -> EvaluatedFrameState {
         let cursor = evaluateCursor(at: time)
         let transform = evaluateTransform(at: time)
-        let ripples = evaluateRipples(at: time)
         let keystrokes = evaluateKeystrokes(at: time)
 
         return EvaluatedFrameState(
             time: time,
             transform: transform,
-            ripples: ripples,
             cursor: cursor,
             keystrokes: keystrokes
         )
     }
 
-    /// Evaluate using a specific frame number
-    func evaluate(frame: Int) -> EvaluatedFrameState {
-        let time = Double(frame) / frameRate
-        return evaluate(at: time)
-    }
-
-    // MARK: - Transform Evaluation
-
-    /// Evaluate the transform track
-    /// - Parameter time: Time to evaluate
-    private func evaluateTransform(at time: TimeInterval) -> TransformState {
-        guard let track = timeline.transformTrack, track.isEnabled else {
-            return .identity
-        }
-
-        let keyframes = track.keyframes
-        guard !keyframes.isEmpty else {
-            return .identity
-        }
-
-        // Include velocity via the derivative of the easing curve during interpolation
-        // In window mode, anchor-point interpolation keeps the visual position synced with zoom
-        let result = interpolator.interpolateTransformWithVelocity(keyframes: keyframes, at: time, windowMode: isWindowMode)
-
-        let finalCenter = result.value.center
-
-        // Clamp the center to the zoom-specific valid range (screen mode only)
-        // Window mode allows the window to move freely, so skip clamping
-        let clampedCenter = isWindowMode ? finalCenter : clampCenterForZoom(center: finalCenter, zoom: result.value.zoom)
-
-        return TransformState(
-            zoom: result.value.zoom,
-            center: clampedCenter,
-            zoomVelocity: result.zoomVelocity,
-            panVelocity: result.panVelocity,
-            panDirection: result.panDirection
-        )
-    }
-
-    /// Clamp the center so the crop area stays within the image bounds
-    /// Pre-limit the center to avoid letting the crop exceed the image edges
-    private func clampCenterForZoom(center: NormalizedPoint, zoom: CGFloat) -> NormalizedPoint {
-        guard zoom > 1.0 else { return center }
-
-        let halfCropRatio = 0.5 / zoom
-        return NormalizedPoint(
-            x: clamp(center.x, min: halfCropRatio, max: 1.0 - halfCropRatio),
-            y: clamp(center.y, min: halfCropRatio, max: 1.0 - halfCropRatio)
-        )
-    }
-
-    // MARK: - Ripple Evaluation
-
-    /// Evaluate the ripple track
-    private func evaluateRipples(at time: TimeInterval) -> [ActiveRipple] {
-        guard let track = timeline.rippleTrack, track.isEnabled else {
-            return []
-        }
-
-        // Find ripples active at the current time
-        let activeKeyframes = track.activeRipples(at: time)
-
-        return activeKeyframes.map { keyframe in
-            ActiveRipple(from: keyframe, at: time)
-        }
-    }
-
-    // MARK: - Keystroke Evaluation
-
-    /// Evaluate the keystroke overlay track
-    private func evaluateKeystrokes(at time: TimeInterval) -> [ActiveKeystroke] {
-        guard let track = timeline.keystrokeTrack, track.isEnabled else {
-            return []
-        }
-
-        let activeKeyframes = track.activeKeystrokes(at: time)
-
-        return activeKeyframes.map { keyframe in
-            ActiveKeystroke(from: keyframe, at: time)
-        }
-    }
-
-    // MARK: - Cursor Evaluation
-
-    /// Evaluate the cursor track
-    private func evaluateCursor(at time: TimeInterval) -> CursorState {
-        guard let track = timeline.cursorTrack, track.isEnabled else {
-            return .hidden
-        }
-
-        // Check the click state
-        let (isClicking, clickType) = checkClickState(at: time)
-
-        // If style keyframes exist (one or more), apply style/visibility/scale from them
-        if let styleKeyframes = track.styleKeyframes, !styleKeyframes.isEmpty {
-            let cursorValues = evaluateCursorFromKeyframes(styleKeyframes, at: time)
-
-            // Position comes from the keyframe if provided; otherwise use raw mouse positions
-            let position: NormalizedPoint
-            if let kfPosition = cursorValues.position {
-                position = kfPosition
-            } else {
-                position = interpolateMousePosition(at: time)
-            }
-
-            return CursorState(
-                position: position,
-                style: cursorValues.style,
-                scale: cursorValues.scale,
-                visible: cursorValues.visible,
-                isClicking: isClicking,
-                clickType: clickType,
-                velocity: cursorValues.velocity,
-                movementDirection: cursorValues.direction
-            )
-        } else {
-            // Without keyframes, use raw mouse positions plus default values
-            let position = interpolateMousePosition(at: time)
-
-            return CursorState(
-                position: position,
-                style: track.defaultStyle,
-                scale: track.defaultScale,
-                visible: track.defaultVisible,
-                isClicking: isClicking,
-                clickType: clickType,
-                velocity: 0,
-                movementDirection: 0
-            )
-        }
-    }
-
-    // MARK: - Cursor Keyframe Evaluation
-
-    /// Evaluate cursor keyframes for style, visibility, scale, position, etc.
-    /// - position: Use Catmull-Rom interpolation only on keyframes that define a position; return nil otherwise
-    /// - style, visible: Discrete interpolation using the last keyframe before the current time
-    /// - scale: Linear interpolation
-    private func evaluateCursorFromKeyframes(
-        _ keyframes: [CursorStyleKeyframe],
-        at time: TimeInterval
-    ) -> (position: NormalizedPoint?, scale: CGFloat, velocity: CGFloat, direction: CGFloat, style: CursorStyle, visible: Bool) {
-        // 1. Find keyframes before and after the current time (consider all keyframes)
-        let previousKF = keyframes.last { $0.time <= time } ?? keyframes.first!
-        let nextKF = keyframes.first { $0.time > time }
-
-        // 2. style, visible: discrete (use the previous keyframe value)
-        let style = previousKF.style
-        let visible = previousKF.visible
-
-        // 3. scale: linear interpolation
-        let scale: CGFloat
-        if let next = nextKF {
-            let duration = max(0.001, next.time - previousKF.time)
-            let t = CGFloat((time - previousKF.time) / duration)
-            scale = previousKF.scale + (next.scale - previousKF.scale) * t
-        } else {
-            scale = previousKF.scale
-        }
-
-        // 4. position: interpolate using only keyframes that define a position
-        let (position, velocity, direction) = interpolateCursorPosition(from: keyframes, at: time)
-
-        return (position, scale, velocity, direction, style, visible)
-    }
-
-    /// Interpolate the cursor position using only keyframes that define a position (Catmull-Rom spline)
-    /// Returns nil when no such keyframes exist (fall back to raw mouse positions)
-    private func interpolateCursorPosition(
-        from keyframes: [CursorStyleKeyframe],
-        at time: TimeInterval
-    ) -> (position: NormalizedPoint?, velocity: CGFloat, direction: CGFloat) {
-        // Filter keyframes that define a position
-        let positionKeyframes = keyframes.compactMap { kf -> (time: TimeInterval, position: NormalizedPoint, velocity: CGFloat?, direction: CGFloat?)? in
-            guard let position = kf.position else { return nil }
-            return (kf.time, position, kf.velocity, kf.movementDirection)
-        }
-
-        // Return nil if no position keyframes exist
-        guard !positionKeyframes.isEmpty else {
-            return (nil, 0, 0)
-        }
-
-        // Return the lone position if only one keyframe exists
-        guard positionKeyframes.count >= 2 else {
-            let first = positionKeyframes[0]
-            return (first.position, first.velocity ?? 0, first.direction ?? 0)
-        }
-
-        // Handle boundary cases
-        if time <= positionKeyframes[0].time {
-            let first = positionKeyframes[0]
-            return (first.position, first.velocity ?? 0, first.direction ?? 0)
-        }
-        if time >= positionKeyframes[positionKeyframes.count - 1].time {
-            let last = positionKeyframes[positionKeyframes.count - 1]
-            return (last.position, last.velocity ?? 0, last.direction ?? 0)
-        }
-
-        // Use binary search to find the interval
-        var low = 0
-        var high = positionKeyframes.count - 1
-
-        while low < high - 1 {
-            let mid = (low + high) / 2
-            if positionKeyframes[mid].time <= time {
-                low = mid
-            } else {
-                high = mid
-            }
-        }
-
-        // Four control points for Catmull-Rom interpolation
-        let i0 = max(0, low - 1)
-        let i1 = low
-        let i2 = high
-        let i3 = min(positionKeyframes.count - 1, high + 1)
-
-        let p0 = positionKeyframes[i0]
-        let p1 = positionKeyframes[i1]
-        let p2 = positionKeyframes[i2]
-        let p3 = positionKeyframes[i3]
-
-        // Compute t (0-1)
-        let duration = max(0.001, p2.time - p1.time)
-        let t = CGFloat((time - p1.time) / duration)
-
-        // Catmull-Rom interpolate the position
-        let position = catmullRomInterpolatePoint(
-            p0: CGPoint(x: p0.position.x, y: p0.position.y),
-            p1: CGPoint(x: p1.position.x, y: p1.position.y),
-            p2: CGPoint(x: p2.position.x, y: p2.position.y),
-            p3: CGPoint(x: p3.position.x, y: p3.position.y),
-            t: t
-        )
-
-        // Interpolate velocity
-        let velocity1 = p1.velocity ?? 0
-        let velocity2 = p2.velocity ?? 0
-        let velocity = velocity1 + (velocity2 - velocity1) * t
-
-        // Interpolate direction
-        let direction: CGFloat
-        if let dir1 = p1.direction, let dir2 = p2.direction {
-            direction = interpolateAngle(from: dir1, to: dir2, t: t)
-        } else {
-            let dx = p2.position.x - p1.position.x
-            let dy = p2.position.y - p1.position.y
-            direction = atan2(dy, dx)
-        }
-
-        return (NormalizedPoint(x: position.x, y: position.y), velocity, direction)
-    }
-
-    /// Interpolate angles (handles wrap-around)
-    private func interpolateAngle(from angle1: CGFloat, to angle2: CGFloat, t: CGFloat) -> CGFloat {
-        var diff = angle2 - angle1
-
-        // Normalize the difference to the -π to π range
-        while diff > .pi { diff -= 2 * .pi }
-        while diff < -.pi { diff += 2 * .pi }
-
-        return angle1 + diff * t
-    }
-
-    /// Catmull-Rom point interpolation (low tension for a smoother path)
-    private func catmullRomInterpolatePoint(
-        p0: CGPoint,
-        p1: CGPoint,
-        p2: CGPoint,
-        p3: CGPoint,
-        t: CGFloat
-    ) -> CGPoint {
-        let tension: CGFloat = 0.2  // 0.5 → 0.2: reduce exaggerated curves for a more natural path
-        let t2 = t * t
-        let t3 = t2 * t
-
-        let x = catmullRomValue(p0: p0.x, p1: p1.x, p2: p2.x, p3: p3.x, t: t, t2: t2, t3: t3, tension: tension)
-        let y = catmullRomValue(p0: p0.y, p1: p1.y, p2: p2.y, p3: p3.y, t: t, t2: t2, t3: t3, tension: tension)
-
-        return CGPoint(x: x, y: y)
-    }
-
-    // MARK: - Mouse Position Interpolation
-
-    /// Interpolate mouse positions using a Catmull-Rom spline
-    private func interpolateMousePosition(at time: TimeInterval) -> NormalizedPoint {
-        guard mousePositions.count >= 2 else {
-            if let first = mousePositions.first {
-                return normalizePosition(first.position)
-            }
-            return .center
-        }
-
-        // Find the position corresponding to the given time
-        let (index, t) = findInterpolationParameters(for: time)
-
-        // Catmull-Rom interpolation
-        let interpolatedPosition = catmullRomInterpolate(index: index, t: t)
-
-        return normalizePosition(interpolatedPosition)
-    }
-
-    private func findInterpolationParameters(for time: TimeInterval) -> (index: Int, t: CGFloat) {
-        guard mousePositions.count >= 4 else {
-            // Fall back to linear interpolation
-            if mousePositions.count >= 2 {
-                let t0 = mousePositions[0].timestamp
-                let t1 = mousePositions[mousePositions.count - 1].timestamp
-                let duration = max(0.001, t1 - t0)
-                let rawT = (time - t0) / duration
-                return (0, CGFloat(clamp(rawT, min: 0, max: 1)))
-            }
-            return (0, 0)
-        }
-
-        // Handle boundary cases
-        if time <= mousePositions[1].timestamp {
-            let t0 = mousePositions[0].timestamp
-            let t1 = mousePositions[1].timestamp
-            let duration = max(0.001, t1 - t0)
-            let rawT = (time - t0) / duration
-            return (1, CGFloat(clamp(rawT, min: 0, max: 1)))
-        }
-
-        if time >= mousePositions[mousePositions.count - 2].timestamp {
-            return (mousePositions.count - 3, 1.0)
-        }
-
-        // Binary search
-        var low = 1
-        var high = mousePositions.count - 2
-
-        while low < high - 1 {
-            let mid = (low + high) / 2
-            if mousePositions[mid].timestamp <= time {
-                low = mid
-            } else {
-                high = mid
-            }
-        }
-
-        let t0 = mousePositions[low].timestamp
-        let t1 = mousePositions[high].timestamp
-        let duration = max(0.001, t1 - t0)
-        let rawT = (time - t0) / duration
-
-        return (low, CGFloat(clamp(rawT, min: 0, max: 1)))
-    }
-
-    private func catmullRomInterpolate(index: Int, t: CGFloat) -> CGPoint {
-        let n = mousePositions.count
-
-        let i0 = max(0, index - 1)
-        let i1 = index
-        let i2 = min(n - 1, index + 1)
-        let i3 = min(n - 1, index + 2)
-
-        let p0 = mousePositions[i0].position
-        let p1 = mousePositions[i1].position
-        let p2 = mousePositions[i2].position
-        let p3 = mousePositions[i3].position
-
-        let tension: CGFloat = 0.2  // 0.5 → 0.2: smoother interpolation closer to the actual mouse path
-
-        let t2 = t * t
-        let t3 = t2 * t
-
-        let x = catmullRomValue(p0: p0.x, p1: p1.x, p2: p2.x, p3: p3.x, t: t, t2: t2, t3: t3, tension: tension)
-        let y = catmullRomValue(p0: p0.y, p1: p1.y, p2: p2.y, p3: p3.y, t: t, t2: t2, t3: t3, tension: tension)
-
-        return CGPoint(x: x, y: y)
-    }
-
-    private func catmullRomValue(
-        p0: CGFloat, p1: CGFloat, p2: CGFloat, p3: CGFloat,
-        t: CGFloat, t2: CGFloat, t3: CGFloat, tension: CGFloat
-    ) -> CGFloat {
-        let a0 = -tension * p0 + (2 - tension) * p1 + (tension - 2) * p2 + tension * p3
-        let a1 = 2 * tension * p0 + (tension - 3) * p1 + (3 - 2 * tension) * p2 - tension * p3
-        let a2 = -tension * p0 + tension * p2
-        let a3 = p1
-
-        return a0 * t3 + a1 * t2 + a2 * t + a3
-    }
-
-    // MARK: - Click State
-
-    private func checkClickState(at time: TimeInterval) -> (isClicking: Bool, clickType: ClickType?) {
-        for click in clickEvents {
-            if click.isActive(at: time) {
-                return (true, click.clickType)
-            }
-        }
-        return (false, nil)
-    }
-
     // MARK: - Helpers
 
-    private func normalizePosition(_ position: CGPoint) -> NormalizedPoint {
-        // PreviewEngine already provides normalized (0-1) coordinates, so use them directly
-        return NormalizedPoint(x: position.x, y: position.y)
-    }
-
-    private func clamp(_ value: Double, min minValue: Double, max maxValue: Double) -> Double {
+    func clamp(_ value: Double, min minValue: Double, max maxValue: Double) -> Double {
         Swift.max(minValue, Swift.min(maxValue, value))
     }
 
-    private func clamp(_ value: CGFloat, min minValue: CGFloat, max maxValue: CGFloat) -> CGFloat {
+    func clamp(_ value: CGFloat, min minValue: CGFloat, max maxValue: CGFloat) -> CGFloat {
         Swift.max(minValue, Swift.min(maxValue, value))
     }
 }
@@ -520,34 +123,5 @@ struct RenderClickEvent {
         self.duration = duration
         self.position = CGPoint(x: x, y: y)
         self.clickType = clickType
-    }
-}
-
-// MARK: - Batch Evaluation
-
-extension FrameEvaluator {
-    /// Generate an array of states for all frames
-    func evaluateAllFrames(totalFrames: Int) -> [EvaluatedFrameState] {
-        var states: [EvaluatedFrameState] = []
-        states.reserveCapacity(totalFrames)
-
-        for frame in 0..<totalFrames {
-            states.append(evaluate(frame: frame))
-        }
-
-        return states
-    }
-
-    /// Evaluate states for a specific frame range
-    func evaluateFrames(from startFrame: Int, to endFrame: Int) -> [EvaluatedFrameState] {
-        var states: [EvaluatedFrameState] = []
-        let count = endFrame - startFrame + 1
-        states.reserveCapacity(count)
-
-        for frame in startFrame...endFrame {
-            states.append(evaluate(frame: frame))
-        }
-
-        return states
     }
 }

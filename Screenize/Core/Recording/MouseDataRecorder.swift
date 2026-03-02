@@ -17,7 +17,7 @@ final class MouseDataRecorder {
 
     // Position sampling
     private var positionTimer: Timer?
-    private let sampleInterval: TimeInterval = 1.0 / 60.0  // 60Hz sampling
+    private var sampleInterval: TimeInterval = 1.0 / 60.0  // Default 60Hz, configurable
 
     // UI state sampling (for Smart Zoom)
     private var uiStateSampleTimer: Timer?
@@ -43,9 +43,12 @@ final class MouseDataRecorder {
 
     // MARK: - Recording Control
 
-    func startRecording(screenBounds: CGRect, scaleFactor: CGFloat = 1.0) {
+    func startRecording(screenBounds: CGRect, scaleFactor: CGFloat = 1.0, captureFrameRate: Int = 60) {
         guard !isRecording else { return }
 
+        // Cap mouse sampling at 120Hz (Timer resolution degrades beyond this)
+        let mouseHz = min(captureFrameRate, 120)
+        self.sampleInterval = 1.0 / Double(mouseHz)
         self.screenBounds = screenBounds
         self.scaleFactor = scaleFactor
         self.positions.removeAll()
@@ -69,7 +72,7 @@ final class MouseDataRecorder {
         startUIStateSampling()
 
         isRecording = true
-        print("🖱️ [MouseDataRecorder] Recording started (scaleFactor: \(scaleFactor))")
+        Log.tracking.info("Mouse recording started (scaleFactor: \(scaleFactor))")
     }
 
     func stopRecording() -> MouseRecording {
@@ -99,13 +102,18 @@ final class MouseDataRecorder {
         clickHandler?.finalizePendingClicks()
         dragHandler?.finalizePendingDrag(screenBounds: screenBounds)
 
+        // Lock to safely capture final arrays (timer callback may still be in-flight)
+        let (finalPositions, finalUISamples) = lock.withLock {
+            (positions, uiStateSamples)
+        }
+
         let recording = MouseRecording(
-            positions: positions,
+            positions: finalPositions,
             clicks: clickHandler?.getClicks() ?? [],
             scrollEvents: scrollHandler?.getScrollEvents() ?? [],
             keyboardEvents: keyboardHandler?.getKeyboardEvents() ?? [],
             dragEvents: dragHandler?.getDragEvents() ?? [],
-            uiStateSamples: uiStateSamples,
+            uiStateSamples: finalUISamples,
             screenBounds: screenBounds,
             recordingDuration: duration,
             scaleFactor: scaleFactor
@@ -116,18 +124,21 @@ final class MouseDataRecorder {
         let keyboards = keyboardHandler?.getKeyboardEvents().count ?? 0
         let drags = dragHandler?.getDragEvents().count ?? 0
 
-        print("🖱️ [MouseDataRecorder] Recording stopped - positions: \(positions.count), clicks: \(clicks), scrolls: \(scrolls), keyboards: \(keyboards), drags: \(drags), UI samples: \(uiStateSamples.count) (scaleFactor: \(scaleFactor))")
+        Log.tracking.info("Mouse recording stopped - positions: \(finalPositions.count), clicks: \(clicks), scrolls: \(scrolls), keyboards: \(keyboards), drags: \(drags), UI samples: \(finalUISamples.count) (scaleFactor: \(self.scaleFactor))")
 
-        // DEBUG: Position validation summary
-        if !positions.isEmpty {
-            let ys = positions.map { $0.y }
-            let xs = positions.map { $0.x }
-            let minY = ys.min()!, maxY = ys.max()!, avgY = ys.reduce(0, +) / CGFloat(ys.count)
-            let minX = xs.min()!, maxX = xs.max()!, avgX = xs.reduce(0, +) / CGFloat(xs.count)
-            print("🔍 [DEBUG] Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
-            print("🔍 [DEBUG] screenBounds=\(screenBounds) (origin.y=\(screenBounds.origin.y), size=\(screenBounds.size))")
-            if maxY > screenBounds.height * 1.05 {
-                print("⚠️ [DEBUG] WARNING: Y positions exceed screenBounds.height! Origin conversion likely incorrect.")
+        // Position validation summary
+        if !finalPositions.isEmpty {
+            let ys = finalPositions.map { $0.y }
+            let xs = finalPositions.map { $0.x }
+            if let minY = ys.min(), let maxY = ys.max(),
+               let minX = xs.min(), let maxX = xs.max() {
+                let avgY = ys.reduce(0, +) / CGFloat(ys.count)
+                let avgX = xs.reduce(0, +) / CGFloat(xs.count)
+                Log.tracking.debug("Position summary: X range [\(minX)...\(maxX)] avg=\(avgX), Y range [\(minY)...\(maxY)] avg=\(avgY)")
+                Log.tracking.debug("screenBounds=\(String(describing: self.screenBounds)) (origin.y=\(self.screenBounds.origin.y), size=\(String(describing: self.screenBounds.size)))")
+                if maxY > screenBounds.height * 1.05 {
+                    Log.tracking.warning("Y positions exceed screenBounds.height! Origin conversion likely incorrect.")
+                }
             }
         }
 
@@ -178,10 +189,13 @@ final class MouseDataRecorder {
     // MARK: - Position Sampling
 
     private func startPositionSampling() {
+        positionTimer?.invalidate()
         positionTimer = Timer.scheduledTimer(withTimeInterval: sampleInterval, repeats: true) { [weak self] _ in
             self?.sampleMousePosition()
         }
-        RunLoop.current.add(positionTimer!, forMode: .common)
+        if let timer = positionTimer {
+            RunLoop.current.add(timer, forMode: .common)
+        }
     }
 
     private func stopPositionSampling() {
@@ -192,13 +206,16 @@ final class MouseDataRecorder {
     // MARK: - UI State Sampling (for Smart Zoom)
 
     private func startUIStateSampling() {
+        uiStateSampleTimer?.invalidate()
         // Collect the first sample immediately
         sampleUIState()
 
         uiStateSampleTimer = Timer.scheduledTimer(withTimeInterval: uiStateSampleInterval, repeats: true) { [weak self] _ in
             self?.sampleUIState()
         }
-        RunLoop.current.add(uiStateSampleTimer!, forMode: .common)
+        if let timer = uiStateSampleTimer {
+            RunLoop.current.add(timer, forMode: .common)
+        }
     }
 
     private func stopUIStateSampling() {
@@ -230,9 +247,7 @@ final class MouseDataRecorder {
             caretBounds: caretBounds
         )
 
-        lock.lock()
-        uiStateSamples.append(sample)
-        lock.unlock()
+        lock.withLock { uiStateSamples.append(sample) }
     }
 
     private func sampleMousePosition() {
@@ -252,18 +267,17 @@ final class MouseDataRecorder {
             velocity = sqrt(dx * dx + dy * dy) / CGFloat(dt)
         }
 
-        lock.lock()
-        // DEBUG: Log first 3 mouse samples
-        if positions.count < 3 {
-            print("🔍 [DEBUG] Mouse sample #\(positions.count): mouseLocation=\(mouseLocation), relative=\(relativePosition), screenBounds=\(screenBounds)")
+        lock.withLock {
+            if positions.count < 3 {
+                Log.tracking.debug("Mouse sample #\(self.positions.count): mouseLocation=\(String(describing: mouseLocation)), relative=\(String(describing: relativePosition)), screenBounds=\(String(describing: self.screenBounds))")
+            }
+            positions.append(MousePosition(
+                timestamp: timestamp,
+                x: relativePosition.x,
+                y: relativePosition.y,
+                velocity: velocity
+            ))
         }
-        positions.append(MousePosition(
-            timestamp: timestamp,
-            x: relativePosition.x,
-            y: relativePosition.y,
-            velocity: velocity
-        ))
-        lock.unlock()
 
         lastPosition = mouseLocation
         lastPositionTime = currentTime

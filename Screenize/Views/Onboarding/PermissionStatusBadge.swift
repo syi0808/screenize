@@ -33,18 +33,18 @@ struct PermissionStatusBadge: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Spacing.xs) {
             Image(systemName: iconName)
                 .foregroundColor(iconColor)
             Text(label)
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundColor(iconColor)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, Spacing.xs)
         .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(iconColor.opacity(0.1))
+            RoundedRectangle(cornerRadius: CornerRadius.md)
+                .fill(iconColor.opacity(DesignOpacity.subtle))
         )
     }
 }

@@ -53,7 +53,7 @@ final class RecordingSession: Identifiable, @unchecked Sendable {
             callback(newState)
         }
 
-        print("Recording session \(id): \(oldState) -> \(newState)")
+        Log.recording.info("Session \(self.id): \(String(describing: oldState)) -> \(String(describing: newState))")
     }
 
     func onStateChange(_ callback: @escaping (RecordingState) -> Void) {
@@ -101,11 +101,35 @@ final class RecordingSession: Identifiable, @unchecked Sendable {
     }
 
     private static func generateOutputURL(id: UUID) -> URL {
-        let documentsPath = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first!
+        #if DEBUG
+        let repoRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // Recording/
+            .deletingLastPathComponent() // Core/
+            .deletingLastPathComponent() // Screenize/
+            .deletingLastPathComponent() // repo root
+        let screenizeFolder = repoRoot.appendingPathComponent("projects", isDirectory: true)
+        #else
+        guard let documentsPath = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first else {
+            let home = FileManager.default.homeDirectoryForCurrentUser
+            let fallback = home.appendingPathComponent("Movies/Screenize", isDirectory: true)
+            do {
+                try FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)
+            } catch {
+                Log.recording.error("Failed to create fallback recordings directory: \(error.localizedDescription)")
+            }
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+            let dateString = dateFormatter.string(from: Date())
+            return fallback.appendingPathComponent("Recording_\(dateString).mp4")
+        }
         let screenizeFolder = documentsPath.appendingPathComponent("Screenize", isDirectory: true)
+        #endif
 
-        // Create folder if needed
-        try? FileManager.default.createDirectory(at: screenizeFolder, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: screenizeFolder, withIntermediateDirectories: true)
+        } catch {
+            Log.recording.error("Failed to create recordings directory at \(screenizeFolder.path): \(error.localizedDescription)")
+        }
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"

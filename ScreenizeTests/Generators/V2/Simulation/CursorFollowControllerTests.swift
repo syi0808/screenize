@@ -1,0 +1,409 @@
+import XCTest
+@testable import Screenize
+
+final class CursorFollowControllerTests: XCTestCase {
+
+    private let defaultSettings = SimulationSettings()
+
+    // MARK: - Start Position
+
+    func test_simulate_startsAtShotPlanPosition() {
+        let controller = CursorFollowController()
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.4))
+        let settings = makeSettings(events: [], screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        XCTAssertFalse(samples.isEmpty)
+        XCTAssertEqual(samples[0].transform.zoom, 2.0, accuracy: 0.01)
+        XCTAssertEqual(samples[0].transform.center.x, 0.3, accuracy: 0.01)
+        XCTAssertEqual(samples[0].transform.center.y, 0.4, accuracy: 0.01)
+    }
+
+    // MARK: - Stationary Caret
+
+    func test_simulate_stationaryCaret_holdsSteady() {
+        let controller = CursorFollowController()
+        // Caret stays at same position throughout
+        let events = [
+            makeUIStateEvent(time: 1.0, caretCenter: NormalizedPoint(x: 0.3, y: 0.4)),
+            makeUIStateEvent(time: 2.0, caretCenter: NormalizedPoint(x: 0.3, y: 0.4)),
+            makeUIStateEvent(time: 3.0, caretCenter: NormalizedPoint(x: 0.3, y: 0.4)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.4))
+        let settings = makeSettings(events: events, screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // All samples should have same center (no panning)
+        for sample in samples {
+            XCTAssertEqual(sample.transform.center.x, 0.3, accuracy: 0.05)
+            XCTAssertEqual(sample.transform.center.y, 0.4, accuracy: 0.05)
+            XCTAssertEqual(sample.transform.zoom, 2.0, accuracy: 0.01)
+        }
+    }
+
+    func test_simulate_typingKeyDownCaretEvents_triggersPanWithoutMouseMoves() {
+        let controller = CursorFollowController()
+        let events = [
+            makeKeyDownEvent(
+                time: 1.0,
+                caretCenter: NormalizedPoint(x: 0.3, y: 0.4)
+            ),
+            makeKeyDownEvent(
+                time: 2.2,
+                caretCenter: NormalizedPoint(x: 0.85, y: 0.8)
+            )
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(
+            scene: scene,
+            zoom: 2.0,
+            center: NormalizedPoint(x: 0.3, y: 0.4)
+        )
+        let settings = makeSettings(
+            events: events,
+            screenBounds: CGSize(width: 1920, height: 1080)
+        )
+
+        let samples = controller.simulate(
+            scene: scene,
+            shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(),
+            settings: settings
+        )
+
+        XCTAssertGreaterThan(samples.count, 2)
+        let lastCenter = samples.last?.transform.center ?? NormalizedPoint(x: 0.3, y: 0.4)
+        XCTAssertGreaterThan(lastCenter.x, 0.4)
+        XCTAssertGreaterThan(lastCenter.y, 0.45)
+    }
+
+    // MARK: - Caret Moves Outside Viewport
+
+    func test_simulate_caretMovesOutsideViewport_pansToCaret() {
+        let controller = CursorFollowController()
+        // At zoom 2.0 centered at (0.3, 0.4), viewport is [0.05, 0.55] x [0.15, 0.65]
+        // Caret at (0.8, 0.8) is outside → should trigger pan
+        let events = [
+            makeUIStateEvent(time: 1.0, caretCenter: NormalizedPoint(x: 0.3, y: 0.4)),
+            makeUIStateEvent(time: 2.5, caretCenter: NormalizedPoint(x: 0.8, y: 0.8)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.4))
+        let settings = makeSettings(events: events, screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // Should have more than 2 samples (start + end) due to pan
+        XCTAssertGreaterThan(samples.count, 2)
+        // Last sample should have moved significantly toward the caret
+        // With partial correction (0.6 fraction), center moves ~60% of the minimum shift
+        let lastCenter = samples.last!.transform.center
+        XCTAssertGreaterThan(lastCenter.x, 0.4, "Center should have moved toward caret at 0.8")
+        XCTAssertGreaterThan(lastCenter.y, 0.45, "Center should have moved toward caret at 0.8")
+    }
+
+    // MARK: - Caret Within Viewport
+
+    func test_simulate_caretWithinViewport_noMovement() {
+        let controller = CursorFollowController()
+        // At zoom 2.0 centered at (0.5, 0.5), viewport is [0.25, 0.75] x [0.25, 0.75]
+        // Caret at (0.45, 0.55) is inside → no pan
+        let events = [
+            makeUIStateEvent(time: 1.0, caretCenter: NormalizedPoint(x: 0.5, y: 0.5)),
+            makeUIStateEvent(time: 2.5, caretCenter: NormalizedPoint(x: 0.45, y: 0.55)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.5, y: 0.5))
+        let settings = makeSettings(events: events, screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // Should have exactly 2 samples (start + end) — no intermediate pans
+        XCTAssertEqual(samples.count, 2)
+        XCTAssertEqual(samples[0].transform.center.x, 0.5, accuracy: 0.01)
+        XCTAssertEqual(samples[1].transform.center.x, 0.5, accuracy: 0.01)
+    }
+
+    // MARK: - Multiple Pans
+
+    func test_simulate_multiplePans_followsSequence() {
+        let controller = CursorFollowController()
+        // At zoom 2.0, viewport is 0.5 wide. Multiple caret jumps outside viewport.
+        let events = [
+            makeUIStateEvent(time: 0.5, caretCenter: NormalizedPoint(x: 0.3, y: 0.3)),
+            // Jump far right at t=1.5 (outside viewport of center 0.3)
+            makeUIStateEvent(time: 1.5, caretCenter: NormalizedPoint(x: 0.8, y: 0.3)),
+            // Jump far down at t=3.0 (outside viewport of center ~0.8)
+            makeUIStateEvent(time: 3.0, caretCenter: NormalizedPoint(x: 0.8, y: 0.8)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.3))
+        let settings = makeSettings(events: events, screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // Should have multiple pan keyframes
+        XCTAssertGreaterThan(samples.count, 4, "Should produce keyframes for two pans")
+    }
+
+    // MARK: - Pan Clamped to Viewport
+
+    func test_simulate_panClampedToViewport() {
+        let controller = CursorFollowController()
+        // Caret at extreme edge (0.99, 0.99) → center must be clamped
+        let events = [
+            makeUIStateEvent(time: 1.5, caretCenter: NormalizedPoint(x: 0.99, y: 0.99)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.5, y: 0.5))
+        let settings = makeSettings(events: events, screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // All centers should be within valid bounds: [halfCrop, 1-halfCrop]
+        let halfCrop = 0.5 / 2.0 // = 0.25
+        for sample in samples {
+            XCTAssertGreaterThanOrEqual(sample.transform.center.x, halfCrop - 0.01)
+            XCTAssertLessThanOrEqual(sample.transform.center.x, 1.0 - halfCrop + 0.01)
+            XCTAssertGreaterThanOrEqual(sample.transform.center.y, halfCrop - 0.01)
+            XCTAssertLessThanOrEqual(sample.transform.center.y, 1.0 - halfCrop + 0.01)
+        }
+    }
+
+    // MARK: - Debounce
+
+    func test_simulate_minimumPanInterval_debounce() {
+        let controller = CursorFollowController()
+        // Rapid caret jumps within 0.5s should be debounced
+        let events = [
+            makeUIStateEvent(time: 1.0, caretCenter: NormalizedPoint(x: 0.8, y: 0.3)),
+            makeUIStateEvent(time: 1.1, caretCenter: NormalizedPoint(x: 0.2, y: 0.8)),
+            makeUIStateEvent(time: 1.2, caretCenter: NormalizedPoint(x: 0.9, y: 0.2)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.5, y: 0.5))
+        let settings = makeSettings(events: events, screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // With minMoveInterval=0.15s, events at t=1.0 and t=1.2 can both trigger (0.2s gap)
+        // Start + hold1 + pan1_end + hold2 + pan2_end + end = 6 max
+        XCTAssertLessThanOrEqual(samples.count, 6, "Rapid caret jumps should be partially debounced")
+    }
+
+    // MARK: - Fallback to Mouse
+
+    func test_simulate_noCaretData_fallsBackToMouse() {
+        let controller = CursorFollowController()
+        // No caret data, but mouse events that move outside viewport
+        let events = [
+            makeMouseMoveEvent(time: 0.5, position: NormalizedPoint(x: 0.3, y: 0.3)),
+            makeMouseMoveEvent(time: 2.0, position: NormalizedPoint(x: 0.85, y: 0.85)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(scene: scene, zoom: 2.0, center: NormalizedPoint(x: 0.3, y: 0.3))
+        let settings = makeSettings(events: events, screenBounds: CGSize(width: 1920, height: 1080))
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // Should trigger a pan toward (0.85, 0.85)
+        // With partial correction, center moves ~60% of minimum shift
+        XCTAssertGreaterThan(samples.count, 2, "Should pan to follow mouse when no caret data")
+        let lastCenter = samples.last!.transform.center
+        XCTAssertGreaterThan(lastCenter.x, 0.4, "Should have followed mouse to the right")
+    }
+
+    // MARK: - Distance-Based Pan Duration
+
+    func test_simulate_shortDistance_shortPanDuration() {
+        let controller = CursorFollowController()
+        // At zoom 2.0 center (0.5, 0.5): viewport [0.25, 0.75], margin=0.025
+        // Caret at (0.5, 0.73) is just outside → distance 0.23
+        let events = [
+            makeUIStateEvent(time: 1.5, caretCenter: NormalizedPoint(x: 0.5, y: 0.73)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(
+            scene: scene, zoom: 2.0,
+            center: NormalizedPoint(x: 0.5, y: 0.5)
+        )
+        let settings = makeSettings(
+            events: events,
+            screenBounds: CGSize(width: 1920, height: 1080)
+        )
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        // Find the pan (hold → new position)
+        guard samples.count >= 3 else {
+            XCTFail("Expected pan samples")
+            return
+        }
+        // Pan duration = time between hold keyframe and pan end
+        let panStart = samples[1].time
+        let panEnd = samples[2].time
+        let panDuration = panEnd - panStart
+        // distance ≈ 0.23, duration = 0.23 * 1.2 = 0.276
+        XCTAssertLessThanOrEqual(panDuration, 0.30,
+            "Short distance pan should be quick (≤ 0.30s), got \(panDuration)")
+    }
+
+    func test_simulate_longDistance_longerPanDuration() {
+        let controller = CursorFollowController()
+        // Caret jumps far (from center to edge)
+        let events = [
+            makeUIStateEvent(time: 1.5, caretCenter: NormalizedPoint(x: 0.1, y: 0.1)),
+        ]
+        let scene = makeScene(start: 0, end: 5, intent: .typing(context: .codeEditor))
+        let shotPlan = makeShotPlan(
+            scene: scene, zoom: 2.0,
+            center: NormalizedPoint(x: 0.7, y: 0.7)
+        )
+        let settings = makeSettings(
+            events: events,
+            screenBounds: CGSize(width: 1920, height: 1080)
+        )
+
+        let samples = controller.simulate(
+            scene: scene, shotPlan: shotPlan,
+            mouseData: EmptyMouseDataSource(), settings: settings
+        )
+
+        guard samples.count >= 3 else {
+            XCTFail("Expected pan samples")
+            return
+        }
+        let panStart = samples[1].time
+        let panEnd = samples[2].time
+        let panDuration = panEnd - panStart
+        XCTAssertGreaterThanOrEqual(panDuration, 0.3,
+            "Long distance pan should be slower (≥ 0.3s), got \(panDuration)")
+    }
+
+    // MARK: - Helpers
+
+    private func makeScene(
+        start: TimeInterval, end: TimeInterval, intent: UserIntent
+    ) -> CameraScene {
+        CameraScene(
+            startTime: start, endTime: end,
+            primaryIntent: intent,
+            focusRegions: []
+        )
+    }
+
+    private func makeShotPlan(
+        scene: CameraScene, zoom: CGFloat, center: NormalizedPoint
+    ) -> ShotPlan {
+        ShotPlan(
+            scene: scene,
+            shotType: zoom > 2.0 ? .closeUp(zoom: zoom) : .medium(zoom: zoom),
+            idealZoom: zoom,
+            idealCenter: center
+        )
+    }
+
+    private func makeSettings(
+        events: [UnifiedEvent],
+        screenBounds: CGSize
+    ) -> SimulationSettings {
+        let timeline = EventTimeline(events: events, duration: 10.0)
+        return SimulationSettings(
+            eventTimeline: timeline,
+            screenBounds: screenBounds
+        )
+    }
+
+    private func makeUIStateEvent(
+        time: TimeInterval, caretCenter: NormalizedPoint
+    ) -> UnifiedEvent {
+        // Create caret bounds as a small rect centered at the given normalized point
+        let caretRect = CGRect(
+            x: caretCenter.x - 0.005, y: caretCenter.y - 0.01,
+            width: 0.01, height: 0.02
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .mouseMove,
+            position: caretCenter,
+            metadata: EventMetadata(caretBounds: caretRect)
+        )
+    }
+
+    private func makeMouseMoveEvent(
+        time: TimeInterval, position: NormalizedPoint
+    ) -> UnifiedEvent {
+        UnifiedEvent(
+            time: time,
+            kind: .mouseMove,
+            position: position,
+            metadata: EventMetadata()
+        )
+    }
+
+    private func makeKeyDownEvent(
+        time: TimeInterval,
+        caretCenter: NormalizedPoint
+    ) -> UnifiedEvent {
+        let keyData = KeyboardEventData(
+            time: time,
+            keyCode: 0,
+            eventType: .keyDown,
+            modifiers: KeyboardEventData.ModifierFlags(rawValue: 0),
+            character: "a"
+        )
+        let caretRect = CGRect(
+            x: caretCenter.x - 0.005,
+            y: caretCenter.y - 0.01,
+            width: 0.01,
+            height: 0.02
+        )
+        return UnifiedEvent(
+            time: time,
+            kind: .keyDown(keyData),
+            position: caretCenter,
+            metadata: EventMetadata(caretBounds: caretRect)
+        )
+    }
+}
+
+/// Minimal MouseDataSource for testing.
+private struct EmptyMouseDataSource: MouseDataSource {
+    var duration: TimeInterval { 10.0 }
+    var frameRate: Double { 60.0 }
+    var positions: [MousePositionData] { [] }
+    var clicks: [ClickEventData] { [] }
+    var keyboardEvents: [KeyboardEventData] { [] }
+    var dragEvents: [DragEventData] { [] }
+}

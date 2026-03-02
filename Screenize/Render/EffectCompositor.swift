@@ -4,7 +4,7 @@ import CoreImage
 import AppKit
 
 /// Effect compositor
-/// Renders ripple effects and the cursor
+/// Renders cursor and keystroke overlays
 final class EffectCompositor {
 
     /// CoreImage context
@@ -16,6 +16,15 @@ final class EffectCompositor {
     /// Cache for cursor hotspots (actual NSCursor hotSpot values)
     private var cursorHotspotCache: [CursorStyle: CGPoint] = [:]
 
+    /// Cache for keystroke pill images (displayText -> fully opaque pill CIImage)
+    /// Opacity is applied at render time via CIColorMatrix, not baked in
+    private var keystrokePillCache: [String: CIImage] = [:]
+    private var keystrokePillAccessOrder: [String] = []
+    private let maxKeystrokePillCacheSize = 32
+
+    /// Frame size used for the current keystroke pill cache (invalidated on size change)
+    private var keystrokePillCacheFrameSize: CGSize = .zero
+
     /// DEBUG: Counter for first-call logging
     private var debugCursorRenderCount = 0
 
@@ -24,89 +33,6 @@ final class EffectCompositor {
             .useSoftwareRenderer: false,
             .cacheIntermediates: true
         ])
-    }
-
-    // MARK: - Ripple Rendering
-
-    /// Render a ripple effect
-    /// - Parameters:
-    ///   - ripple: Active ripple information
-    ///   - frameSize: Frame size
-    /// - Returns: Ripple effect image
-    func renderRipple(_ ripple: ActiveRipple, frameSize: CGSize) -> CIImage? {
-        // Base radius
-        let baseRadius: CGFloat = 50
-        let currentRadius = ripple.radius(baseRadius: baseRadius * (frameSize.width / 1920))
-
-        // Enforce a minimum radius
-        guard currentRadius > 1 else { return nil }
-
-        // Compute position (normalized -> CoreImage pixels, bottom-left origin)
-        let center = CoordinateConverter.normalizedToCoreImage(ripple.position, frameSize: frameSize)
-        let centerX = center.x
-        let centerY = center.y
-
-        // Ripple color
-        let color = ripple.color.ciColor
-
-        // Ring width
-        let ringWidth: CGFloat = max(2, currentRadius * 0.15)
-
-        // Generate gradient ripple
-        guard let rippleImage = createRippleImage(
-            center: CGPoint(x: centerX, y: centerY),
-            radius: currentRadius,
-            ringWidth: ringWidth,
-            color: color,
-            opacity: ripple.opacity,
-            frameSize: frameSize
-        ) else { return nil }
-
-        return rippleImage
-    }
-
-    /// Create the ripple image
-    private func createRippleImage(
-        center: CGPoint,
-        radius: CGFloat,
-        ringWidth: CGFloat,
-        color: CIColor,
-        opacity: CGFloat,
-        frameSize: CGSize
-    ) -> CIImage? {
-        // Outer radius
-        let outerRadius = radius
-        let innerRadius = max(0, radius - ringWidth)
-
-        // Use CIRadialGradient
-        guard let gradientFilter = CIFilter(name: "CIRadialGradient") else { return nil }
-
-        // Create a fade-out ring effect
-        let fadeColor = CIColor(
-            red: color.red,
-            green: color.green,
-            blue: color.blue,
-            alpha: color.alpha * opacity
-        )
-        let transparentColor = CIColor(
-            red: color.red,
-            green: color.green,
-            blue: color.blue,
-            alpha: 0
-        )
-
-        gradientFilter.setValue(CIVector(x: center.x, y: center.y), forKey: "inputCenter")
-        gradientFilter.setValue(innerRadius, forKey: "inputRadius0")
-        gradientFilter.setValue(outerRadius, forKey: "inputRadius1")
-        gradientFilter.setValue(fadeColor, forKey: "inputColor0")
-        gradientFilter.setValue(transparentColor, forKey: "inputColor1")
-
-        guard var gradient = gradientFilter.outputImage else { return nil }
-
-        // Crop to the frame size
-        gradient = gradient.cropped(to: CGRect(origin: .zero, size: frameSize))
-
-        return gradient
     }
 
     // MARK: - Cursor Rendering
@@ -120,7 +46,9 @@ final class EffectCompositor {
         guard cursor.visible else { return nil }
 
         // Retrieve the cursor image (uses cache)
-        guard let cursorImage = getCursorImage(style: cursor.style, scale: cursor.scale) else {
+        let effectiveScale = cursor.scale * cursor.clickScaleModifier
+
+        guard let cursorImage = getCursorImage(style: cursor.style, scale: effectiveScale) else {
             return nil
         }
 
@@ -131,7 +59,7 @@ final class EffectCompositor {
 
         // DEBUG: Log first cursor render
         if debugCursorRenderCount == 0 {
-            print("🔍 [DEBUG] EffectCompositor.renderCursor: normalized=(\(cursor.position.x), \(cursor.position.y)), frameSize=\(frameSize), ciPos=(\(posX), \(posY))")
+            Log.export.debug("EffectCompositor.renderCursor: normalized=(\(cursor.position.x), \(cursor.position.y)), frameSize=\(String(describing: frameSize)), ciPos=(\(posX), \(posY))")
         }
         debugCursorRenderCount += 1
 
@@ -142,7 +70,7 @@ final class EffectCompositor {
         // CoreImage uses a bottom-left origin, while hotspotOffset assumes top-left, so convert
         // Position the bottom of the image at (posY - cursorHeight + hotspotOffset.y)
         // That places the hotspot exactly at posY
-        let hotspotOffset = hotspotOffset(for: cursor.style, scale: cursor.scale)
+        let hotspotOffset = hotspotOffset(for: cursor.style, scale: effectiveScale)
         // Fine correction: shift slightly up-left to reduce perceived offset from actual click
         let correctionX: CGFloat = -2.0
         let correctionY: CGFloat = 2.0  // Positive goes upward due to CoreImage bottom-left origin
@@ -234,6 +162,59 @@ final class EffectCompositor {
         return CGPoint(x: hotspot.x * scale, y: hotspot.y * scale)
     }
 
+    // MARK: - High-Resolution Cursor Rendering (Post-Transform)
+
+    /// Render cursor at output resolution after the zoom transform has been applied.
+    /// The cursor is drawn at the exact pixel size needed, avoiding any upscale artifacts.
+    /// - Parameters:
+    ///   - cursor: Cursor state
+    ///   - outputPosition: Cursor hotspot position in output pixel coordinates (bottom-left origin)
+    ///   - outputSize: Output frame size
+    ///   - zoomLevel: Current zoom level (for proportional cursor sizing)
+    ///   - outputScale: Ratio of output height to source height (accounts for resolution difference)
+    ///   - cursorImageProvider: Provider for resolution-independent cursor images
+    /// - Returns: Cursor image sized to the output frame
+    func renderCursorAtOutputResolution(
+        _ cursor: CursorState,
+        outputPosition: CGPoint,
+        outputSize: CGSize,
+        zoomLevel: CGFloat,
+        outputScale: CGFloat,
+        cursorImageProvider: CursorImageProvider
+    ) -> CIImage? {
+        guard cursor.visible else { return nil }
+
+        let effectiveScale = cursor.scale * cursor.clickScaleModifier
+
+        // Base cursor height matches the NSCursor image size (~28 design units for arrow).
+        // The final pixel height accounts for user scale, zoom level, and output/source ratio.
+        let baseCursorHeight: CGFloat = 28.0
+        let cursorPixelHeight = baseCursorHeight * effectiveScale * zoomLevel * outputScale
+
+        guard let cursorImage = cursorImageProvider.cursorImage(style: cursor.style, pixelHeight: cursorPixelHeight) else {
+            return nil
+        }
+
+        let cursorSize = cursorImage.extent.size
+        let hotspot = cursorImageProvider.normalizedHotspot(style: cursor.style)
+
+        // Hotspot pixel offset (hotspot is in top-left origin, convert for CoreImage bottom-left)
+        let hotspotPixelX = hotspot.x * cursorSize.width
+        let hotspotPixelY = hotspot.y * cursorSize.height
+
+        // Position: place cursor so hotspot aligns with outputPosition
+        // CoreImage uses bottom-left origin; hotspot.y is from top
+        let finalX = outputPosition.x - hotspotPixelX
+        let finalY = outputPosition.y - cursorSize.height + hotspotPixelY
+
+        let translated = cursorImage.transformed(by: CGAffineTransform(
+            translationX: finalX,
+            y: finalY
+        ))
+
+        return translated.cropped(to: CGRect(origin: .zero, size: outputSize))
+    }
+
     // MARK: - Keystroke Overlay Rendering
 
     /// Render keystroke overlay
@@ -261,8 +242,65 @@ final class EffectCompositor {
     }
 
     /// Render a single keystroke pill at its position
+    /// Uses pill cache to avoid per-frame CGContext text rendering
     private func renderSingleKeystroke(_ keystroke: ActiveKeystroke, frameSize: CGSize) -> CIImage? {
-        // Font size: 3% of frame height
+        // Invalidate cache if frame size changed (font size depends on frame height)
+        if keystrokePillCacheFrameSize != frameSize {
+            keystrokePillCache.removeAll()
+            keystrokePillAccessOrder.removeAll()
+            keystrokePillCacheFrameSize = frameSize
+        }
+
+        // Get or create the fully-opaque pill image
+        let pillImage: CIImage
+        if let cached = keystrokePillCache[keystroke.displayText] {
+            keystrokePillAccessOrder.removeAll { $0 == keystroke.displayText }
+            keystrokePillAccessOrder.append(keystroke.displayText)
+            pillImage = cached
+        } else {
+            guard let rendered = renderPillImage(for: keystroke.displayText, frameSize: frameSize) else {
+                return nil
+            }
+            while keystrokePillCache.count >= maxKeystrokePillCacheSize, let oldest = keystrokePillAccessOrder.first {
+                keystrokePillAccessOrder.removeFirst()
+                keystrokePillCache.removeValue(forKey: oldest)
+            }
+            keystrokePillCache[keystroke.displayText] = rendered
+            keystrokePillAccessOrder.append(keystroke.displayText)
+            pillImage = rendered
+        }
+
+        let pillSize = pillImage.extent.size
+
+        // Apply opacity via CIColorMatrix (multiply all RGBA channels for premultiplied alpha)
+        let opacity = keystroke.opacity
+        var opacityApplied = pillImage
+        if opacity < 1.0 {
+            guard let colorMatrix = CIFilter(name: "CIColorMatrix") else { return nil }
+            colorMatrix.setValue(opacityApplied, forKey: kCIInputImageKey)
+            colorMatrix.setValue(CIVector(x: opacity, y: 0, z: 0, w: 0), forKey: "inputRVector")
+            colorMatrix.setValue(CIVector(x: 0, y: opacity, z: 0, w: 0), forKey: "inputGVector")
+            colorMatrix.setValue(CIVector(x: 0, y: 0, z: opacity, w: 0), forKey: "inputBVector")
+            colorMatrix.setValue(CIVector(x: 0, y: 0, z: 0, w: opacity), forKey: "inputAVector")
+            colorMatrix.setValue(CIVector(x: 0, y: 0, z: 0, w: 0), forKey: "inputBiasVector")
+            guard let output = colorMatrix.outputImage else { return nil }
+            opacityApplied = output
+        }
+
+        // Position: NormalizedPoint uses top-left origin (y=0 top, y=1 bottom)
+        // CoreImage uses bottom-left origin (y=0 bottom, y=height top), so flip Y
+        let posX = keystroke.position.x * frameSize.width - pillSize.width / 2
+        let posY = (1.0 - keystroke.position.y) * frameSize.height - pillSize.height / 2
+        let positioned = opacityApplied.transformed(
+            by: CGAffineTransform(translationX: posX, y: posY)
+        )
+
+        // Crop to frame size
+        return positioned.cropped(to: CGRect(origin: .zero, size: frameSize))
+    }
+
+    /// Render a fully-opaque pill image for the given display text (cacheable)
+    private func renderPillImage(for displayText: String, frameSize: CGSize) -> CIImage? {
         let fontSize: CGFloat = max(24, frameSize.height * 0.03)
         let font = NSFont.systemFont(ofSize: fontSize, weight: .medium)
         let cornerRadius: CGFloat = fontSize * 0.4
@@ -274,7 +312,7 @@ final class EffectCompositor {
             .foregroundColor: NSColor.white
         ]
 
-        let textSize = (keystroke.displayText as NSString).size(withAttributes: attributes)
+        let textSize = (displayText as NSString).size(withAttributes: attributes)
         let pillWidth = textSize.width + paddingH * 2
         let pillHeight = textSize.height + paddingV * 2
 
@@ -283,14 +321,13 @@ final class EffectCompositor {
 
         guard bitmapWidth > 0, bitmapHeight > 0 else { return nil }
 
-        // Create bitmap context
         guard let context = CGContext(
             data: nil,
             width: bitmapWidth,
             height: bitmapHeight,
             bitsPerComponent: 8,
             bytesPerRow: bitmapWidth * 4,
-            space: CGColorSpaceCreateDeviceRGB(),
+            space: .screenizeSRGB,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
 
@@ -298,35 +335,20 @@ final class EffectCompositor {
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = nsContext
 
-        // Rounded rectangle background
+        // Rounded rectangle background at fixed opacity (0.75)
         let pillRect = CGRect(x: 0, y: 0, width: pillWidth, height: pillHeight)
         let path = NSBezierPath(roundedRect: pillRect, xRadius: cornerRadius, yRadius: cornerRadius)
-        NSColor(white: 0.1, alpha: 0.75 * keystroke.opacity).setFill()
+        NSColor(white: 0.1, alpha: 0.75).setFill()
         path.fill()
 
-        // Text
+        // White text at full opacity
         let textRect = CGRect(x: paddingH, y: paddingV, width: textSize.width, height: textSize.height)
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor.white.withAlphaComponent(keystroke.opacity)
-        ]
-        (keystroke.displayText as NSString).draw(in: textRect, withAttributes: textAttributes)
+        (displayText as NSString).draw(in: textRect, withAttributes: attributes)
 
         NSGraphicsContext.restoreGraphicsState()
 
         guard let cgImage = context.makeImage() else { return nil }
-        var ciImage = CIImage(cgImage: cgImage)
-
-        // Position: NormalizedPoint uses top-left origin (y=0 top, y=1 bottom)
-        // CoreImage uses bottom-left origin (y=0 bottom, y=height top), so flip Y
-        let posX = keystroke.position.x * frameSize.width - CGFloat(bitmapWidth) / 2
-        let posY = (1.0 - keystroke.position.y) * frameSize.height - CGFloat(bitmapHeight) / 2
-        ciImage = ciImage.transformed(by: CGAffineTransform(translationX: posX, y: posY))
-
-        // Crop to frame size
-        ciImage = ciImage.cropped(to: CGRect(origin: .zero, size: frameSize))
-
-        return ciImage
+        return CIImage(cgImage: cgImage)
     }
 
     // MARK: - Cache Management
@@ -336,19 +358,17 @@ final class EffectCompositor {
         cursorImageCache.removeAll()
         cursorHotspotCache.removeAll()
     }
-}
 
-// MARK: - RippleColor Extension
+    /// Clear the keystroke pill cache
+    func clearKeystrokePillCache() {
+        keystrokePillCache.removeAll()
+        keystrokePillAccessOrder.removeAll()
+        keystrokePillCacheFrameSize = .zero
+    }
 
-extension RippleColor {
-    var ciColor: CIColor {
-        switch self {
-        case .leftClick:
-            return CIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.6)
-        case .rightClick:
-            return CIColor(red: 1.0, green: 0.5, blue: 0.2, alpha: 0.6)
-        case .custom(let r, let g, let b, let a):
-            return CIColor(red: r, green: g, blue: b, alpha: a)
-        }
+    /// Clear all caches (cursor + keystroke)
+    func clearAllCaches() {
+        clearCursorCache()
+        clearKeystrokePillCache()
     }
 }

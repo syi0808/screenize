@@ -1,12 +1,66 @@
 import Foundation
 import SwiftUI
 
+/// Identifies a specific segment in a specific track.
+struct SegmentIdentifier: Hashable {
+    let id: UUID
+    let trackType: TrackType
+}
+
+/// Multi-select capable segment selection model.
+struct SegmentSelection: Equatable {
+    private(set) var segments: Set<SegmentIdentifier> = []
+
+    var isEmpty: Bool { segments.isEmpty }
+    var count: Int { segments.count }
+    var isSingle: Bool { segments.count == 1 }
+
+    /// Returns the single selected segment, or nil if not exactly one.
+    var single: SegmentIdentifier? {
+        isSingle ? segments.first : nil
+    }
+
+    /// Replace selection with a single segment.
+    mutating func select(_ id: UUID, trackType: TrackType) {
+        segments = [SegmentIdentifier(id: id, trackType: trackType)]
+    }
+
+    /// Toggle a segment in/out of selection (for Shift+Click).
+    mutating func toggle(_ id: UUID, trackType: TrackType) {
+        let ident = SegmentIdentifier(id: id, trackType: trackType)
+        if segments.contains(ident) {
+            segments.remove(ident)
+        } else {
+            segments.insert(ident)
+        }
+    }
+
+    /// Add a segment to the selection.
+    mutating func add(_ id: UUID, trackType: TrackType) {
+        segments.insert(SegmentIdentifier(id: id, trackType: trackType))
+    }
+
+    /// Remove a segment by ID (regardless of track type).
+    mutating func remove(_ id: UUID) {
+        segments = segments.filter { $0.id != id }
+    }
+
+    /// Clear all selection.
+    mutating func clear() {
+        segments.removeAll()
+    }
+
+    /// Check if a segment ID is selected.
+    func contains(_ id: UUID) -> Bool {
+        segments.contains { $0.id == id }
+    }
+}
+
 /// Snapshot of undoable editor state
 struct EditorSnapshot {
     let timeline: Timeline
     let renderSettings: RenderSettings
-    let selectedKeyframeID: UUID?
-    let selectedTrackType: TrackType?
+    let selection: SegmentSelection
 }
 
 /// Stack-based undo/redo manager for value-type state

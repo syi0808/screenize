@@ -18,11 +18,14 @@ final class EditorViewModel: ObservableObject {
     /// Playback state
     @Published var isPlaying: Bool = false
 
-    /// Selected keyframe ID
-    @Published var selectedKeyframeID: UUID?
+    /// Segment selection (supports multi-select)
+    @Published var selection = SegmentSelection()
 
-    /// Selected track type
-    @Published var selectedTrackType: TrackType?
+    /// Internal clipboard for segment copy/paste
+    var clipboard: [CopiedSegment] = []
+
+    /// Camera generation method selection
+    @Published var cameraGenerationMethod: CameraGenerationMethod = .continuousCamera
 
     /// Loading state
     @Published var isLoading: Bool = false
@@ -160,9 +163,36 @@ final class EditorViewModel: ObservableObject {
         self.previewEngine = PreviewEngine(previewScale: 0.5)
         self.exportEngine = ExportEngine()
 
-        // Migrate: add keystroke track if missing (for projects created before this feature)
-        if self.project.timeline.keystrokeTrack == nil {
-            self.project.timeline.tracks.append(.keystroke(KeystrokeTrack()))
+        if self.project.timeline.cameraTrack == nil {
+            self.project.timeline.tracks.insert(.camera(CameraTrack()), at: 0)
+        }
+        if self.project.timeline.cursorTrackV2 == nil {
+            self.project.timeline.tracks.append(.cursor(CursorTrackV2()))
+        }
+        if self.project.timeline.keystrokeTrackV2 == nil {
+            self.project.timeline.tracks.append(.keystroke(KeystrokeTrackV2()))
+        }
+        if self.project.timeline.systemAudioTrack == nil && self.project.media.systemAudioExists {
+            self.project.timeline.tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "System Audio",
+                isEnabled: true,
+                audioSource: .system,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: self.project.timeline.duration)
+                ]
+            )))
+        }
+        if self.project.timeline.micAudioTrack == nil && self.project.media.micAudioExists {
+            self.project.timeline.tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "Mic Audio",
+                isEnabled: true,
+                audioSource: .microphone,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: self.project.timeline.duration)
+                ]
+            )))
         }
 
         setupBindings()
@@ -194,13 +224,12 @@ final class EditorViewModel: ObservableObject {
         EditorSnapshot(
             timeline: project.timeline,
             renderSettings: project.renderSettings,
-            selectedKeyframeID: selectedKeyframeID,
-            selectedTrackType: selectedTrackType
+            selection: selection
         )
     }
 
     /// Save a snapshot before a mutation
-    private func saveUndoSnapshot() {
+    func saveUndoSnapshot() {
         undoStack.push(currentSnapshot())
     }
 
@@ -235,8 +264,7 @@ final class EditorViewModel: ObservableObject {
     private func applySnapshot(_ snapshot: EditorSnapshot) {
         project.timeline = snapshot.timeline
         project.renderSettings = snapshot.renderSettings
-        selectedKeyframeID = snapshot.selectedKeyframeID
-        selectedTrackType = snapshot.selectedTrackType
+        selection = snapshot.selection
         hasUnsavedChanges = true
         invalidatePreviewCache()
         updateRenderSettings()
@@ -261,180 +289,7 @@ final class EditorViewModel: ObservableObject {
 
     /// Check whether the timeline is empty
     private var isTimelineEmpty: Bool {
-        let transformCount = project.timeline.transformTrack?.keyframes.count ?? 0
-        let rippleCount = project.timeline.rippleTrack?.keyframes.count ?? 0
-        return transformCount == 0 && rippleCount == 0
-    }
-
-    // MARK: - Smart Generation
-
-    /// Auto-generate keyframes using mouse data
-    /// - Parameter selection: Which track types to generate. Unselected types are preserved.
-    func runSmartGeneration(
-        for selection: Set<TrackType> = [.transform, .ripple, .cursor, .keystroke]
-    ) async {
-        await runSmartZoomGeneration(for: selection)
-    }
-
-    /// Smart generation with selective track types (video analysis + UI state)
-    private func runSmartZoomGeneration(for selection: Set<TrackType>) async {
-        saveUndoSnapshot()
-
-        isLoading = true
-        errorMessage = nil
-
-        do {
-            // 1. Load mouse data source (prefers v4 event streams, falls back to v2)
-            guard let mouseDataSource = loadMouseDataSource() else {
-                print("Smart generation skipped: No mouse data available")
-                isLoading = false
-                return
-            }
-
-            let settings = GeneratorSettings.default
-
-            // 2. Generate transform track (includes expensive video analysis)
-            var transformTrack: TransformTrack?
-            if selection.contains(.transform) {
-                let frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis]
-                if let cached = project.frameAnalysisCache, !cached.isEmpty {
-                    frameAnalysis = cached
-                } else {
-                    let analyzer = VideoFrameAnalyzer()
-                    frameAnalysis = try await analyzer.analyze(
-                        videoURL: project.media.videoURL,
-                        progressHandler: { progress in
-                            Task { @MainActor in
-                                print("Frame analysis: \(Int(progress.percentage * 100))%")
-                            }
-                        }
-                    )
-                    project.frameAnalysisCache = frameAnalysis
-                }
-
-                // Load legacy MouseRecording for uiStateSamples (not in event streams)
-                let uiStateSamples: [UIStateSample]
-                let screenBounds: CGSize
-                if project.media.mouseDataExists,
-                   let recording = try? MouseRecording.load(from: project.media.mouseDataURL) {
-                    uiStateSamples = recording.uiStateSamples
-                    screenBounds = CGSize(
-                        width: recording.screenBounds.width,
-                        height: recording.screenBounds.height
-                    )
-                } else {
-                    uiStateSamples = []
-                    screenBounds = project.media.pixelSize
-                }
-
-                transformTrack = SmartZoomGenerator().generate(
-                    from: mouseDataSource,
-                    frameAnalysisArray: frameAnalysis,
-                    uiStateSamples: uiStateSamples,
-                    screenBounds: screenBounds,
-                    settings: settings.smartZoom
-                )
-            }
-
-            let rippleTrack = selection.contains(.ripple)
-                ? RippleGenerator().generate(from: mouseDataSource, settings: settings) : nil
-            let cursorTrack = selection.contains(.cursor)
-                ? ClickCursorGenerator().generate(from: mouseDataSource, settings: settings) : nil
-            let keystrokeTrack = selection.contains(.keystroke)
-                ? KeystrokeGenerator().generate(from: mouseDataSource, settings: settings) : nil
-
-            updateTimeline(
-                transformTrack: transformTrack,
-                rippleTrack: rippleTrack,
-                cursorTrack: cursorTrack,
-                keystrokeTrack: keystrokeTrack
-            )
-
-            print("Smart generation completed for \(selection.count) track type(s)")
-
-            hasUnsavedChanges = true
-            invalidatePreviewCache()
-
-        } catch {
-            print("Smart generation failed: \(error.localizedDescription)")
-            errorMessage = "Failed to generate keyframes: \(error.localizedDescription)"
-        }
-
-        isLoading = false
-    }
-
-    /// Load mouse data source, preferring v4 event streams over legacy recording.mouse.json.
-    private func loadMouseDataSource() -> MouseDataSource? {
-        // v4 path: load from event streams
-        if let interop = project.interop, let packageURL = projectURL {
-            if let source = EventStreamLoader.load(
-                from: packageURL,
-                interop: interop,
-                duration: project.media.duration,
-                frameRate: project.media.frameRate
-            ) {
-                return source
-            }
-        }
-
-        // MARK: - Legacy v2 (remove in next minor version)
-        guard project.media.mouseDataExists else { return nil }
-        guard let recording = try? MouseRecording.load(from: project.media.mouseDataURL) else { return nil }
-        return MouseRecordingAdapter(
-            recording: recording,
-            duration: project.media.duration,
-            frameRate: project.media.frameRate
-        )
-    }
-
-    /// Invalidate the frame analysis cache
-    func invalidateFrameAnalysisCache() {
-        project.frameAnalysisCache = nil
-        hasUnsavedChanges = true
-    }
-
-    /// Apply the generated tracks to the timeline (nil = preserve existing)
-    private func updateTimeline(
-        transformTrack: TransformTrack? = nil,
-        rippleTrack: RippleTrack? = nil,
-        cursorTrack: CursorTrack? = nil,
-        keystrokeTrack: KeystrokeTrack? = nil
-    ) {
-        // Update the transform track (only if provided)
-        if let transformTrack = transformTrack {
-            if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) {
-                project.timeline.tracks[index] = .transform(transformTrack)
-            } else {
-                project.timeline.tracks.append(.transform(transformTrack))
-            }
-        }
-
-        // Update the ripple track (only if provided)
-        if let rippleTrack = rippleTrack {
-            if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) {
-                project.timeline.tracks[index] = .ripple(rippleTrack)
-            } else {
-                project.timeline.tracks.append(.ripple(rippleTrack))
-            }
-        }
-
-        // Update the cursor track (if present)
-        if let cursorTrack = cursorTrack {
-            if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) {
-                project.timeline.tracks[index] = .cursor(cursorTrack)
-            } else {
-                project.timeline.tracks.append(.cursor(cursorTrack))
-            }
-        }
-
-        // Update the keystroke track (if present)
-        if let keystrokeTrack = keystrokeTrack {
-            if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }) {
-                project.timeline.tracks[index] = .keystroke(keystrokeTrack)
-            } else {
-                project.timeline.tracks.append(.keystroke(keystrokeTrack))
-            }
-        }
+        project.timeline.totalSegmentCount == 0
     }
 
     /// Cleanup resources
@@ -488,377 +343,66 @@ final class EditorViewModel: ObservableObject {
         await seek(to: newTime)
     }
 
-    // MARK: - Keyframe Management
-
-    /// Add a keyframe at the current time
-    func addKeyframe(to trackType: TrackType) {
-        addKeyframe(to: trackType, at: currentTime)
-    }
-
-    /// Add a keyframe at a specified time
-    func addKeyframe(to trackType: TrackType, at time: TimeInterval) {
-        saveUndoSnapshot()
-        switch trackType {
-        case .transform:
-            addTransformKeyframe(at: time)
-        case .ripple:
-            addRippleKeyframe(at: time)
-        case .cursor:
-            addCursorKeyframe(at: time)
-        case .keystroke:
-            addKeystrokeKeyframe(at: time)
-        case .audio:
-            break  // TODO: implement audio tracks in the future
-        }
-
-        hasUnsavedChanges = true
-        invalidatePreviewCache()
-    }
-
-    private func addTransformKeyframe(at time: TimeInterval) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) else {
-            return
-        }
-
-        guard case .transform(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        // Create a keyframe based on the current state
-        let newKeyframe = TransformKeyframe(
-            time: time,
-            zoom: 1.0,
-            centerX: 0.5,
-            centerY: 0.5
-        )
-
-        track.keyframes.append(newKeyframe)
-        track.keyframes.sort { $0.time < $1.time }
-
-        project.timeline.tracks[trackIndex] = .transform(track)
-        selectedKeyframeID = newKeyframe.id
-        selectedTrackType = .transform
-    }
-
-    private func addRippleKeyframe(at time: TimeInterval) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) else {
-            return
-        }
-
-        guard case .ripple(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        let newKeyframe = RippleKeyframe(
-            time: time,
-            x: 0.5,
-            y: 0.5
-        )
-
-        track.keyframes.append(newKeyframe)
-        track.keyframes.sort { $0.time < $1.time }
-
-        project.timeline.tracks[trackIndex] = .ripple(track)
-        selectedKeyframeID = newKeyframe.id
-        selectedTrackType = .ripple
-    }
-
-    private func addCursorKeyframe(at time: TimeInterval) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) else {
-            return
-        }
-
-        guard case .cursor(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        let newKeyframe = CursorStyleKeyframe(
-            time: time,
-            style: .arrow,
-            visible: true,
-            scale: 1.0
-        )
-
-        var keyframes = track.styleKeyframes ?? []
-        keyframes.append(newKeyframe)
-        keyframes.sort { $0.time < $1.time }
-        track = CursorTrack(
-            id: track.id,
-            name: track.name,
-            isEnabled: track.isEnabled,
-            defaultStyle: track.defaultStyle,
-            defaultScale: track.defaultScale,
-            defaultVisible: track.defaultVisible,
-            styleKeyframes: keyframes
-        )
-
-        project.timeline.tracks[trackIndex] = .cursor(track)
-        selectedKeyframeID = newKeyframe.id
-        selectedTrackType = .cursor
-    }
-
-    private func addKeystrokeKeyframe(at time: TimeInterval) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }) else {
-            return
-        }
-
-        guard case .keystroke(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        let newKeyframe = KeystrokeKeyframe(
-            time: time,
-            displayText: "⌘"
-        )
-
-        track.keyframes.append(newKeyframe)
-        track.keyframes.sort { $0.time < $1.time }
-
-        project.timeline.tracks[trackIndex] = .keystroke(track)
-        selectedKeyframeID = newKeyframe.id
-        selectedTrackType = .keystroke
-        hasUnsavedChanges = true
-        invalidatePreviewCache()
-    }
-
-    /// Delete a keyframe
-    func deleteKeyframe(_ id: UUID, from trackType: TrackType) {
-        saveUndoSnapshot()
-        switch trackType {
-        case .transform:
-            deleteTransformKeyframe(id)
-        case .ripple:
-            deleteRippleKeyframe(id)
-        case .cursor:
-            deleteCursorKeyframe(id)
-        case .keystroke:
-            deleteKeystrokeKeyframe(id)
-        case .audio:
-            break  // TODO: implement audio tracks in the future
-        }
-
-        if selectedKeyframeID == id {
-            selectedKeyframeID = nil
-        }
-
-        hasUnsavedChanges = true
-        invalidatePreviewCache()
-    }
-
-    private func deleteTransformKeyframe(_ id: UUID) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) else {
-            return
-        }
-
-        guard case .transform(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        track.keyframes.removeAll { $0.id == id }
-        project.timeline.tracks[trackIndex] = .transform(track)
-    }
-
-    private func deleteRippleKeyframe(_ id: UUID) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .ripple }) else {
-            return
-        }
-
-        guard case .ripple(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        track.keyframes.removeAll { $0.id == id }
-        project.timeline.tracks[trackIndex] = .ripple(track)
-    }
-
-    private func deleteCursorKeyframe(_ id: UUID) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) else {
-            return
-        }
-
-        guard case .cursor(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        var keyframes = track.styleKeyframes ?? []
-        keyframes.removeAll { $0.id == id }
-        track = CursorTrack(
-            id: track.id,
-            name: track.name,
-            isEnabled: track.isEnabled,
-            defaultStyle: track.defaultStyle,
-            defaultScale: track.defaultScale,
-            defaultVisible: track.defaultVisible,
-            styleKeyframes: keyframes
-        )
-        project.timeline.tracks[trackIndex] = .cursor(track)
-    }
-
-    private func deleteKeystrokeKeyframe(_ id: UUID) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .keystroke }) else {
-            return
-        }
-
-        guard case .keystroke(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        track.keyframes.removeAll { $0.id == id }
-        project.timeline.tracks[trackIndex] = .keystroke(track)
-    }
-
-    /// Update a keyframe time
-    func updateKeyframeTime(_ id: UUID, to newTime: TimeInterval) {
-        saveBindingUndoSnapshot()
-        // Find and update the keyframe time
-        for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
-            switch anyTrack {
-            case .transform(var track):
-                if let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex].time = newTime
-                    track.keyframes.sort { $0.time < $1.time }
-                    project.timeline.tracks[trackIndex] = .transform(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
-                }
-
-            case .ripple(var track):
-                if let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex].time = newTime
-                    track.keyframes.sort { $0.time < $1.time }
-                    project.timeline.tracks[trackIndex] = .ripple(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
-                }
-
-            case .cursor(var track):
-                if var keyframes = track.styleKeyframes,
-                   let keyframeIndex = keyframes.firstIndex(where: { $0.id == id }) {
-                    keyframes[keyframeIndex].time = newTime
-                    keyframes.sort { $0.time < $1.time }
-                    track = CursorTrack(
-                        id: track.id,
-                        name: track.name,
-                        isEnabled: track.isEnabled,
-                        defaultStyle: track.defaultStyle,
-                        defaultScale: track.defaultScale,
-                        defaultVisible: track.defaultVisible,
-                        styleKeyframes: keyframes
-                    )
-                    project.timeline.tracks[trackIndex] = .cursor(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
-                }
-
-            case .keystroke(var track):
-                if let keyframeIndex = track.keyframes.firstIndex(where: { $0.id == id }) {
-                    track.keyframes[keyframeIndex].time = newTime
-                    track.keyframes.sort { $0.time < $1.time }
-                    project.timeline.tracks[trackIndex] = .keystroke(track)
-                    hasUnsavedChanges = true
-                    invalidatePreviewCache()
-                    return
-                }
-            }
-        }
-    }
-
     // MARK: - Selection
 
-    /// Select a keyframe
-    func selectKeyframe(_ id: UUID, trackType: TrackType) {
-        selectedKeyframeID = id
-        selectedTrackType = trackType
+    /// Select a segment (replaces current selection).
+    func selectSegment(_ id: UUID, trackType: TrackType) {
+        selection.select(id, trackType: trackType)
     }
 
-    /// Delete all keyframes
-    func deleteAllKeyframes() {
-        saveUndoSnapshot()
-        for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
-            switch anyTrack {
-            case .transform(var track):
-                track.keyframes.removeAll()
-                project.timeline.tracks[trackIndex] = .transform(track)
-            case .ripple(var track):
-                track.keyframes.removeAll()
-                project.timeline.tracks[trackIndex] = .ripple(track)
-            case .cursor(var track):
-                track = CursorTrack(
-                    id: track.id,
-                    name: track.name,
-                    isEnabled: track.isEnabled,
-                    defaultStyle: track.defaultStyle,
-                    defaultScale: track.defaultScale,
-                    defaultVisible: track.defaultVisible,
-                    styleKeyframes: nil
-                )
-                project.timeline.tracks[trackIndex] = .cursor(track)
-            case .keystroke(var track):
-                track.keyframes.removeAll()
-                project.timeline.tracks[trackIndex] = .keystroke(track)
-            }
-        }
-
-        selectedKeyframeID = nil
-        selectedTrackType = nil
-        hasUnsavedChanges = true
-        invalidatePreviewCache()
+    /// Toggle a segment in/out of the selection (for Shift+Click).
+    func toggleSegmentSelection(_ id: UUID, trackType: TrackType) {
+        selection.toggle(id, trackType: trackType)
     }
 
     /// Clear the selection
     func clearSelection() {
-        selectedKeyframeID = nil
+        selection.clear()
     }
 
-    /// Jump to the selected keyframe
-    func goToSelectedKeyframe() async {
-        guard let id = selectedKeyframeID,
-              let trackType = selectedTrackType else {
+    /// Jump to the selected segment (single selection only).
+    func goToSelectedSegment() async {
+        guard let selected = selection.single else {
             return
         }
+        let id = selected.id
+        let trackType = selected.trackType
 
-        // Locate the keyframe time
+        // Locate the segment start time
         let time: TimeInterval?
 
         switch trackType {
         case .transform:
-            if let track = project.timeline.transformTrack,
-               let keyframe = track.keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
-            } else {
-                time = nil
-            }
-
-        case .ripple:
-            if let track = project.timeline.rippleTrack,
-               let keyframe = track.keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
+            if let track = project.timeline.cameraTrack,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
             } else {
                 time = nil
             }
 
         case .cursor:
-            if let track = project.timeline.cursorTrack,
-               let keyframes = track.styleKeyframes,
-               let keyframe = keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
+            if let track = project.timeline.cursorTrackV2,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
             } else {
                 time = nil
             }
 
         case .keystroke:
-            if let track = project.timeline.keystrokeTrack,
-               let keyframe = track.keyframes.first(where: { $0.id == id }) {
-                time = keyframe.time
+            if let track = project.timeline.keystrokeTrackV2,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
             } else {
                 time = nil
             }
 
         case .audio:
-            time = nil  // TODO: support audio tracks later
+            if let track = project.timeline.audioTrack,
+               let segment = track.segments.first(where: { $0.id == id }) {
+                time = segment.startTime
+            } else {
+                time = nil
+            }
         }
 
         if let time = time {
@@ -873,121 +417,33 @@ final class EditorViewModel: ObservableObject {
         previewEngine.invalidateAllCache(with: project.timeline)
     }
 
+    /// Invalidate a specific time range of the preview cache
+    func invalidatePreviewCache(from startTime: TimeInterval, to endTime: TimeInterval) {
+        previewEngine.invalidateRange(with: project.timeline, from: startTime, to: endTime)
+    }
+
     /// Update render settings (for window-style changes)
     func updateRenderSettings() {
         previewEngine.updateRenderSettings(project.renderSettings)
     }
 
-    // MARK: - Keyframe Change Notification
+    // MARK: - Segment Change Notification
 
-    /// Notify that a keyframe changed (called from the inspector)
-    func notifyKeyframeChanged() {
+    /// Notify that a segment changed (called from the inspector)
+    func notifySegmentChanged() {
+        project.timeline.continuousTransforms = nil
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
+
 }
 
-// MARK: - Legacy v2 (remove in next minor version)
+// MARK: - Camera Generation Method
 
-/// Adapter that converts MouseRecording into a MouseDataSource
-struct MouseRecordingAdapter: MouseDataSource {
-    let recording: MouseRecording
-    let duration: TimeInterval
-    let frameRate: Double
-
-    var positions: [MousePositionData] {
-        recording.positions.map { pos in
-            // Convert screen coordinates to normalized space
-            let normalizedX = pos.x / recording.screenBounds.width
-            let normalizedY = pos.y / recording.screenBounds.height
-            return MousePositionData(
-                time: pos.timestamp,
-                x: normalizedX,
-                y: normalizedY,
-                appBundleID: nil,
-                elementInfo: nil
-            )
-        }
-    }
-
-    var clicks: [ClickEventData] {
-        recording.clicks.map { click in
-            // Convert screen coordinates into normalized values
-            let normalizedX = click.x / recording.screenBounds.width
-            let normalizedY = click.y / recording.screenBounds.height
-
-            // Convert ClickType (MouseEvent → ClickEventData)
-            let clickType: ClickEventData.ClickType
-            switch click.type {
-            case .left:
-                clickType = .leftDown
-            case .right:
-                clickType = .rightDown
-            }
-
-            return ClickEventData(
-                time: click.timestamp,
-                x: normalizedX,
-                y: normalizedY,
-                clickType: clickType,
-                appBundleID: click.targetElement?.applicationName,
-                elementInfo: click.targetElement
-            )
-        }
-    }
-
-    var keyboardEvents: [KeyboardEventData] {
-        recording.keyboardEvents.map { event in
-            let eventType: KeyboardEventData.EventType
-            switch event.type {
-            case .keyDown:
-                eventType = .keyDown
-            case .keyUp:
-                eventType = .keyUp
-            }
-
-            var modifiers: KeyboardEventData.ModifierFlags = []
-            if event.modifiers.shift { modifiers.insert(.shift) }
-            if event.modifiers.control { modifiers.insert(.control) }
-            if event.modifiers.option { modifiers.insert(.option) }
-            if event.modifiers.command { modifiers.insert(.command) }
-
-            return KeyboardEventData(
-                time: event.timestamp,
-                keyCode: event.keyCode,
-                eventType: eventType,
-                modifiers: modifiers,
-                character: event.character
-            )
-        }
-    }
-
-    var dragEvents: [DragEventData] {
-        recording.dragEvents.map { drag in
-            // Convert screen coordinates to normalized space
-            let normalizedStartX = drag.startX / recording.screenBounds.width
-            let normalizedStartY = drag.startY / recording.screenBounds.height
-            let normalizedEndX = drag.endX / recording.screenBounds.width
-            let normalizedEndY = drag.endY / recording.screenBounds.height
-
-            // Convert the drag type
-            let dragType: DragEventData.DragType
-            switch drag.type {
-            case .selection:
-                dragType = .selection
-            case .move:
-                dragType = .move
-            case .resize:
-                dragType = .resize
-            }
-
-            return DragEventData(
-                startTime: drag.startTimestamp,
-                endTime: drag.endTimestamp,
-                startPosition: NormalizedPoint(x: normalizedStartX, y: normalizedStartY),
-                endPosition: NormalizedPoint(x: normalizedEndX, y: normalizedEndY),
-                dragType: dragType
-            )
-        }
-    }
+/// Which camera generation pipeline to use.
+enum CameraGenerationMethod: String, CaseIterable {
+    case smartGeneration = "Smart Generation"
+    case continuousCamera = "Continuous Camera"
 }
+
+

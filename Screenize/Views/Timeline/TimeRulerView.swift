@@ -149,7 +149,7 @@ struct TimeRulerView: View {
             }
         }
 
-        return intervals.last!
+        return intervals.last ?? (300.0, 60.0)
     }
 
     /// Convert time to an X position
