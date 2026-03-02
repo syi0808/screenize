@@ -177,6 +177,73 @@ final class SpringDamperSimulatorTests: XCTestCase {
         XCTAssertEqual(sampleAfterSwitch.transform.center.y, 0.72, accuracy: 0.001)
     }
 
+    func test_simulate_normalUrgency_noEarlyAnticipation() {
+        let wp1 = makeWaypoint(
+            time: 0.0,
+            zoom: 1.4,
+            x: 0.40,
+            y: 0.40,
+            urgency: .normal
+        )
+        let wp2 = makeWaypoint(
+            time: 2.0,
+            zoom: 1.4,
+            x: 0.60,
+            y: 0.40,
+            urgency: .normal
+        )
+
+        let result = SpringDamperSimulator.simulate(
+            waypoints: [wp1, wp2],
+            duration: 3.0,
+            settings: defaultSettings
+        )
+
+        guard let beforeSwitch = result.last(where: { $0.time < 1.95 }) else {
+            XCTFail("Expected sample before switch")
+            return
+        }
+        XCTAssertEqual(
+            beforeSwitch.transform.center.x,
+            0.40,
+            accuracy: 0.03,
+            "Normal urgency should not pre-pan before waypoint time"
+        )
+    }
+
+    func test_simulate_highUrgency_stillAnticipates() {
+        let wp1 = makeWaypoint(
+            time: 0.0,
+            zoom: 1.4,
+            x: 0.40,
+            y: 0.40,
+            urgency: .normal
+        )
+        let wp2 = makeWaypoint(
+            time: 2.0,
+            zoom: 1.4,
+            x: 0.60,
+            y: 0.40,
+            urgency: .high
+        )
+
+        let result = SpringDamperSimulator.simulate(
+            waypoints: [wp1, wp2],
+            duration: 3.0,
+            settings: defaultSettings
+        )
+
+        guard let beforeSwitch = result.last(where: { $0.time < 1.95 }) else {
+            XCTFail("Expected sample before switch")
+            return
+        }
+        XCTAssertGreaterThan(
+            beforeSwitch.transform.center.x,
+            0.40,
+            "High urgency should anticipate upcoming waypoint"
+        )
+    }
+
     // MARK: - Center Clamping
 
     func test_simulate_centerClampedToViewportBounds() {

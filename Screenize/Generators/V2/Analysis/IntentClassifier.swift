@@ -40,6 +40,10 @@ struct IntentClassifier {
     /// Must be >= SceneSegmenter.minSceneDuration to avoid scene absorption.
     static let pointSpanDuration: TimeInterval = 0.5
 
+    /// Window for associating a click with a post-click UI context change.
+    /// Wider windows tend to pick unrelated state changes and cause zoom jumps.
+    static let contextChangeWindow: TimeInterval = 0.8
+
     /// Anticipation time for typing scenes: camera arrives this much before the
     /// first keystroke so the transition completes before typing begins.
     static let typingAnticipation: TimeInterval = 0.4
@@ -353,12 +357,21 @@ struct IntentClassifier {
         from timeline: EventTimeline
     ) -> [IntentSpan] {
         var spans: [IntentSpan] = []
-        var lastAppBundleID: String?
+        var lastAppIdentifier: String?
+        var lastSwitchTime: TimeInterval = -.greatestFiniteMagnitude
 
         for event in timeline.events {
-            guard let currentApp = event.metadata.appBundleID else { continue }
-            if let lastApp = lastAppBundleID, lastApp != currentApp {
+            guard let currentApp = eventAppIdentifier(from: event) else {
+                continue
+            }
+
+            if let lastApp = lastAppIdentifier,
+               !appIdentifiersEquivalent(lastApp, currentApp) {
                 let switchTime = event.time
+                guard switchTime - lastSwitchTime > pointSpanDuration * 0.5 else {
+                    lastAppIdentifier = currentApp
+                    continue
+                }
                 spans.append(IntentSpan(
                     startTime: max(0, switchTime - pointSpanDuration),
                     endTime: switchTime + pointSpanDuration,
@@ -367,8 +380,9 @@ struct IntentClassifier {
                     focusPosition: event.position,
                     focusElement: nil
                 ))
+                lastSwitchTime = switchTime
             }
-            lastAppBundleID = currentApp
+            lastAppIdentifier = currentApp
         }
 
         return spans
@@ -423,8 +437,7 @@ struct IntentClassifier {
 
         if group.count >= navigatingMinClicks {
             guard let firstEvent = group.first, let lastEvent = group.last else { return [] }
-            let avgX = group.map(\.position.x).reduce(0, +) / CGFloat(group.count)
-            let avgY = group.map(\.position.y).reduce(0, +) / CGFloat(group.count)
+            let focus = recencyWeightedFocusPosition(for: group)
             // Use last click's context change for the navigating span
             let change = detectPostClickChange(
                 clickTime: lastEvent.time, uiStateSamples: uiStateSamples
@@ -434,7 +447,7 @@ struct IntentClassifier {
                 endTime: lastEvent.time + pointSpanDuration,
                 intent: .navigating,
                 confidence: 0.8,
-                focusPosition: NormalizedPoint(x: avgX, y: avgY),
+                focusPosition: focus,
                 focusElement: lastEvent.metadata.elementInfo
             )
             span.contextChange = change
@@ -472,14 +485,80 @@ struct IntentClassifier {
 
         // Find nearest sample after the click time (within 2 seconds)
         let postSample = uiStateSamples
-            .filter { $0.timestamp > clickTime && $0.timestamp <= clickTime + 2.0 }
+            .filter {
+                $0.timestamp > clickTime
+                    && $0.timestamp <= clickTime + contextChangeWindow
+            }
             .min(by: { $0.timestamp < $1.timestamp })
 
         guard let post = postSample else { return nil }
+        if let preApp = normalizedAppIdentifier(
+            preSample?.elementInfo?.applicationName
+        ), let postApp = normalizedAppIdentifier(
+            post.elementInfo?.applicationName
+        ), !appIdentifiersEquivalent(preApp, postApp) {
+            return nil
+        }
 
         let change = post.detectContextChange(from: preSample)
         if case .none = change { return nil }
         return change
+    }
+
+    private static func recencyWeightedFocusPosition(
+        for events: [UnifiedEvent]
+    ) -> NormalizedPoint {
+        guard !events.isEmpty else {
+            return NormalizedPoint(x: 0.5, y: 0.5)
+        }
+
+        var totalWeight: CGFloat = 0
+        var weightedX: CGFloat = 0
+        var weightedY: CGFloat = 0
+
+        for (index, event) in events.enumerated() {
+            let weight = CGFloat(index + 1)
+            totalWeight += weight
+            weightedX += event.position.x * weight
+            weightedY += event.position.y * weight
+        }
+
+        guard totalWeight > 0 else {
+            return events[events.count - 1].position
+        }
+        return NormalizedPoint(
+            x: weightedX / totalWeight,
+            y: weightedY / totalWeight
+        )
+    }
+
+    private static func eventAppIdentifier(from event: UnifiedEvent) -> String? {
+        if let metadataID = normalizedAppIdentifier(event.metadata.appBundleID) {
+            return metadataID
+        }
+        if let appName = normalizedAppIdentifier(
+            event.metadata.elementInfo?.applicationName
+        ) {
+            return appName
+        }
+
+        switch event.kind {
+        case .uiStateChange(let sample):
+            return normalizedAppIdentifier(sample.elementInfo?.applicationName)
+        case .click(let click):
+            return normalizedAppIdentifier(
+                click.appBundleID ?? click.elementInfo?.applicationName
+            )
+        default:
+            return nil
+        }
+    }
+
+    private static func normalizedAppIdentifier(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.lowercased()
     }
 
     // MARK: - Overlap Resolution
@@ -622,5 +701,76 @@ struct IntentClassifier {
             focusPosition: focusPosition,
             focusElement: nil
         )
+    }
+}
+
+private extension IntentClassifier {
+    /// Common bundle-prefix tokens that should not drive app identity matching.
+    static let ignoredAppIdentifierTokens: Set<String> = [
+        "app", "co", "com", "corp", "io", "llc", "net", "org"
+    ]
+
+    static func appIdentifiersEquivalent(
+        _ lhsRaw: String,
+        _ rhsRaw: String
+    ) -> Bool {
+        guard let lhs = normalizedAppIdentifier(lhsRaw),
+              let rhs = normalizedAppIdentifier(rhsRaw) else {
+            return false
+        }
+        if lhs == rhs { return true }
+
+        let lhsCandidates = appIdentifierCandidates(from: lhs)
+        let rhsCandidates = appIdentifierCandidates(from: rhs)
+        if !lhsCandidates.isDisjoint(with: rhsCandidates) {
+            return true
+        }
+
+        let lhsCompact = compactIdentifier(lhs)
+        let rhsCompact = compactIdentifier(rhs)
+        guard !lhsCompact.isEmpty, !rhsCompact.isEmpty else { return false }
+        let minLength = min(lhsCompact.count, rhsCompact.count)
+        if minLength >= 5
+            && (lhsCompact.contains(rhsCompact) || rhsCompact.contains(lhsCompact)) {
+            return true
+        }
+        return false
+    }
+
+    static func appIdentifierCandidates(from normalized: String) -> Set<String> {
+        var candidates: Set<String> = [normalized, compactIdentifier(normalized)]
+
+        if normalized.contains(".") {
+            let parts = normalized
+                .split(separator: ".")
+                .map(String.init)
+                .filter { !$0.isEmpty }
+            if let last = parts.last {
+                candidates.insert(last)
+                candidates.insert(compactIdentifier(last))
+            }
+        }
+
+        let words = normalized
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+            .filter {
+                $0.count >= 3
+                    && !ignoredAppIdentifierTokens.contains($0)
+            }
+        for word in words {
+            candidates.insert(word)
+            candidates.insert(compactIdentifier(word))
+        }
+
+        return Set(candidates.filter { $0.count >= 3 })
+    }
+
+    static func compactIdentifier(_ value: String) -> String {
+        value.unicodeScalars
+            .filter { CharacterSet.alphanumerics.contains($0) }
+            .map(String.init)
+            .joined()
+            .lowercased()
     }
 }

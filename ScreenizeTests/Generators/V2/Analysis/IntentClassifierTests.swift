@@ -290,6 +290,28 @@ final class IntentClassifierTests: XCTestCase {
         XCTAssertEqual(navigatingSpans.count, 1)
     }
 
+    func test_classify_navigatingFocus_biasedTowardRecentClicks() {
+        let clicks = [
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.20, y: 0.50)),
+            makeClick(at: 1.5, position: NormalizedPoint(x: 0.35, y: 0.50)),
+            makeClick(at: 1.9, position: NormalizedPoint(x: 0.50, y: 0.50)),
+        ]
+        let mouseData = MockMouseDataSource(clicks: clicks)
+        let spans = classify(mouseData)
+
+        guard let navigating = spans.first(where: { $0.intent == .navigating }) else {
+            XCTFail("Expected navigating span")
+            return
+        }
+
+        let simpleAverageX = (0.20 + 0.35 + 0.50) / 3.0
+        XCTAssertGreaterThan(
+            navigating.focusPosition.x,
+            simpleAverageX,
+            "Navigating focus should bias toward recent clicks"
+        )
+    }
+
     // MARK: - Dragging Detection
 
     func test_classify_dragStartEnd_producesDraggingSpan() {
@@ -344,6 +366,159 @@ final class IntentClassifierTests: XCTestCase {
 
         let switchingSpans = spans.filter { $0.intent == .switching }
         XCTAssertGreaterThanOrEqual(switchingSpans.count, 1)
+    }
+
+    func test_classify_sameAppAlias_doesNotProduceSwitchingSpan() {
+        let positions = [
+            MousePositionData(
+                time: 0.9,
+                position: NormalizedPoint(x: 0.4, y: 0.6),
+                appBundleID: "com.apple.dt.xcode"
+            ),
+            MousePositionData(
+                time: 1.1,
+                position: NormalizedPoint(x: 0.42, y: 0.62),
+                appBundleID: "com.apple.dt.xcode"
+            )
+        ]
+        let uiStates = [
+            UIStateSample(
+                timestamp: 1.0,
+                cursorPosition: CGPoint(x: 0.4, y: 0.6),
+                elementInfo: UIElementInfo(
+                    role: "AXTextArea",
+                    subrole: nil,
+                    frame: CGRect(x: 0.35, y: 0.55, width: 0.3, height: 0.2),
+                    title: nil,
+                    isClickable: true,
+                    applicationName: "Xcode"
+                )
+            )
+        ]
+
+        let mouseData = MockMouseDataSource(duration: 3.0, positions: positions)
+        let timeline = EventTimeline.build(from: mouseData, uiStateSamples: uiStates)
+        let spans = IntentClassifier.classify(events: timeline, uiStateSamples: uiStates)
+
+        let switchingSpans = spans.filter { $0.intent == .switching }
+        XCTAssertEqual(
+            switchingSpans.count,
+            0,
+            "Bundle ID and app name aliases for the same app must not trigger switching"
+        )
+    }
+
+    func test_classify_uiStateApplicationChange_producesSwitchingSpan() {
+        let clicks = [
+            makeClick(at: 0.8, position: NormalizedPoint(x: 0.2, y: 0.3)),
+            makeClick(at: 2.8, position: NormalizedPoint(x: 0.8, y: 0.7)),
+        ]
+        let positions = [
+            MousePositionData(
+                time: 0.6,
+                position: NormalizedPoint(x: 0.2, y: 0.3)
+            ),
+            MousePositionData(
+                time: 1.8,
+                position: NormalizedPoint(x: 0.5, y: 0.5)
+            ),
+            MousePositionData(
+                time: 2.8,
+                position: NormalizedPoint(x: 0.8, y: 0.7)
+            )
+        ]
+        let uiStates = [
+            UIStateSample(
+                timestamp: 1.0,
+                cursorPosition: CGPoint(x: 0.2, y: 0.3),
+                elementInfo: UIElementInfo(
+                    role: "AXTextArea",
+                    subrole: nil,
+                    frame: CGRect(x: 0.1, y: 0.1, width: 0.4, height: 0.2),
+                    title: nil,
+                    isClickable: true,
+                    applicationName: "Xcode"
+                )
+            ),
+            UIStateSample(
+                timestamp: 2.0,
+                cursorPosition: CGPoint(x: 0.8, y: 0.7),
+                elementInfo: UIElementInfo(
+                    role: "AXButton",
+                    subrole: nil,
+                    frame: CGRect(x: 0.6, y: 0.6, width: 0.2, height: 0.1),
+                    title: nil,
+                    isClickable: true,
+                    applicationName: "Safari"
+                )
+            )
+        ]
+
+        let mouseData = MockMouseDataSource(
+            duration: 5.0,
+            positions: positions,
+            clicks: clicks
+        )
+        let timeline = EventTimeline.build(
+            from: mouseData,
+            uiStateSamples: uiStates
+        )
+        let spans = IntentClassifier.classify(
+            events: timeline,
+            uiStateSamples: uiStates
+        )
+
+        let switchingSpans = spans.filter { $0.intent == .switching }
+        XCTAssertGreaterThanOrEqual(
+            switchingSpans.count,
+            1,
+            "App changes in UI state samples should produce switching spans"
+        )
+    }
+
+    // MARK: - Click Context Change
+
+    func test_classify_clickContextChange_ignoresLateSample() {
+        let clicks = [makeClick(at: 1.0, position: NormalizedPoint(x: 0.3, y: 0.4))]
+        let mouseData = MockMouseDataSource(duration: 4.0, clicks: clicks)
+        let uiStates = [
+            UIStateSample(
+                timestamp: 0.9,
+                cursorPosition: CGPoint(x: 0.3, y: 0.4),
+                elementInfo: UIElementInfo(
+                    role: "AXTextField",
+                    subrole: nil,
+                    frame: CGRect(x: 0.2, y: 0.3, width: 0.1, height: 0.05),
+                    title: nil,
+                    isClickable: true,
+                    applicationName: "Xcode"
+                )
+            ),
+            UIStateSample(
+                timestamp: 1.95,
+                cursorPosition: CGPoint(x: 0.3, y: 0.4),
+                elementInfo: UIElementInfo(
+                    role: "AXTextArea",
+                    subrole: nil,
+                    frame: CGRect(x: 0.1, y: 0.1, width: 0.8, height: 0.8),
+                    title: nil,
+                    isClickable: true,
+                    applicationName: "Xcode"
+                )
+            )
+        ]
+
+        let timeline = EventTimeline.build(from: mouseData, uiStateSamples: uiStates)
+        let spans = IntentClassifier.classify(events: timeline, uiStateSamples: uiStates)
+
+        guard let clicking = spans.first(where: { $0.intent == .clicking }) else {
+            XCTFail("Expected clicking span")
+            return
+        }
+        XCTAssertNil(
+            clicking.contextChange,
+            "UI sample outside context-change window should be ignored"
+        )
     }
 
     // MARK: - Idle Detection

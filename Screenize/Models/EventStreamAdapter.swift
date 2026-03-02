@@ -103,10 +103,15 @@ struct EventStreamAdapter: MouseDataSource {
                     elementInfo = nil
                 }
 
+                let appIdentifier = Self.normalizedAppIdentifier(
+                    event.elementAppName
+                )
+
                 return ClickEventData(
                     time: timelineSec,
                     position: NormalizedPoint(x: CGFloat(xNorm), y: CGFloat(yNorm)),
                     clickType: clickType,
+                    appBundleID: appIdentifier,
                     elementInfo: elementInfo
                 )
             }
@@ -135,6 +140,13 @@ struct EventStreamAdapter: MouseDataSource {
     /// Minimum normalized distance to classify a mouseDown/mouseUp pair as a drag.
     /// ~30px on a 1512px display (0.02 * 1512 ≈ 30).
     private static let dragDistanceThreshold: CGFloat = 0.02
+
+    private static func normalizedAppIdentifier(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.lowercased()
+    }
 
     /// Synthesize drag events from mouseDown+mouseMoved+mouseUp sequences.
     /// Returns inferred drags and the indices of click events to remove.

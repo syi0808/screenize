@@ -95,6 +95,9 @@ struct EventTimeline {
                 kind: .uiStateChange(sample),
                 position: position,
                 metadata: EventMetadata(
+                    appBundleID: normalizedAppIdentifier(
+                        sample.elementInfo?.applicationName
+                    ),
                     elementInfo: sample.elementInfo,
                     caretBounds: sample.caretBounds
                 )
@@ -151,5 +154,12 @@ struct EventTimeline {
         in positions: [MousePositionData]
     ) -> NormalizedPoint? {
         positions.last(where: { $0.time <= time })?.position
+    }
+
+    private static func normalizedAppIdentifier(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.lowercased()
     }
 }

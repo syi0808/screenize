@@ -135,6 +135,36 @@ final class EventStreamAdapterTests: XCTestCase {
         XCTAssertEqual(adapter.keyboardEvents[0].keyCode, 0)
     }
 
+    func test_clickElementAppName_mappedToAppIdentifier() {
+        let sessionStart: Int64 = 1000000
+        let meta = makeMetadata(sessionStartMs: sessionStart)
+        let clicks = [
+            PolyMouseClickEvent(
+                type: "mouseDown",
+                processTimeMs: sessionStart + 1200,
+                unixTimeMs: 0,
+                x: 300,
+                y: 400,
+                button: "left",
+                cursorId: nil,
+                activeModifiers: [],
+                elementRole: "AXButton",
+                elementSubrole: nil,
+                elementTitle: "Run",
+                elementAppName: "  Xcode  ",
+                elementFrameX: 100,
+                elementFrameY: 100,
+                elementFrameW: 60,
+                elementFrameH: 24,
+                elementIsClickable: true
+            )
+        ]
+
+        let adapter = makeAdapter(clicks: clicks, metadata: meta)
+        XCTAssertEqual(adapter.clicks.count, 1)
+        XCTAssertEqual(adapter.clicks[0].appBundleID, "xcode")
+    }
+
     // MARK: - Drag Inference: Basic Detection
 
     func test_dragInference_largeDisplacement_createsDragEvent() {

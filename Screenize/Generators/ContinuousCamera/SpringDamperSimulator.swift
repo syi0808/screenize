@@ -139,6 +139,11 @@ struct SpringDamperSimulator {
             // App switching should cut at the activation time, not pre-pan.
             return (active.targetZoom, active.targetCenter, active.urgency)
         }
+        guard next.urgency == .high else {
+            // Anticipation for normal/lazy waypoints causes perpetual drift on
+            // click-heavy timelines; only typing-like targets should pre-pan.
+            return (active.targetZoom, active.targetCenter, active.urgency)
+        }
 
         let lead = anticipationLeadTime(for: next.urgency)
         let start = next.time - lead
