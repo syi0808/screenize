@@ -9,6 +9,22 @@ actor VideoFrameAnalyzer {
 
     // MARK: - Types
 
+    private enum SamplingZone: Int, Comparable {
+        case base = 0
+        case boundary = 1
+        case burst = 2
+
+        static func < (lhs: SamplingZone, rhs: SamplingZone) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+    }
+
+    private struct SampleCandidate {
+        let index: Int
+        let time: TimeInterval
+        let zone: SamplingZone
+    }
+
     /// Frame analysis result
     struct FrameAnalysis: Codable, Equatable {
         let time: TimeInterval
@@ -30,12 +46,41 @@ actor VideoFrameAnalyzer {
         var percentage: Double { Double(current) / Double(max(1, total)) }
     }
 
+    /// Diagnostics for adaptive frame sampling.
+    struct SamplingDiagnostics {
+        let duration: TimeInterval
+        let sourceSampleCount: Int
+        let selectedSampleCount: Int
+        let baseSampleCount: Int
+        let boundarySampleCount: Int
+        let burstSampleCount: Int
+        let anchorCount: Int
+        let missedAnchorCount: Int
+        let budgetApplied: Bool
+        let effectiveSamplesPerSecond: Double
+        let upliftVsBaseRate: Double
+    }
+
+    /// Adaptive sampling policy for frame extraction.
+    struct AdaptiveSamplingPolicy {
+        var enabled: Bool = true
+        var anchorTimes: [TimeInterval] = []
+        var baseSampleRate: Double = 1.0
+        var boundarySampleRate: Double = 2.0
+        var burstSampleRate: Double = 6.0
+        var burstWindow: TimeInterval = 0.35
+        var boundaryWindow: TimeInterval = 1.0
+        var boundaryGapThreshold: TimeInterval = 1.0
+        var maxAverageSampleRate: Double = 2.5
+    }
+
     /// Analysis settings
     struct AnalysisSettings {
         var sampleRate: Double = 1.0        // Samples per second (1.0 = 1fps)
         var computeSaliency: Bool = true    // Whether to compute saliency
         var scrollThreshold: CGFloat = 50   // Threshold for scroll detection (average motion magnitude)
         var scrollDirectionCoherence: CGFloat = 0.8  // Threshold for scroll direction coherence
+        var adaptiveSampling: AdaptiveSamplingPolicy?
 
         static let `default` = AnalysisSettings()
     }
@@ -67,7 +112,8 @@ actor VideoFrameAnalyzer {
     func analyze(
         videoURL: URL,
         settings: AnalysisSettings = .default,
-        progressHandler: ((AnalysisProgress) -> Void)? = nil
+        progressHandler: ((AnalysisProgress) -> Void)? = nil,
+        diagnosticsHandler: ((SamplingDiagnostics) -> Void)? = nil
     ) async throws -> [FrameAnalysis] {
         self.progressHandler = progressHandler
 
@@ -78,15 +124,12 @@ actor VideoFrameAnalyzer {
             throw AnalysisError.invalidVideo("Video duration is zero")
         }
 
-        // Generate the list of sample times
-        let sampleInterval = 1.0 / settings.sampleRate
-        var sampleTimes: [TimeInterval] = []
-        var time: TimeInterval = 0
-
-        while time < duration {
-            sampleTimes.append(time)
-            time += sampleInterval
-        }
+        // Generate adaptive sample times (with budget cap + diagnostics).
+        let (sampleTimes, diagnostics) = buildSampleTimes(
+            duration: duration,
+            settings: settings
+        )
+        diagnosticsHandler?(diagnostics)
 
         guard !sampleTimes.isEmpty else {
             return []
@@ -109,8 +152,15 @@ actor VideoFrameAnalyzer {
     ) async throws -> [FrameAnalysis] {
         let imageGenerator = AVAssetImageGenerator(asset: asset)
         imageGenerator.appliesPreferredTrackTransform = true
-        imageGenerator.requestedTimeToleranceBefore = CMTime(seconds: 0.1, preferredTimescale: 600)
-        imageGenerator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
+        let toleranceSeconds = sampleTolerance(sampleTimes: sampleTimes)
+        imageGenerator.requestedTimeToleranceBefore = CMTime(
+            seconds: toleranceSeconds,
+            preferredTimescale: 600
+        )
+        imageGenerator.requestedTimeToleranceAfter = CMTime(
+            seconds: toleranceSeconds,
+            preferredTimescale: 600
+        )
 
         var results: [FrameAnalysis] = []
         results.reserveCapacity(sampleTimes.count)
@@ -429,5 +479,335 @@ actor VideoFrameAnalyzer {
                 return "Optical flow calculation failed"
             }
         }
+    }
+}
+
+private extension VideoFrameAnalyzer {
+    // MARK: - Adaptive Sampling
+
+    func buildSampleTimes(
+        duration: TimeInterval,
+        settings: AnalysisSettings
+    ) -> ([TimeInterval], SamplingDiagnostics) {
+        let baseRate = max(0.1, settings.sampleRate)
+
+        guard
+            let policy = settings.adaptiveSampling,
+            policy.enabled
+        else {
+            let sampleTimes = uniformSampleTimes(duration: duration, sampleRate: baseRate)
+            let diagnostics = SamplingDiagnostics(
+                duration: duration,
+                sourceSampleCount: sampleTimes.count,
+                selectedSampleCount: sampleTimes.count,
+                baseSampleCount: sampleTimes.count,
+                boundarySampleCount: 0,
+                burstSampleCount: 0,
+                anchorCount: 0,
+                missedAnchorCount: 0,
+                budgetApplied: false,
+                effectiveSamplesPerSecond: Double(sampleTimes.count) / max(duration, 0.001),
+                upliftVsBaseRate: (Double(sampleTimes.count) / max(duration, 0.001)) / baseRate
+            )
+            return (sampleTimes, diagnostics)
+        }
+
+        let anchors = normalizedAnchorTimes(
+            policy.anchorTimes,
+            duration: duration
+        )
+        guard !anchors.isEmpty else {
+            let sampleTimes = uniformSampleTimes(duration: duration, sampleRate: baseRate)
+            let diagnostics = SamplingDiagnostics(
+                duration: duration,
+                sourceSampleCount: sampleTimes.count,
+                selectedSampleCount: sampleTimes.count,
+                baseSampleCount: sampleTimes.count,
+                boundarySampleCount: 0,
+                burstSampleCount: 0,
+                anchorCount: 0,
+                missedAnchorCount: 0,
+                budgetApplied: false,
+                effectiveSamplesPerSecond: Double(sampleTimes.count) / max(duration, 0.001),
+                upliftVsBaseRate: (Double(sampleTimes.count) / max(duration, 0.001)) / baseRate
+            )
+            return (sampleTimes, diagnostics)
+        }
+
+        let boundaryAnchors = makeBoundaryAnchors(
+            from: anchors,
+            gapThreshold: max(0.1, policy.boundaryGapThreshold)
+        )
+        let rates = (
+            base: max(0.1, policy.baseSampleRate),
+            boundary: max(max(0.1, policy.baseSampleRate), policy.boundarySampleRate),
+            burst: max(max(0.1, policy.boundarySampleRate), policy.burstSampleRate)
+        )
+
+        var candidates: [SampleCandidate] = []
+        var time: TimeInterval = 0
+        var index = 0
+        while time < duration {
+            let zone = samplingZone(
+                at: time,
+                burstAnchors: anchors,
+                boundaryAnchors: boundaryAnchors,
+                burstWindow: max(0.01, policy.burstWindow),
+                boundaryWindow: max(policy.burstWindow, policy.boundaryWindow)
+            )
+            candidates.append(SampleCandidate(index: index, time: time, zone: zone))
+            index += 1
+
+            let rate: Double
+            switch zone {
+            case .base:
+                rate = rates.base
+            case .boundary:
+                rate = rates.boundary
+            case .burst:
+                rate = rates.burst
+            }
+            time += 1.0 / rate
+        }
+
+        let maxSamples = max(
+            1,
+            Int(ceil(duration * max(0.1, policy.maxAverageSampleRate)))
+        )
+        let budgetApplied = candidates.count > maxSamples
+        let selectedCandidates = budgetApplied
+            ? enforceBudget(candidates: candidates, maxSamples: maxSamples)
+            : candidates
+
+        let selectedTimes = selectedCandidates.map(\.time)
+        let baseCount = selectedCandidates.filter { $0.zone == .base }.count
+        let boundaryCount = selectedCandidates.filter { $0.zone == .boundary }.count
+        let burstCount = selectedCandidates.filter { $0.zone == .burst }.count
+        let missedAnchors = countMissedAnchors(
+            anchors: anchors,
+            sampleTimes: selectedTimes,
+            maxDistance: max(0.05, 1.5 / rates.burst)
+        )
+        let effectiveRate = Double(selectedTimes.count) / max(duration, 0.001)
+        let diagnostics = SamplingDiagnostics(
+            duration: duration,
+            sourceSampleCount: candidates.count,
+            selectedSampleCount: selectedTimes.count,
+            baseSampleCount: baseCount,
+            boundarySampleCount: boundaryCount,
+            burstSampleCount: burstCount,
+            anchorCount: anchors.count,
+            missedAnchorCount: missedAnchors,
+            budgetApplied: budgetApplied,
+            effectiveSamplesPerSecond: effectiveRate,
+            upliftVsBaseRate: effectiveRate / baseRate
+        )
+
+        return (selectedTimes, diagnostics)
+    }
+
+    func uniformSampleTimes(
+        duration: TimeInterval,
+        sampleRate: Double
+    ) -> [TimeInterval] {
+        let interval = 1.0 / max(0.1, sampleRate)
+        var result: [TimeInterval] = []
+        var time: TimeInterval = 0
+        while time < duration {
+            result.append(time)
+            time += interval
+        }
+        return result
+    }
+
+    func normalizedAnchorTimes(
+        _ anchors: [TimeInterval],
+        duration: TimeInterval
+    ) -> [TimeInterval] {
+        let clamped = anchors
+            .map { min(max(0, $0), duration) }
+            .sorted()
+        guard !clamped.isEmpty else { return [] }
+        var deduped: [TimeInterval] = []
+        deduped.reserveCapacity(clamped.count)
+        for anchor in clamped {
+            if let last = deduped.last, abs(last - anchor) < 0.01 {
+                continue
+            }
+            deduped.append(anchor)
+        }
+        return deduped
+    }
+
+    func makeBoundaryAnchors(
+        from anchors: [TimeInterval],
+        gapThreshold: TimeInterval
+    ) -> [TimeInterval] {
+        guard anchors.count >= 2 else { return anchors }
+        var boundaries: [TimeInterval] = anchors
+        for index in 1..<anchors.count {
+            let previous = anchors[index - 1]
+            let current = anchors[index]
+            if current - previous >= gapThreshold {
+                boundaries.append(previous)
+                boundaries.append(current)
+            }
+        }
+        return boundaries.sorted()
+    }
+
+    private func samplingZone(
+        at time: TimeInterval,
+        burstAnchors: [TimeInterval],
+        boundaryAnchors: [TimeInterval],
+        burstWindow: TimeInterval,
+        boundaryWindow: TimeInterval
+    ) -> SamplingZone {
+        if nearestDistance(to: time, in: burstAnchors) <= burstWindow {
+            return .burst
+        }
+        if nearestDistance(to: time, in: boundaryAnchors) <= boundaryWindow {
+            return .boundary
+        }
+        return .base
+    }
+
+    func nearestDistance(
+        to target: TimeInterval,
+        in sortedValues: [TimeInterval]
+    ) -> TimeInterval {
+        guard !sortedValues.isEmpty else { return .greatestFiniteMagnitude }
+
+        var low = 0
+        var high = sortedValues.count
+        while low < high {
+            let mid = (low + high) / 2
+            if sortedValues[mid] < target {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+
+        var best = TimeInterval.greatestFiniteMagnitude
+        if low < sortedValues.count {
+            best = min(best, abs(sortedValues[low] - target))
+        }
+        if low > 0 {
+            best = min(best, abs(sortedValues[low - 1] - target))
+        }
+        return best
+    }
+
+    private func enforceBudget(
+        candidates: [SampleCandidate],
+        maxSamples: Int
+    ) -> [SampleCandidate] {
+        guard candidates.count > maxSamples else { return candidates }
+
+        var selected: [SampleCandidate] = []
+        var used = Set<Int>()
+
+        func appendEvenly(_ zone: SamplingZone, budget: Int) {
+            guard budget > 0 else { return }
+            let scoped = candidates.filter { $0.zone == zone }
+            for candidate in evenlySelected(scoped, targetCount: budget) {
+                if used.insert(candidate.index).inserted {
+                    selected.append(candidate)
+                }
+            }
+        }
+
+        var remaining = maxSamples
+
+        let burstCandidates = candidates.filter { $0.zone == .burst }
+        appendEvenly(.burst, budget: min(remaining, burstCandidates.count))
+        remaining = max(0, maxSamples - selected.count)
+        guard remaining > 0 else {
+            return selected.sorted { $0.time < $1.time }
+        }
+
+        let boundaryCandidates = candidates.filter { $0.zone == .boundary }
+        appendEvenly(.boundary, budget: min(remaining, boundaryCandidates.count))
+        remaining = max(0, maxSamples - selected.count)
+        guard remaining > 0 else {
+            return selected.sorted { $0.time < $1.time }
+        }
+
+        let baseCandidates = candidates.filter { $0.zone == .base }
+        appendEvenly(.base, budget: min(remaining, baseCandidates.count))
+        remaining = max(0, maxSamples - selected.count)
+
+        if remaining > 0 {
+            let fallback = candidates.filter { !used.contains($0.index) }
+            for candidate in evenlySelected(fallback, targetCount: remaining) {
+                if used.insert(candidate.index).inserted {
+                    selected.append(candidate)
+                }
+            }
+        }
+
+        return selected.sorted { $0.time < $1.time }
+    }
+
+    private func evenlySelected(
+        _ candidates: [SampleCandidate],
+        targetCount: Int
+    ) -> [SampleCandidate] {
+        guard targetCount > 0, !candidates.isEmpty else { return [] }
+        guard targetCount < candidates.count else { return candidates }
+
+        if targetCount == 1 {
+            return [candidates[0]]
+        }
+
+        let step = Double(candidates.count - 1) / Double(targetCount - 1)
+        var selected: [SampleCandidate] = []
+        selected.reserveCapacity(targetCount)
+        var used = Set<Int>()
+
+        for i in 0..<targetCount {
+            let raw = Int(round(Double(i) * step))
+            let index = min(max(0, raw), candidates.count - 1)
+            if used.insert(index).inserted {
+                selected.append(candidates[index])
+            }
+        }
+
+        if selected.count < targetCount {
+            for (index, candidate) in candidates.enumerated() where !used.contains(index) {
+                selected.append(candidate)
+                if selected.count == targetCount {
+                    break
+                }
+            }
+        }
+
+        return selected
+    }
+
+    func countMissedAnchors(
+        anchors: [TimeInterval],
+        sampleTimes: [TimeInterval],
+        maxDistance: TimeInterval
+    ) -> Int {
+        guard !anchors.isEmpty else { return 0 }
+        guard !sampleTimes.isEmpty else { return anchors.count }
+
+        return anchors.reduce(into: 0) { misses, anchor in
+            if nearestDistance(to: anchor, in: sampleTimes) > maxDistance {
+                misses += 1
+            }
+        }
+    }
+
+    func sampleTolerance(sampleTimes: [TimeInterval]) -> TimeInterval {
+        guard sampleTimes.count >= 2 else { return 0.1 }
+        var minGap = TimeInterval.greatestFiniteMagnitude
+        for index in 1..<sampleTimes.count {
+            minGap = min(minGap, sampleTimes[index] - sampleTimes[index - 1])
+        }
+        guard minGap.isFinite, minGap > 0 else { return 0.1 }
+        return min(0.1, max(0.01, minGap * 0.5))
     }
 }

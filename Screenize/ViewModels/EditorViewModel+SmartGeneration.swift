@@ -33,11 +33,27 @@ extension EditorViewModel {
                 frameAnalysis = cached
             } else {
                 let analyzer = VideoFrameAnalyzer()
+                let anchorTimes = adaptiveFrameAnalysisAnchors(from: mouseDataSource)
+                var analysisSettings = VideoFrameAnalyzer.AnalysisSettings.default
+                analysisSettings.adaptiveSampling = VideoFrameAnalyzer.AdaptiveSamplingPolicy(
+                    enabled: true,
+                    anchorTimes: anchorTimes
+                )
                 frameAnalysis = try await analyzer.analyze(
                     videoURL: project.media.videoURL,
+                    settings: analysisSettings,
                     progressHandler: { progress in
                         Task { @MainActor in
                             Log.generator.debug("Frame analysis: \(Int(progress.percentage * 100))%")
+                        }
+                    },
+                    diagnosticsHandler: { diagnostics in
+                        Task { @MainActor in
+                            let rate = String(format: "%.2f", diagnostics.effectiveSamplesPerSecond)
+                            let uplift = String(format: "%.2fx", diagnostics.upliftVsBaseRate)
+                            Log.generator.debug(
+                                "Adaptive frame sampling: selected=\(diagnostics.selectedSampleCount)/\(diagnostics.sourceSampleCount), rate=\(rate)fps, uplift=\(uplift), anchors=\(diagnostics.anchorCount), missed=\(diagnostics.missedAnchorCount), budget=\(diagnostics.budgetApplied)"
+                            )
                         }
                     }
                 )
@@ -158,5 +174,27 @@ extension EditorViewModel {
                 project.timeline.tracks.append(.keystroke(keystrokeTrack))
             }
         }
+    }
+
+    private func adaptiveFrameAnalysisAnchors(
+        from mouseData: MouseDataSource
+    ) -> [TimeInterval] {
+        let clickAnchors = mouseData.clicks.map(\.time)
+        let keyAnchors = mouseData.keyboardEvents.map(\.time)
+        let dragAnchors = mouseData.dragEvents.flatMap { [$0.startTime, $0.endTime] }
+        let anchors = (clickAnchors + keyAnchors + dragAnchors)
+            .map { min(max(0, $0), mouseData.duration) }
+            .sorted()
+
+        guard !anchors.isEmpty else { return [] }
+        var deduped: [TimeInterval] = []
+        deduped.reserveCapacity(anchors.count)
+        for anchor in anchors {
+            if let last = deduped.last, abs(last - anchor) < 0.01 {
+                continue
+            }
+            deduped.append(anchor)
+        }
+        return deduped
     }
 }

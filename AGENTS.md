@@ -36,6 +36,16 @@ Auto-fix lint violations where possible:
 ./scripts/lint.sh --fix
 ```
 
+### Smart Generation Quality Report (Direction 1)
+Generate benchmark quality metrics and gate checks:
+```bash
+./scripts/smart-generation-quality-report.sh
+```
+Enforce gates (blocking mode):
+```bash
+./scripts/smart-generation-quality-report.sh --enforce-gates
+```
+
 ### Tests (Current Status + How To Run)
 Current repository status:
 - There is currently **no test target** configured in `Screenize.xcodeproj`.

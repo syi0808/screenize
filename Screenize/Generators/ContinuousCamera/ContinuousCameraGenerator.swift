@@ -40,7 +40,16 @@ class ContinuousCameraGenerator {
         // Step 2: Build event timeline
         let timeline = EventTimeline.build(
             from: effectiveMouseData,
-            uiStateSamples: uiStateSamples
+            uiStateSamples: uiStateSamples,
+            diagnosticsHandler: { diagnostics in
+                #if DEBUG
+                let sourceRate = String(format: "%.2f", diagnostics.sourceSamplesPerSecond)
+                let effectiveRate = String(format: "%.2f", diagnostics.effectiveSamplesPerSecond)
+                Log.generator.debug(
+                    "Adaptive event sampling: moves=\(diagnostics.selectedMouseMoveCount)/\(diagnostics.sourceMouseMoveCount), rate=\(effectiveRate)Hz (src=\(sourceRate)Hz), burst=\(diagnostics.burstSampleCount), boundary=\(diagnostics.boundarySampleCount), base=\(diagnostics.baseSampleCount), missed=\(diagnostics.missedAnchorCount)/\(diagnostics.anchorCount), budget=\(diagnostics.budgetApplied)"
+                )
+                #endif
+            }
         )
 
         // Step 3: Classify intents
