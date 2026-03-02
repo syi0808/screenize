@@ -84,36 +84,19 @@ struct ShotPlanner {
 
     // MARK: - Idle Scene Resolution
 
-    /// Idle scenes inherit center from nearest non-idle neighbor with zoom decayed toward 1.0.
-    /// This is applied in both directions so short leading idles don't snap to (0.5, 0.5)
-    /// right before the first action.
+    /// Idle scenes inherit center from the previous non-idle scene with zoom decayed
+    /// toward 1.0. Leading idle scenes remain establishing shots (zoom 1.0, centered).
     private static func resolveIdleScenes(_ plans: inout [ShotPlan], settings: ShotSettings) {
         guard plans.count > 1 else { return }
         let decay = settings.idleZoomDecay
 
-        // Forward pass: idle inherits from previous non-idle.
+        // Idle scenes after the first action inherit from the previous action.
         var lastNonIdleIndex: Int?
         for i in 0..<plans.count {
             if plans[i].scene.primaryIntent != .idle {
                 lastNonIdleIndex = i
             } else if let prev = lastNonIdleIndex {
                 plans[i] = plans[i].inheriting(from: plans[prev], decayFactor: decay)
-            }
-        }
-
-        // Backward pass: fill untouched idles from the next non-idle.
-        // This specifically handles leading idles (before the first action).
-        var nextNonIdleIndex: Int?
-        for i in stride(from: plans.count - 1, through: 0, by: -1) {
-            if plans[i].scene.primaryIntent != .idle {
-                nextNonIdleIndex = i
-                continue
-            }
-
-            guard let next = nextNonIdleIndex else { continue }
-            let untouchedIdle = abs(plans[i].idealZoom - settings.idleZoom) < 0.0001
-            if untouchedIdle {
-                plans[i] = plans[i].inheriting(from: plans[next], decayFactor: decay)
             }
         }
     }

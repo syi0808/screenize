@@ -153,6 +153,37 @@ final class WaypointGeneratorTests: XCTestCase {
         }
     }
 
+    func test_generate_leadingIdle_keepsEstablishingZoom() {
+        let spans = [
+            makeIntentSpan(
+                start: 0, end: 2, intent: .idle,
+                focus: NormalizedPoint(x: 0.5, y: 0.5)
+            ),
+            makeIntentSpan(
+                start: 2, end: 5, intent: .clicking,
+                focus: NormalizedPoint(x: 0.8, y: 0.2)
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+
+        guard let idleWP = waypoints.first(where: {
+            if case .idle = $0.source { return true }
+            return false
+        }) else {
+            XCTFail("Expected leading idle waypoint")
+            return
+        }
+
+        XCTAssertEqual(idleWP.time, 0, accuracy: 0.001)
+        XCTAssertEqual(idleWP.targetZoom, 1.0, accuracy: 0.01)
+    }
+
     // MARK: - Idle/Switching Use focusPosition (Not Center)
 
     func test_generate_idleSpan_usesFocusPositionNotCenter() {

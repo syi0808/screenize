@@ -249,6 +249,22 @@ final class IntentClassifierTests: XCTestCase {
         XCTAssertEqual(navigatingSpans.count, 1)
     }
 
+    func test_classify_twoClicksModeratelyFar_stillNavigating() {
+        let clicks = [
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.3)),
+            makeClick(at: 2.2, position: NormalizedPoint(x: 0.55, y: 0.3)),
+        ]
+        let mouseData = MockMouseDataSource(clicks: clicks)
+        let spans = classify(mouseData)
+
+        let navigatingSpans = spans.filter { $0.intent == .navigating }
+        XCTAssertEqual(
+            navigatingSpans.count,
+            1,
+            "Natural UI traversal clicks should remain in one navigating span"
+        )
+    }
+
     func test_classify_twoClicksFarApart_producesSeparateClickingSpans() {
         let clicks = [
             makeClick(at: 1.0, position: NormalizedPoint(x: 0.1, y: 0.1)),
@@ -454,6 +470,25 @@ final class IntentClassifierTests: XCTestCase {
             "Large gap between clicks should insert idle span. " +
             "All spans: \(spans.map { "[\(String(format: "%.2f", $0.startTime))-\(String(format: "%.2f", $0.endTime))] \($0.intent)" })"
         )
+    }
+
+    func test_classify_insertedIdleFocus_keepsPreviousContext() {
+        let clicks = [
+            makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.2)),
+            makeClick(at: 4.0, position: NormalizedPoint(x: 0.8, y: 0.8)),
+        ]
+        let mouseData = MockMouseDataSource(duration: 6.0, clicks: clicks)
+        let spans = classify(mouseData)
+
+        guard let idle = spans.first(where: {
+            $0.intent == .idle && $0.startTime >= 1.4 && $0.endTime <= 4.0
+        }) else {
+            XCTFail("Expected an idle span between click actions")
+            return
+        }
+
+        XCTAssertEqual(idle.focusPosition.x, 0.2, accuracy: 0.01)
+        XCTAssertEqual(idle.focusPosition.y, 0.2, accuracy: 0.01)
     }
 
     func test_classify_gapFillingDoesNotExtendSpanBeyond300ms() {

@@ -15,8 +15,8 @@ struct IntentClassifier {
     static let navigatingClickWindow: TimeInterval = 2.0
 
     /// Maximum spatial distance between clicks to count as navigating.
-    /// 0.25 covers a quarter of the screen — clicks within this range during UI navigation are grouped.
-    static let navigatingClickDistance: CGFloat = 0.25
+    /// 0.5 keeps natural multi-step UI traversal in one intent span.
+    static let navigatingClickDistance: CGFloat = 0.5
 
     /// Minimum number of clicks for a navigating span.
     static let navigatingMinClicks: Int = 2
@@ -560,10 +560,12 @@ struct IntentClassifier {
                         contextChange: result[lastIdx].contextChange
                     )
                 } else {
+                    let idleFocus = result.last?.focusPosition
+                        ?? NormalizedPoint(x: 0.5, y: 0.5)
                     // Gap too large (temporal or spatial): insert idle span
                     result.append(makeIdleSpan(
                         start: gapStart, end: gapEnd,
-                        focusPosition: span.focusPosition
+                        focusPosition: idleFocus
                     ))
                 }
             }

@@ -332,8 +332,8 @@ final class ShotPlannerTests: XCTestCase {
         XCTAssertEqual(plans[1].idealCenter.y, plans[0].idealCenter.y, accuracy: 0.01)
     }
 
-    func test_plan_idleAtStart_decaysZoomFromNextNonIdle() {
-        // Idle → Clicking → idle at start decays from clicking
+    func test_plan_idleAtStart_keepsEstablishingShot() {
+        // Leading idle should stay as an establishing shot.
         let events = [
             makeMouseMoveEvent(time: 3.5, position: NormalizedPoint(x: 0.6, y: 0.7)),
             makeMouseMoveEvent(time: 4.0, position: NormalizedPoint(x: 0.65, y: 0.72)),
@@ -347,15 +347,9 @@ final class ShotPlannerTests: XCTestCase {
             scenes: scenes, screenBounds: screenBounds,
             eventTimeline: timeline, settings: defaultSettings
         )
-        let actionZoom = plans[1].idealZoom
-        let idleZoom = plans[0].idealZoom
-        // Idle zoom decays toward 1.0
-        XCTAssertLessThan(idleZoom, actionZoom,
-                          "Leading idle zoom should be less than action zoom")
-        XCTAssertGreaterThanOrEqual(idleZoom, 1.0,
-                                    "Leading idle zoom should be >= 1.0")
-        // Center still inherited
-        XCTAssertEqual(plans[0].idealCenter.x, plans[1].idealCenter.x, accuracy: 0.01)
+        XCTAssertEqual(plans[0].idealZoom, 1.0, accuracy: 0.01)
+        XCTAssertEqual(plans[0].idealCenter.x, 0.5, accuracy: 0.01)
+        XCTAssertEqual(plans[0].idealCenter.y, 0.5, accuracy: 0.01)
     }
 
     func test_plan_multipleConsecutiveIdles_allDecayed() {

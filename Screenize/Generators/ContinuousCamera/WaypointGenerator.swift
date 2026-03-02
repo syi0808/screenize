@@ -443,7 +443,7 @@ struct WaypointGenerator {
 
     // MARK: - Idle Resolution
 
-    /// Resolve zoom for idle spans by inheriting from nearest non-idle neighbor with decay.
+    /// Resolve zoom for idle spans by inheriting from the previous non-idle span with decay.
     private static func resolveIdleZoom(
         at index: Int,
         spans: [IntentSpan],
@@ -452,15 +452,9 @@ struct WaypointGenerator {
     ) -> CGFloat {
         let decay = settings.shot.idleZoomDecay
 
-        // Look backward for nearest non-idle
+        // Look backward for nearest non-idle.
+        // Leading idles intentionally stay at establishing zoom 1.0.
         for i in stride(from: index - 1, through: 0, by: -1) where spans[i].intent != .idle {
-            let neighborZoom = baseTransforms[i]?.zoom
-                ?? computeZoom(for: spans[i], settings: settings)
-            return 1.0 + (neighborZoom - 1.0) * decay
-        }
-
-        // Look forward for nearest non-idle
-        for i in (index + 1)..<spans.count where spans[i].intent != .idle {
             let neighborZoom = baseTransforms[i]?.zoom
                 ?? computeZoom(for: spans[i], settings: settings)
             return 1.0 + (neighborZoom - 1.0) * decay

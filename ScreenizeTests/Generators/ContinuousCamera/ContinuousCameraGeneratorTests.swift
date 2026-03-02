@@ -147,6 +147,27 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
                       "Clicking activity should produce zoomed-in segments")
     }
 
+    func test_generate_fixtureProject_startsWithEstablishingShot() throws {
+        let fixture = try loadFixtureProjectInput()
+        let result = generator.generate(
+            from: fixture.mouseData,
+            uiStateSamples: fixture.uiStateSamples,
+            frameAnalysis: [],
+            screenBounds: fixture.screenBounds,
+            settings: ContinuousCameraSettings()
+        )
+
+        guard let first = result.continuousTransforms?.first else {
+            XCTFail("Expected continuous transforms for fixture project")
+            return
+        }
+
+        XCTAssertEqual(first.time, 0, accuracy: 0.001)
+        XCTAssertEqual(first.transform.zoom, 1.0, accuracy: 0.05)
+        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.05)
+        XCTAssertEqual(first.transform.center.y, 0.5, accuracy: 0.05)
+    }
+
     // MARK: - Helpers
 
     private func makeBasicMouseData(duration: TimeInterval) -> MockMouseDataSource {
@@ -202,5 +223,66 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
             positions: positions,
             clicks: clicks
         )
+    }
+
+    private func loadFixtureProjectInput() throws -> (
+        mouseData: MouseDataSource,
+        uiStateSamples: [UIStateSample],
+        screenBounds: CGSize
+    ) {
+        let projectURL = try fixtureProjectURL()
+        let metadataURL = projectURL.appendingPathComponent("recording/metadata.json")
+        let mouseMovesURL = projectURL.appendingPathComponent("recording/mousemoves-0.json")
+        let mouseClicksURL = projectURL.appendingPathComponent("recording/mouseclicks-0.json")
+        let keystrokesURL = projectURL.appendingPathComponent("recording/keystrokes-0.json")
+
+        let metadata: PolyRecordingMetadata = try decode(from: metadataURL)
+        let mouseMoves: [PolyMouseMoveEvent] = try decode(from: mouseMovesURL)
+        let mouseClicks: [PolyMouseClickEvent] = try decode(from: mouseClicksURL)
+        let keystrokes: [PolyKeystrokeEvent] = try decode(from: keystrokesURL)
+
+        let duration = Double(metadata.processTimeEndMs - metadata.processTimeStartMs) / 1000.0
+        let mouseData = EventStreamAdapter(
+            mouseMoves: mouseMoves,
+            mouseClicks: mouseClicks,
+            keystrokes: keystrokes,
+            metadata: metadata,
+            duration: duration,
+            frameRate: 60.0
+        )
+
+        let interop = InteropBlock.forRecording(
+            videoRelativePath: "recording/recording.mp4"
+        )
+        let uiStateSamples = EventStreamLoader.loadUIStateSamples(
+            from: projectURL,
+            interop: interop,
+            metadata: metadata
+        )
+
+        return (
+            mouseData,
+            uiStateSamples,
+            CGSize(width: metadata.display.widthPx, height: metadata.display.heightPx)
+        )
+    }
+
+    private func fixtureProjectURL() throws -> URL {
+        let filePath = #filePath
+        guard let testsRange = filePath.range(of: "/ScreenizeTests/") else {
+            throw FixtureError.invalidTestPath
+        }
+        let rootPath = String(filePath[..<testsRange.lowerBound])
+        return URL(fileURLWithPath: rootPath)
+            .appendingPathComponent("projects/Recording_2026-02-24_02-19-36.screenize")
+    }
+
+    private func decode<T: Decodable>(from url: URL) throws -> T {
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+
+    private enum FixtureError: Error {
+        case invalidTestPath
     }
 }
