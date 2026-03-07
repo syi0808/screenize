@@ -60,7 +60,7 @@ final class GlobalHotkeyManager {
         )
 
         guard status == noErr else {
-            print("[GlobalHotkeyManager] Failed to install event handler: \(status)")
+            Log.ui.error("Failed to install event handler: \(status)")
             return
         }
 
@@ -80,7 +80,7 @@ final class GlobalHotkeyManager {
         )
 
         guard regStatus == noErr else {
-            print("[GlobalHotkeyManager] Failed to register hotkey: \(regStatus)")
+            Log.ui.error("Failed to register hotkey: \(regStatus)")
             return
         }
     }

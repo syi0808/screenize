@@ -18,7 +18,7 @@ struct SettingsInspector: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             // Presets
             PresetPickerView(settings: $settings, onChange: onChange)
 
@@ -29,77 +29,82 @@ struct SettingsInspector: View {
 
             Divider()
 
-            // Background header
-            backgroundHeader
+            // Background
+            SectionHeader(title: "Background", icon: "rectangle.on.rectangle", iconColor: DesignColors.sectionBackground)
 
             Divider()
 
-            // Background toggle
             backgroundToggle
 
             if settings.backgroundEnabled {
                 Divider()
-
-                // Background style
                 backgroundStyleSection
-
-                Divider()
-
-                // Padding
-                paddingSection
-
-                Divider()
-
-                // Window inset (border removal)
-                windowInsetSection
-
-                Divider()
-
-                // Rounded corners
-                cornerRadiusSection
-
-                Divider()
-
-                // Shadow
-                shadowSection
             }
+
+            Divider()
+
+            // Padding
+            SliderWithField(
+                label: "Padding",
+                value: $settings.padding.asDouble,
+                range: 0...100,
+                step: 4,
+                unit: "px",
+                presets: [("0", 0), ("20", 20), ("40", 40), ("60", 60)],
+                onChange: onChange
+            )
+
+            Divider()
+
+            // Window inset
+            SliderWithField(
+                label: "Window Inset",
+                value: $settings.windowInset.asDouble,
+                range: 0...30,
+                step: 1,
+                unit: "px",
+                presets: [("0", 0), ("8", 8), ("12", 12), ("16", 16)],
+                description: "Remove window border by cropping edges",
+                onChange: onChange
+            )
+
+            Divider()
+
+            // Corner radius
+            SliderWithField(
+                label: "Corner Radius",
+                value: $settings.cornerRadius.asDouble,
+                range: 0...60,
+                step: 2,
+                unit: "px",
+                presets: [("0", 0), ("8", 8), ("12", 12), ("20", 20)],
+                onChange: onChange
+            )
+
+            Divider()
+
+            // Shadow
+            shadowSection
 
             Spacer()
         }
-        .padding(12)
+        .padding(Spacing.md)
     }
 
-    // MARK: - Sections
-
-    // MARK: Cursor Settings
+    // MARK: - Cursor Settings
 
     private var cursorSettingsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "cursorarrow")
-                    .foregroundColor(.orange)
-
-                Text("Cursor")
-                    .font(.headline)
-
-                Spacer()
-            }
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            SectionHeader(title: "Cursor", icon: "cursorarrow", iconColor: DesignColors.sectionCursor)
 
             // Cursor scale
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Cursor Scale")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                SubSectionLabel(
+                    label: "Cursor Scale",
+                    value: String(format: "%.1fx", cursorScale)
+                )
 
-                    Spacer()
-
-                    Text(String(format: "%.1fx", cursorScale))
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(.secondary)
-                }
-
-                HStack(spacing: 12) {
+                HStack(spacing: Spacing.md) {
                     Slider(value: Binding(
                         get: { Double(cursorScale) },
                         set: { updateCursorScale(CGFloat($0)) }
@@ -114,10 +119,10 @@ struct SettingsInspector: View {
                 }
 
                 // Preset buttons
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.sm) {
                     ForEach([1.0, 1.5, 2.0, 2.5], id: \.self) { value in
                         Button(String(format: "%.1fx", value)) {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withMotionSafeAnimation(AnimationTokens.standard) {
                                 updateCursorScale(value)
                             }
                         }
@@ -126,11 +131,130 @@ struct SettingsInspector: View {
                     }
                 }
             }
+
+            // Smooth cursor interpolation
+            Toggle(isOn: smoothCursorBinding) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("Smooth Cursor")
+                        .font(Typography.bodyMedium)
+                    Text("Spring-based cursor smoothing for polished motion")
+                        .font(Typography.monoSmall)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            // Spring smoothing controls (visible when smooth cursor is on)
+            if timeline.cursorTrackV2?.useSmoothCursor == true {
+                cursorSmoothingControls
+            }
         }
     }
 
+    // MARK: - Cursor Smoothing Controls
+
+    private var cursorSmoothingControls: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            SubSectionLabel(
+                label: "Smoothing",
+                value: smoothingIntensityLabel
+            )
+
+            HStack(spacing: Spacing.md) {
+                Text("Snappy")
+                    .font(Typography.monoSmall)
+                    .foregroundColor(.secondary)
+
+                Slider(
+                    value: smoothingResponseBinding,
+                    in: 0.02...0.20,
+                    step: 0.01
+                )
+
+                Text("Smooth")
+                    .font(Typography.monoSmall)
+                    .foregroundColor(.secondary)
+            }
+
+            // Preset buttons
+            HStack(spacing: Spacing.sm) {
+                ForEach(smoothingPresets, id: \.label) { preset in
+                    Button(preset.label) {
+                        withMotionSafeAnimation(AnimationTokens.standard) {
+                            updateSpringResponse(preset.value)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+
+            Toggle(isOn: adaptiveResponseBinding) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("Adaptive Speed")
+                        .font(Typography.bodyMedium)
+                    Text("Reduce lag for fast cursor movements")
+                        .font(Typography.monoSmall)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+
+    private var smoothingPresets: [(label: String, value: CGFloat)] {
+        [("Subtle", 0.04), ("Default", 0.08), ("Smooth", 0.12), ("Heavy", 0.18)]
+    }
+
+    private var smoothingIntensityLabel: String {
+        let response = timeline.cursorTrackV2?.springConfig.response ?? 0.08
+        return String(format: "%.0fms", response * 1000)
+    }
+
+    private var smoothingResponseBinding: Binding<Double> {
+        Binding(
+            get: { Double(timeline.cursorTrackV2?.springConfig.response ?? 0.08) },
+            set: { updateSpringResponse(CGFloat($0)) }
+        )
+    }
+
+    private var adaptiveResponseBinding: Binding<Bool> {
+        Binding(
+            get: { timeline.cursorTrackV2?.springConfig.adaptiveResponse ?? true },
+            set: { newValue in
+                guard let trackIndex = timeline.tracks.firstIndex(
+                    where: { $0.trackType == .cursor }
+                ), case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+                track.springConfig.adaptiveResponse = newValue
+                timeline.tracks[trackIndex] = .cursor(track)
+                onChange?()
+            }
+        )
+    }
+
+    private func updateSpringResponse(_ newValue: CGFloat) {
+        guard let trackIndex = timeline.tracks.firstIndex(
+            where: { $0.trackType == .cursor }
+        ), case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+        track.springConfig.response = newValue
+        timeline.tracks[trackIndex] = .cursor(track)
+        onChange?()
+    }
+
+    private var smoothCursorBinding: Binding<Bool> {
+        Binding(
+            get: { timeline.cursorTrackV2?.useSmoothCursor ?? true },
+            set: { newValue in
+                guard let trackIndex = timeline.tracks.firstIndex(
+                    where: { $0.trackType == .cursor }
+                ), case .cursor(var track) = timeline.tracks[trackIndex] else { return }
+                track.useSmoothCursor = newValue
+                timeline.tracks[trackIndex] = .cursor(track)
+                onChange?()
+            }
+        )
+    }
+
     private var cursorScale: CGFloat {
-        timeline.cursorTrack?.defaultScale ?? 2.5
+        timeline.cursorTrackV2?.segments.first?.scale ?? 2.5
     }
 
     private func updateCursorScale(_ newValue: CGFloat) {
@@ -139,40 +263,24 @@ struct SettingsInspector: View {
             return
         }
 
-        track = CursorTrack(
-            id: track.id,
-            name: track.name,
-            isEnabled: track.isEnabled,
-            defaultStyle: track.defaultStyle,
-            defaultScale: newValue,
-            defaultVisible: track.defaultVisible,
-            styleKeyframes: track.styleKeyframes
-        )
+        track.segments = track.segments.map {
+            var segment = $0
+            segment.scale = newValue
+            return segment
+        }
         timeline.tracks[trackIndex] = .cursor(track)
         onChange?()
     }
 
-    // MARK: Background
-
-    private var backgroundHeader: some View {
-        HStack {
-            Image(systemName: "rectangle.on.rectangle")
-                .foregroundColor(.purple)
-
-            Text("Background")
-                .font(.headline)
-
-            Spacer()
-        }
-    }
+    // MARK: - Background
 
     private var backgroundToggle: some View {
         Toggle(isOn: $settings.backgroundEnabled) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("Background")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(Typography.bodyMedium)
                 Text("Add background behind window")
-                    .font(.system(size: 10))
+                    .font(Typography.monoSmall)
                     .foregroundColor(.secondary)
             }
         }
@@ -182,22 +290,20 @@ struct SettingsInspector: View {
     }
 
     private var backgroundStyleSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Background Style")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            SubSectionLabel(label: "Background Style")
 
             // Gradient presets
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 Text("Gradient Presets")
-                    .font(.system(size: 10))
+                    .font(Typography.monoSmall)
                     .foregroundStyle(.tertiary)
 
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
                     GridItem(.flexible()),
                     GridItem(.flexible())
-                ], spacing: 8) {
+                ], spacing: Spacing.sm) {
                     ForEach(0..<GradientStyle.presets.count, id: \.self) { index in
                         let gradient = GradientStyle.presets[index]
                         GradientPresetButton(
@@ -213,12 +319,12 @@ struct SettingsInspector: View {
             }
 
             // Solid color selection
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 Text("Solid Color")
-                    .font(.system(size: 10))
+                    .font(Typography.monoSmall)
                     .foregroundStyle(.tertiary)
 
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.sm) {
                     ForEach(solidColorPresets, id: \.self) { color in
                         SolidColorButton(
                             color: color,
@@ -230,7 +336,6 @@ struct SettingsInspector: View {
                         )
                     }
 
-                    // Custom color picker
                     ColorPicker("", selection: Binding(
                         get: { currentSolidColor },
                         set: { newColor in
@@ -244,16 +349,16 @@ struct SettingsInspector: View {
             }
 
             // Custom image
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 Text("Custom Image")
-                    .font(.system(size: 10))
+                    .font(Typography.monoSmall)
                     .foregroundStyle(.tertiary)
 
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.sm) {
                     Button {
                         selectBackgroundImage()
                     } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: Spacing.xs) {
                             Image(systemName: "photo")
                             Text(isBackgroundImageSelected ? "Change Image" : "Select Image")
                         }
@@ -278,219 +383,50 @@ struct SettingsInspector: View {
             // Current selection preview
             currentBackgroundPreview
                 .frame(height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
         }
     }
 
-    private var paddingSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Padding")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                Text("\(Int(settings.padding)) px")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary)
-            }
-
-            HStack(spacing: 12) {
-                Slider(value: $settings.padding, in: 0...100, step: 4)
-                    .onChange(of: settings.padding) { _ in
-                        onChange?()
-                    }
-
-                TextField("", value: Binding(
-                    get: { Double(settings.padding) },
-                    set: { settings.padding = CGFloat($0); onChange?() }
-                ), format: .number.precision(.fractionLength(0)))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 50)
-            }
-
-            // Preset buttons
-            HStack(spacing: 8) {
-                ForEach([0, 20, 40, 60], id: \.self) { value in
-                    Button("\(value)") {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            settings.padding = CGFloat(value)
-                        }
-                        onChange?()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-        }
-    }
-
-    private var windowInsetSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Window Inset")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                Text("\(Int(settings.windowInset)) px")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary)
-            }
-
-            Text("Remove window border by cropping edges")
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-
-            HStack(spacing: 12) {
-                Slider(value: $settings.windowInset, in: 0...30, step: 1)
-                    .onChange(of: settings.windowInset) { _ in
-                        onChange?()
-                    }
-
-                TextField("", value: Binding(
-                    get: { Double(settings.windowInset) },
-                    set: { settings.windowInset = CGFloat($0); onChange?() }
-                ), format: .number.precision(.fractionLength(0)))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 50)
-            }
-
-            // Preset buttons
-            HStack(spacing: 8) {
-                ForEach([0, 8, 12, 16], id: \.self) { value in
-                    Button("\(value)") {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            settings.windowInset = CGFloat(value)
-                        }
-                        onChange?()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-        }
-    }
-
-    private var cornerRadiusSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Corner Radius")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                Text("\(Int(settings.cornerRadius)) px")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary)
-            }
-
-            HStack(spacing: 12) {
-                Slider(value: $settings.cornerRadius, in: 0...40, step: 2)
-                    .onChange(of: settings.cornerRadius) { _ in
-                        onChange?()
-                    }
-
-                TextField("", value: Binding(
-                    get: { Double(settings.cornerRadius) },
-                    set: { settings.cornerRadius = CGFloat($0); onChange?() }
-                ), format: .number.precision(.fractionLength(0)))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 50)
-            }
-
-            // Preset buttons
-            HStack(spacing: 8) {
-                ForEach([0, 8, 12, 20], id: \.self) { value in
-                    Button("\(value)") {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            settings.cornerRadius = CGFloat(value)
-                        }
-                        onChange?()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-        }
-    }
+    // MARK: - Shadow
 
     private var shadowSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Shadow")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            SubSectionLabel(label: "Shadow")
 
             // Shadow radius
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Radius")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-
-                    Spacer()
-
-                    Text("\(Int(settings.shadowRadius)) px")
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                }
-
-                HStack(spacing: 12) {
-                    Slider(value: $settings.shadowRadius, in: 0...50, step: 2)
-                        .onChange(of: settings.shadowRadius) { _ in
-                            onChange?()
-                        }
-
-                    TextField("", value: Binding(
-                        get: { Double(settings.shadowRadius) },
-                        set: { settings.shadowRadius = CGFloat($0); onChange?() }
-                    ), format: .number.precision(.fractionLength(0)))
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 50)
-                }
-            }
+            SliderWithField(
+                label: "Radius",
+                value: $settings.shadowRadius.asDouble,
+                range: 0...50,
+                step: 2,
+                unit: "px",
+                onChange: onChange
+            )
 
             // Shadow opacity
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Opacity")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-
-                    Spacer()
-
-                    Text("\(Int(settings.shadowOpacity * 100))%")
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                }
-
-                HStack(spacing: 12) {
-                    Slider(value: Binding(
-                        get: { Double(settings.shadowOpacity) },
-                        set: { settings.shadowOpacity = Float($0) }
-                    ), in: 0...1, step: 0.05)
-                        .onChange(of: settings.shadowOpacity) { _ in
-                            onChange?()
-                        }
-
-                    TextField("", value: Binding(
-                        get: { Double(settings.shadowOpacity) },
-                        set: { settings.shadowOpacity = Float($0); onChange?() }
-                    ), format: .number.precision(.fractionLength(2)))
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 50)
-                }
-            }
+            SliderWithField(
+                label: "Opacity",
+                value: shadowOpacityBinding,
+                range: 0...1,
+                step: 0.05,
+                unit: "%",
+                fractionDigits: 0,
+                onChange: onChange
+            )
         }
+    }
+
+    private var shadowOpacityBinding: Binding<Double> {
+        Binding(
+            get: { Double(settings.shadowOpacity) },
+            set: { settings.shadowOpacity = Float($0) }
+        )
     }
 
     // MARK: - Helpers
 
     private var solidColorPresets: [Color] {
-        [.black, .white, Color(hex: "#1a1a2e")!, Color(hex: "#f5f5f5")!]
+        [.black, .white, Color(hex: "#1a1a2e") ?? .black, Color(hex: "#f5f5f5") ?? .white]
     }
 
     private var currentSolidColor: Color {
@@ -567,7 +503,7 @@ private struct GradientPresetButton: View {
 
     var body: some View {
         Button(action: onSelect) {
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: CornerRadius.md)
                 .fill(
                     LinearGradient(
                         colors: gradient.colors,
@@ -577,8 +513,8 @@ private struct GradientPresetButton: View {
                 )
                 .frame(height: 32)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+                    RoundedRectangle(cornerRadius: CornerRadius.md)
+                        .stroke(isSelected ? DesignColors.accent : Color.clear, lineWidth: 2)
                 )
                 .overlay(
                     isSelected ?
@@ -606,11 +542,11 @@ private struct SolidColorButton: View {
                 .frame(width: 24, height: 24)
                 .overlay(
                     Circle()
-                        .stroke(color == .white ? Color.gray.opacity(0.3) : Color.clear, lineWidth: 1)
+                        .stroke(color == .white ? Color.gray.opacity(DesignOpacity.medium) : Color.clear, lineWidth: 1)
                 )
                 .overlay(
                     Circle()
-                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+                        .stroke(isSelected ? DesignColors.accent : Color.clear, lineWidth: 2)
                 )
         }
         .buttonStyle(.plain)
@@ -624,11 +560,13 @@ private struct SolidColorButton: View {
         @State private var settings = RenderSettings()
         @State private var timeline = Timeline(
             tracks: [
-                AnyTrack(CursorTrack(
+                AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
-                    defaultScale: 2.5
+                    segments: [
+                        CursorSegment(startTime: 0, endTime: 10, scale: 2.5),
+                    ]
                 ))
             ],
             duration: 10

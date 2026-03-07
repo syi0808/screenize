@@ -6,6 +6,7 @@ import ScreenCaptureKit
 
 /// CFR (Constant Frame Rate) recording manager
 /// Converts ScreenCaptureKit's VFR output to a fixed 60fps CFR recording
+@available(*, deprecated, message: "Use VFRRecordingManager instead")
 final class CFRRecordingManager: @unchecked Sendable {
 
     // MARK: - Properties
@@ -13,11 +14,19 @@ final class CFRRecordingManager: @unchecked Sendable {
     /// Target frame rate (fixed at 60fps)
     private let targetFPS: Double = 60.0
 
+    /// Base timestamp for audio rebasing (first audio sample's PTS)
+    /// ScreenCaptureKit audio timestamps use the system media clock (since boot),
+    /// while video uses synthetic timestamps starting from 0. We rebase audio to match.
+    private var audioBaseTime: CMTime?
+
     /// Duration between frames (seconds)
     private var frameInterval: TimeInterval { 1.0 / targetFPS }
 
     /// Video writer
     private var videoWriter: VideoWriter?
+
+    /// System audio sidecar writer
+    private var systemAudioWriter: SystemAudioWriter?
 
     /// Recording status
     private var isRecording = false
@@ -49,6 +58,9 @@ final class CFRRecordingManager: @unchecked Sendable {
     /// Pause state
     private var isPaused = false
 
+    /// System audio output URL
+    private var systemAudioURL: URL?
+
     /// Recording completion callback
     var onRecordingFinished: ((URL?) -> Void)?
 
@@ -70,7 +82,7 @@ final class CFRRecordingManager: @unchecked Sendable {
         self.outputURL = outputURL
         self.configuration = configuration
 
-        // Configure the VideoWriter
+        // Configure the VideoWriter (video only — system audio goes to sidecar)
         let writerConfig = VideoWriterConfiguration(
             width: configuration.width,
             height: configuration.height,
@@ -78,39 +90,53 @@ final class CFRRecordingManager: @unchecked Sendable {
             videoBitRate: 20_000_000,  // 20Mbps for high quality
             keyFrameInterval: Int(targetFPS),  // Keyframe every second
             videoCodec: .hevc,
-            fileType: .mov
+            fileType: .mov,
+            includeAudio: false
         )
 
         videoWriter = try VideoWriter(outputURL: outputURL, configuration: writerConfig)
         try videoWriter?.startWriting()
+
+        // Start system audio sidecar writer (only if audio capture is enabled)
+        if configuration.capturesAudio {
+            let sysAudioURL = Self.generateSystemAudioURL(for: outputURL)
+            systemAudioWriter = SystemAudioWriter()
+            try systemAudioWriter?.startWriting(to: sysAudioURL)
+            self.systemAudioURL = sysAudioURL
+        }
 
         isRecording = true
         isPaused = false
         frameIndex = 0
         recordingStartTime = Date()
         lastValidPixelBuffer = nil
+        audioBaseTime = nil
 
         // Start the frame writing timer
         startFrameTimer()
 
-        print("🎬 [CFRRecordingManager] CFR recording started: \(Int(targetFPS))fps, \(configuration.width)x\(configuration.height)")
+        Log.capture.info("CFR recording started: \(Int(self.targetFPS))fps, \(configuration.width)x\(configuration.height)")
     }
 
     /// Stop recording
-    func stopRecording() async -> URL? {
-        guard isRecording else { return nil }
+    func stopRecording() async -> CFRRecordingResult {
+        guard isRecording else { return CFRRecordingResult(videoURL: nil, systemAudioURL: nil) }
 
         isRecording = false
 
         // Stop the timer
         stopFrameTimer()
 
-        // Finish the writer
+        // Stop system audio writer
+        let sysAudioURL = await systemAudioWriter?.stopWriting()
+        self.systemAudioWriter = nil
+
+        // Finish the video writer
         do {
             let url = try await videoWriter?.finishWriting()
 
             let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
-            print("🎬 [CFRRecordingManager] CFR recording ended: \(frameIndex) frames, \(String(format: "%.2f", duration))s")
+            Log.capture.info("CFR recording ended: \(self.frameIndex) frames, \(String(format: "%.2f", duration))s")
 
             // Cleanup
             frameLock.lock()
@@ -121,11 +147,13 @@ final class CFRRecordingManager: @unchecked Sendable {
             outputURL = nil
             configuration = nil
             recordingStartTime = nil
+            audioBaseTime = nil
+            systemAudioURL = nil
 
             onRecordingFinished?(url)
-            return url
+            return CFRRecordingResult(videoURL: url, systemAudioURL: sysAudioURL)
         } catch {
-            print("❌ [CFRRecordingManager] Failed to stop recording: \(error)")
+            Log.capture.error("CFR failed to stop recording: \(error)")
             videoWriter?.cancelWriting()
 
             frameLock.lock()
@@ -133,9 +161,10 @@ final class CFRRecordingManager: @unchecked Sendable {
             frameLock.unlock()
 
             videoWriter = nil
+            systemAudioURL = nil
 
             onRecordingFinished?(nil)
-            return nil
+            return CFRRecordingResult(videoURL: nil, systemAudioURL: sysAudioURL)
         }
     }
 
@@ -147,6 +176,49 @@ final class CFRRecordingManager: @unchecked Sendable {
     /// Resume recording
     func resume() {
         isPaused = false
+    }
+
+    // MARK: - Audio Handling
+
+    /// Receive a system audio sample buffer from ScreenCaptureKit.
+    /// Rebases timestamps so audio aligns with synthetic video timestamps.
+    func receiveAudioSample(_ sampleBuffer: CMSampleBuffer) {
+        guard isRecording, !isPaused else { return }
+
+        let originalPTS = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+
+        // Capture the first audio PTS as our base for rebasing
+        if audioBaseTime == nil {
+            audioBaseTime = originalPTS
+        }
+
+        guard let base = audioBaseTime else { return }
+
+        // Rebase: subtract the base time so audio starts near 0
+        let rebasedPTS = originalPTS - base
+
+        // Skip negative timestamps (can happen if samples arrive out of order)
+        guard rebasedPTS.seconds >= 0 else { return }
+
+        // Create a copy with the rebased timestamp
+        var timingInfo = CMSampleTimingInfo(
+            duration: CMSampleBufferGetDuration(sampleBuffer),
+            presentationTimeStamp: rebasedPTS,
+            decodeTimeStamp: .invalid
+        )
+
+        var rebasedBuffer: CMSampleBuffer?
+        let status = CMSampleBufferCreateCopyWithNewTiming(
+            allocator: kCFAllocatorDefault,
+            sampleBuffer: sampleBuffer,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timingInfo,
+            sampleBufferOut: &rebasedBuffer
+        )
+
+        guard status == noErr, let buffer = rebasedBuffer else { return }
+
+        systemAudioWriter?.appendSampleBuffer(buffer)
     }
 
     // MARK: - Frame Handling
@@ -166,20 +238,20 @@ final class CFRRecordingManager: @unchecked Sendable {
         if debugFrameCount == 0 {
             let bufW = CVPixelBufferGetWidth(pixelBuffer)
             let bufH = CVPixelBufferGetHeight(pixelBuffer)
-            print("🔍 [DEBUG] First frame pixel buffer: \(bufW)x\(bufH)")
+            Log.capture.debug("First frame pixel buffer: \(bufW)x\(bufH)")
 
             // Extract SCStreamFrameInfo from sample buffer attachments
             if let attachmentsArray = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [NSDictionary],
                let dict = attachmentsArray.first {
                 if let contentRectDict = dict[SCStreamFrameInfo.contentRect] as? NSDictionary,
                    let contentRect = CGRect(dictionaryRepresentation: contentRectDict) {
-                    print("🔍 [DEBUG] contentRect: \(contentRect)")
+                    Log.capture.debug("contentRect: \(String(describing: contentRect))")
                 }
                 if let contentScale = dict[SCStreamFrameInfo.contentScale] as? CGFloat {
-                    print("🔍 [DEBUG] contentScale: \(contentScale)")
+                    Log.capture.debug("contentScale: \(contentScale)")
                 }
                 if let scaleFactor = dict[SCStreamFrameInfo.scaleFactor] as? CGFloat {
-                    print("🔍 [DEBUG] scaleFactor: \(scaleFactor)")
+                    Log.capture.debug("scaleFactor: \(scaleFactor)")
                 }
             }
         }
@@ -323,6 +395,22 @@ final class CFRRecordingManager: @unchecked Sendable {
     var recordedFrameCount: Int64 {
         return frameIndex
     }
+
+    // MARK: - Helpers
+
+    /// Generate the system audio sidecar URL from the video output URL.
+    private static func generateSystemAudioURL(for videoURL: URL) -> URL {
+        let dir = videoURL.deletingLastPathComponent()
+        let name = videoURL.deletingPathExtension().lastPathComponent
+        return dir.appendingPathComponent("\(name)_system.m4a")
+    }
+}
+
+// MARK: - CFRRecordingResult
+
+struct CFRRecordingResult {
+    let videoURL: URL?
+    let systemAudioURL: URL?
 }
 
 // MARK: - Errors

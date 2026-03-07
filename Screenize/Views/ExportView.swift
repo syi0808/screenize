@@ -20,10 +20,24 @@ struct ExportSheetView: View {
 
     // MARK: - State
 
-    @State private var renderSettings: RenderSettings
+    @State var renderSettings: RenderSettings
     @State private var outputURL: URL?
     @State private var isExporting = false
-    @State private var showFilePicker = false
+
+    // Custom resolution state
+    @State var isCustomResolution: Bool
+    @State var customWidth: Int
+    @State var customHeight: Int
+    @State var resolutionValidationError: String?
+
+    // Custom frame rate state
+    @State var isCustomFrameRate: Bool
+    @State var customFPS: Int
+    @State var frameRateValidationError: String?
+
+    // Export error state
+    @State private var showExportErrorAlert = false
+    @State private var exportErrorMessage = ""
 
     // MARK: - Initialization
 
@@ -38,6 +52,30 @@ struct ExportSheetView: View {
         self.onDismiss = onDismiss
         self.onComplete = onComplete
         self._renderSettings = State(initialValue: project.renderSettings)
+
+        // Detect existing custom resolution
+        if case .custom(let w, let h) = project.renderSettings.outputResolution {
+            self._isCustomResolution = State(initialValue: true)
+            self._customWidth = State(initialValue: w)
+            self._customHeight = State(initialValue: h)
+        } else {
+            self._isCustomResolution = State(initialValue: false)
+            self._customWidth = State(initialValue: 1920)
+            self._customHeight = State(initialValue: 1080)
+        }
+        self._resolutionValidationError = State(initialValue: nil)
+
+        // Detect existing custom frame rate
+        let presetFPS = [24, 30, 60, 120, 240]
+        if case .fixed(let fps) = project.renderSettings.outputFrameRate,
+           !presetFPS.contains(fps) {
+            self._isCustomFrameRate = State(initialValue: true)
+            self._customFPS = State(initialValue: fps)
+        } else {
+            self._isCustomFrameRate = State(initialValue: false)
+            self._customFPS = State(initialValue: 60)
+        }
+        self._frameRateValidationError = State(initialValue: nil)
     }
 
     // MARK: - Body
@@ -63,19 +101,10 @@ struct ExportSheetView: View {
             footer
         }
         .frame(width: 400)
-        .fileExporter(
-            isPresented: $showFilePicker,
-            document: ExportDocument(),
-            contentType: .mpeg4Movie,
-            defaultFilename: "\(project.media.videoURL.deletingPathExtension().lastPathComponent)_edited"
-        ) { result in
-            switch result {
-            case .success(let url):
-                outputURL = url
-                startExport()
-            case .failure(let error):
-                print("File picker error: \(error)")
-            }
+        .alert("Export Error", isPresented: $showExportErrorAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(exportErrorMessage)
         }
     }
 
@@ -87,8 +116,8 @@ struct ExportSheetView: View {
                 .font(.title2)
                 .foregroundColor(.accentColor)
 
-            Text("Export Video")
-                .font(.headline)
+            Text(renderSettings.exportFormat == .gif ? "Export GIF" : "Export Video")
+                .font(Typography.heading)
 
             Spacer()
 
@@ -101,93 +130,19 @@ struct ExportSheetView: View {
             .buttonStyle(.plain)
             .disabled(isExporting)
         }
-        .padding()
-    }
-
-    // MARK: - Settings Form
-
-    private var settingsForm: some View {
-        Form {
-            // Preset
-            Section("Preset") {
-                PresetPickerView(settings: $renderSettings)
-            }
-
-            // Resolution
-            Section("Resolution") {
-                Picker("Output Size", selection: $renderSettings.outputResolution) {
-                    ForEach(OutputResolution.allCases, id: \.self) { resolution in
-                        Text(resolution.displayName).tag(resolution)
-                    }
-                }
-            }
-
-            // Frame rate
-            Section("Frame Rate") {
-                Picker("Frame Rate", selection: $renderSettings.outputFrameRate) {
-                    ForEach(OutputFrameRate.allCases, id: \.self) { rate in
-                        Text(rate.displayName).tag(rate)
-                    }
-                }
-            }
-
-            // Codec
-            Section("Codec") {
-                Picker("Video Codec", selection: $renderSettings.codec) {
-                    ForEach(VideoCodec.allCases, id: \.self) { codec in
-                        Text(codec.displayName).tag(codec)
-                    }
-                }
-
-                Text(renderSettings.codec.displayName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // Quality
-            Section("Quality") {
-                Picker("Quality", selection: $renderSettings.quality) {
-                    ForEach(ExportQuality.allCases, id: \.self) { quality in
-                        Text(quality.displayName).tag(quality)
-                    }
-                }
-
-                // Estimated file size
-                estimatedFileSize
-            }
-        }
-        .formStyle(.grouped)
-        .padding()
-    }
-
-    // MARK: - Estimated File Size
-
-    private var estimatedFileSize: some View {
-        let sourceSize = project.media.pixelSize
-        let outputSize = renderSettings.outputResolution.size(sourceSize: sourceSize)
-        let bitRate = renderSettings.quality.bitRate(for: outputSize)
-        let estimatedBytes = Int64(Double(bitRate) * project.media.duration / 8)
-
-        return HStack {
-            Text("Estimated size:")
-                .foregroundColor(.secondary)
-
-            Text(ByteCountFormatter.string(fromByteCount: estimatedBytes, countStyle: .file))
-                .fontWeight(.medium)
-        }
-        .font(.caption)
+        .padding(Spacing.lg)
     }
 
     // MARK: - Export Progress View
 
     private var exportProgressView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Spacing.xl) {
             Spacer()
 
             // Progress circle
             ZStack {
                 Circle()
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 8)
+                    .stroke(Color.secondary.opacity(DesignOpacity.light), lineWidth: 8)
                     .frame(width: 100, height: 100)
 
                 Circle()
@@ -195,7 +150,7 @@ struct ExportSheetView: View {
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .frame(width: 100, height: 100)
                     .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 0.1), value: exportEngine.progress.progress)
+                    .motionSafeAnimation(AnimationTokens.linearFast, value: exportEngine.progress.progress)
 
                 Text("\(exportEngine.progress.percentComplete)%")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -203,24 +158,25 @@ struct ExportSheetView: View {
 
             // Status text
             Text(exportEngine.progress.statusText)
-                .font(.headline)
+                .font(Typography.heading)
+                .accessibilityLabel("Export status: \(exportEngine.progress.statusText)")
 
             // Statistics
             if let stats = exportEngine.statistics {
-                VStack(spacing: 4) {
+                VStack(spacing: Spacing.xs) {
                     Text("Processing: \(String(format: "%.1f", stats.processingFPS)) fps")
 
                     if let remaining = stats.estimatedRemainingTime {
                         Text("Remaining: \(formatDuration(remaining))")
                     }
                 }
-                .font(.caption)
+                .font(Typography.caption)
                 .foregroundColor(.secondary)
             }
 
             Spacer()
         }
-        .padding()
+        .padding(Spacing.lg)
     }
 
     // MARK: - Footer
@@ -243,9 +199,10 @@ struct ExportSheetView: View {
 
             if !isExporting {
                 Button("Export") {
-                    showFilePicker = true
+                    showSavePanel()
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(hasValidationError)
             } else if exportEngine.progress.isCompleted {
                 Button("Done") {
                     if let url = exportEngine.progress.outputURL {
@@ -256,7 +213,22 @@ struct ExportSheetView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .padding()
+        .padding(Spacing.lg)
+    }
+
+    // MARK: - File Picker
+
+    private func showSavePanel() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [renderSettings.exportUTType]
+        let baseName = project.media.videoURL
+            .deletingPathExtension().lastPathComponent
+        panel.nameFieldStringValue = "\(baseName)_edited.\(renderSettings.fileExtension)"
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        outputURL = url
+        startExport()
     }
 
     // MARK: - Actions
@@ -279,8 +251,9 @@ struct ExportSheetView: View {
             } catch {
                 await MainActor.run {
                     isExporting = false
-                    // Handle the error
-                    print("Export error: \(error)")
+                    exportErrorMessage = "Export failed: \(error.localizedDescription)"
+                    showExportErrorAlert = true
+                    Log.export.error("Export error: \(error)")
                 }
             }
         }
@@ -305,23 +278,6 @@ struct ExportSheetView: View {
     }
 }
 
-// MARK: - Export Document (for file exporter)
-
-struct ExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] = [.mpeg4Movie]
-
-    init() {}
-
-    init(configuration: ReadConfiguration) throws {
-        // Not used for export
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        // Return empty wrapper - actual content written by export engine
-        return FileWrapper(regularFileWithContents: Data())
-    }
-}
-
 // MARK: - Inline Export Progress View
 
 /// Export progress view displayed inside the editor
@@ -332,14 +288,14 @@ struct InlineExportProgressView: View {
     var onCancel: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spacing.md) {
             // Progress bar
             ProgressView(value: exportEngine.progress.progress)
                 .progressViewStyle(.linear)
 
             // Percentage
             Text("\(exportEngine.progress.percentComplete)%")
-                .font(.system(size: 11, design: .monospaced))
+                .font(Typography.mono)
                 .foregroundColor(.secondary)
                 .frame(width: 36, alignment: .trailing)
 
@@ -352,10 +308,10 @@ struct InlineExportProgressView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(8)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .background(DesignColors.controlBackground)
+        .cornerRadius(CornerRadius.lg)
     }
 }
 

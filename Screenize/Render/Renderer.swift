@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 import CoreImage
 import CoreVideo
+import Metal
 
 /// Unified renderer
 /// Shared rendering logic for both Preview and Export
@@ -30,6 +31,12 @@ final class Renderer {
     /// Rendering settings for window mode
     private let renderSettings: RenderSettings?
 
+    /// High-resolution cursor image provider
+    private let cursorImageProvider: CursorImageProvider
+
+    /// Window transform applicator (for cursor position calculation in window mode)
+    private let windowTransformApplicator: WindowTransformApplicator
+
     // MARK: - Initialization
 
     init(
@@ -42,10 +49,14 @@ final class Renderer {
         self.transformApplicator = TransformApplicator()
         self.compositor = EffectCompositor(ciContext: context.ciContext)
         self.motionBlurSettings = motionBlurSettings
+        self.cursorImageProvider = CursorImageProvider()
+        self.windowTransformApplicator = WindowTransformApplicator()
 
         self.isWindowMode = isWindowMode
         self.renderSettings = renderSettings
-        self.windowModeRenderer = isWindowMode ? WindowModeRenderer(ciContext: context.ciContext) : nil
+        self.windowModeRenderer = isWindowMode
+            ? WindowModeRenderer(ciContext: context.ciContext, isPreview: context.isPreview)
+            : nil
     }
 
     // MARK: - Main Render
@@ -61,22 +72,7 @@ final class Renderer {
     ) -> CIImage? {
         var result = sourceFrame
 
-        // 1. Composite ripple effects (over source frame, before transform)
-        for ripple in state.ripples {
-            if let rippleImage = compositor.renderRipple(ripple, frameSize: context.sourceSize) {
-                result = rippleImage.composited(over: result)
-            }
-        }
-
-        // 2. Render cursor (over source frame, before transform)
-        // The cursor renders at the source frame's absolute position and scales/moves with the transform
-        if state.cursor.visible {
-            if let cursorImage = compositor.renderCursor(state.cursor, frameSize: context.sourceSize) {
-                result = cursorImage.composited(over: result)
-            }
-        }
-
-        // 3. Apply transform (mode-specific branch)
+        // 1. Apply transform (mode-specific branch)
         if isWindowMode, let windowRenderer = windowModeRenderer, let settings = renderSettings {
             // Window mode: background + window scale/offset + effects
             result = windowRenderer.render(
@@ -97,7 +93,68 @@ final class Renderer {
             )
         }
 
-        // 4. Keystroke overlay (after transform — fixed screen position)
+        // 2. Render cursor (after transform — always sharp at output resolution)
+        if state.cursor.visible {
+            let outputPosition: CGPoint
+            let outputScale: CGFloat
+
+            if isWindowMode, let settings = renderSettings {
+                // Window mode: account for window inset when computing cursor position
+                var adjustedSourceSize = context.sourceSize
+                if settings.windowInset > 0 {
+                    adjustedSourceSize = CGSize(
+                        width: max(1, adjustedSourceSize.width - settings.windowInset * 2),
+                        height: max(1, adjustedSourceSize.height - settings.windowInset * 2)
+                    )
+                }
+
+                // Re-normalize cursor position relative to the inset-adjusted frame
+                var adjustedPosition = state.cursor.position
+                if settings.windowInset > 0 {
+                    let inset = settings.windowInset
+                    let adjX = (state.cursor.position.x * context.sourceSize.width - inset) / adjustedSourceSize.width
+                    let adjY = (state.cursor.position.y * context.sourceSize.height - inset) / adjustedSourceSize.height
+                    adjustedPosition = NormalizedPoint(x: adjX, y: adjY)
+                }
+
+                outputPosition = windowTransformApplicator.sourcePointToOutputPoint(
+                    adjustedPosition,
+                    transform: state.transform,
+                    sourceSize: adjustedSourceSize,
+                    outputSize: context.outputSize,
+                    padding: settings.padding
+                )
+
+                // Window mode output scale: base fit scale
+                let availableWidth = context.outputSize.width - settings.padding * 2
+                let availableHeight = context.outputSize.height - settings.padding * 2
+                let scaleX = availableWidth / adjustedSourceSize.width
+                let scaleY = availableHeight / adjustedSourceSize.height
+                outputScale = min(scaleX, scaleY)
+            } else {
+                // Screen mode
+                outputPosition = transformApplicator.sourcePointToOutputPoint(
+                    state.cursor.position,
+                    transform: state.transform,
+                    sourceSize: context.sourceSize,
+                    outputSize: context.outputSize
+                )
+                outputScale = context.outputSize.height / context.sourceSize.height
+            }
+
+            if let cursorImage = compositor.renderCursorAtOutputResolution(
+                state.cursor,
+                outputPosition: outputPosition,
+                outputSize: context.outputSize,
+                zoomLevel: state.transform.zoom,
+                outputScale: outputScale,
+                cursorImageProvider: cursorImageProvider
+            ) {
+                result = cursorImage.composited(over: result)
+            }
+        }
+
+        // 3. Keystroke overlay (after transform — fixed screen position)
         if !state.keystrokes.isEmpty {
             if let keystrokeOverlay = compositor.renderKeystrokeOverlay(
                 state.keystrokes,
@@ -116,20 +173,25 @@ final class Renderer {
     /// - Parameters:
     ///   - sourceFrame: Source video frame
     ///   - state: Evaluated frame state
+    ///   - outputColorSpace: Color space for the output pixel buffer (export only, defaults to sRGB)
     /// - Returns: Rendered pixel buffer
     func renderToPixelBuffer(
         sourceFrame: CIImage,
-        state: EvaluatedFrameState
+        state: EvaluatedFrameState,
+        outputColorSpace: CGColorSpace? = nil
     ) -> CVPixelBuffer? {
         guard let rendered = render(sourceFrame: sourceFrame, state: state) else {
             return nil
         }
 
-        return createPixelBuffer(from: rendered)
+        return createPixelBuffer(from: rendered, outputColorSpace: outputColorSpace)
     }
 
     /// Convert a CIImage to a CVPixelBuffer
-    private func createPixelBuffer(from image: CIImage) -> CVPixelBuffer? {
+    private func createPixelBuffer(
+        from image: CIImage,
+        outputColorSpace: CGColorSpace? = nil
+    ) -> CVPixelBuffer? {
         var pixelBuffer: CVPixelBuffer?
 
         // Acquire from the pixel buffer pool
@@ -162,20 +224,52 @@ final class Renderer {
 
         guard let buffer = pixelBuffer else { return nil }
 
+        let colorSpace = outputColorSpace ?? .screenizeSRGB
+
         // Render the CIImage into the CVPixelBuffer
         context.ciContext.render(
             image,
             to: buffer,
             bounds: CGRect(origin: .zero, size: context.outputSize),
-            colorSpace: CGColorSpaceCreateDeviceRGB()
+            colorSpace: colorSpace
         )
 
         return buffer
     }
 
+    // MARK: - MTLTexture Output
+
+    /// Render a frame directly to an MTLTexture (GPU-resident, no CPU readback)
+    /// The CIContext must be Metal-backed (created via CIContext(mtlDevice:))
+    /// Passing nil for commandBuffer makes the call synchronous (waits for GPU completion)
+    /// - Parameters:
+    ///   - sourceFrame: Source video frame
+    ///   - state: Evaluated frame state
+    ///   - targetTexture: Destination MTLTexture (must have .renderTarget usage)
+    /// - Returns: Whether rendering succeeded
+    func renderToTexture(
+        sourceFrame: CIImage,
+        state: EvaluatedFrameState,
+        targetTexture: MTLTexture
+    ) -> Bool {
+        guard let rendered = render(sourceFrame: sourceFrame, state: state) else {
+            return false
+        }
+
+        // Synchronous render: CIContext creates its own command buffer, commits, and waits
+        context.ciContext.render(
+            rendered,
+            to: targetTexture,
+            commandBuffer: nil,
+            bounds: CGRect(origin: .zero, size: context.outputSize),
+            colorSpace: .screenizeSRGB
+        )
+        return true
+    }
+
     // MARK: - CGImage Output
 
-    /// Render a frame to a CGImage
+    /// Render a frame to a CGImage (used by export pipeline)
     /// - Parameters:
     ///   - sourceFrame: Source video frame
     ///   - state: Evaluated frame state
@@ -193,6 +287,19 @@ final class Renderer {
             from: CGRect(origin: .zero, size: context.outputSize)
         )
     }
+}
+
+// MARK: - Metal Accessors
+
+extension Renderer {
+    /// Metal device from the render context (nil if not Metal-backed)
+    var device: MTLDevice? { context.device }
+
+    /// Metal command queue from the render context
+    var commandQueue: MTLCommandQueue? { context.commandQueue }
+
+    /// Output size from the render context
+    var outputSize: CGSize { context.outputSize }
 }
 
 // MARK: - Batch Rendering
@@ -228,7 +335,10 @@ extension Renderer {
         isWindowMode: Bool = false,
         renderSettings: RenderSettings? = nil
     ) -> Renderer {
-        let context = RenderContext.forPreview(sourceSize: sourceSize, scale: scale)
+        let context = RenderContext.forPreview(
+            sourceSize: sourceSize,
+            scale: scale
+        )
         return Renderer(
             context: context,
             motionBlurSettings: motionBlurSettings,
@@ -245,7 +355,10 @@ extension Renderer {
         isWindowMode: Bool = false,
         renderSettings: RenderSettings? = nil
     ) -> Renderer {
-        let context = RenderContext.forExport(sourceSize: sourceSize, outputSize: outputSize)
+        let context = RenderContext.forExport(
+            sourceSize: sourceSize,
+            outputSize: outputSize
+        )
         return Renderer(
             context: context,
             motionBlurSettings: motionBlurSettings,

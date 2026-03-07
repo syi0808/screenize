@@ -191,7 +191,6 @@ struct EditorLoaderView: View {
 
                 let packageInfo: PackageInfo
 
-                // v4 path: use event streams when mouse recording and capture meta are available
                 if let captureMeta,
                    let mouseRecording = appState.lastMouseRecording {
                     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -200,6 +199,8 @@ struct EditorLoaderView: View {
                         videoURL: videoURL,
                         mouseRecording: mouseRecording,
                         captureMeta: captureMeta,
+                        micAudioURL: appState.lastMicAudioURL,
+                        systemAudioURL: appState.lastSystemAudioURL,
                         in: parentDirectory,
                         recordingStartDate: appState.lastRecordingStartDate ?? Date(),
                         processTimeStartMs: appState.lastProcessTimeStartMs,
@@ -211,27 +212,20 @@ struct EditorLoaderView: View {
                         captureMeta: captureMeta
                     )
 
-                    // Clear retained mouse recording to free memory
                     appState.lastMouseRecording = nil
+                    appState.lastMicAudioURL = nil
+                    appState.lastSystemAudioURL = nil
                 } else {
-                    // MARK: - Legacy v2 (remove in next minor version)
-                    packageInfo = try ProjectManager.shared.createPackage(
+                    // Video import without mouse recording
+                    packageInfo = try PackageManager.shared.createPackageFromVideo(
                         name: videoName,
                         videoURL: videoURL,
-                        mouseDataURL: mouseDataURL,
                         in: parentDirectory
                     )
 
-                    if let captureMeta {
-                        project = try await ProjectCreator.createFromRecording(
-                            packageInfo: packageInfo,
-                            captureMeta: captureMeta
-                        )
-                    } else {
-                        project = try await ProjectCreator.createFromVideo(
-                            packageInfo: packageInfo
-                        )
-                    }
+                    project = try await ProjectCreator.createFromVideo(
+                        packageInfo: packageInfo
+                    )
                 }
 
                 // Save the project into the package
@@ -334,7 +328,7 @@ struct RecentProjectsView: View {
 
     private var projectList: some View {
         VStack(spacing: 4) {
-            ForEach(projectManager.recentProjects) { info in
+            ForEach(projectManager.recentProjects.prefix(5)) { info in
                 recentProjectRow(info)
             }
         }

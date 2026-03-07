@@ -23,14 +23,45 @@ struct ProjectCreator {
         let media = MediaAsset(
             videoRelativePath: packageInfo.videoRelativePath,
             mouseDataRelativePath: packageInfo.mouseDataRelativePath,
+            micAudioRelativePath: packageInfo.micAudioRelativePath,
+            systemAudioRelativePath: packageInfo.systemAudioRelativePath,
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
-            duration: videoInfo.duration
+            duration: videoInfo.duration,
+            isVariableFrameRate: videoInfo.isVariableFrameRate
         )
 
+        // Load mic audio duration if available
+        var micAudioDuration: TimeInterval?
+        if let micRelPath = packageInfo.micAudioRelativePath {
+            let micURL = packageInfo.packageURL.appendingPathComponent(micRelPath)
+            let micAsset = AVAsset(url: micURL)
+            do {
+                micAudioDuration = try await CMTimeGetSeconds(micAsset.load(.duration))
+            } catch {
+                Log.project.warning("Failed to load mic audio duration: \(error.localizedDescription)")
+            }
+        }
+
+        // Load system audio duration if available
+        var systemAudioDuration: TimeInterval?
+        if let sysRelPath = packageInfo.systemAudioRelativePath {
+            let sysURL = packageInfo.packageURL.appendingPathComponent(sysRelPath)
+            let sysAsset = AVAsset(url: sysURL)
+            do {
+                systemAudioDuration = try await CMTimeGetSeconds(sysAsset.load(.duration))
+            } catch {
+                Log.project.warning("Failed to load system audio duration: \(error.localizedDescription)")
+            }
+        }
+
         // Create a default timeline
-        let timeline = createDefaultTimeline(duration: videoInfo.duration)
+        let timeline = createDefaultTimeline(
+            duration: videoInfo.duration,
+            micAudioDuration: micAudioDuration,
+            systemAudioDuration: systemAudioDuration
+        )
 
         // Create the project
         return ScreenizeProject(
@@ -38,7 +69,8 @@ struct ProjectCreator {
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
-            renderSettings: RenderSettings()
+            renderSettings: RenderSettings(),
+            interop: packageInfo.interop
         )
     }
 
@@ -60,7 +92,8 @@ struct ProjectCreator {
             packageRootURL: packageInfo.packageURL,
             pixelSize: videoInfo.size,
             frameRate: videoInfo.frameRate,
-            duration: videoInfo.duration
+            duration: videoInfo.duration,
+            isVariableFrameRate: videoInfo.isVariableFrameRate
         )
 
         // Basic capture metadata based on video size
@@ -92,6 +125,7 @@ struct ProjectCreator {
         let size: CGSize
         let frameRate: Double
         let duration: TimeInterval
+        let isVariableFrameRate: Bool
     }
 
     private static func loadVideoInfo(from url: URL) async throws -> VideoInfo {
@@ -107,10 +141,22 @@ struct ProjectCreator {
 
         let frameRate = nominalFrameRate > 0 ? nominalFrameRate : 60.0
 
+        // Detect variable frame rate by comparing minFrameDuration with nominal
+        let minFrameDuration = try await videoTrack.load(.minFrameDuration)
+        let minFrameDurationSec = CMTimeGetSeconds(minFrameDuration)
+        let isVFR: Bool
+        if minFrameDurationSec > 0 && nominalFrameRate > 0 {
+            let minFPS = 1.0 / minFrameDurationSec
+            isVFR = abs(minFPS - nominalFrameRate) / nominalFrameRate > 0.1
+        } else {
+            isVFR = false
+        }
+
         return VideoInfo(
             size: size,
             frameRate: frameRate,
-            duration: duration
+            duration: duration,
+            isVariableFrameRate: isVFR
         )
     }
 
@@ -132,52 +178,69 @@ struct ProjectCreator {
 
     // MARK: - Default Timeline
 
-    private static func createDefaultTimeline(duration: TimeInterval) -> Timeline {
-        Timeline(
-            tracks: [
-                AnyTrack(TransformTrack(
-                    id: UUID(),
-                    name: "Transform",
-                    isEnabled: true,
-                    keyframes: [
-                        TransformKeyframe(
-                            time: 0,
-                            zoom: 1.0,
-                            centerX: 0.5,
-                            centerY: 0.5,
-                            easing: .easeInOut
-                        )
-                    ]
-                )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: []
-                )),
-                AnyTrack(CursorTrack(
-                    id: UUID(),
-                    name: "Cursor",
-                    isEnabled: true,
-                    styleKeyframes: [
-                        CursorStyleKeyframe(
-                            time: 0,
-                            style: .arrow,
-                            visible: true,
-                            scale: 1.5,
-                            easing: .linear
-                        )
-                    ]
-                )),
-                AnyTrack(KeystrokeTrack(
-                    id: UUID(),
-                    name: "Keystroke",
-                    isEnabled: true,
-                    keyframes: []
-                )),
-            ],
-            duration: duration
-        )
+    private static func createDefaultTimeline(
+        duration: TimeInterval,
+        micAudioDuration: TimeInterval? = nil,
+        systemAudioDuration: TimeInterval? = nil
+    ) -> Timeline {
+        var tracks: [AnySegmentTrack] = [
+            .camera(CameraTrack(
+                id: UUID(),
+                name: "Camera",
+                isEnabled: true,
+                segments: [
+                    CameraSegment(
+                        startTime: 0,
+                        endTime: max(0.1, duration),
+                        startTransform: .identity,
+                        endTransform: .identity,
+                        interpolation: .easeInOut
+                    ),
+                ]
+            )),
+            .cursor(CursorTrackV2(
+                id: UUID(),
+                name: "Cursor",
+                isEnabled: true,
+                segments: [
+                    CursorSegment(startTime: 0, endTime: max(0.1, duration), style: .arrow, visible: true, scale: 1.5),
+                ]
+            )),
+            .keystroke(KeystrokeTrackV2(
+                id: UUID(),
+                name: "Keystroke",
+                isEnabled: true,
+                segments: []
+            )),
+        ]
+
+        if let sysAudioDuration = systemAudioDuration, sysAudioDuration > 0 {
+            let clampedEnd = min(duration, sysAudioDuration)
+            tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "System Audio",
+                isEnabled: true,
+                audioSource: .system,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: max(0.1, clampedEnd))
+                ]
+            )))
+        }
+
+        if let audioDuration = micAudioDuration, audioDuration > 0 {
+            let clampedEnd = min(duration, audioDuration)
+            tracks.append(.audio(AudioTrack(
+                id: UUID(),
+                name: "Mic Audio",
+                isEnabled: true,
+                audioSource: .microphone,
+                segments: [
+                    AudioSegment(startTime: 0, endTime: max(0.1, clampedEnd))
+                ]
+            )))
+        }
+
+        return Timeline(tracks: tracks, duration: duration)
     }
 }
 
@@ -221,7 +284,6 @@ struct ProjectCreatorOptions {
 
     enum AutoGeneratorType {
         case clickZoom
-        case ripple
         case cursorSmooth
     }
 

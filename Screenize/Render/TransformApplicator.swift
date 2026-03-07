@@ -129,9 +129,9 @@ final class TransformApplicator {
         let cropWidth = sourceSize.width / transform.zoom
         let cropHeight = sourceSize.height / transform.zoom
 
-        // Position the crop around the center (centerX/Y are normalized 0-1 coordinates)
-        let centerX = transform.centerX * sourceSize.width
-        let centerY = transform.centerY * sourceSize.height
+        // Position the crop around the center (center.x/y are normalized 0-1 coordinates)
+        let centerX = transform.center.x * sourceSize.width
+        let centerY = transform.center.y * sourceSize.height
 
         // Crop origin (with boundary clamping)
         var cropX = centerX - cropWidth / 2
@@ -157,6 +157,49 @@ final class TransformApplicator {
     }
 }
 
+// MARK: - Point Conversion
+
+extension TransformApplicator {
+    /// Convert a source-normalized point to output pixel coordinates after zoom/pan.
+    /// - Parameters:
+    ///   - point: Normalized position in source frame (0-1, bottom-left origin)
+    ///   - transform: Current transform state
+    ///   - sourceSize: Source frame size in pixels
+    ///   - outputSize: Output frame size in pixels
+    /// - Returns: Position in output pixel coordinates (bottom-left origin)
+    func sourcePointToOutputPoint(
+        _ point: NormalizedPoint,
+        transform: TransformState,
+        sourceSize: CGSize,
+        outputSize: CGSize
+    ) -> CGPoint {
+        if transform == .identity {
+            let scaleX = outputSize.width / sourceSize.width
+            let scaleY = outputSize.height / sourceSize.height
+            return CGPoint(
+                x: point.x * sourceSize.width * scaleX,
+                y: point.y * sourceSize.height * scaleY
+            )
+        }
+
+        let cropRect = calculateCropRect(transform: transform, sourceSize: sourceSize)
+
+        // Source pixel position
+        let sourcePixelX = point.x * sourceSize.width
+        let sourcePixelY = point.y * sourceSize.height
+
+        // Relative position within the crop rect
+        let relX = sourcePixelX - cropRect.origin.x
+        let relY = sourcePixelY - cropRect.origin.y
+
+        // Scale to output
+        let scaleX = outputSize.width / cropRect.width
+        let scaleY = outputSize.height / cropRect.height
+
+        return CGPoint(x: relX * scaleX, y: relY * scaleY)
+    }
+}
+
 // MARK: - Transform Validation
 
 extension TransformApplicator {
@@ -166,8 +209,8 @@ extension TransformApplicator {
         guard transform.zoom >= 1.0 else { return false }
 
         // Ensure the center stays within the normalized 0-1 range
-        guard transform.centerX >= 0, transform.centerX <= 1 else { return false }
-        guard transform.centerY >= 0, transform.centerY <= 1 else { return false }
+        guard transform.center.x >= 0, transform.center.x <= 1 else { return false }
+        guard transform.center.y >= 0, transform.center.y <= 1 else { return false }
 
         // Ensure the crop rectangle is valid
         let cropRect = calculateCropRect(transform: transform, sourceSize: sourceSize)
@@ -181,8 +224,8 @@ extension TransformApplicator {
     /// Clamp a transform into its valid range
     func sanitize(transform: TransformState, sourceSize: CGSize) -> TransformState {
         var zoom = max(1.0, transform.zoom)
-        var centerX = clamp(transform.centerX, min: 0, max: 1)
-        var centerY = clamp(transform.centerY, min: 0, max: 1)
+        var centerX = clamp(transform.center.x, min: 0, max: 1)
+        var centerY = clamp(transform.center.y, min: 0, max: 1)
 
         // Adjust the allowed center range based on zoom level
         // Higher zoom levels prevent the center from reaching the edges
@@ -192,6 +235,6 @@ extension TransformApplicator {
         centerX = clamp(centerX, min: halfCropRatioX, max: 1 - halfCropRatioX)
         centerY = clamp(centerY, min: halfCropRatioY, max: 1 - halfCropRatioY)
 
-        return TransformState(zoom: zoom, centerX: centerX, centerY: centerY)
+        return TransformState(zoom: zoom, center: NormalizedPoint(x: centerX, y: centerY))
     }
 }

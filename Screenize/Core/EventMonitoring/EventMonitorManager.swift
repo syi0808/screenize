@@ -63,16 +63,15 @@ final class EventMonitorManager {
         events: NSEvent.EventTypeMask,
         handler: @escaping (NSEvent) -> Void
     ) {
-        lock.lock()
-        defer { lock.unlock() }
+        lock.withLock {
+            // Stop any existing monitor first
+            monitorPairs[identifier]?.stop()
 
-        // Stop any existing monitor first
-        monitorPairs[identifier]?.stop()
-
-        monitorPairs[identifier] = MonitorPair(
-            events: events,
-            globalHandler: handler
-        )
+            monitorPairs[identifier] = MonitorPair(
+                events: events,
+                globalHandler: handler
+            )
+        }
     }
 
     /// Add a monitor pair with a custom local handler
@@ -87,36 +86,33 @@ final class EventMonitorManager {
         globalHandler: @escaping (NSEvent) -> Void,
         localHandler: @escaping (NSEvent) -> NSEvent?
     ) {
-        lock.lock()
-        defer { lock.unlock() }
+        lock.withLock {
+            monitorPairs[identifier]?.stop()
 
-        monitorPairs[identifier]?.stop()
-
-        monitorPairs[identifier] = MonitorPair(
-            events: events,
-            globalHandler: globalHandler,
-            localHandler: localHandler
-        )
+            monitorPairs[identifier] = MonitorPair(
+                events: events,
+                globalHandler: globalHandler,
+                localHandler: localHandler
+            )
+        }
     }
 
     /// Remove a specific monitor
     func removeMonitor(identifier: String) {
-        lock.lock()
-        defer { lock.unlock() }
-
-        monitorPairs[identifier]?.stop()
-        monitorPairs.removeValue(forKey: identifier)
+        lock.withLock {
+            monitorPairs[identifier]?.stop()
+            monitorPairs.removeValue(forKey: identifier)
+        }
     }
 
     /// Remove all monitors
     func removeAllMonitors() {
-        lock.lock()
-        defer { lock.unlock() }
-
-        for pair in monitorPairs.values {
-            pair.stop()
+        lock.withLock {
+            for pair in monitorPairs.values {
+                pair.stop()
+            }
+            monitorPairs.removeAll()
         }
-        monitorPairs.removeAll()
     }
 
     deinit {

@@ -2,14 +2,14 @@ import Foundation
 import AppKit
 import Combine
 
-final class ClickDetector: @unchecked Sendable {
+@MainActor
+final class ClickDetector {
     @Published private(set) var lastClick: ClickEvent?
     @Published private(set) var activeClicks: [ClickEvent] = []
 
     private let eventMonitor = EventMonitorManager()
     private var isTracking = false
 
-    private let lock = NSLock()
     private let clickDuration: TimeInterval = 0.3 // How long to show click effect
 
     struct ClickEvent: Identifiable {
@@ -73,24 +73,21 @@ final class ClickDetector: @unchecked Sendable {
             timestamp: Date()
         )
 
-        lock.lock()
         lastClick = click
         activeClicks.append(click)
-        lock.unlock()
     }
 
     private var cleanupTimer: Timer?
 
     private func startCleanupTimer() {
         cleanupTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            self?.cleanupExpiredClicks()
+            Task { @MainActor in
+                self?.cleanupExpiredClicks()
+            }
         }
     }
 
     private func cleanupExpiredClicks() {
-        lock.lock()
-        defer { lock.unlock() }
-
         activeClicks.removeAll { click in
             click.age > clickDuration
         }
@@ -104,7 +101,7 @@ final class ClickDetector: @unchecked Sendable {
     }
 
     deinit {
-        stopTracking()
+        eventMonitor.removeAllMonitors()
         cleanupTimer?.invalidate()
     }
 }

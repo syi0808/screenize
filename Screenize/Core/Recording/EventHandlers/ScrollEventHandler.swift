@@ -46,23 +46,17 @@ final class ScrollEventHandler {
             isTrackpad: event.hasPreciseScrollingDeltas
         )
 
-        lock.lock()
-        scrollEvents.append(scrollEvent)
-        lock.unlock()
+        lock.withLock { scrollEvents.append(scrollEvent) }
     }
 
     // MARK: - Results
 
     func getScrollEvents() -> [ScrollEvent] {
-        lock.lock()
-        defer { lock.unlock() }
-        return scrollEvents
+        lock.withLock { scrollEvents }
     }
 
     func reset() {
-        lock.lock()
-        defer { lock.unlock() }
-        scrollEvents.removeAll()
+        lock.withLock { scrollEvents.removeAll() }
     }
 
     // MARK: - Coordinate Conversion

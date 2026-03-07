@@ -62,15 +62,15 @@ final class MouseTracker: @unchecked Sendable {
         // Calculate velocity
         if positionHistory.count >= 2 {
             let recent = positionHistory.suffix(2)
-            let first = recent.first!
-            let last = recent.last!
-            let dt = last.timestamp - first.timestamp
+            if let first = recent.first, let last = recent.last {
+                let dt = last.timestamp - first.timestamp
 
-            if dt > 0 {
-                velocity = CGVector(
-                    dx: (last.position.x - first.position.x) / dt,
-                    dy: (last.position.y - first.position.y) / dt
-                )
+                if dt > 0 {
+                    velocity = CGVector(
+                        dx: (last.position.x - first.position.x) / dt,
+                        dy: (last.position.y - first.position.y) / dt
+                    )
+                }
             }
         }
 
@@ -98,10 +98,9 @@ final class MouseTracker: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        guard positionHistory.count >= 2 else { return .zero }
-
-        let first = positionHistory.first!
-        let last = positionHistory.last!
+        guard positionHistory.count >= 2,
+              let first = positionHistory.first,
+              let last = positionHistory.last else { return .zero }
         let dt = last.timestamp - first.timestamp
 
         guard dt > 0 else { return .zero }

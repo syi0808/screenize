@@ -67,12 +67,16 @@ final class VideoWriter: @unchecked Sendable {
             kCVPixelBufferHeightKey as String: configuration.height
         ]
 
+        guard let videoInput = videoInput else {
+            throw VideoWriterError.writerNotInitialized
+        }
+
         pixelBufferAdaptor = AVAssetWriterInputPixelBufferAdaptor(
-            assetWriterInput: videoInput!,
+            assetWriterInput: videoInput,
             sourcePixelBufferAttributes: sourcePixelBufferAttributes
         )
 
-        if let videoInput = videoInput, assetWriter?.canAdd(videoInput) == true {
+        if assetWriter?.canAdd(videoInput) == true {
             assetWriter?.add(videoInput)
         }
 
@@ -103,7 +107,7 @@ final class VideoWriter: @unchecked Sendable {
             throw VideoWriterError.failedToStart(writer.error)
         }
 
-        isWriting = true
+        lock.withLock { isWriting = true }
     }
 
     /// Add a video sample buffer synchronously, waiting for no frame loss
@@ -132,13 +136,13 @@ final class VideoWriter: @unchecked Sendable {
 
             // Check for timeout
             if Date().timeIntervalSince(startTime) > maxWaitTime {
-                print("⚠️ [VideoWriter] Video sample wait timeout (\(waitCount) retries)")
+                Log.recording.warning("Video sample wait timeout (\(waitCount) retries)")
                 onFrameDropped?()
                 return
             }
 
-            // Retry after a short delay (100μs)
-            usleep(100)
+            // Retry after a short delay (1ms — reduces CPU wake-ups 10x vs 100μs)
+            Thread.sleep(forTimeInterval: 0.001)
             waitCount += 1
 
             lock.lock()
@@ -150,7 +154,7 @@ final class VideoWriter: @unchecked Sendable {
 
         // Append the frame
         if !videoInput.append(sampleBuffer) {
-            print("❌ [VideoWriter] Failed to append video sample buffer")
+            Log.recording.error("Failed to append video sample buffer")
             lock.unlock()
             onFrameDropped?()
             return
@@ -186,13 +190,13 @@ final class VideoWriter: @unchecked Sendable {
 
             // Check for timeout
             if Date().timeIntervalSince(startTime) > maxWaitTime {
-                print("⚠️ [VideoWriter] Frame wait timeout (\(waitCount) retries)")
+                Log.recording.warning("Frame wait timeout (\(waitCount) retries)")
                 onFrameDropped?()
                 return
             }
 
-            // Retry after a short delay (100μs)
-            usleep(100)
+            // Retry after a short delay (1ms — reduces CPU wake-ups 10x vs 100μs)
+            Thread.sleep(forTimeInterval: 0.001)
             waitCount += 1
 
             lock.lock()
@@ -204,7 +208,7 @@ final class VideoWriter: @unchecked Sendable {
 
         // Append the frame
         if !adaptor.append(pixelBuffer, withPresentationTime: presentationTime) {
-            print("❌ [VideoWriter] Failed to append pixel buffer")
+            Log.recording.error("Failed to append pixel buffer")
             lock.unlock()
             onFrameDropped?()
             return
@@ -230,11 +234,11 @@ final class VideoWriter: @unchecked Sendable {
             lock.unlock()
 
             if Date().timeIntervalSince(startTime) > maxWaitTime {
-                print("⚠️ [VideoWriter] Audio sample wait timeout")
+                Log.recording.warning("Audio sample wait timeout")
                 return
             }
 
-            usleep(100)
+            Thread.sleep(forTimeInterval: 0.001)
 
             lock.lock()
             guard isWriting else {
@@ -244,18 +248,21 @@ final class VideoWriter: @unchecked Sendable {
         }
 
         if !audioInput.append(sampleBuffer) {
-            print("❌ [VideoWriter] Failed to append audio sample buffer")
+            Log.recording.error("Failed to append audio sample buffer")
         }
 
         lock.unlock()
     }
 
     func finishWriting() async throws -> URL {
-        guard isWriting else {
+        let wasWriting = lock.withLock { () -> Bool in
+            guard isWriting else { return false }
+            isWriting = false
+            return true
+        }
+        guard wasWriting else {
             throw VideoWriterError.notWriting
         }
-
-        isWriting = false
 
         return try await withCheckedThrowingContinuation { continuation in
             writerQueue.async { [weak self] in
@@ -279,45 +286,53 @@ final class VideoWriter: @unchecked Sendable {
     }
 
     func cancelWriting() {
-        isWriting = false
+        lock.withLock { isWriting = false }
         assetWriter?.cancelWriting()
 
         // Clean up file
-        try? FileManager.default.removeItem(at: outputURL)
+        do {
+            try FileManager.default.removeItem(at: outputURL)
+        } catch {
+            Log.recording.debug("Could not remove cancelled recording file: \(error.localizedDescription)")
+        }
     }
 
     var currentDuration: TimeInterval {
-        guard let startTime = sessionStartTime else { return 0 }
-        return CMTimeGetSeconds(lastVideoTime - startTime)
+        lock.withLock {
+            guard let startTime = sessionStartTime else { return 0 }
+            return CMTimeGetSeconds(lastVideoTime - startTime)
+        }
     }
 
     /// Check whether VideoWriter is ready to accept more data
     var isReadyForMoreMediaData: Bool {
-        return videoInput?.isReadyForMoreMediaData ?? false
+        lock.withLock { videoInput?.isReadyForMoreMediaData ?? false }
     }
 
     /// Synchronously append pixel buffers (quality-first for export) - returns success
     @discardableResult
     func appendVideoPixelBufferSync(_ pixelBuffer: CVPixelBuffer, presentationTime: CMTime) -> Bool {
-        guard isWriting, let adaptor = pixelBufferAdaptor else { return false }
+        lock.withLock {
+            guard isWriting, let adaptor = pixelBufferAdaptor else { return false }
 
-        // Handle session start
-        if sessionStartTime == nil {
-            sessionStartTime = presentationTime
-            assetWriter?.startSession(atSourceTime: presentationTime)
-        }
+            // Handle session start
+            if sessionStartTime == nil {
+                sessionStartTime = presentationTime
+                assetWriter?.startSession(atSourceTime: presentationTime)
+            }
 
-        // Ensure readiness
-        guard adaptor.assetWriterInput.isReadyForMoreMediaData else {
-            return false
-        }
+            // Ensure readiness
+            guard adaptor.assetWriterInput.isReadyForMoreMediaData else {
+                return false
+            }
 
-        // Attempt synchronous append
-        let success = adaptor.append(pixelBuffer, withPresentationTime: presentationTime)
-        if success {
-            lastVideoTime = presentationTime
+            // Attempt synchronous append
+            let success = adaptor.append(pixelBuffer, withPresentationTime: presentationTime)
+            if success {
+                lastVideoTime = presentationTime
+            }
+            return success
         }
-        return success
     }
 }
 
@@ -415,11 +430,16 @@ struct VideoWriterConfiguration {
             codec = .hevc
         }
 
+        // Scale bitrate proportionally for higher frame rates (base rates are for 60fps)
+        let frameRateScale = max(1.0, Double(captureConfig.frameRate) / 60.0)
+        let scaledBitRate = Int(Double(bitRate) * frameRateScale)
+
         return Self(
             width: captureConfig.width,
             height: captureConfig.height,
             frameRate: captureConfig.frameRate,
-            videoBitRate: bitRate,
+            videoBitRate: scaledBitRate,
+            keyFrameInterval: captureConfig.frameRate,  // Keyframe every second
             videoCodec: codec
         )
     }

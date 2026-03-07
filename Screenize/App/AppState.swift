@@ -4,7 +4,8 @@ import ScreenCaptureKit
 import AVFoundation
 import Combine
 
-/// Global application state
+/// Global application state coordinator.
+/// Owns focused child ObservableObjects and provides backward-compatible facades.
 @MainActor
 final class AppState: ObservableObject {
 
@@ -12,102 +13,173 @@ final class AppState: ObservableObject {
 
     static let shared = AppState()
 
-    // MARK: - Published Properties
+    // MARK: - Child State Objects
 
-    // Recording state
-    @Published var isRecording: Bool = false
-    @Published var isPaused: Bool = false
-    @Published var recordingDuration: TimeInterval = 0
-    @Published var hasRecording: Bool = false
-    @Published var lastRecordingURL: URL?
-    @Published var lastMouseDataURL: URL?
-    // v4 recording metadata (captured before coordinator is released)
-    var lastMouseRecording: MouseRecording?
-    var lastRecordingStartDate: Date?
-    var lastProcessTimeStartMs: Int64 = 0
-
-    // Countdown state
-    @Published var isCountingDown: Bool = false
-
-    // UI state
-    @Published var showSourcePicker: Bool = false
-    @Published var showEditor: Bool = false
-    @Published var showExportSheet: Bool = false
-    @Published var errorMessage: String?
-
-    // Current project
-    @Published var currentProject: ScreenizeProject?
-    @Published var currentProjectURL: URL?
-
-    // Capture source
-    @Published var selectedTarget: CaptureTarget?
-    @Published var availableDisplays: [SCDisplay] = []
-    @Published var availableWindows: [SCWindow] = []
-
-    // Preview
-    @Published var previewImage: CGImage?
-
-    // MARK: - Editor State (for menu commands)
-
-    /// Whether undo is available (updated from EditorViewModel)
-    @Published var canUndo: Bool = false
-
-    /// Whether redo is available (updated from EditorViewModel)
-    @Published var canRedo: Bool = false
-
-    // MARK: - User Preferences
-
-    // Note: BackgroundStyle doesn't support @AppStorage directly
-    var backgroundStyle: BackgroundStyle = .solid(.gray)
-    @AppStorage("autoZoomEnabled") var autoZoomEnabled: Bool = true
-    @AppStorage("zoomLevel") var zoomLevel: Double = 2.0
-
-    // MARK: - Managers
-
-    private(set) var recordingCoordinator: RecordingCoordinator?
+    let capture = CaptureSettings()
+    let navigation = NavigationState()
+    let recording = RecordingState()
     let permissionsManager = PermissionsManager()
+
+    // MARK: - Capture Toolbar
+
+    private(set) var captureToolbarCoordinator: CaptureToolbarCoordinator?
 
     // MARK: - Private Properties
 
-    private var durationTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    private var countdownPanel: CountdownPanel?
-    private var recordingFloatingPanel: RecordingFloatingPanel?
+
+    // MARK: - Backward-Compatibility Facades
+    // These delegate to child objects so existing code continues to work.
+    // Migrate call sites to use children directly over time.
+
+    // Recording facades
+    var isRecording: Bool {
+        get { recording.isRecording }
+        set { recording.isRecording = newValue }
+    }
+    var isPaused: Bool {
+        get { recording.isPaused }
+        set { recording.isPaused = newValue }
+    }
+    var recordingDuration: TimeInterval {
+        get { recording.recordingDuration }
+        set { recording.recordingDuration = newValue }
+    }
+    var lastRecordingURL: URL? {
+        get { recording.lastRecordingURL }
+        set { recording.lastRecordingURL = newValue }
+    }
+    var previewImage: CGImage? {
+        get { recording.previewImage }
+        set { recording.previewImage = newValue }
+    }
+    var lastMouseRecording: MouseRecording? {
+        get { recording.lastMouseRecording }
+        set { recording.lastMouseRecording = newValue }
+    }
+    var lastRecordingStartDate: Date? {
+        get { recording.lastRecordingStartDate }
+        set { recording.lastRecordingStartDate = newValue }
+    }
+    var lastProcessTimeStartMs: Int64 {
+        get { recording.lastProcessTimeStartMs }
+        set { recording.lastProcessTimeStartMs = newValue }
+    }
+    var lastMicAudioURL: URL? {
+        get { recording.lastMicAudioURL }
+        set { recording.lastMicAudioURL = newValue }
+    }
+    var lastSystemAudioURL: URL? {
+        get { recording.lastSystemAudioURL }
+        set { recording.lastSystemAudioURL = newValue }
+    }
+    var recordingCoordinator: RecordingCoordinator? {
+        recording.recordingCoordinator
+    }
+
+    // Capture facades
+    var isMicrophoneEnabled: Bool {
+        get { capture.isMicrophoneEnabled }
+        set { capture.isMicrophoneEnabled = newValue }
+    }
+    var isSystemAudioEnabled: Bool {
+        get { capture.isSystemAudioEnabled }
+        set { capture.isSystemAudioEnabled = newValue }
+    }
+    var selectedMicrophoneDeviceID: String {
+        get { capture.selectedMicrophoneDeviceID }
+        set { capture.selectedMicrophoneDeviceID = newValue }
+    }
+    var captureFrameRate: Int {
+        get { capture.captureFrameRate }
+        set { capture.captureFrameRate = newValue }
+    }
+    var selectedMicrophoneDevice: AVCaptureDevice? {
+        capture.selectedMicrophoneDevice
+    }
+    var selectedTarget: CaptureTarget? {
+        get { capture.selectedTarget }
+        set { capture.selectedTarget = newValue }
+    }
+    var availableDisplays: [SCDisplay] {
+        get { capture.availableDisplays }
+        set { capture.availableDisplays = newValue }
+    }
+    var availableWindows: [SCWindow] {
+        get { capture.availableWindows }
+        set { capture.availableWindows = newValue }
+    }
+    var backgroundStyle: BackgroundStyle {
+        get { capture.backgroundStyle }
+        set { capture.backgroundStyle = newValue }
+    }
+
+    // Navigation facades
+    var showEditor: Bool {
+        get { navigation.showEditor }
+        set { navigation.showEditor = newValue }
+    }
+    var showExportSheet: Bool {
+        get { navigation.showExportSheet }
+        set { navigation.showExportSheet = newValue }
+    }
+    var errorMessage: String? {
+        get { navigation.errorMessage }
+        set { navigation.errorMessage = newValue }
+    }
+    var currentProject: ScreenizeProject? {
+        get { navigation.currentProject }
+        set { navigation.currentProject = newValue }
+    }
+    var currentProjectURL: URL? {
+        get { navigation.currentProjectURL }
+        set { navigation.currentProjectURL = newValue }
+    }
+    var canUndo: Bool {
+        get { navigation.canUndo }
+        set { navigation.canUndo = newValue }
+    }
+    var canRedo: Bool {
+        get { navigation.canRedo }
+        set { navigation.canRedo = newValue }
+    }
+    var showCaptureToolbar: Bool {
+        get { navigation.showCaptureToolbar }
+        set { navigation.showCaptureToolbar = newValue }
+    }
 
     // MARK: - Initialization
 
     private init() {
-        setupBindings()
+        recording.configure(captureSettings: capture, navigationState: navigation)
+        forwardChildChanges()
     }
 
-    // MARK: - Setup
-
-    private func setupBindings() {
-        // Update UI when recording state changes
-        $isRecording
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] recording in
-                if !recording {
-                    self?.stopDurationTimer()
-                }
-            }
+    /// Forward all children's objectWillChange to self so SwiftUI views
+    /// using @EnvironmentObject AppState still update.
+    private func forwardChildChanges() {
+        capture.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+        navigation.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+        recording.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
     }
 
     // MARK: - Permissions
 
     func requestPermissions() async -> Bool {
-        // Check screen recording permission
         if !CGPreflightScreenCaptureAccess() {
             CGRequestScreenCaptureAccess()
             return false
         }
 
-        // Check accessibility permission
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
         let accessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
 
-        // Check input monitoring permission (for capturing keyboard events)
         if #available(macOS 14.0, *) {
             if !CGPreflightListenEventAccess() {
                 CGRequestListenEventAccess()
@@ -120,50 +192,20 @@ final class AppState: ObservableObject {
     // MARK: - Source Selection
 
     func refreshAvailableSources() async {
-        // Request permission if missing
         if !CGPreflightScreenCaptureAccess() {
             CGRequestScreenCaptureAccess()
-            // Wait briefly after requesting permission to give the user time
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 500_000_000)
+            } catch {
+                Log.permissions.debug("Permission wait sleep cancelled: \(error.localizedDescription)")
+            }
 
-            // If still blocked, show guidance
             if !CGPreflightScreenCaptureAccess() {
                 errorMessage = "Screen capture permission required. Please enable it in System Settings > Privacy & Security > Screen Recording."
                 return
             }
         }
-
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(
-                false,
-                onScreenWindowsOnly: true
-            )
-
-            availableDisplays = content.displays
-            let excludedBundleIDs: Set<String> = [
-                Bundle.main.bundleIdentifier ?? "com.screenize.Screenize",
-                "com.apple.dock",
-                "com.apple.controlcenter",
-                "com.apple.systemuiserver",
-                "com.apple.notificationcenterui",
-                "com.apple.WindowManager",
-            ]
-
-            availableWindows = content.windows.filter { window in
-                guard let app = window.owningApplication else {
-                    return false
-                }
-                // Exclude system UI elements and Screenize, filter by minimum size
-                return !excludedBundleIDs.contains(app.bundleIdentifier)
-                    && window.frame.width >= 50
-                    && window.frame.height >= 50
-            }
-
-            print("📺 [AppState] Sources refreshed - displays: \(availableDisplays.count), windows: \(availableWindows.count)")
-        } catch {
-            print("❌ [AppState] Failed to refresh sources: \(error)")
-            errorMessage = "Failed to get available sources: \(error.localizedDescription)"
-        }
+        await capture.refreshAvailableSources()
     }
 
     // MARK: - Recording Control
@@ -174,137 +216,52 @@ final class AppState: ObservableObject {
             return
         }
 
-        guard let target = selectedTarget else {
-            errorMessage = "Please select a capture source first"
-            return
-        }
-
-        // Create RecordingCoordinator
-        let coordinator = RecordingCoordinator()
-        self.recordingCoordinator = coordinator
-
-        // Start recording
         do {
-            try await coordinator.startRecording(
-                target: target,
-                backgroundStyle: backgroundStyle,
-                zoomSettings: ZoomSettings(
-                    isEnabled: autoZoomEnabled,
-                    zoomLevel: zoomLevel
-                )
-            )
+            try await recording.startRecording(appState: self)
 
-            isRecording = true
-            isPaused = false
-            recordingDuration = 0
-            startDurationTimer()
-            setupPreviewUpdates()
-            showRecordingFloatingPanel()
+            // Only show standalone panel when capture toolbar is not managing the UI
+            if !showCaptureToolbar {
+                recording.showRecordingFloatingPanel(appState: self)
+            }
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
-            recordingCoordinator = nil
         }
     }
 
     func stopRecording() async {
         guard #available(macOS 15.0, *) else { return }
-        guard let coordinator = recordingCoordinator else { return }
 
-        isRecording = false
-        isPaused = false
-        stopDurationTimer()
-        hideRecordingFloatingPanel()
+        // Only hide standalone panel when capture toolbar is not managing the UI
+        if !showCaptureToolbar {
+            recording.hideRecordingFloatingPanel()
+        }
 
-        // Capture v4 timing metadata before releasing coordinator
-        lastRecordingStartDate = coordinator.recordingStartDate
-        lastProcessTimeStartMs = coordinator.processTimeStartMs
-
-        if let videoURL = await coordinator.stopRecording() {
-            lastRecordingURL = videoURL
-            lastMouseDataURL = MouseDataRecorder.mouseDataURL(for: videoURL)
-            lastMouseRecording = coordinator.lastMouseRecording
-            hasRecording = true
+        if let videoURL = await recording.stopRecording() {
+            showEditor = true
+            _ = videoURL // URL stored in recording.lastRecordingURL
         } else {
             errorMessage = "Failed to stop recording"
         }
 
-        recordingCoordinator = nil
         showMainWindow()
     }
 
     func togglePause() {
-        guard isRecording else { return }
-
-        isPaused.toggle()
-
-        if isPaused {
-            recordingCoordinator?.pauseRecording()
-        } else {
-            recordingCoordinator?.resumeRecording()
-        }
+        recording.togglePause()
     }
 
     func toggleRecording() async {
         if isRecording {
-            await stopRecording()
-        } else if isCountingDown {
-            cancelCountdown()
+            if showCaptureToolbar {
+                captureToolbarCoordinator?.stopRecording()
+            } else {
+                await stopRecording()
+            }
+        } else if showCaptureToolbar {
+            captureToolbarCoordinator?.cancel()
         } else {
-            await startRecordingWithCountdown()
+            await showCaptureToolbarFlow()
         }
-    }
-
-    // MARK: - Countdown Recording
-
-    /// Start recording after a 3-second countdown
-    func startRecordingWithCountdown() async {
-        guard !isRecording, !isCountingDown else { return }
-        guard selectedTarget != nil else {
-            errorMessage = "Please select a capture source first"
-            return
-        }
-
-        isCountingDown = true
-
-        // Hide the main window
-        hideMainWindow()
-
-        // Show the countdown panel
-        let panel = CountdownPanel()
-        self.countdownPanel = panel
-
-        let completed: Bool = await withCheckedContinuation { continuation in
-            panel.startCountdown(
-                seconds: 3,
-                onComplete: {
-                    continuation.resume(returning: true)
-                },
-                onCancel: {
-                    continuation.resume(returning: false)
-                }
-            )
-        }
-
-        countdownPanel = nil
-
-        guard completed, isCountingDown else {
-            // Cancelled
-            isCountingDown = false
-            showMainWindow()
-            return
-        }
-
-        isCountingDown = false
-        await startRecording()
-    }
-
-    /// Cancel the countdown
-    func cancelCountdown() {
-        guard isCountingDown else { return }
-        countdownPanel?.cancelCountdown()
-        countdownPanel = nil
-        isCountingDown = false
-        showMainWindow()
     }
 
     // MARK: - Window Management
@@ -318,123 +275,117 @@ final class AppState: ObservableObject {
         NSApp.windows.first { !($0 is NSPanel) }?.makeKeyAndOrderFront(nil)
     }
 
-    // MARK: - Recording Floating Panel
-
-    private func showRecordingFloatingPanel() {
-        let panel = RecordingFloatingPanel(appState: self)
-        panel.show()
-        self.recordingFloatingPanel = panel
-    }
-
-    private func hideRecordingFloatingPanel() {
-        recordingFloatingPanel?.dismiss()
-        recordingFloatingPanel = nil
-    }
-
     // MARK: - Project Navigation
 
-    /// Close the current project and return to the welcome screen
     func closeProject() {
-        currentProject = nil
-        currentProjectURL = nil
+        navigation.closeProject()
     }
 
-    /// Close the current project and start a new recording
     func startNewRecording() {
-        currentProject = nil
-        currentProjectURL = nil
-        showSourcePicker = true
+        hideMainWindow()
+        navigation.closeProject()
+        Task {
+            await showCaptureToolbarFlow()
+        }
     }
 
-    /// Leave the recording screen and return to the welcome screen
-    func returnToWelcome() {
+    // MARK: - Capture Toolbar Flow
+
+    func showCaptureToolbarFlow() async {
+        if captureToolbarCoordinator == nil {
+            captureToolbarCoordinator = CaptureToolbarCoordinator(appState: self)
+        }
+        showCaptureToolbar = true
+        await captureToolbarCoordinator?.showToolbar()
+    }
+
+    func captureToolbarDidDismiss() {
+        showCaptureToolbar = false
+        captureToolbarCoordinator = nil
         selectedTarget = nil
-        showSourcePicker = false
-        hasRecording = false
-        lastRecordingURL = nil
-        lastMouseDataURL = nil
     }
 
     // MARK: - Project Creation
 
-    func createProject(packageInfo: PackageInfo) async -> ScreenizeProject? {
-        // Extract video metadata
-        guard let videoMetadata = await extractVideoMetadata(from: packageInfo.videoURL) else {
-            return nil
-        }
-
-        // Capture metadata
-        let captureMeta: CaptureMeta
+    func buildCaptureMeta(videoURL: URL) async -> CaptureMeta? {
         if let target = selectedTarget {
             switch target {
             case .display(let display):
-                captureMeta = CaptureMeta(
+                let backingScale = NSScreen.screens.first(where: {
+                    ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32) == display.displayID
+                })?.backingScaleFactor ?? 2.0
+                return CaptureMeta(
+                    displayID: display.displayID,
                     boundsPt: CGRect(origin: .zero, size: CGSize(width: display.width, height: display.height)),
-                    scaleFactor: CGFloat(display.width) / CGFloat(display.width) * 2.0  // Retina
+                    scaleFactor: backingScale
                 )
             case .window(let window):
-                captureMeta = CaptureMeta(
-                    boundsPt: window.frame,
-                    scaleFactor: 2.0
-                )
-            case .region(let rect, _):
-                captureMeta = CaptureMeta(
+                let backingScale = NSScreen.main?.backingScaleFactor ?? 2.0
+                return CaptureMeta(boundsPt: window.frame, scaleFactor: backingScale)
+            case .region(let rect, let display):
+                let backingScale = NSScreen.screens.first(where: {
+                    ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32) == display.displayID
+                })?.backingScaleFactor ?? 2.0
+                return CaptureMeta(
+                    displayID: display.displayID,
                     boundsPt: rect,
-                    scaleFactor: 2.0
+                    scaleFactor: backingScale
                 )
             }
         } else {
-            captureMeta = CaptureMeta(
+            guard let videoMetadata = await extractVideoMetadata(from: videoURL) else { return nil }
+            return CaptureMeta(
                 boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
                 scaleFactor: 2.0
             )
         }
+    }
 
-        // Create media asset with relative paths
+    func createProject(packageInfo: PackageInfo) async -> ScreenizeProject? {
+        guard let videoMetadata = await extractVideoMetadata(from: packageInfo.videoURL) else {
+            return nil
+        }
+
+        let captureMeta = await buildCaptureMeta(videoURL: packageInfo.videoURL) ?? CaptureMeta(
+            boundsPt: CGRect(x: 0, y: 0, width: videoMetadata.width / 2, height: videoMetadata.height / 2),
+            scaleFactor: 2.0
+        )
+
         let media = MediaAsset(
             videoRelativePath: packageInfo.videoRelativePath,
             mouseDataRelativePath: packageInfo.mouseDataRelativePath,
+            micAudioRelativePath: packageInfo.micAudioRelativePath,
+            systemAudioRelativePath: packageInfo.systemAudioRelativePath,
             packageRootURL: packageInfo.packageURL,
             pixelSize: CGSize(width: videoMetadata.width, height: videoMetadata.height),
             frameRate: videoMetadata.frameRate,
             duration: videoMetadata.duration
         )
 
-        // Generate default timeline
         let timeline = Timeline(
             tracks: [
-                AnyTrack(TransformTrack(
+                AnySegmentTrack.camera(CameraTrack(
                     id: UUID(),
-                    name: "Transform",
+                    name: "Camera",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 )),
-                AnyTrack(RippleTrack(
-                    id: UUID(),
-                    name: "Ripple",
-                    isEnabled: true,
-                    keyframes: []
-                )),
-                AnyTrack(CursorTrack(
+                AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
-                    defaultStyle: .arrow,
-                    defaultScale: 1.5,
-                    defaultVisible: true,
-                    styleKeyframes: nil
+                    segments: []
                 )),
-                AnyTrack(KeystrokeTrack(
+                AnySegmentTrack.keystroke(KeystrokeTrackV2(
                     id: UUID(),
                     name: "Keystroke",
                     isEnabled: true,
-                    keyframes: []
+                    segments: []
                 ))
             ],
             duration: videoMetadata.duration
         )
 
-        // Adjust cornerRadius/windowInset defaults for full screen source
         var renderSettings = RenderSettings()
         if selectedTarget?.isFullScreen == true {
             renderSettings.cornerRadius = 8.0
@@ -446,37 +397,12 @@ final class AppState: ObservableObject {
             media: media,
             captureMeta: captureMeta,
             timeline: timeline,
-            renderSettings: renderSettings
+            renderSettings: renderSettings,
+            interop: packageInfo.interop
         )
     }
 
     // MARK: - Private Helpers
-
-    private func startDurationTimer() {
-        durationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self, self.isRecording, !self.isPaused else { return }
-                self.recordingDuration += 0.1
-            }
-        }
-    }
-
-    private func stopDurationTimer() {
-        durationTimer?.invalidate()
-        durationTimer = nil
-    }
-
-    private func setupPreviewUpdates() {
-        // Bind RecordingCoordinator's previewImage to AppState's previewImage
-        guard let coordinator = recordingCoordinator else { return }
-
-        coordinator.$previewImage
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] image in
-                self?.previewImage = image
-            }
-            .store(in: &cancellables)
-    }
 
     private func extractVideoMetadata(from url: URL) async -> (width: Int, height: Int, frameRate: Double, duration: TimeInterval)? {
         let asset = AVAsset(url: url)
@@ -495,7 +421,7 @@ final class AppState: ObservableObject {
 
             return (Int(size.width), Int(size.height), frameRate, duration)
         } catch {
-            print("Failed to load video metadata: \(error)")
+            Log.project.error("Failed to load video metadata: \(error)")
             return nil
         }
     }
@@ -506,6 +432,9 @@ final class AppState: ObservableObject {
 extension Notification.Name {
     static let editorUndo = Notification.Name("editorUndo")
     static let editorRedo = Notification.Name("editorRedo")
+    static let editorCopy = Notification.Name("editorCopy")
+    static let editorPaste = Notification.Name("editorPaste")
+    static let editorDuplicate = Notification.Name("editorDuplicate")
 }
 
 // MARK: - Auto Zoom Settings

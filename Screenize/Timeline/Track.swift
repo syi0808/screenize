@@ -6,256 +6,278 @@ import CoreGraphics
 /// Track type
 enum TrackType: String, Codable, CaseIterable {
     case transform   // Zoom/pan
-    case ripple      // Click ripple effect
     case cursor      // Cursor style/visibility
     case keystroke   // Keystroke overlay
     case audio       // Audio (future extension)
 }
 
-// MARK: - Track Protocol
+// MARK: - Segment Track Protocol
 
-/// Track protocol
-protocol Track: Codable, Identifiable {
+protocol SegmentTrack: Codable, Identifiable {
     var id: UUID { get }
     var name: String { get set }
     var isEnabled: Bool { get set }
     var trackType: TrackType { get }
-
-    /// Number of keyframes
-    var keyframeCount: Int { get }
+    var segmentCount: Int { get }
 }
 
-// MARK: - Transform Track
-
-/// Transform (zoom/pan) track
-struct TransformTrack: Track, Equatable {
+struct CameraTrack: SegmentTrack, Equatable {
     let id: UUID
     var name: String
     var isEnabled: Bool
-    var keyframes: [TransformKeyframe]
+    var segments: [CameraSegment]
 
     var trackType: TrackType { .transform }
-    var keyframeCount: Int { keyframes.count }
+    var segmentCount: Int { segments.count }
 
-    init(
-        id: UUID = UUID(),
-        name: String = "Transform",
-        isEnabled: Bool = true,
-        keyframes: [TransformKeyframe] = []
-    ) {
+    init(id: UUID = UUID(), name: String = "Camera", isEnabled: Bool = true, segments: [CameraSegment] = []) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
-        self.keyframes = keyframes.sorted { $0.time < $1.time }
+        self.segments = segments.sorted { $0.startTime < $1.startTime }
     }
 
-    // MARK: - Keyframe Management
-
-    /// Add keyframe (keep sorted by time)
-    mutating func addKeyframe(_ keyframe: TransformKeyframe) {
-        keyframes.append(keyframe)
-        keyframes.sort { $0.time < $1.time }
+    mutating func addSegment(_ segment: CameraSegment) -> Bool {
+        guard !hasOverlap(segment, excluding: nil) else { return false }
+        segments.append(segment)
+        segments.sort { $0.startTime < $1.startTime }
+        return true
     }
 
-    /// Remove keyframe
-    mutating func removeKeyframe(id: UUID) {
-        keyframes.removeAll { $0.id == id }
+    mutating func updateSegment(_ segment: CameraSegment) -> Bool {
+        guard let index = segments.firstIndex(where: { $0.id == segment.id }) else { return false }
+        guard !hasOverlap(segment, excluding: segment.id) else { return false }
+        segments[index] = segment
+        segments.sort { $0.startTime < $1.startTime }
+        return true
     }
 
-    /// Update keyframe
-    mutating func updateKeyframe(_ keyframe: TransformKeyframe) {
-        if let index = keyframes.firstIndex(where: { $0.id == keyframe.id }) {
-            keyframes[index] = keyframe
-            keyframes.sort { $0.time < $1.time }
+    mutating func removeSegment(id: UUID) {
+        segments.removeAll { $0.id == id }
+    }
+
+    func activeSegment(at time: TimeInterval) -> CameraSegment? {
+        segments.first { time >= $0.startTime && time < $0.endTime }
+    }
+
+    private func hasOverlap(_ segment: CameraSegment, excluding excludedID: UUID?) -> Bool {
+        segments.contains { existing in
+            if let excludedID, existing.id == excludedID { return false }
+            return segment.startTime < existing.endTime && segment.endTime > existing.startTime
         }
-    }
-
-    /// Find a keyframe at a specific time
-    func keyframe(at time: TimeInterval, tolerance: TimeInterval = 0.016) -> TransformKeyframe? {
-        keyframes.first { abs($0.time - time) <= tolerance }
-    }
-
-    /// Keyframes within a time range
-    func keyframes(in range: ClosedRange<TimeInterval>) -> [TransformKeyframe] {
-        keyframes.filter { range.contains($0.time) }
     }
 }
 
-// MARK: - Ripple Track
-
-/// Ripple effect track
-struct RippleTrack: Track, Equatable {
+struct CursorTrackV2: SegmentTrack, Equatable {
     let id: UUID
     var name: String
     var isEnabled: Bool
-    var keyframes: [RippleKeyframe]
-
-    var trackType: TrackType { .ripple }
-    var keyframeCount: Int { keyframes.count }
-
-    init(
-        id: UUID = UUID(),
-        name: String = "Click Ripple",
-        isEnabled: Bool = true,
-        keyframes: [RippleKeyframe] = []
-    ) {
-        self.id = id
-        self.name = name
-        self.isEnabled = isEnabled
-        self.keyframes = keyframes.sorted { $0.time < $1.time }
-    }
-
-    // MARK: - Keyframe Management
-
-    mutating func addKeyframe(_ keyframe: RippleKeyframe) {
-        keyframes.append(keyframe)
-        keyframes.sort { $0.time < $1.time }
-    }
-
-    mutating func removeKeyframe(id: UUID) {
-        keyframes.removeAll { $0.id == id }
-    }
-
-    mutating func updateKeyframe(_ keyframe: RippleKeyframe) {
-        if let index = keyframes.firstIndex(where: { $0.id == keyframe.id }) {
-            keyframes[index] = keyframe
-            keyframes.sort { $0.time < $1.time }
-        }
-    }
-
-    /// Ripples active at the given time
-    func activeRipples(at time: TimeInterval) -> [RippleKeyframe] {
-        keyframes.filter { $0.isActive(at: time) }
-    }
-}
-
-// MARK: - Cursor Track
-
-/// Cursor track
-struct CursorTrack: Track, Equatable {
-    let id: UUID
-    var name: String
-    var isEnabled: Bool
-
-    // Default cursor settings
-    var defaultStyle: CursorStyle
-    var defaultScale: CGFloat
-    var defaultVisible: Bool
-
-    // Style keyframes (future extension)
-    var styleKeyframes: [CursorStyleKeyframe]?
+    var useSmoothCursor: Bool
+    var springConfig: SpringCursorConfig
+    var segments: [CursorSegment]
 
     var trackType: TrackType { .cursor }
-    var keyframeCount: Int { styleKeyframes?.count ?? 0 }
+    var segmentCount: Int { segments.count }
 
     init(
         id: UUID = UUID(),
         name: String = "Cursor",
         isEnabled: Bool = true,
-        defaultStyle: CursorStyle = .arrow,
-        defaultScale: CGFloat = 2.5,
-        defaultVisible: Bool = true,
-        styleKeyframes: [CursorStyleKeyframe]? = nil
+        useSmoothCursor: Bool = true,
+        springConfig: SpringCursorConfig = .default,
+        segments: [CursorSegment] = []
     ) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
-        self.defaultStyle = defaultStyle
-        self.defaultScale = defaultScale
-        self.defaultVisible = defaultVisible
-        self.styleKeyframes = styleKeyframes?.sorted { $0.time < $1.time }
-    }
-}
-
-// MARK: - Keystroke Track
-
-/// Keystroke overlay track
-struct KeystrokeTrack: Track, Equatable {
-    let id: UUID
-    var name: String
-    var isEnabled: Bool
-    var keyframes: [KeystrokeKeyframe]
-
-    var trackType: TrackType { .keystroke }
-    var keyframeCount: Int { keyframes.count }
-
-    init(
-        id: UUID = UUID(),
-        name: String = "Keystroke",
-        isEnabled: Bool = true,
-        keyframes: [KeystrokeKeyframe] = []
-    ) {
-        self.id = id
-        self.name = name
-        self.isEnabled = isEnabled
-        self.keyframes = keyframes.sorted { $0.time < $1.time }
+        self.useSmoothCursor = useSmoothCursor
+        self.springConfig = springConfig
+        self.segments = segments.sorted { $0.startTime < $1.startTime }
     }
 
-    // MARK: - Keyframe Management
-
-    mutating func addKeyframe(_ keyframe: KeystrokeKeyframe) {
-        keyframes.append(keyframe)
-        keyframes.sort { $0.time < $1.time }
+    mutating func addSegment(_ segment: CursorSegment) -> Bool {
+        guard !hasOverlap(segment, excluding: nil) else { return false }
+        segments.append(segment)
+        segments.sort { $0.startTime < $1.startTime }
+        return true
     }
 
-    mutating func removeKeyframe(id: UUID) {
-        keyframes.removeAll { $0.id == id }
+    mutating func updateSegment(_ segment: CursorSegment) -> Bool {
+        guard let index = segments.firstIndex(where: { $0.id == segment.id }) else { return false }
+        guard !hasOverlap(segment, excluding: segment.id) else { return false }
+        segments[index] = segment
+        segments.sort { $0.startTime < $1.startTime }
+        return true
     }
 
-    mutating func updateKeyframe(_ keyframe: KeystrokeKeyframe) {
-        if let index = keyframes.firstIndex(where: { $0.id == keyframe.id }) {
-            keyframes[index] = keyframe
-            keyframes.sort { $0.time < $1.time }
+    mutating func removeSegment(id: UUID) {
+        segments.removeAll { $0.id == id }
+    }
+
+    func activeSegment(at time: TimeInterval) -> CursorSegment? {
+        segments.first { time >= $0.startTime && time < $0.endTime }
+    }
+
+    private func hasOverlap(_ segment: CursorSegment, excluding excludedID: UUID?) -> Bool {
+        segments.contains { existing in
+            if let excludedID, existing.id == excludedID { return false }
+            return segment.startTime < existing.endTime && segment.endTime > existing.startTime
         }
     }
 
-    /// Active keystroke overlays at the given time
-    func activeKeystrokes(at time: TimeInterval) -> [KeystrokeKeyframe] {
-        keyframes.filter { $0.isActive(at: time) }
+    // MARK: - Codable (backward-compatible)
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, isEnabled, useSmoothCursor, springConfig, segments
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        useSmoothCursor = try container.decode(Bool.self, forKey: .useSmoothCursor)
+        springConfig = try container.decodeIfPresent(SpringCursorConfig.self, forKey: .springConfig)
+            ?? .default
+        segments = try container.decode([CursorSegment].self, forKey: .segments)
+        segments.sort { $0.startTime < $1.startTime }
     }
 }
 
-// MARK: - AnyTrack (Type-Erased Wrapper)
+struct KeystrokeTrackV2: SegmentTrack, Equatable {
+    let id: UUID
+    var name: String
+    var isEnabled: Bool
+    var segments: [KeystrokeSegment]
 
-/// Type-erased track wrapper (Codable support)
-enum AnyTrack: Codable, Identifiable, Equatable {
-    case transform(TransformTrack)
-    case ripple(RippleTrack)
-    case cursor(CursorTrack)
-    case keystroke(KeystrokeTrack)
+    var trackType: TrackType { .keystroke }
+    var segmentCount: Int { segments.count }
+
+    init(id: UUID = UUID(), name: String = "Keystroke", isEnabled: Bool = true, segments: [KeystrokeSegment] = []) {
+        self.id = id
+        self.name = name
+        self.isEnabled = isEnabled
+        self.segments = segments.sorted { $0.startTime < $1.startTime }
+    }
+
+    /// Keystroke segments are allowed to overlap.
+    mutating func addSegment(_ segment: KeystrokeSegment) {
+        segments.append(segment)
+        segments.sort { $0.startTime < $1.startTime }
+    }
+
+    mutating func updateSegment(_ segment: KeystrokeSegment) -> Bool {
+        guard let index = segments.firstIndex(where: { $0.id == segment.id }) else { return false }
+        segments[index] = segment
+        segments.sort { $0.startTime < $1.startTime }
+        return true
+    }
+
+    mutating func removeSegment(id: UUID) {
+        segments.removeAll { $0.id == id }
+    }
+
+    func activeSegments(at time: TimeInterval) -> [KeystrokeSegment] {
+        segments.filter { time >= $0.startTime && time < $0.endTime }
+    }
+}
+
+// MARK: - Audio Track
+
+struct AudioTrack: SegmentTrack, Equatable {
+    let id: UUID
+    var name: String
+    var isEnabled: Bool
+    var audioSource: AudioSource
+    var segments: [AudioSegment]
+
+    var trackType: TrackType { .audio }
+    var segmentCount: Int { segments.count }
+
+    init(
+        id: UUID = UUID(),
+        name: String = "Mic Audio",
+        isEnabled: Bool = true,
+        audioSource: AudioSource = .microphone,
+        segments: [AudioSegment] = []
+    ) {
+        self.id = id
+        self.name = name
+        self.isEnabled = isEnabled
+        self.audioSource = audioSource
+        self.segments = segments.sorted { $0.startTime < $1.startTime }
+    }
+
+    @discardableResult
+    mutating func addSegment(_ segment: AudioSegment) -> Bool {
+        guard !hasOverlap(segment, excluding: nil) else { return false }
+        segments.append(segment)
+        segments.sort { $0.startTime < $1.startTime }
+        return true
+    }
+
+    mutating func updateSegment(_ segment: AudioSegment) -> Bool {
+        guard let index = segments.firstIndex(where: { $0.id == segment.id }) else { return false }
+        guard !hasOverlap(segment, excluding: segment.id) else { return false }
+        segments[index] = segment
+        segments.sort { $0.startTime < $1.startTime }
+        return true
+    }
+
+    mutating func removeSegment(id: UUID) {
+        segments.removeAll { $0.id == id }
+    }
+
+    func activeSegment(at time: TimeInterval) -> AudioSegment? {
+        segments.first { time >= $0.startTime && time < $0.endTime }
+    }
+
+    private func hasOverlap(_ segment: AudioSegment, excluding excludedID: UUID?) -> Bool {
+        segments.contains { existing in
+            if let excludedID, existing.id == excludedID { return false }
+            return segment.startTime < existing.endTime && segment.endTime > existing.startTime
+        }
+    }
+}
+
+enum AnySegmentTrack: Codable, Identifiable, Equatable {
+    case camera(CameraTrack)
+    case cursor(CursorTrackV2)
+    case keystroke(KeystrokeTrackV2)
+    case audio(AudioTrack)
 
     var id: UUID {
         switch self {
-        case .transform(let track): return track.id
-        case .ripple(let track): return track.id
+        case .camera(let track): return track.id
         case .cursor(let track): return track.id
         case .keystroke(let track): return track.id
+        case .audio(let track): return track.id
         }
     }
 
     var name: String {
         get {
             switch self {
-            case .transform(let track): return track.name
-            case .ripple(let track): return track.name
+            case .camera(let track): return track.name
             case .cursor(let track): return track.name
             case .keystroke(let track): return track.name
+            case .audio(let track): return track.name
             }
         }
         set {
             switch self {
-            case .transform(var track):
+            case .camera(var track):
                 track.name = newValue
-                self = .transform(track)
-            case .ripple(var track):
-                track.name = newValue
-                self = .ripple(track)
+                self = .camera(track)
             case .cursor(var track):
                 track.name = newValue
                 self = .cursor(track)
             case .keystroke(var track):
                 track.name = newValue
                 self = .keystroke(track)
+            case .audio(var track):
+                track.name = newValue
+                self = .audio(track)
             }
         }
     }
@@ -263,40 +285,38 @@ enum AnyTrack: Codable, Identifiable, Equatable {
     var isEnabled: Bool {
         get {
             switch self {
-            case .transform(let track): return track.isEnabled
-            case .ripple(let track): return track.isEnabled
+            case .camera(let track): return track.isEnabled
             case .cursor(let track): return track.isEnabled
             case .keystroke(let track): return track.isEnabled
+            case .audio(let track): return track.isEnabled
             }
         }
         set {
             switch self {
-            case .transform(var track):
+            case .camera(var track):
                 track.isEnabled = newValue
-                self = .transform(track)
-            case .ripple(var track):
-                track.isEnabled = newValue
-                self = .ripple(track)
+                self = .camera(track)
             case .cursor(var track):
                 track.isEnabled = newValue
                 self = .cursor(track)
             case .keystroke(var track):
                 track.isEnabled = newValue
                 self = .keystroke(track)
+            case .audio(var track):
+                track.isEnabled = newValue
+                self = .audio(track)
             }
         }
     }
 
     var trackType: TrackType {
         switch self {
-        case .transform: return .transform
-        case .ripple: return .ripple
+        case .camera: return .transform
         case .cursor: return .cursor
         case .keystroke: return .keystroke
+        case .audio: return .audio
         }
     }
-
-    // MARK: - Codable
 
     private enum CodingKeys: String, CodingKey {
         case type, data
@@ -308,24 +328,17 @@ enum AnyTrack: Codable, Identifiable, Equatable {
 
         switch type {
         case .transform:
-            let track = try container.decode(TransformTrack.self, forKey: .data)
-            self = .transform(track)
-        case .ripple:
-            let track = try container.decode(RippleTrack.self, forKey: .data)
-            self = .ripple(track)
+            let track = try container.decode(CameraTrack.self, forKey: .data)
+            self = .camera(track)
         case .cursor:
-            let track = try container.decode(CursorTrack.self, forKey: .data)
+            let track = try container.decode(CursorTrackV2.self, forKey: .data)
             self = .cursor(track)
         case .keystroke:
-            let track = try container.decode(KeystrokeTrack.self, forKey: .data)
+            let track = try container.decode(KeystrokeTrackV2.self, forKey: .data)
             self = .keystroke(track)
         case .audio:
-            // Future extension
-            throw DecodingError.dataCorruptedError(
-                forKey: .type,
-                in: container,
-                debugDescription: "Audio track not yet supported"
-            )
+            let track = try container.decode(AudioTrack.self, forKey: .data)
+            self = .audio(track)
         }
     }
 
@@ -333,11 +346,8 @@ enum AnyTrack: Codable, Identifiable, Equatable {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         switch self {
-        case .transform(let track):
+        case .camera(let track):
             try container.encode(TrackType.transform, forKey: .type)
-            try container.encode(track, forKey: .data)
-        case .ripple(let track):
-            try container.encode(TrackType.ripple, forKey: .type)
             try container.encode(track, forKey: .data)
         case .cursor(let track):
             try container.encode(TrackType.cursor, forKey: .type)
@@ -345,24 +355,9 @@ enum AnyTrack: Codable, Identifiable, Equatable {
         case .keystroke(let track):
             try container.encode(TrackType.keystroke, forKey: .type)
             try container.encode(track, forKey: .data)
+        case .audio(let track):
+            try container.encode(TrackType.audio, forKey: .type)
+            try container.encode(track, forKey: .data)
         }
-    }
-
-    // MARK: - Convenience Initializers
-
-    init(_ track: TransformTrack) {
-        self = .transform(track)
-    }
-
-    init(_ track: RippleTrack) {
-        self = .ripple(track)
-    }
-
-    init(_ track: CursorTrack) {
-        self = .cursor(track)
-    }
-
-    init(_ track: KeystrokeTrack) {
-        self = .keystroke(track)
     }
 }

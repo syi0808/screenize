@@ -72,8 +72,16 @@ enum EasingCurve: Codable, Equatable, Hashable {
             return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
         case .cubicBezier(let p1x, let p1y, let p2x, let p2y):
             return Double(cubicBezierValue(t: CGFloat(t), p1x: p1x, p1y: p1y, p2x: p2x, p2y: p2y))
-        case .spring:
-            return Double(springValue(t: CGFloat(t), duration: 1.0))
+        case .spring(let zeta, let responseParam):
+            let omega = 2.0 * .pi / max(0.01, Double(responseParam))
+            let raw = Double(springRawValue(
+                zeta: CGFloat(zeta), omega: CGFloat(omega), actualTime: CGFloat(t)
+            ))
+            let endVal = Double(springRawValue(
+                zeta: CGFloat(zeta), omega: CGFloat(omega), actualTime: 1.0
+            ))
+            guard abs(endVal) > 0.001 else { return t }
+            return raw / endVal
         }
     }
 
@@ -116,15 +124,42 @@ enum EasingCurve: Codable, Equatable, Hashable {
         }
     }
 
-    /// Calculate the spring derivative
+    /// Calculate the spring derivative with respect to normalized t.
+    /// Returns d(value)/d(t_normalized) where t_normalized is in [0, 1].
     private func springDerivative(t: CGFloat, duration: CGFloat) -> CGFloat {
-        let response = duration * 0.5
-        let omega = 2.0 * .pi / max(0.01, response)
+        guard case .spring(let zeta, let responseParam) = self else { return 1.0 }
+        let omega = 2.0 * .pi / max(0.01, responseParam)
         let actualTime = t * duration
-        let decay = exp(-omega * actualTime)
-        // d/dt [1 - (1 + ωt)e^(-ωt)] = ω²t·e^(-ωt)
-        // dt/d(normalized_t) = duration
-        return omega * omega * actualTime * decay * duration
+
+        let rawDeriv: CGFloat
+        if zeta >= 1.0 {
+            // Critically damped: d/dt[1 - (1+ζωt)e^(-ζωt)] = (ζω)²t·e^(-ζωt)
+            let zo = zeta * omega
+            let decay = exp(-zo * actualTime)
+            rawDeriv = zo * zo * actualTime * decay
+        } else {
+            // Underdamped: derivative of 1 - e^(-ζωt)(cos(ωd·t) + (ζω/ωd)sin(ωd·t))
+            let wd = omega * sqrt(1.0 - zeta * zeta)
+            let zo = zeta * omega
+            let decay = exp(-zo * actualTime)
+            let cosVal = cos(wd * actualTime)
+            let sinVal = sin(wd * actualTime)
+            let ratio = zo / wd
+            // d/dt = e^(-ζωt) * [(ζω)(cos + ratio·sin) + (wd·sin - ratio·wd·cos)]
+            //       = e^(-ζωt) * [ζω·cos + ζω·ratio·sin + wd·sin - ratio·wd·cos]
+            //       = e^(-ζωt) * [(ζω - ratio·wd)cos + (ζω·ratio + wd)sin]
+            // Since ratio = ζω/wd: ratio·wd = ζω, ζω·ratio = (ζω)²/wd
+            //       = e^(-ζωt) * [0·cos + ((ζω)²/wd + wd)sin]
+            //       = e^(-ζωt) * (omega²/wd) * sin(wd·t)
+            rawDeriv = decay * (omega * omega / wd) * sinVal
+        }
+
+        // Normalize: d(normalized_value)/d(t_norm) = rawDeriv * duration / endValue
+        let endValue = springRawValue(
+            zeta: zeta, omega: omega, actualTime: duration
+        )
+        guard abs(endValue) > 0.001 else { return 1.0 }
+        return rawDeriv * duration / endValue
     }
 
     /// Calculate the cubic Bezier derivative
@@ -162,18 +197,48 @@ enum EasingCurve: Codable, Equatable, Hashable {
         Swift.max(minValue, Swift.min(maxValue, value))
     }
 
-    /// Screen Studio-style spring calculation
-    /// Critically damped spring: fast start → smooth settle, no overshoot
+    /// Damped harmonic oscillator spring calculation.
+    /// Uses stored dampingRatio and response parameters.
     /// - Parameters:
     ///   - t: Normalized progress (0.0–1.0)
     ///   - duration: Actual duration of the keyframe segment in seconds
-    /// - Returns: Value with spring animation applied
+    /// - Returns: Normalized spring value (0.0 at t=0, 1.0 at t=1)
     private func springValue(t: CGFloat, duration: CGFloat) -> CGFloat {
-        let response = duration * 0.5
-        let omega = 2.0 * .pi / max(0.01, response)
+        guard case .spring(let zeta, let responseParam) = self else { return t }
+        let omega = 2.0 * .pi / max(0.01, responseParam)
         let actualTime = t * duration
-        let decay = exp(-omega * actualTime)
-        return 1.0 - (1.0 + omega * actualTime) * decay
+
+        let rawValue = springRawValue(
+            zeta: zeta, omega: omega, actualTime: actualTime
+        )
+        let endValue = springRawValue(
+            zeta: zeta, omega: omega, actualTime: duration
+        )
+
+        // Normalize so value = 1.0 at t = 1.0
+        guard abs(endValue) > 0.001 else { return t }
+        return rawValue / endValue
+    }
+
+    /// Raw damped harmonic oscillator value (not normalized to [0,1] at end).
+    private func springRawValue(
+        zeta: CGFloat, omega: CGFloat, actualTime: CGFloat
+    ) -> CGFloat {
+        if zeta >= 1.0 {
+            // Critically damped or overdamped
+            let zo = zeta * omega
+            let decay = exp(-zo * actualTime)
+            return 1.0 - (1.0 + zo * actualTime) * decay
+        } else {
+            // Underdamped (oscillatory)
+            let wd = omega * sqrt(1.0 - zeta * zeta)
+            let zo = zeta * omega
+            let decay = exp(-zo * actualTime)
+            return 1.0 - decay * (
+                cos(wd * actualTime)
+                + (zo / wd) * sin(wd * actualTime)
+            )
+        }
     }
 
     /// Compute the Cubic Bezier curve

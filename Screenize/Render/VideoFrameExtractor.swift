@@ -47,7 +47,7 @@ final class VideoFrameExtractor {
 
         // DEBUG: Log video metadata
         let transform = try await videoTrack.load(.preferredTransform)
-        print("🔍 [DEBUG] VideoFrameExtractor: videoSize=\(size), frameRate=\(self.frameRate), transform=\(transform)")
+        Log.export.debug("VideoFrameExtractor: videoSize=\(String(describing: size)), frameRate=\(self.frameRate), transform=\(String(describing: transform))")
 
         // Configure the image generator
         setupImageGenerator()
@@ -90,14 +90,6 @@ final class VideoFrameExtractor {
                 continuation.resume(returning: ciImage)
             }
         }
-    }
-
-    /// Extract a frame by frame number
-    /// - Parameter frame: Frame number
-    /// - Returns: CIImage
-    func extractFrame(frame: Int) async throws -> CIImage {
-        let time = Double(frame) / frameRate
-        return try await extractFrame(at: time)
     }
 
     /// Extract frames for multiple times

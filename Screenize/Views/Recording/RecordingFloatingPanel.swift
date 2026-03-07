@@ -80,13 +80,13 @@ struct RecordingFloatingView: View {
     @State private var isBlinking = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spacing.md) {
             // Recording indicator (red dot)
             Circle()
                 .fill(Color.red)
                 .frame(width: 10, height: 10)
                 .opacity(isBlinking ? 0.4 : 1.0)
-                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isBlinking)
+                .motionSafeAnimation(AnimationTokens.pulse, value: isBlinking)
 
             // Recording duration
             Text(formattedDuration)
@@ -97,10 +97,10 @@ struct RecordingFloatingView: View {
                 Text("PAUSED")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.yellow)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(Color.yellow.opacity(0.2))
-                    .cornerRadius(3)
+                    .padding(.horizontal, Spacing.xs)
+                    .padding(.vertical, Spacing.xxs)
+                    .background(Color.yellow.opacity(DesignOpacity.light))
+                    .cornerRadius(CornerRadius.sm)
             }
 
             Spacer()
@@ -115,6 +115,7 @@ struct RecordingFloatingView: View {
             }
             .buttonStyle(.plain)
             .help(appState.isPaused ? "Resume" : "Pause")
+            .accessibilityLabel(appState.isPaused ? "Resume Recording" : "Pause Recording")
 
             // Stop button
             Button {
@@ -128,12 +129,13 @@ struct RecordingFloatingView: View {
             }
             .buttonStyle(.plain)
             .help("Stop Recording")
+            .accessibilityLabel("Stop Recording")
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, Spacing.lg)
         .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.black.opacity(0.85))
+            RoundedRectangle(cornerRadius: CornerRadius.xl)
+                .fill(Color.black.opacity(DesignOpacity.intense))
         )
         .onAppear {
             isBlinking = true

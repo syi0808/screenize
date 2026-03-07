@@ -23,16 +23,15 @@ struct TrimHandleView: View {
                 .fill(handleColor)
                 .frame(width: 2)
 
-            // Handle grip (top and bottom)
+            // Handle grip (top only)
             VStack {
                 handleGrip
                 Spacer()
-                handleGrip
             }
         }
         .frame(width: handleWidth)
         .opacity(isDragging ? 1.0 : 0.8)
-        .animation(.easeInOut(duration: 0.15), value: isDragging)
+        .motionSafeAnimation(AnimationTokens.quick, value: isDragging)
         .contentShape(Rectangle())
         .onHover { hovering in
             if hovering {

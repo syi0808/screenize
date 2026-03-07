@@ -38,62 +38,59 @@ final class DragEventHandler {
         let position = NSEvent.mouseLocation
         let relativePosition = convertToScreenBounds(position, screenBounds: screenBounds)
 
-        lock.lock()
-        if pendingDrag == nil {
-            // Start dragging
-            pendingDrag = PendingDrag(start: timestamp, startPosition: relativePosition)
+        lock.withLock {
+            if pendingDrag == nil {
+                // Start dragging
+                pendingDrag = PendingDrag(start: timestamp, startPosition: relativePosition)
+            }
+            // While dragging, only update the current position (track the end location)
         }
-        // While dragging, only update the current position (track the end location)
-        lock.unlock()
     }
 
     // MARK: - Finalization
 
     func finalizePendingDrag(screenBounds: CGRect) {
-        lock.lock()
-        defer { lock.unlock() }
-
-        guard let pending = pendingDrag else { return }
-
         let currentTime = ProcessInfo.processInfo.systemUptime
         let timestamp = currentTime - recordingStartTime()
         let position = NSEvent.mouseLocation
         let relativePosition = convertToScreenBounds(position, screenBounds: screenBounds)
 
-        // Enforce a minimum drag distance (at least 10 pixels)
-        let dx = relativePosition.x - pending.startPosition.x
-        let dy = relativePosition.y - pending.startPosition.y
-        let distance = sqrt(dx * dx + dy * dy)
+        lock.withLock {
+            guard let pending = pendingDrag else { return }
 
-        if distance >= 10 {
-            let dragEvent = DragEvent(
-                startTimestamp: pending.start,
-                endTimestamp: timestamp,
-                startX: pending.startPosition.x,
-                startY: pending.startPosition.y,
-                endX: relativePosition.x,
-                endY: relativePosition.y,
-                type: .selection
-            )
-            dragEvents.append(dragEvent)
+            // Enforce a minimum drag distance (at least 10 pixels)
+            let dx = relativePosition.x - pending.startPosition.x
+            let dy = relativePosition.y - pending.startPosition.y
+            let distance = sqrt(dx * dx + dy * dy)
+
+            if distance >= 10 {
+                let dragEvent = DragEvent(
+                    startTimestamp: pending.start,
+                    endTimestamp: timestamp,
+                    startX: pending.startPosition.x,
+                    startY: pending.startPosition.y,
+                    endX: relativePosition.x,
+                    endY: relativePosition.y,
+                    type: .selection
+                )
+                dragEvents.append(dragEvent)
+            }
+
+            pendingDrag = nil
         }
-
-        pendingDrag = nil
     }
 
     // MARK: - Results
 
     func getDragEvents() -> [DragEvent] {
-        lock.lock()
-        defer { lock.unlock() }
-        return dragEvents
+        lock.withLock { dragEvents }
     }
 
     func reset() {
-        lock.lock()
-        defer { lock.unlock() }
-        dragEvents.removeAll()
-        pendingDrag = nil
+        lock.withLock {
+            dragEvents.removeAll()
+            pendingDrag = nil
+        }
     }
 
     // MARK: - Coordinate Conversion

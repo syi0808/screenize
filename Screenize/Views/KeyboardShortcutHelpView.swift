@@ -152,7 +152,10 @@ extension KeyboardShortcutHelpView {
         ]),
         ShortcutCategory(name: "Editor", icon: "slider.horizontal.3", shortcuts: [
             ShortcutEntry(keys: "Space", description: "Play/Pause", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{232B}", description: "Delete Selected Keyframe", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{232B}", description: "Delete Selected Segment(s)", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{2318}C", description: "Copy Selected Segment(s)", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{2318}V", description: "Paste Segment(s) at Playhead", contexts: [.editor]),
+            ShortcutEntry(keys: "\u{2318}T", description: "Duplicate Selected Segment(s)", contexts: [.editor]),
             ShortcutEntry(keys: "\u{2318}Z", description: "Undo", contexts: [.editor]),
             ShortcutEntry(keys: "\u{21E7}\u{2318}Z", description: "Redo", contexts: [.editor]),
         ]),
