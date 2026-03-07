@@ -17,12 +17,15 @@ struct MousePositionInterpolator {
     ///   - baseTension: Catmull-Rom tension (0.2 = natural curve)
     ///   - springConfig: Spring cursor config. When provided, uses the spring pipeline.
     ///                   When nil, falls back to the legacy Gaussian + idle stabilization pipeline.
+    ///   - cameraTransforms: Optional camera transforms for camera-relative spring smoothing.
+    ///                       Only used when springConfig is provided.
     /// - Returns: Interpolated mouse positions at frame rate intervals
     static func interpolate(
         _ positions: [RenderMousePosition],
         outputFrameRate: Double,
         baseTension: CGFloat = 0.2,
-        springConfig: SpringCursorConfig? = nil
+        springConfig: SpringCursorConfig? = nil,
+        cameraTransforms: [TimedTransform]? = nil
     ) -> [RenderMousePosition] {
         guard positions.count >= 2 else { return positions }
 
@@ -33,7 +36,9 @@ struct MousePositionInterpolator {
             let resampled = catmullRomResample(
                 positions, frameDuration: frameDuration, tension: baseTension
             )
-            let springSmoothed = SpringCursorSimulator.simulate(resampled, config: springConfig)
+            let springSmoothed = SpringCursorSimulator.simulate(
+                resampled, config: springConfig, cameraTransforms: cameraTransforms
+            )
             return deduplicateByTimestamp(springSmoothed, minInterval: frameDuration * 0.5)
         } else {
             // Legacy pipeline: Gaussian -> Catmull-Rom -> Idle stabilization -> Dedup
@@ -351,13 +356,15 @@ extension PreviewEngine {
         _ positions: [RenderMousePosition],
         outputFrameRate: Double,
         tension: CGFloat = 0.2,
-        springConfig: SpringCursorConfig? = nil
+        springConfig: SpringCursorConfig? = nil,
+        cameraTransforms: [TimedTransform]? = nil
     ) -> [RenderMousePosition] {
         MousePositionInterpolator.interpolate(
             positions,
             outputFrameRate: outputFrameRate,
             baseTension: tension,
-            springConfig: springConfig
+            springConfig: springConfig,
+            cameraTransforms: cameraTransforms
         )
     }
 }

@@ -28,11 +28,11 @@ struct SpringCursorConfig: Codable, Equatable, Hashable {
     var adaptiveMinScale: CGFloat
 
     static let `default` = Self(
-        dampingRatio: 0.85,
-        response: 0.08,
+        dampingRatio: 0.90,
+        response: 0.06,
         adaptiveResponse: true,
-        adaptiveMaxVelocity: 3.0,
-        adaptiveMinScale: 0.3
+        adaptiveMaxVelocity: 4.0,
+        adaptiveMinScale: 0.4
     )
 
     /// Passthrough (effectively no smoothing)
@@ -56,17 +56,30 @@ struct SpringCursorSimulator {
     /// - Parameters:
     ///   - positions: Cursor positions (typically from Catmull-Rom resampling)
     ///   - config: Spring configuration parameters
+    ///   - cameraTransforms: Optional camera transforms for camera-relative smoothing.
+    ///     When provided, the spring operates in camera-relative space to prevent
+    ///     cursor "sliding" during camera pans.
     /// - Returns: Spring-smoothed positions with the same timestamps
     static func simulate(
         _ positions: [RenderMousePosition],
-        config: SpringCursorConfig
+        config: SpringCursorConfig,
+        cameraTransforms: [TimedTransform]? = nil
     ) -> [RenderMousePosition] {
         guard positions.count >= 2 else { return positions }
 
-        var springX = positions[0].position.x
-        var springY = positions[0].position.y
+        // Initialize spring state, optionally in camera-relative space
+        let initialCamera: CGPoint
+        if let transforms = cameraTransforms, let cam = transforms.first {
+            initialCamera = CGPoint(x: cam.transform.center.x, y: cam.transform.center.y)
+        } else {
+            initialCamera = .zero
+        }
+
+        var springX = positions[0].position.x - initialCamera.x
+        var springY = positions[0].position.y - initialCamera.y
         var velX: CGFloat = 0
         var velY: CGFloat = 0
+        var idleBlend: CGFloat = 0
 
         var result: [RenderMousePosition] = []
         result.reserveCapacity(positions.count)
@@ -77,13 +90,55 @@ struct SpringCursorSimulator {
             let dt = CGFloat(positions[i].timestamp - positions[i - 1].timestamp)
 
             guard dt > 0.0001 else {
+                let outputX: CGFloat
+                let outputY: CGFloat
+                if cameraTransforms != nil {
+                    let cam = findCameraCenter(at: positions[i].timestamp, in: cameraTransforms!)
+                    outputX = springX + cam.x
+                    outputY = springY + cam.y
+                } else {
+                    outputX = springX
+                    outputY = springY
+                }
                 result.append(RenderMousePosition(
                     timestamp: positions[i].timestamp,
-                    x: springX, y: springY,
+                    x: outputX, y: outputY,
                     velocity: positions[i].velocity
                 ))
                 continue
             }
+
+            // Get camera center for this frame
+            let cameraCenter: CGPoint
+            if let transforms = cameraTransforms {
+                let cam = findCameraCenter(at: positions[i].timestamp, in: transforms)
+                cameraCenter = CGPoint(x: cam.x, y: cam.y)
+            } else {
+                cameraCenter = .zero
+            }
+
+            // Compute relative target (camera-relative when transforms available)
+            let relativeTarget = CGPoint(
+                x: target.x - cameraCenter.x,
+                y: target.y - cameraCenter.y
+            )
+
+            // Idle stabilization: when cursor barely moves, blend target toward current
+            let rawVelocity = sqrt(
+                pow((relativeTarget.x - springX) / dt, 2)
+                + pow((relativeTarget.y - springY) / dt, 2)
+            )
+            let idleThreshold: CGFloat = 0.3 // normalized units/sec
+            if rawVelocity < idleThreshold {
+                idleBlend = min(idleBlend + dt * 3.0, 0.95)
+            } else {
+                idleBlend = 0
+            }
+
+            let effectiveTarget = CGPoint(
+                x: relativeTarget.x * (1 - idleBlend) + springX * idleBlend,
+                y: relativeTarget.y * (1 - idleBlend) + springY * idleBlend
+            )
 
             let effectiveResponse = computeEffectiveResponse(
                 config: config, velX: velX, velY: velY
@@ -93,11 +148,11 @@ struct SpringCursorSimulator {
 
             let (newX, newVX) = springStep(
                 current: springX, velocity: velX,
-                target: target.x, omega: omega, zeta: zeta, dt: dt
+                target: effectiveTarget.x, omega: omega, zeta: zeta, dt: dt
             )
             let (newY, newVY) = springStep(
                 current: springY, velocity: velY,
-                target: target.y, omega: omega, zeta: zeta, dt: dt
+                target: effectiveTarget.y, omega: omega, zeta: zeta, dt: dt
             )
 
             springX = newX
@@ -105,15 +160,49 @@ struct SpringCursorSimulator {
             velX = newVX
             velY = newVY
 
+            // Convert back from camera-relative to absolute
+            let outputX = springX + cameraCenter.x
+            let outputY = springY + cameraCenter.y
+
             let springVelocity = sqrt(velX * velX + velY * velY)
             result.append(RenderMousePosition(
                 timestamp: positions[i].timestamp,
-                x: springX, y: springY,
+                x: outputX, y: outputY,
                 velocity: springVelocity
             ))
         }
 
         return result
+    }
+
+    /// Find the interpolated camera center at a given time via binary search.
+    private static func findCameraCenter(
+        at time: TimeInterval,
+        in transforms: [TimedTransform]
+    ) -> NormalizedPoint {
+        guard !transforms.isEmpty else { return .center }
+        guard transforms.count > 1 else { return transforms[0].transform.center }
+
+        var lo = 0
+        var hi = transforms.count - 1
+        while lo < hi - 1 {
+            let mid = (lo + hi) / 2
+            if transforms[mid].time <= time {
+                lo = mid
+            } else {
+                hi = mid
+            }
+        }
+
+        let s0 = transforms[lo]
+        let s1 = transforms[hi]
+        let dt = s1.time - s0.time
+        guard dt > 0.0001 else { return s0.transform.center }
+        let t = CGFloat((time - s0.time) / dt)
+        return NormalizedPoint(
+            x: s0.transform.center.x + (s1.transform.center.x - s0.transform.center.x) * t,
+            y: s0.transform.center.y + (s1.transform.center.y - s0.transform.center.y) * t
+        )
     }
 
     // MARK: - Private
