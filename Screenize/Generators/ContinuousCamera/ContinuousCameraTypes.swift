@@ -1,6 +1,20 @@
 import Foundation
 import CoreGraphics
 
+// MARK: - Micro Tracker Settings
+
+/// Configuration for the micro tracking layer.
+struct MicroTrackerSettings {
+    /// Dead zone as fraction of viewport half-size. Micro offset inactive within this zone.
+    var deadZoneRatio: CGFloat = 0.4
+    /// Maximum micro offset as fraction of viewport half-size.
+    var maxOffsetRatio: CGFloat = 0.3
+    /// Spring damping ratio for micro offset.
+    var dampingRatio: CGFloat = 0.85
+    /// Spring response time in seconds.
+    var response: CGFloat = 0.15
+}
+
 // MARK: - Waypoint Urgency
 
 /// How quickly the camera should reach a waypoint.
@@ -85,4 +99,6 @@ struct ContinuousCameraSettings {
     var cursor = CursorEmissionSettings()
     /// Keystroke emission settings.
     var keystroke = KeystrokeEmissionSettings()
+    /// Micro tracking layer settings.
+    var micro = MicroTrackerSettings()
 }
