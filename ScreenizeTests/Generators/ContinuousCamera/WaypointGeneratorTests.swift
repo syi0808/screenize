@@ -283,7 +283,7 @@ final class WaypointGeneratorTests: XCTestCase {
         }
     }
 
-    func test_generate_typingWithCaretMovement_addsDetailWaypoints() {
+    func test_generate_typingWithCaretMovement_noDetailWaypoints() {
         let spans = [
             makeIntentSpan(
                 start: 0,
@@ -325,18 +325,11 @@ final class WaypointGeneratorTests: XCTestCase {
             if case .typing = $0.source { return true }
             return false
         }
-        XCTAssertGreaterThan(
-            typingWaypoints.count,
-            1,
-            "Typing with caret movement should emit detail waypoints"
-        )
-        let hasLateCaretWaypoint = typingWaypoints.contains {
-            $0.time > 1.0 && $0.targetCenter.x > 0.6 && $0.targetCenter.y > 0.6
-        }
-        XCTAssertTrue(hasLateCaretWaypoint)
+        XCTAssertEqual(typingWaypoints.count, 1,
+                       "Macro layer should not emit detail waypoints")
     }
 
-    func test_generate_clickingWithMultipleClicks_addsDetailWaypoints() {
+    func test_generate_clickingWithMultipleClicks_noDetailWaypoints() {
         let spans = [
             makeIntentSpan(
                 start: 1.0,
@@ -375,11 +368,8 @@ final class WaypointGeneratorTests: XCTestCase {
             if case .clicking = $0.source { return true }
             return false
         }
-        XCTAssertGreaterThan(clickWaypoints.count, 1)
-        let hasLateClickAnchor = clickWaypoints.contains {
-            $0.time > 3.0 && $0.targetCenter.x > 0.62 && $0.targetCenter.y > 0.60
-        }
-        XCTAssertTrue(hasLateClickAnchor)
+        XCTAssertEqual(clickWaypoints.count, 1,
+                       "Macro layer should not emit detail waypoints")
     }
 
     func test_generate_typingWaypoint_startsBeforeSpanForAnticipation() {

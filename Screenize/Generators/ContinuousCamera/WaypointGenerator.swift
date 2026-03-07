@@ -89,25 +89,6 @@ struct WaypointGenerator {
                 source: span.intent
             )
             waypoints.append(waypoint)
-
-            if let timeline = eventTimeline {
-                if case .typing = span.intent {
-                    waypoints.append(contentsOf: typingDetailWaypoints(
-                        for: span,
-                        baseTransform: transform,
-                        eventTimeline: timeline,
-                        screenBounds: screenBounds,
-                        settings: settings
-                    ))
-                } else {
-                    waypoints.append(contentsOf: activityDetailWaypoints(
-                        for: span,
-                        baseTransform: transform,
-                        eventTimeline: timeline,
-                        settings: settings
-                    ))
-                }
-            }
         }
 
         return sortAndCoalesce(waypoints)
