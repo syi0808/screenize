@@ -74,6 +74,8 @@ struct ContinuousCameraSettings {
     var maxZoom: CGFloat = 2.8
     /// Post-hoc zoom intensity multiplier.
     var zoomIntensity: CGFloat = 1.0
+    /// Stiffness of the soft boundary pushback force. Higher = harder boundary.
+    var boundaryStiffness: CGFloat = 80.0
 
     /// Shot settings for zoom range and center calculation.
     var shot = ShotSettings()

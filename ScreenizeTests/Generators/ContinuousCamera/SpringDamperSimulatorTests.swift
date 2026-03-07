@@ -288,11 +288,48 @@ final class SpringDamperSimulatorTests: XCTestCase {
         )
         for sample in result {
             let halfCrop = 0.5 / sample.transform.zoom
-            XCTAssertGreaterThanOrEqual(sample.transform.center.x, halfCrop - 0.01)
-            XCTAssertLessThanOrEqual(sample.transform.center.x, 1.0 - halfCrop + 0.01)
-            XCTAssertGreaterThanOrEqual(sample.transform.center.y, halfCrop - 0.01)
-            XCTAssertLessThanOrEqual(sample.transform.center.y, 1.0 - halfCrop + 0.01)
+            XCTAssertGreaterThanOrEqual(sample.transform.center.x, halfCrop - 0.06)
+            XCTAssertLessThanOrEqual(sample.transform.center.x, 1.0 - halfCrop + 0.06)
+            XCTAssertGreaterThanOrEqual(sample.transform.center.y, halfCrop - 0.06)
+            XCTAssertLessThanOrEqual(sample.transform.center.y, 1.0 - halfCrop + 0.06)
         }
+    }
+
+    // MARK: - Soft Clamping
+
+    func test_simulate_nearBoundary_velocityNotZeroed() {
+        let wp1 = makeWaypoint(time: 0, zoom: 2.0, x: 0.5, y: 0.5, urgency: .normal)
+        let wp2 = makeWaypoint(time: 1, zoom: 2.0, x: 0.95, y: 0.5, urgency: .normal)
+
+        let result = SpringDamperSimulator.simulate(
+            waypoints: [wp1, wp2], duration: 3.0, settings: defaultSettings
+        )
+
+        // Find samples near the right boundary (at zoom 2.0, max center.x ~ 0.75)
+        let nearBoundary = result.filter {
+            $0.transform.center.x > 0.70 && $0.time > 1.0
+        }
+        guard nearBoundary.count >= 3 else { return }
+
+        // With soft clamping, the velocity should never be zeroed in a single frame
+        // while the camera was moving significantly. Check that no frame has velocity
+        // drop to exactly zero (within float precision) from a significant speed.
+        var hadHardZero = false
+        for i in 2..<nearBoundary.count {
+            let dt = CGFloat(nearBoundary[i].time - nearBoundary[i - 1].time)
+            let dt2 = CGFloat(nearBoundary[i - 1].time - nearBoundary[i - 2].time)
+            guard dt > 0, dt2 > 0 else { continue }
+            let v = (nearBoundary[i].transform.center.x
+                      - nearBoundary[i - 1].transform.center.x) / dt
+            let vPrev = (nearBoundary[i - 1].transform.center.x
+                          - nearBoundary[i - 2].transform.center.x) / dt2
+            // Detect hard-stop: previous velocity was significant and current is near zero
+            if abs(vPrev) > 0.15 && abs(v) < 0.001 {
+                hadHardZero = true
+            }
+        }
+        XCTAssertFalse(hadHardZero,
+                       "Velocity near boundary should not be hard-zeroed")
     }
 
     // MARK: - Sample Count

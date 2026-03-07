@@ -32,7 +32,7 @@ struct SpringDamperSimulator {
             positionY: first.targetCenter.y,
             zoom: first.targetZoom
         )
-        clampState(&state, settings: settings)
+        clampState(&state, settings: settings, dt: CGFloat(dt))
 
         var results: [TimedTransform] = []
         let estimatedCount = Int(duration * settings.tickRate) + 1
@@ -80,7 +80,7 @@ struct SpringDamperSimulator {
                 state.velocityX = 0
                 state.velocityY = 0
                 state.velocityZoom = 0
-                clampState(&state, settings: settings)
+                clampState(&state, settings: settings, dt: CGFloat(dt))
                 results.append(transformSample(from: state, at: t))
                 t += dt
                 continue
@@ -133,7 +133,7 @@ struct SpringDamperSimulator {
             state.velocityY = newVY
             state.velocityZoom = newVZ
 
-            clampState(&state, settings: settings)
+            clampState(&state, settings: settings, dt: CGFloat(dt))
             results.append(transformSample(from: state, at: t))
 
             t += dt
@@ -194,32 +194,44 @@ struct SpringDamperSimulator {
         }
     }
 
-    /// Clamp camera state to valid bounds, zeroing velocity on clamped axes.
+    /// Clamp camera state to valid bounds with soft pushback on center axes.
     private static func clampState(
         _ state: inout CameraState,
-        settings: ContinuousCameraSettings
+        settings: ContinuousCameraSettings,
+        dt: CGFloat
     ) {
-        // Clamp zoom to bounds
+        // Hard clamp zoom (zoom boundaries should feel firm)
         if state.zoom < settings.minZoom {
             state.zoom = settings.minZoom
-            state.velocityZoom = 0
+            state.velocityZoom = max(0, state.velocityZoom)
         } else if state.zoom > settings.maxZoom {
             state.zoom = settings.maxZoom
-            state.velocityZoom = 0
+            state.velocityZoom = min(0, state.velocityZoom)
         }
 
-        // Clamp center to keep viewport in [0, 1]
+        // Soft clamp center — apply pushback force proportional to overflow
         let clamped = ShotPlanner.clampCenter(
             NormalizedPoint(x: state.positionX, y: state.positionY),
             zoom: state.zoom
         )
-        if abs(clamped.x - state.positionX) > 0.0001 {
-            state.positionX = clamped.x
-            state.velocityX = 0
+        let overflowX = state.positionX - clamped.x
+        let overflowY = state.positionY - clamped.y
+        let stiffness = settings.boundaryStiffness
+
+        if abs(overflowX) > 0.0001 {
+            state.velocityX -= overflowX * stiffness * dt
+            // Hard limit to prevent divergence
+            let maxOverflow: CGFloat = 0.05
+            if abs(overflowX) > maxOverflow {
+                state.positionX = clamped.x + copysign(maxOverflow, overflowX)
+            }
         }
-        if abs(clamped.y - state.positionY) > 0.0001 {
-            state.positionY = clamped.y
-            state.velocityY = 0
+        if abs(overflowY) > 0.0001 {
+            state.velocityY -= overflowY * stiffness * dt
+            let maxOverflow: CGFloat = 0.05
+            if abs(overflowY) > maxOverflow {
+                state.positionY = clamped.y + copysign(maxOverflow, overflowY)
+            }
         }
     }
 
