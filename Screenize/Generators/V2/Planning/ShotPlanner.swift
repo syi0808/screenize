@@ -325,7 +325,7 @@ struct ShotPlanner {
         let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
         var center: NormalizedPoint
 
-        // Prefer first caret position: CursorFollowController starts at idealCenter
+        // Prefer first caret position: the camera starts at idealCenter
         // and pans forward, so the camera should start where typing begins.
         if let firstWithCaret = sceneEvents.first(where: {
             $0.metadata.caretBounds != nil

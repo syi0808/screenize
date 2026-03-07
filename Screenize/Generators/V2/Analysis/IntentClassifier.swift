@@ -37,7 +37,7 @@ struct IntentClassifier {
     static let scrollMergeGap: TimeInterval = 1.0
 
     /// Brief span duration for point events (clicks, switching).
-    /// Must be >= SceneSegmenter.minSceneDuration to avoid scene absorption.
+    /// Must be long enough to avoid absorption into adjacent spans.
     static let pointSpanDuration: TimeInterval = 0.5
 
     /// Window for associating a click with a post-click UI context change.

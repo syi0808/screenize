@@ -19,45 +19,20 @@
 		AA000002296A0001 /* UserIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000002296A0001 /* UserIntent.swift */; };
 		AA000003296A0001 /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000003296A0001 /* Scene.swift */; };
 		AA000004296A0001 /* ShotPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000004296A0001 /* ShotPlan.swift */; };
-		AA000005296A0001 /* TransitionPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000005296A0001 /* TransitionPlan.swift */; };
 		AA000006296A0001 /* TimedTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000006296A0001 /* TimedTransform.swift */; };
-		AA000007296A0001 /* SmartGeneratorV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000007296A0001 /* SmartGeneratorV2.swift */; };
 		AD000010296A0001 /* EventTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100010296A0001 /* EventTimeline.swift */; };
 		AD000011296A0001 /* IntentClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100011296A0001 /* IntentClassifier.swift */; };
 		AD000021296A0001 /* MockMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100021296A0001 /* MockMouseDataSource.swift */; };
 		AD000022296A0001 /* EventTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100022296A0001 /* EventTimelineTests.swift */; };
 		AD000023296A0001 /* IntentClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100023296A0001 /* IntentClassifierTests.swift */; };
-		AE000001296A0001 /* SceneSegmenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100001296A0001 /* SceneSegmenter.swift */; };
 		AE000002296A0001 /* ShotPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100002296A0001 /* ShotPlanner.swift */; };
-		AE000003296A0001 /* TransitionPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100003296A0001 /* TransitionPlanner.swift */; };
-		AF000001296A0001 /* SceneSegmenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100001296A0001 /* SceneSegmenterTests.swift */; };
 		AF000002296A0001 /* ShotPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100002296A0001 /* ShotPlannerTests.swift */; };
-		AF000003296A0001 /* TransitionPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100003296A0001 /* TransitionPlannerTests.swift */; };
-		B0000001296A0001 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100001296A0001 /* CameraController.swift */; };
-		B0000002296A0001 /* StaticHoldController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100002296A0001 /* StaticHoldController.swift */; };
-		B0000003296A0001 /* CameraSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100003296A0001 /* CameraSimulator.swift */; };
-		B0000004296A0001 /* CursorFollowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0100004296A0001 /* CursorFollowController.swift */; };
-		B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100001296A0001 /* StaticHoldControllerTests.swift */; };
-		B1000002296A0001 /* CameraSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100002296A0001 /* CameraSimulatorTests.swift */; };
-		B1000003296A0001 /* CursorFollowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100003296A0001 /* CursorFollowControllerTests.swift */; };
 		B1000010296A0001 /* TimelineView+MultiMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100010296A0001 /* TimelineView+MultiMove.swift */; };
-		B2000001296A0001 /* CameraTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100001296A0001 /* CameraTrackEmitter.swift */; };
 		B2000002296A0001 /* CursorTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100002296A0001 /* CursorTrackEmitter.swift */; };
 		B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100003296A0001 /* KeystrokeTrackEmitter.swift */; };
-		B2000004296A0001 /* SegmentOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100004296A0001 /* SegmentOptimizer.swift */; };
-		B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100001296A0001 /* CameraTrackEmitterTests.swift */; };
 		B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100002296A0001 /* CursorTrackEmitterTests.swift */; };
 		B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */; };
-		B3000004296A0001 /* SegmentOptimizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3100004296A0001 /* SegmentOptimizerTests.swift */; };
 		B5000001296A0001 /* EasingCurveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5100001296A0001 /* EasingCurveTests.swift */; };
-		B6000001296A0001 /* PathSmoother.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100001296A0001 /* PathSmoother.swift */; };
-		B6000002296A0001 /* HoldEnforcer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100002296A0001 /* HoldEnforcer.swift */; };
-		B6000003296A0001 /* TransitionRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100003296A0001 /* TransitionRefiner.swift */; };
-		B6000004296A0001 /* SegmentMerger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100004296A0001 /* SegmentMerger.swift */; };
-		B7000001296A0001 /* PathSmootherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100001296A0001 /* PathSmootherTests.swift */; };
-		B7000002296A0001 /* HoldEnforcerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100002296A0001 /* HoldEnforcerTests.swift */; };
-		B7000003296A0001 /* TransitionRefinerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100003296A0001 /* TransitionRefinerTests.swift */; };
-		B7000004296A0001 /* SegmentMergerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100004296A0001 /* SegmentMergerTests.swift */; };
 		C0000001296A0001 /* InspectorView+CameraSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0100001296A0001 /* InspectorView+CameraSection.swift */; };
 		C1000001296A0001 /* InspectorView+SegmentBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1100001296A0001 /* InspectorView+SegmentBindings.swift */; };
 		C2000001296A0001 /* CursorImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2100001296A0001 /* CursorImageProvider.swift */; };
@@ -113,11 +88,9 @@
 		E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100001296A0001 /* ContinuousCameraTypes.swift */; };
 		E7000002296A0001 /* WaypointGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100002296A0001 /* WaypointGenerator.swift */; };
 		E7000003296A0001 /* SpringDamperSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100003296A0001 /* SpringDamperSimulator.swift */; };
-		E7000004296A0001 /* ContinuousTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100004296A0001 /* ContinuousTrackEmitter.swift */; };
 		E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100005296A0001 /* ContinuousCameraGenerator.swift */; };
 		E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100011296A0001 /* WaypointGeneratorTests.swift */; };
 		E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100012296A0001 /* SpringDamperSimulatorTests.swift */; };
-		E7000013296A0001 /* ContinuousTrackEmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100013296A0001 /* ContinuousTrackEmitterTests.swift */; };
 		E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */; };
 		F0000001296A0001 /* ScreenizeProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000001296A0001 /* ScreenizeProject.swift */; };
 		F0000002296A0001 /* MediaAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000002296A0001 /* MediaAsset.swift */; };
@@ -237,46 +210,21 @@
 		AB000002296A0001 /* UserIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIntent.swift; sourceTree = "<group>"; };
 		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
 		AB000004296A0001 /* ShotPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlan.swift; sourceTree = "<group>"; };
-		AB000005296A0001 /* TransitionPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlan.swift; sourceTree = "<group>"; };
 		AB000006296A0001 /* TimedTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedTransform.swift; sourceTree = "<group>"; };
-		AB000007296A0001 /* SmartGeneratorV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGeneratorV2.swift; sourceTree = "<group>"; };
 		AD100010296A0001 /* EventTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeline.swift; sourceTree = "<group>"; };
 		AD100011296A0001 /* IntentClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifier.swift; sourceTree = "<group>"; };
 		AD100020296A0001 /* ScreenizeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScreenizeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD100021296A0001 /* MockMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMouseDataSource.swift; sourceTree = "<group>"; };
 		AD100022296A0001 /* EventTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimelineTests.swift; sourceTree = "<group>"; };
 		AD100023296A0001 /* IntentClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifierTests.swift; sourceTree = "<group>"; };
-		AE100001296A0001 /* SceneSegmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenter.swift; sourceTree = "<group>"; };
 		AE100002296A0001 /* ShotPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlanner.swift; sourceTree = "<group>"; };
-		AE100003296A0001 /* TransitionPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlanner.swift; sourceTree = "<group>"; };
-		AF100001296A0001 /* SceneSegmenterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSegmenterTests.swift; sourceTree = "<group>"; };
 		AF100002296A0001 /* ShotPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlannerTests.swift; sourceTree = "<group>"; };
-		AF100003296A0001 /* TransitionPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlannerTests.swift; sourceTree = "<group>"; };
-		B0100001296A0001 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
-		B0100002296A0001 /* StaticHoldController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldController.swift; sourceTree = "<group>"; };
-		B0100003296A0001 /* CameraSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulator.swift; sourceTree = "<group>"; };
-		B0100004296A0001 /* CursorFollowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorFollowController.swift; sourceTree = "<group>"; };
-		B1100001296A0001 /* StaticHoldControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticHoldControllerTests.swift; sourceTree = "<group>"; };
-		B1100002296A0001 /* CameraSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSimulatorTests.swift; sourceTree = "<group>"; };
-		B1100003296A0001 /* CursorFollowControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorFollowControllerTests.swift; sourceTree = "<group>"; };
 		B1100010296A0001 /* TimelineView+MultiMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+MultiMove.swift"; sourceTree = "<group>"; };
-		B2100001296A0001 /* CameraTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitter.swift; sourceTree = "<group>"; };
 		B2100002296A0001 /* CursorTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitter.swift; sourceTree = "<group>"; };
 		B2100003296A0001 /* KeystrokeTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitter.swift; sourceTree = "<group>"; };
-		B2100004296A0001 /* SegmentOptimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentOptimizer.swift; sourceTree = "<group>"; };
-		B3100001296A0001 /* CameraTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTrackEmitterTests.swift; sourceTree = "<group>"; };
 		B3100002296A0001 /* CursorTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitterTests.swift; sourceTree = "<group>"; };
 		B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeTrackEmitterTests.swift; sourceTree = "<group>"; };
-		B3100004296A0001 /* SegmentOptimizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentOptimizerTests.swift; sourceTree = "<group>"; };
 		B5100001296A0001 /* EasingCurveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingCurveTests.swift; sourceTree = "<group>"; };
-		B6100001296A0001 /* PathSmoother.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathSmoother.swift; sourceTree = "<group>"; };
-		B6100002296A0001 /* HoldEnforcer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldEnforcer.swift; sourceTree = "<group>"; };
-		B6100003296A0001 /* TransitionRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRefiner.swift; sourceTree = "<group>"; };
-		B6100004296A0001 /* SegmentMerger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentMerger.swift; sourceTree = "<group>"; };
-		B7100001296A0001 /* PathSmootherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathSmootherTests.swift; sourceTree = "<group>"; };
-		B7100002296A0001 /* HoldEnforcerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldEnforcerTests.swift; sourceTree = "<group>"; };
-		B7100003296A0001 /* TransitionRefinerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRefinerTests.swift; sourceTree = "<group>"; };
-		B7100004296A0001 /* SegmentMergerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentMergerTests.swift; sourceTree = "<group>"; };
 		C0100001296A0001 /* InspectorView+CameraSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InspectorView+CameraSection.swift"; sourceTree = "<group>"; };
 		C1100001296A0001 /* InspectorView+SegmentBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InspectorView+SegmentBindings.swift"; sourceTree = "<group>"; };
 		C2100001296A0001 /* CursorImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorImageProvider.swift; sourceTree = "<group>"; };
@@ -333,11 +281,9 @@
 		E7100001296A0001 /* ContinuousCameraTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraTypes.swift; sourceTree = "<group>"; };
 		E7100002296A0001 /* WaypointGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGenerator.swift; sourceTree = "<group>"; };
 		E7100003296A0001 /* SpringDamperSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulator.swift; sourceTree = "<group>"; };
-		E7100004296A0001 /* ContinuousTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousTrackEmitter.swift; sourceTree = "<group>"; };
 		E7100005296A0001 /* ContinuousCameraGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGenerator.swift; sourceTree = "<group>"; };
 		E7100011296A0001 /* WaypointGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGeneratorTests.swift; sourceTree = "<group>"; };
 		E7100012296A0001 /* SpringDamperSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulatorTests.swift; sourceTree = "<group>"; };
-		E7100013296A0001 /* ContinuousTrackEmitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousTrackEmitterTests.swift; sourceTree = "<group>"; };
 		E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGeneratorTests.swift; sourceTree = "<group>"; };
 		F0A00000296A0001 /* Screenize.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Screenize.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1000001296A0001 /* ScreenizeProject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeProject.swift; sourceTree = "<group>"; };
@@ -480,10 +426,7 @@
 				AC000002296A0001 /* Types */,
 				AD200010296A0001 /* Analysis */,
 				AE200001296A0001 /* Planning */,
-				B0200001296A0001 /* Simulation */,
-				B6200001296A0001 /* PostProcessing */,
 				B2200001296A0001 /* Emission */,
-				AB000007296A0001 /* SmartGeneratorV2.swift */,
 				D9100001296A0001 /* GeneratedTimeline.swift */,
 				D3100001296A0001 /* SmoothedMouseDataSource.swift */,
 			);
@@ -497,7 +440,6 @@
 				AB000002296A0001 /* UserIntent.swift */,
 				AB000003296A0001 /* Scene.swift */,
 				AB000004296A0001 /* ShotPlan.swift */,
-				AB000005296A0001 /* TransitionPlan.swift */,
 				AB000006296A0001 /* TimedTransform.swift */,
 			);
 			path = Types;
@@ -547,8 +489,6 @@
 			children = (
 				AD200024296A0001 /* Analysis */,
 				AF200001296A0001 /* Planning */,
-				B1200001296A0001 /* Simulation */,
-				B7200001296A0001 /* PostProcessing */,
 				B3200001296A0001 /* Emission */,
 				D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */,
 			);
@@ -567,9 +507,7 @@
 		AE200001296A0001 /* Planning */ = {
 			isa = PBXGroup;
 			children = (
-				AE100001296A0001 /* SceneSegmenter.swift */,
 				AE100002296A0001 /* ShotPlanner.swift */,
-				AE100003296A0001 /* TransitionPlanner.swift */,
 			);
 			path = Planning;
 			sourceTree = "<group>";
@@ -577,41 +515,16 @@
 		AF200001296A0001 /* Planning */ = {
 			isa = PBXGroup;
 			children = (
-				AF100001296A0001 /* SceneSegmenterTests.swift */,
 				AF100002296A0001 /* ShotPlannerTests.swift */,
-				AF100003296A0001 /* TransitionPlannerTests.swift */,
 			);
 			path = Planning;
-			sourceTree = "<group>";
-		};
-		B0200001296A0001 /* Simulation */ = {
-			isa = PBXGroup;
-			children = (
-				B0100001296A0001 /* CameraController.swift */,
-				B0100002296A0001 /* StaticHoldController.swift */,
-				B0100004296A0001 /* CursorFollowController.swift */,
-				B0100003296A0001 /* CameraSimulator.swift */,
-			);
-			path = Simulation;
-			sourceTree = "<group>";
-		};
-		B1200001296A0001 /* Simulation */ = {
-			isa = PBXGroup;
-			children = (
-				B1100001296A0001 /* StaticHoldControllerTests.swift */,
-				B1100003296A0001 /* CursorFollowControllerTests.swift */,
-				B1100002296A0001 /* CameraSimulatorTests.swift */,
-			);
-			path = Simulation;
 			sourceTree = "<group>";
 		};
 		B2200001296A0001 /* Emission */ = {
 			isa = PBXGroup;
 			children = (
-				B2100001296A0001 /* CameraTrackEmitter.swift */,
 				B2100002296A0001 /* CursorTrackEmitter.swift */,
 				B2100003296A0001 /* KeystrokeTrackEmitter.swift */,
-				B2100004296A0001 /* SegmentOptimizer.swift */,
 			);
 			path = Emission;
 			sourceTree = "<group>";
@@ -619,10 +532,8 @@
 		B3200001296A0001 /* Emission */ = {
 			isa = PBXGroup;
 			children = (
-				B3100001296A0001 /* CameraTrackEmitterTests.swift */,
 				B3100002296A0001 /* CursorTrackEmitterTests.swift */,
 				B3100003296A0001 /* KeystrokeTrackEmitterTests.swift */,
-				B3100004296A0001 /* SegmentOptimizerTests.swift */,
 			);
 			path = Emission;
 			sourceTree = "<group>";
@@ -633,28 +544,6 @@
 				B5100001296A0001 /* EasingCurveTests.swift */,
 			);
 			path = Timeline;
-			sourceTree = "<group>";
-		};
-		B6200001296A0001 /* PostProcessing */ = {
-			isa = PBXGroup;
-			children = (
-				B6100001296A0001 /* PathSmoother.swift */,
-				B6100002296A0001 /* HoldEnforcer.swift */,
-				B6100003296A0001 /* TransitionRefiner.swift */,
-				B6100004296A0001 /* SegmentMerger.swift */,
-			);
-			path = PostProcessing;
-			sourceTree = "<group>";
-		};
-		B7200001296A0001 /* PostProcessing */ = {
-			isa = PBXGroup;
-			children = (
-				B7100001296A0001 /* PathSmootherTests.swift */,
-				B7100002296A0001 /* HoldEnforcerTests.swift */,
-				B7100003296A0001 /* TransitionRefinerTests.swift */,
-				B7100004296A0001 /* SegmentMergerTests.swift */,
-			);
-			path = PostProcessing;
 			sourceTree = "<group>";
 		};
 		C8200001296A0001 /* Models */ = {
@@ -716,7 +605,6 @@
 				E7100001296A0001 /* ContinuousCameraTypes.swift */,
 				E7100002296A0001 /* WaypointGenerator.swift */,
 				E7100003296A0001 /* SpringDamperSimulator.swift */,
-				E7100004296A0001 /* ContinuousTrackEmitter.swift */,
 				E7100005296A0001 /* ContinuousCameraGenerator.swift */,
 			);
 			path = ContinuousCamera;
@@ -727,7 +615,6 @@
 			children = (
 				E7100011296A0001 /* WaypointGeneratorTests.swift */,
 				E7100012296A0001 /* SpringDamperSimulatorTests.swift */,
-				E7100013296A0001 /* ContinuousTrackEmitterTests.swift */,
 				E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */,
 			);
 			path = ContinuousCamera;
@@ -1134,28 +1021,16 @@
 				AD000022296A0001 /* EventTimelineTests.swift in Sources */,
 				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
 				C8000001296A0001 /* EventStreamAdapterTests.swift in Sources */,
-				AF000001296A0001 /* SceneSegmenterTests.swift in Sources */,
 				AF000002296A0001 /* ShotPlannerTests.swift in Sources */,
-				AF000003296A0001 /* TransitionPlannerTests.swift in Sources */,
-				B1000001296A0001 /* StaticHoldControllerTests.swift in Sources */,
-				B1000003296A0001 /* CursorFollowControllerTests.swift in Sources */,
-				B1000002296A0001 /* CameraSimulatorTests.swift in Sources */,
-				B3000001296A0001 /* CameraTrackEmitterTests.swift in Sources */,
 				B3000002296A0001 /* CursorTrackEmitterTests.swift in Sources */,
 				B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */,
 				B5000001296A0001 /* EasingCurveTests.swift in Sources */,
-				B7000001296A0001 /* PathSmootherTests.swift in Sources */,
-				B7000002296A0001 /* HoldEnforcerTests.swift in Sources */,
-				B7000003296A0001 /* TransitionRefinerTests.swift in Sources */,
-				B7000004296A0001 /* SegmentMergerTests.swift in Sources */,
-				B3000004296A0001 /* SegmentOptimizerTests.swift in Sources */,
 				D2100002296A0001 /* GIFSettingsTests.swift in Sources */,
 				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
 				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
 				D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */,
 				E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */,
 				E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */,
-				E7000013296A0001 /* ContinuousTrackEmitterTests.swift in Sources */,
 				E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1266,9 +1141,7 @@
 				AA000002296A0001 /* UserIntent.swift in Sources */,
 				AA000003296A0001 /* Scene.swift in Sources */,
 				AA000004296A0001 /* ShotPlan.swift in Sources */,
-				AA000005296A0001 /* TransitionPlan.swift in Sources */,
 				AA000006296A0001 /* TimedTransform.swift in Sources */,
-				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
 				D9000001296A0001 /* GeneratedTimeline.swift in Sources */,
 				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
@@ -1322,25 +1195,12 @@
 				F0A00005296A0001 /* EventStreamWriter.swift in Sources */,
 				AD000010296A0001 /* EventTimeline.swift in Sources */,
 				AD000011296A0001 /* IntentClassifier.swift in Sources */,
-				AE000001296A0001 /* SceneSegmenter.swift in Sources */,
 				AE000002296A0001 /* ShotPlanner.swift in Sources */,
-				AE000003296A0001 /* TransitionPlanner.swift in Sources */,
-				B0000001296A0001 /* CameraController.swift in Sources */,
-				B0000002296A0001 /* StaticHoldController.swift in Sources */,
-				B0000004296A0001 /* CursorFollowController.swift in Sources */,
-				B0000003296A0001 /* CameraSimulator.swift in Sources */,
-				B2000001296A0001 /* CameraTrackEmitter.swift in Sources */,
 				B2000002296A0001 /* CursorTrackEmitter.swift in Sources */,
 				B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */,
-				B6000001296A0001 /* PathSmoother.swift in Sources */,
-				B6000002296A0001 /* HoldEnforcer.swift in Sources */,
-				B6000003296A0001 /* TransitionRefiner.swift in Sources */,
-				B6000004296A0001 /* SegmentMerger.swift in Sources */,
-				B2000004296A0001 /* SegmentOptimizer.swift in Sources */,
 				E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */,
 				E7000002296A0001 /* WaypointGenerator.swift in Sources */,
 				E7000003296A0001 /* SpringDamperSimulator.swift in Sources */,
-				E7000004296A0001 /* ContinuousTrackEmitter.swift in Sources */,
 				E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
