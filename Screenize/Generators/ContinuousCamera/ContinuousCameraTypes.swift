@@ -52,6 +52,8 @@ struct ContinuousCameraSettings {
     var zoomDampingRatio: CGFloat = 1.0
     /// Response time in seconds for zoom spring.
     var zoomResponse: CGFloat = 0.8
+    /// Duration in seconds over which urgency transitions are blended.
+    var urgencyBlendDuration: TimeInterval = 0.3
     /// Multipliers applied to response time per urgency level.
     /// Lower multiplier = faster response.
     var urgencyMultipliers: [WaypointUrgency: CGFloat] = [

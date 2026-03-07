@@ -48,17 +48,26 @@ struct SpringDamperSimulator {
         ))
 
         var waypointIndex = 0
+        var prevUrgencyMult: CGFloat = settings.urgencyMultipliers[waypoints[0].urgency] ?? 1.0
+        var urgencyTransitionStart: TimeInterval = 0
         var t = dt
         let activationTolerance = dt * 0.5
 
         while t <= duration + dt * 0.5 {
             // Advance to current active waypoint (last one with time <= t)
             var activatedImmediate = false
+            let previousWaypointIndex = waypointIndex
             while waypointIndex + 1 < waypoints.count
                     && waypoints[waypointIndex + 1].time <= t + activationTolerance {
                 waypointIndex += 1
                 activatedImmediate = activatedImmediate
                     || waypoints[waypointIndex].urgency == .immediate
+            }
+
+            // Track urgency transitions
+            if waypointIndex != previousWaypointIndex {
+                prevUrgencyMult = settings.urgencyMultipliers[waypoints[previousWaypointIndex].urgency] ?? 1.0
+                urgencyTransitionStart = t
             }
 
             let activeWP = waypoints[waypointIndex]
@@ -84,11 +93,19 @@ struct SpringDamperSimulator {
                     : nil,
                 currentTime: t
             )
-            let urgencyMult = settings.urgencyMultipliers[lookAheadTarget.urgency] ?? 1.0
+            let currentMult = settings.urgencyMultipliers[lookAheadTarget.urgency] ?? 1.0
+            let effectiveMult: CGFloat
+            let blendDuration = settings.urgencyBlendDuration
+            if blendDuration > 0.001 && t - urgencyTransitionStart < blendDuration {
+                let blendProgress = CGFloat((t - urgencyTransitionStart) / blendDuration)
+                effectiveMult = prevUrgencyMult + (currentMult - prevUrgencyMult) * blendProgress
+            } else {
+                effectiveMult = currentMult
+            }
 
             // Compute effective spring parameters
-            let posOmega = 2.0 * .pi / max(0.001, settings.positionResponse * urgencyMult)
-            let zoomOmega = 2.0 * .pi / max(0.001, settings.zoomResponse * urgencyMult)
+            let posOmega = 2.0 * .pi / max(0.001, settings.positionResponse * effectiveMult)
+            let zoomOmega = 2.0 * .pi / max(0.001, settings.zoomResponse * effectiveMult)
             let posDamping = settings.positionDampingRatio
             let zoomDamping = settings.zoomDampingRatio
 

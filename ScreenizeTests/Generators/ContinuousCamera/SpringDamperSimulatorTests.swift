@@ -244,6 +244,40 @@ final class SpringDamperSimulatorTests: XCTestCase {
         )
     }
 
+    // MARK: - Urgency Blending
+
+    func test_simulate_urgencyTransition_smoothResponseChange() {
+        let wp1 = makeWaypoint(time: 0, zoom: 1.5, x: 0.3, y: 0.5, urgency: .lazy)
+        let wp2 = makeWaypoint(time: 2, zoom: 2.0, x: 0.7, y: 0.5, urgency: .high)
+
+        let result = SpringDamperSimulator.simulate(
+            waypoints: [wp1, wp2], duration: 4.0, settings: defaultSettings
+        )
+
+        // At the transition point (t~2.0), acceleration change should be gradual
+        let samplesAroundTransition = result.filter { $0.time >= 1.9 && $0.time <= 2.5 }
+        guard samplesAroundTransition.count >= 4 else {
+            XCTFail("Need samples around transition")
+            return
+        }
+
+        // Check that no single-frame acceleration spike exists
+        var maxAccelChange: CGFloat = 0
+        for i in 2..<samplesAroundTransition.count {
+            let dt1 = CGFloat(samplesAroundTransition[i].time - samplesAroundTransition[i - 1].time)
+            let dt2 = CGFloat(samplesAroundTransition[i - 1].time - samplesAroundTransition[i - 2].time)
+            guard dt1 > 0, dt2 > 0 else { continue }
+            let v1 = (samplesAroundTransition[i].transform.center.x
+                       - samplesAroundTransition[i - 1].transform.center.x) / dt1
+            let v0 = (samplesAroundTransition[i - 1].transform.center.x
+                       - samplesAroundTransition[i - 2].transform.center.x) / dt2
+            maxAccelChange = max(maxAccelChange, abs(v1 - v0))
+        }
+
+        XCTAssertLessThan(maxAccelChange, 5.0,
+                          "Urgency transition should be gradual, not instant")
+    }
+
     // MARK: - Center Clamping
 
     func test_simulate_centerClampedToViewportBounds() {
