@@ -65,9 +65,17 @@ class ContinuousCameraGenerator {
             settings: settings
         )
 
+        // Step 5b: Apply micro tracking layer
+        let microSamples = Self.applyMicroTracking(
+            macroSamples: rawSamples,
+            mouseData: effectiveMouseData,
+            intentSpans: intentSpans,
+            settings: settings
+        )
+
         // Step 6: Apply post-hoc zoom intensity directly to samples
         let samples = Self.applyZoomIntensity(
-            to: rawSamples, intensity: settings.zoomIntensity
+            to: microSamples, intensity: settings.zoomIntensity
         )
 
         // Step 7: Create a display-only CameraTrack (single segment for timeline UI)
@@ -99,6 +107,68 @@ class ContinuousCameraGenerator {
             keystrokeTrack: keystrokeTrack,
             continuousTransforms: samples
         )
+    }
+
+    // MARK: - Micro Tracking
+
+    /// Apply micro tracking offset to macro camera samples.
+    private static func applyMicroTracking(
+        macroSamples: [TimedTransform],
+        mouseData: MouseDataSource,
+        intentSpans: [IntentSpan],
+        settings: ContinuousCameraSettings
+    ) -> [TimedTransform] {
+        guard !macroSamples.isEmpty else { return macroSamples }
+
+        let positions = mouseData.positions
+        var tracker = MicroTracker(settings: settings.micro)
+        let dt: CGFloat = 1.0 / CGFloat(settings.tickRate)
+        var posIndex = 0
+
+        return macroSamples.map { sample in
+            // Find nearest mouse position by advancing index
+            while posIndex + 1 < positions.count
+                    && positions[posIndex + 1].time <= sample.time {
+                posIndex += 1
+            }
+            let cursorPos = posIndex < positions.count
+                ? positions[posIndex].position
+                : sample.transform.center
+
+            let macroCenter = sample.transform.center
+            let zoom = sample.transform.zoom
+
+            // Check if current time is in an idle span
+            let isIdle = intentSpans.contains { span in
+                if case .idle = span.intent,
+                   sample.time >= span.startTime,
+                   sample.time <= span.endTime {
+                    return true
+                }
+                return false
+            }
+
+            tracker.update(
+                cursorPosition: cursorPos,
+                macroCenter: macroCenter,
+                zoom: zoom,
+                dt: dt,
+                isIdle: isIdle
+            )
+
+            let finalCenter = ShotPlanner.clampCenter(
+                NormalizedPoint(
+                    x: macroCenter.x + tracker.offset.x,
+                    y: macroCenter.y + tracker.offset.y
+                ),
+                zoom: zoom
+            )
+
+            return TimedTransform(
+                time: sample.time,
+                transform: TransformValue(zoom: zoom, center: finalCenter)
+            )
+        }
     }
 
     // MARK: - Zoom Intensity (Samples)
