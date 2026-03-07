@@ -420,7 +420,7 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
-		AC000001296A0001 /* V2 */ = {
+		AC000001296A0001 /* SmartGeneration */ = {
 			isa = PBXGroup;
 			children = (
 				AC000002296A0001 /* Types */,
@@ -430,7 +430,7 @@
 				D9100001296A0001 /* GeneratedTimeline.swift */,
 				D3100001296A0001 /* SmoothedMouseDataSource.swift */,
 			);
-			path = V2;
+			path = SmartGeneration;
 			sourceTree = "<group>";
 		};
 		AC000002296A0001 /* Types */ = {
@@ -478,13 +478,13 @@
 		AD200022296A0001 /* Generators */ = {
 			isa = PBXGroup;
 			children = (
-				AD200023296A0001 /* V2 */,
+				AD200023296A0001 /* SmartGeneration */,
 				E7200002296A0001 /* ContinuousCamera */,
 			);
 			path = Generators;
 			sourceTree = "<group>";
 		};
-		AD200023296A0001 /* V2 */ = {
+		AD200023296A0001 /* SmartGeneration */ = {
 			isa = PBXGroup;
 			children = (
 				AD200024296A0001 /* Analysis */,
@@ -492,7 +492,7 @@
 				B3200001296A0001 /* Emission */,
 				D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */,
 			);
-			path = V2;
+			path = SmartGeneration;
 			sourceTree = "<group>";
 		};
 		AD200024296A0001 /* Analysis */ = {
@@ -803,7 +803,7 @@
 			isa = PBXGroup;
 			children = (
 				F1000070296A0001 /* KeyframeGenerator.swift */,
-				AC000001296A0001 /* V2 */,
+				AC000001296A0001 /* SmartGeneration */,
 				E7200001296A0001 /* ContinuousCamera */,
 			);
 			path = Generators;
