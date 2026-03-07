@@ -481,10 +481,10 @@ final class WaypointGeneratorTests: XCTestCase {
 
     func test_settings_defaultValues() {
         let settings = ContinuousCameraSettings()
-        XCTAssertEqual(settings.positionDampingRatio, 0.92, accuracy: 0.001)
-        XCTAssertEqual(settings.positionResponse, 0.4, accuracy: 0.001)
-        XCTAssertEqual(settings.zoomDampingRatio, 0.95, accuracy: 0.001)
-        XCTAssertEqual(settings.zoomResponse, 0.5, accuracy: 0.001)
+        XCTAssertEqual(settings.positionDampingRatio, 1.0, accuracy: 0.001)
+        XCTAssertEqual(settings.positionResponse, 0.8, accuracy: 0.001)
+        XCTAssertEqual(settings.zoomDampingRatio, 1.0, accuracy: 0.001)
+        XCTAssertEqual(settings.zoomResponse, 0.8, accuracy: 0.001)
         XCTAssertEqual(settings.tickRate, 60.0, accuracy: 0.001)
         XCTAssertEqual(settings.minZoom, 1.0, accuracy: 0.001)
         XCTAssertEqual(settings.maxZoom, 2.8, accuracy: 0.001)

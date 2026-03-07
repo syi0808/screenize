@@ -45,13 +45,13 @@ struct CameraState {
 /// Configuration for the continuous camera physics simulation.
 struct ContinuousCameraSettings {
     /// Damping ratio for position springs (1.0 = critical, <1 = underdamped).
-    var positionDampingRatio: CGFloat = 0.92
+    var positionDampingRatio: CGFloat = 1.0
     /// Response time in seconds for position springs.
-    var positionResponse: CGFloat = 0.4
+    var positionResponse: CGFloat = 0.8
     /// Damping ratio for zoom spring.
-    var zoomDampingRatio: CGFloat = 0.95
+    var zoomDampingRatio: CGFloat = 1.0
     /// Response time in seconds for zoom spring.
-    var zoomResponse: CGFloat = 0.5
+    var zoomResponse: CGFloat = 0.8
     /// Multipliers applied to response time per urgency level.
     /// Lower multiplier = faster response.
     var urgencyMultipliers: [WaypointUrgency: CGFloat] = [
