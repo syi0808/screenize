@@ -20,7 +20,7 @@
 		AA000003296A0001 /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000003296A0001 /* Scene.swift */; };
 		AA000004296A0001 /* ShotPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000004296A0001 /* ShotPlan.swift */; };
 		AA000005296A0001 /* TransitionPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000005296A0001 /* TransitionPlan.swift */; };
-		AA000006296A0001 /* SimulatedPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000006296A0001 /* SimulatedPath.swift */; };
+		AA000006296A0001 /* TimedTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000006296A0001 /* TimedTransform.swift */; };
 		AA000007296A0001 /* SmartGeneratorV2.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000007296A0001 /* SmartGeneratorV2.swift */; };
 		AD000010296A0001 /* EventTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100010296A0001 /* EventTimeline.swift */; };
 		AD000011296A0001 /* IntentClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100011296A0001 /* IntentClassifier.swift */; };
@@ -238,7 +238,7 @@
 		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
 		AB000004296A0001 /* ShotPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlan.swift; sourceTree = "<group>"; };
 		AB000005296A0001 /* TransitionPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPlan.swift; sourceTree = "<group>"; };
-		AB000006296A0001 /* SimulatedPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulatedPath.swift; sourceTree = "<group>"; };
+		AB000006296A0001 /* TimedTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedTransform.swift; sourceTree = "<group>"; };
 		AB000007296A0001 /* SmartGeneratorV2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartGeneratorV2.swift; sourceTree = "<group>"; };
 		AD100010296A0001 /* EventTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeline.swift; sourceTree = "<group>"; };
 		AD100011296A0001 /* IntentClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifier.swift; sourceTree = "<group>"; };
@@ -498,7 +498,7 @@
 				AB000003296A0001 /* Scene.swift */,
 				AB000004296A0001 /* ShotPlan.swift */,
 				AB000005296A0001 /* TransitionPlan.swift */,
-				AB000006296A0001 /* SimulatedPath.swift */,
+				AB000006296A0001 /* TimedTransform.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -1267,7 +1267,7 @@
 				AA000003296A0001 /* Scene.swift in Sources */,
 				AA000004296A0001 /* ShotPlan.swift in Sources */,
 				AA000005296A0001 /* TransitionPlan.swift in Sources */,
-				AA000006296A0001 /* SimulatedPath.swift in Sources */,
+				AA000006296A0001 /* TimedTransform.swift in Sources */,
 				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
 				D9000001296A0001 /* GeneratedTimeline.swift in Sources */,
 				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
