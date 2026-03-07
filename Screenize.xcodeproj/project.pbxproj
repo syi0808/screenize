@@ -94,6 +94,7 @@
 		D5000001296A0001 /* Segments.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5000002296A0001 /* Segments.swift */; };
 		D6000001296A0001 /* LegacyTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6000002296A0001 /* LegacyTrack.swift */; };
 		D8000001296A0001 /* ExportEngine+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8000002296A0001 /* ExportEngine+Helpers.swift */; };
+		D9000001296A0001 /* GeneratedTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9100001296A0001 /* GeneratedTimeline.swift */; };
 		E0000001296A0001 /* AudioPreviewPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000001296A0001 /* AudioPreviewPlayer.swift */; };
 		E2000001296A0001 /* SpringCursorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3000001296A0001 /* SpringCursorSimulator.swift */; };
 		E6000001296A0001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000001296A0001 /* Spacing.swift */; };
@@ -313,6 +314,7 @@
 		D5000002296A0001 /* Segments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Segments.swift; sourceTree = "<group>"; };
 		D6000002296A0001 /* LegacyTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyTrack.swift; sourceTree = "<group>"; };
 		D8000002296A0001 /* ExportEngine+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportEngine+Helpers.swift"; sourceTree = "<group>"; };
+		D9100001296A0001 /* GeneratedTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedTimeline.swift; sourceTree = "<group>"; };
 		E1000001296A0001 /* AudioPreviewPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPreviewPlayer.swift; sourceTree = "<group>"; };
 		E3000001296A0001 /* SpringCursorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringCursorSimulator.swift; sourceTree = "<group>"; };
 		E5000001296A0001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
@@ -482,6 +484,7 @@
 				B6200001296A0001 /* PostProcessing */,
 				B2200001296A0001 /* Emission */,
 				AB000007296A0001 /* SmartGeneratorV2.swift */,
+				D9100001296A0001 /* GeneratedTimeline.swift */,
 				D3100001296A0001 /* SmoothedMouseDataSource.swift */,
 			);
 			path = V2;
@@ -1266,6 +1269,7 @@
 				AA000005296A0001 /* TransitionPlan.swift in Sources */,
 				AA000006296A0001 /* SimulatedPath.swift in Sources */,
 				AA000007296A0001 /* SmartGeneratorV2.swift in Sources */,
+				D9000001296A0001 /* GeneratedTimeline.swift in Sources */,
 				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
 				F00000A2296A0001 /* Log.swift in Sources */,

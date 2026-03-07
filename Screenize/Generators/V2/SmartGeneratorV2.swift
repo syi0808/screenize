@@ -316,15 +316,6 @@ class SmartGeneratorV2 {
     #endif
 }
 
-/// Output of the V2 smart generation pipeline.
-struct GeneratedTimeline {
-    let cameraTrack: CameraTrack
-    let cursorTrack: CursorTrackV2
-    let keystrokeTrack: KeystrokeTrackV2
-    /// Pre-computed continuous camera path (set by ContinuousCameraGenerator, nil for segment-based).
-    var continuousTransforms: [TimedTransform]?
-}
-
 /// Settings for the V2 smart generation pipeline.
 struct SmartGenerationSettings {
     var shot = ShotSettings()
@@ -346,37 +337,6 @@ struct SmartGenerationSettings {
     var springConfig: SpringCursorConfig? = .default
 
     static let `default` = Self()
-}
-
-// MARK: - Shot Settings
-
-/// Per-intent zoom and center calculation settings.
-struct ShotSettings {
-    // Zoom ranges by intent type
-    var typingCodeZoomRange: ClosedRange<CGFloat> = 2.0...2.5
-    var typingTextFieldZoomRange: ClosedRange<CGFloat> = 2.2...2.8
-    var typingTerminalZoomRange: ClosedRange<CGFloat> = 1.6...2.0
-    var typingRichTextZoomRange: ClosedRange<CGFloat> = 1.8...2.2
-    var clickingZoomRange: ClosedRange<CGFloat> = 1.5...2.5
-    var navigatingZoomRange: ClosedRange<CGFloat> = 1.5...1.8
-    var draggingZoomRange: ClosedRange<CGFloat> = 1.3...1.6
-    var scrollingZoomRange: ClosedRange<CGFloat> = 1.3...1.5
-    var readingZoomRange: ClosedRange<CGFloat> = 1.0...1.3
-    var switchingZoom: CGFloat = 1.0
-    var idleZoom: CGFloat = 1.0
-
-    /// Target area coverage fraction guiding zoom from work area size.
-    var targetAreaCoverage: CGFloat = 0.7
-
-    /// Extra margin around the bounding box (normalized).
-    var workAreaPadding: CGFloat = 0.08
-
-    /// Absolute zoom bounds.
-    var minZoom: CGFloat = 1.0
-    var maxZoom: CGFloat = 2.8
-
-    /// Idle zoom decay factor (0 = full zoom-out to 1.0, 1 = keep neighbor zoom).
-    var idleZoomDecay: CGFloat = 0.5
 }
 
 // MARK: - Transition Settings
@@ -441,25 +401,6 @@ struct SimulationSettings {
 
     /// Screen bounds for normalizing caret coordinates.
     var screenBounds: CGSize = .zero
-}
-
-// MARK: - Cursor Emission Settings
-
-/// Cursor track emission settings.
-struct CursorEmissionSettings {
-    var cursorScale: CGFloat = 2.0
-}
-
-// MARK: - Keystroke Emission Settings
-
-/// Keystroke track emission settings.
-struct KeystrokeEmissionSettings {
-    var enabled: Bool = true
-    var shortcutsOnly: Bool = true
-    var displayDuration: TimeInterval = 1.5
-    var fadeInDuration: TimeInterval = 0.15
-    var fadeOutDuration: TimeInterval = 0.3
-    var minInterval: TimeInterval = 0.05
 }
 
 // MARK: - Post-Processing Settings

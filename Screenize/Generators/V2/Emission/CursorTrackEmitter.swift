@@ -28,3 +28,10 @@ struct CursorTrackEmitter {
         )
     }
 }
+
+// MARK: - Settings
+
+/// Cursor track emission settings.
+struct CursorEmissionSettings {
+    var cursorScale: CGFloat = 2.0
+}

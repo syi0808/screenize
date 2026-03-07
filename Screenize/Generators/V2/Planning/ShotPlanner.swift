@@ -530,3 +530,25 @@ struct ShotPlanner {
         }
     }
 }
+
+// MARK: - Settings
+
+/// Per-intent zoom and center calculation settings.
+struct ShotSettings {
+    var typingCodeZoomRange: ClosedRange<CGFloat> = 2.0...2.5
+    var typingTextFieldZoomRange: ClosedRange<CGFloat> = 2.2...2.8
+    var typingTerminalZoomRange: ClosedRange<CGFloat> = 1.6...2.0
+    var typingRichTextZoomRange: ClosedRange<CGFloat> = 1.8...2.2
+    var clickingZoomRange: ClosedRange<CGFloat> = 1.5...2.5
+    var navigatingZoomRange: ClosedRange<CGFloat> = 1.5...1.8
+    var draggingZoomRange: ClosedRange<CGFloat> = 1.3...1.6
+    var scrollingZoomRange: ClosedRange<CGFloat> = 1.3...1.5
+    var readingZoomRange: ClosedRange<CGFloat> = 1.0...1.3
+    var switchingZoom: CGFloat = 1.0
+    var idleZoom: CGFloat = 1.0
+    var targetAreaCoverage: CGFloat = 0.7
+    var workAreaPadding: CGFloat = 0.08
+    var minZoom: CGFloat = 1.0
+    var maxZoom: CGFloat = 2.8
+    var idleZoomDecay: CGFloat = 0.5
+}

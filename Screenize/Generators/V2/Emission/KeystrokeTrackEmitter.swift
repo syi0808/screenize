@@ -158,3 +158,15 @@ struct KeystrokeTrackEmitter {
         return symbols
     }
 }
+
+// MARK: - Settings
+
+/// Keystroke track emission settings.
+struct KeystrokeEmissionSettings {
+    var enabled: Bool = true
+    var shortcutsOnly: Bool = true
+    var displayDuration: TimeInterval = 1.5
+    var fadeInDuration: TimeInterval = 0.15
+    var fadeOutDuration: TimeInterval = 0.3
+    var minInterval: TimeInterval = 0.05
+}
