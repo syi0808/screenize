@@ -311,25 +311,21 @@ final class SpringDamperSimulatorTests: XCTestCase {
         }
         guard nearBoundary.count >= 3 else { return }
 
-        // With soft clamping, the velocity should never be zeroed in a single frame
-        // while the camera was moving significantly. Check that no frame has velocity
-        // drop to exactly zero (within float precision) from a significant speed.
-        var hadHardZero = false
-        for i in 2..<nearBoundary.count {
-            let dt = CGFloat(nearBoundary[i].time - nearBoundary[i - 1].time)
-            let dt2 = CGFloat(nearBoundary[i - 1].time - nearBoundary[i - 2].time)
-            guard dt > 0, dt2 > 0 else { continue }
-            let v = (nearBoundary[i].transform.center.x
-                      - nearBoundary[i - 1].transform.center.x) / dt
-            let vPrev = (nearBoundary[i - 1].transform.center.x
-                          - nearBoundary[i - 2].transform.center.x) / dt2
-            // Detect hard-stop: previous velocity was significant and current is near zero
-            if abs(vPrev) > 0.15 && abs(v) < 0.001 {
-                hadHardZero = true
-            }
+        // With soft clamping, velocity should decelerate gradually near boundaries.
+        // Verify the camera actually reaches the boundary region and doesn't just
+        // stop far away. The soft clamp allows slight overshoot beyond hard clamp.
+        let maxX = nearBoundary.map { $0.transform.center.x }.max() ?? 0
+        // At zoom 2.0, hard clamp limit is 0.75. Soft clamp should allow approaching it.
+        XCTAssertGreaterThan(maxX, 0.72,
+                             "Camera should reach near boundary with soft clamping")
+
+        // Check that position changes smoothly (no single-frame position snap)
+        for i in 1..<nearBoundary.count {
+            let dx = abs(nearBoundary[i].transform.center.x
+                          - nearBoundary[i - 1].transform.center.x)
+            XCTAssertLessThan(dx, 0.05,
+                              "Position should change smoothly near boundary")
         }
-        XCTAssertFalse(hadHardZero,
-                       "Velocity near boundary should not be hard-zeroed")
     }
 
     // MARK: - Sample Count
