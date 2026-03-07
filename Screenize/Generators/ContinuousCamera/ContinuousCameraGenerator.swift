@@ -3,8 +3,8 @@ import CoreGraphics
 
 /// Continuous camera generation pipeline.
 ///
-/// Unlike SmartGeneratorV2 which uses discrete segments + transitions,
-/// this generator produces a single continuous camera path via physics simulation.
+/// Produces a single unbroken physics-simulated camera path
+/// via spring-damper simulation over classified intent spans.
 /// The resulting `TimedTransform[]` is stored on the Timeline and evaluated
 /// directly by FrameEvaluator — no lossy segment conversion.
 ///

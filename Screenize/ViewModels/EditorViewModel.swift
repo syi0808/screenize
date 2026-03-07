@@ -24,9 +24,6 @@ final class EditorViewModel: ObservableObject {
     /// Internal clipboard for segment copy/paste
     var clipboard: [CopiedSegment] = []
 
-    /// Camera generation method selection
-    @Published var cameraGenerationMethod: CameraGenerationMethod = .continuousCamera
-
     /// Loading state
     @Published var isLoading: Bool = false
 
@@ -437,13 +434,3 @@ final class EditorViewModel: ObservableObject {
     }
 
 }
-
-// MARK: - Camera Generation Method
-
-/// Which camera generation pipeline to use.
-enum CameraGenerationMethod: String, CaseIterable {
-    case smartGeneration = "Smart Generation"
-    case continuousCamera = "Continuous Camera"
-}
-
-

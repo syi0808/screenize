@@ -55,31 +55,19 @@ extension EditorViewModel {
                 uiStateSamples = []
             }
 
-            // 4. Run generation pipeline (V2 or Continuous Camera)
+            // 4. Run generation pipeline
             let generated: GeneratedTimeline
             let springConfig = project.timeline.cursorTrackV2?.springConfig ?? .default
 
-            if cameraGenerationMethod == .continuousCamera {
-                var ccSettings = ContinuousCameraSettings()
-                ccSettings.springConfig = springConfig
-                generated = ContinuousCameraGenerator().generate(
-                    from: mouseDataSource,
-                    uiStateSamples: uiStateSamples,
-                    frameAnalysis: frameAnalysis,
-                    screenBounds: project.media.pixelSize,
-                    settings: ccSettings
-                )
-            } else {
-                var genSettings = SmartGenerationSettings.default
-                genSettings.springConfig = springConfig
-                generated = SmartGeneratorV2().generate(
-                    from: mouseDataSource,
-                    uiStateSamples: uiStateSamples,
-                    frameAnalysis: frameAnalysis,
-                    screenBounds: project.media.pixelSize,
-                    settings: genSettings
-                )
-            }
+            var ccSettings = ContinuousCameraSettings()
+            ccSettings.springConfig = springConfig
+            generated = ContinuousCameraGenerator().generate(
+                from: mouseDataSource,
+                uiStateSamples: uiStateSamples,
+                frameAnalysis: frameAnalysis,
+                screenBounds: project.media.pixelSize,
+                settings: ccSettings
+            )
 
             // 5. Apply selected tracks
             updateTimeline(
