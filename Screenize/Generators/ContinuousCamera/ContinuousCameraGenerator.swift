@@ -4,16 +4,20 @@ import CoreGraphics
 /// Continuous camera generation pipeline.
 ///
 /// Produces a single unbroken physics-simulated camera path
-/// via spring-damper simulation over classified intent spans.
+/// via cursor-driven spring-damper simulation with zoom waypoints.
 /// The resulting `TimedTransform[]` is stored on the Timeline and evaluated
 /// directly by FrameEvaluator — no lossy segment conversion.
 ///
 /// Pipeline:
-/// 1. Pre-smooth mouse data
-/// 2. Build EventTimeline + classify intents (reuses existing V2 infrastructure)
-/// 3. WaypointGenerator: IntentSpan[] → CameraWaypoint[]
-/// 4. SpringDamperSimulator: waypoints → continuous TimedTransform[] at 60Hz
-/// 5. Apply zoom intensity to samples + emit cursor/keystroke tracks
+/// 1. Pre-smooth mouse positions
+/// 2. Build event timeline
+/// 3. Classify intents (for zoom decisions only)
+/// 4. Generate zoom waypoints from intents
+/// 5. Simulate cursor-driven camera path
+/// 6. Apply idle re-centering layer
+/// 7. Apply post-hoc zoom intensity
+/// 8. Create display track
+/// 9. Emit cursor and keystroke tracks
 class ContinuousCameraGenerator {
 
     /// Generate a complete timeline using continuous camera physics.
@@ -58,27 +62,27 @@ class ContinuousCameraGenerator {
             settings: settings
         )
 
-        // Step 5: Simulate continuous camera path
+        // Step 5: Simulate cursor-driven camera path
         let rawSamples = SpringDamperSimulator.simulate(
-            waypoints: waypoints,
+            cursorPositions: effectiveMouseData.positions,
+            zoomWaypoints: waypoints,
             duration: duration,
             settings: settings
         )
 
-        // Step 5b: Apply micro tracking layer
-        let microSamples = Self.applyMicroTracking(
-            macroSamples: rawSamples,
+        // Step 6: Apply idle re-centering layer
+        let recenterSamples = Self.applyIdleRecentering(
+            samples: rawSamples,
             mouseData: effectiveMouseData,
-            intentSpans: intentSpans,
             settings: settings
         )
 
-        // Step 6: Apply post-hoc zoom intensity directly to samples
+        // Step 7: Apply post-hoc zoom intensity directly to samples
         let samples = Self.applyZoomIntensity(
-            to: microSamples, intensity: settings.zoomIntensity
+            to: recenterSamples, intensity: settings.zoomIntensity
         )
 
-        // Step 7: Create a display-only CameraTrack (single segment for timeline UI)
+        // Step 8: Create a display-only CameraTrack (single segment for timeline UI)
         let displayTrack = Self.createDisplayTrack(from: samples, duration: duration)
 
         #if DEBUG
@@ -90,7 +94,7 @@ class ContinuousCameraGenerator {
         )
         #endif
 
-        // Step 8: Emit cursor and keystroke tracks (reuse V2 emitters)
+        // Step 9: Emit cursor and keystroke tracks (reuse V2 emitters)
         let cursorTrack = CursorTrackEmitter.emit(
             duration: duration,
             settings: settings.cursor
@@ -109,24 +113,22 @@ class ContinuousCameraGenerator {
         )
     }
 
-    // MARK: - Micro Tracking
+    // MARK: - Idle Re-centering (Layer 2)
 
-    /// Apply micro tracking offset to macro camera samples.
-    private static func applyMicroTracking(
-        macroSamples: [TimedTransform],
+    /// Apply idle re-centering correction to camera samples.
+    private static func applyIdleRecentering(
+        samples: [TimedTransform],
         mouseData: MouseDataSource,
-        intentSpans: [IntentSpan],
         settings: ContinuousCameraSettings
     ) -> [TimedTransform] {
-        guard !macroSamples.isEmpty else { return macroSamples }
+        guard !samples.isEmpty else { return samples }
 
         let positions = mouseData.positions
         var tracker = MicroTracker(settings: settings.micro)
         let dt: CGFloat = 1.0 / CGFloat(settings.tickRate)
         var posIndex = 0
 
-        return macroSamples.map { sample in
-            // Find nearest mouse position by advancing index
+        return samples.map { sample in
             while posIndex + 1 < positions.count
                     && positions[posIndex + 1].time <= sample.time {
                 posIndex += 1
@@ -135,31 +137,20 @@ class ContinuousCameraGenerator {
                 ? positions[posIndex].position
                 : sample.transform.center
 
-            let macroCenter = sample.transform.center
+            let cameraCenter = sample.transform.center
             let zoom = sample.transform.zoom
-
-            // Check if current time is in an idle span
-            let isIdle = intentSpans.contains { span in
-                if case .idle = span.intent,
-                   sample.time >= span.startTime,
-                   sample.time <= span.endTime {
-                    return true
-                }
-                return false
-            }
 
             tracker.update(
                 cursorPosition: cursorPos,
-                macroCenter: macroCenter,
+                cameraCenter: cameraCenter,
                 zoom: zoom,
-                dt: dt,
-                isIdle: isIdle
+                dt: dt
             )
 
             let finalCenter = ShotPlanner.clampCenter(
                 NormalizedPoint(
-                    x: macroCenter.x + tracker.offset.x,
-                    y: macroCenter.y + tracker.offset.y
+                    x: cameraCenter.x + tracker.correction.x,
+                    y: cameraCenter.y + tracker.correction.y
                 ),
                 zoom: zoom
             )
@@ -221,14 +212,14 @@ class ContinuousCameraGenerator {
         print("[ContinuousCamera] === Diagnostics ===")
         print("[ContinuousCamera] Duration: \(String(format: "%.1f", duration))s")
         print("[ContinuousCamera] IntentSpans: \(intentSpans.count)")
-        print("[ContinuousCamera] Waypoints: \(waypoints.count)")
+        print("[ContinuousCamera] Waypoints (zoom-only): \(waypoints.count)")
         for (i, wp) in waypoints.enumerated() {
             let t = String(format: "t=%.2f", wp.time)
             let zoom = String(format: "zoom=%.2f", wp.targetZoom)
             let center = String(format: "center=(%.2f,%.2f)", wp.targetCenter.x, wp.targetCenter.y)
             print("[ContinuousCamera]   [\(i)] \(t) \(zoom) \(center) urgency=\(wp.urgency)")
         }
-        print("[ContinuousCamera] Samples: \(sampleCount) (direct rendering, no segments)")
+        print("[ContinuousCamera] Samples: \(sampleCount) (cursor-driven, no segments)")
         print("[ContinuousCamera] === End Diagnostics ===")
     }
     #endif

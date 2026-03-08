@@ -3,16 +3,14 @@ import CoreGraphics
 
 // MARK: - Micro Tracker Settings
 
-/// Configuration for the micro tracking layer.
+/// Configuration for the idle re-centering layer (Layer 2).
 struct MicroTrackerSettings {
-    /// Dead zone as fraction of viewport half-size. Micro offset inactive within this zone.
-    var deadZoneRatio: CGFloat = 0.4
-    /// Maximum micro offset as fraction of viewport half-size.
-    var maxOffsetRatio: CGFloat = 0.3
-    /// Spring damping ratio for micro offset.
-    var dampingRatio: CGFloat = 0.85
-    /// Spring response time in seconds.
-    var response: CGFloat = 0.15
+    /// Cursor velocity threshold (normalized units/sec) below which idle re-centering activates.
+    var idleVelocityThreshold: CGFloat = 0.05
+    /// Spring damping ratio for idle re-centering.
+    var dampingRatio: CGFloat = 1.0
+    /// Spring response time in seconds for idle re-centering.
+    var response: CGFloat = 2.5
 }
 
 // MARK: - Waypoint Urgency
@@ -59,15 +57,15 @@ struct CameraState {
 /// Configuration for the continuous camera physics simulation.
 struct ContinuousCameraSettings {
     /// Damping ratio for position springs (1.0 = critical, <1 = underdamped).
-    var positionDampingRatio: CGFloat = 1.0
+    var positionDampingRatio: CGFloat = 0.85
     /// Response time in seconds for position springs.
-    var positionResponse: CGFloat = 0.8
+    var positionResponse: CGFloat = 0.15
     /// Damping ratio for zoom spring.
     var zoomDampingRatio: CGFloat = 1.0
     /// Response time in seconds for zoom spring.
-    var zoomResponse: CGFloat = 0.8
+    var zoomResponse: CGFloat = 0.7
     /// Duration in seconds over which urgency transitions are blended.
-    var urgencyBlendDuration: TimeInterval = 0.3
+    var urgencyBlendDuration: TimeInterval = 0.5
     /// Multipliers applied to response time per urgency level.
     /// Lower multiplier = faster response.
     var urgencyMultipliers: [WaypointUrgency: CGFloat] = [
@@ -89,7 +87,7 @@ struct ContinuousCameraSettings {
     /// Post-hoc zoom intensity multiplier.
     var zoomIntensity: CGFloat = 1.0
     /// Stiffness of the soft boundary pushback force. Higher = harder boundary.
-    var boundaryStiffness: CGFloat = 80.0
+    var boundaryStiffness: CGFloat = 30.0
 
     /// Shot settings for zoom range and center calculation.
     var shot = ShotSettings()

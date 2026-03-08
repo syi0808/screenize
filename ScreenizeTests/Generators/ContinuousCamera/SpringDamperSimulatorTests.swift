@@ -7,93 +7,163 @@ final class SpringDamperSimulatorTests: XCTestCase {
 
     // MARK: - Empty Input
 
-    func test_simulate_emptyWaypoints_returnsEmpty() {
+    func test_simulate_emptyPositions_returnsEmpty() {
         let result = SpringDamperSimulator.simulate(
-            waypoints: [], duration: 5.0, settings: defaultSettings
+            cursorPositions: [],
+            zoomWaypoints: [],
+            duration: 5.0,
+            settings: defaultSettings
         )
         XCTAssertTrue(result.isEmpty)
     }
 
     func test_simulate_zeroDuration_returnsEmpty() {
-        let wp = makeWaypoint(time: 0, zoom: 2.0, x: 0.5, y: 0.5, urgency: .normal)
+        let positions = [MousePositionData(time: 0, position: NormalizedPoint(x: 0.5, y: 0.5))]
         let result = SpringDamperSimulator.simulate(
-            waypoints: [wp], duration: 0, settings: defaultSettings
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: 0,
+            settings: defaultSettings
         )
         XCTAssertTrue(result.isEmpty)
     }
 
-    // MARK: - Convergence
+    // MARK: - Cursor Following
 
-    func test_simulate_singleWaypoint_convergesOnTarget() {
-        let wp = makeWaypoint(time: 0, zoom: 2.0, x: 0.4, y: 0.6, urgency: .normal)
+    func test_simulate_stationaryCursor_convergesOnPosition() {
+        let positions = (0..<300).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.4, y: 0.6))
+        }
         let result = SpringDamperSimulator.simulate(
-            waypoints: [wp], duration: 5.0, settings: defaultSettings
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: 5.0,
+            settings: defaultSettings
         )
         XCTAssertFalse(result.isEmpty)
-
-        // After 5 seconds the camera should have converged on the target
         guard let last = result.last else { return }
-        XCTAssertEqual(last.transform.zoom, 2.0, accuracy: 0.05,
-                       "Zoom should converge on target")
-        XCTAssertEqual(last.transform.center.x, 0.4, accuracy: 0.02,
-                       "X should converge on target")
-        XCTAssertEqual(last.transform.center.y, 0.6, accuracy: 0.02,
-                       "Y should converge on target")
+        XCTAssertEqual(last.transform.center.x, 0.4, accuracy: 0.02)
+        XCTAssertEqual(last.transform.center.y, 0.6, accuracy: 0.02)
     }
 
-    func test_simulate_startPosition_matchesFirstWaypoint() {
-        let wp = makeWaypoint(time: 0, zoom: 1.5, x: 0.4, y: 0.6, urgency: .normal)
+    func test_simulate_movingCursor_cameraFollows() {
+        let positions = (0..<180).map { i -> MousePositionData in
+            let t = Double(i) / 60.0
+            let x = 0.3 + 0.4 * CGFloat(t / 3.0)
+            return MousePositionData(time: t, position: NormalizedPoint(x: x, y: 0.5))
+        }
         let result = SpringDamperSimulator.simulate(
-            waypoints: [wp], duration: 1.0, settings: defaultSettings
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: 3.0,
+            settings: defaultSettings
+        )
+        guard let last = result.last else { return }
+        XCTAssertGreaterThan(last.transform.center.x, 0.6,
+                             "Camera should follow cursor")
+    }
+
+    func test_simulate_cursorJump_cameraSmooths() {
+        var positions: [MousePositionData] = []
+        for i in 0..<60 {
+            positions.append(MousePositionData(
+                time: Double(i) / 60.0,
+                position: NormalizedPoint(x: 0.3, y: 0.5)
+            ))
+        }
+        for i in 60..<180 {
+            positions.append(MousePositionData(
+                time: Double(i) / 60.0,
+                position: NormalizedPoint(x: 0.7, y: 0.5)
+            ))
+        }
+
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: 3.0,
+            settings: defaultSettings
+        )
+
+        for i in 1..<result.count {
+            let dx = abs(result[i].transform.center.x - result[i - 1].transform.center.x)
+            XCTAssertLessThan(dx, 0.25, "Camera should smooth cursor jumps at t=\(result[i].time)")
+        }
+    }
+
+    func test_simulate_startPosition_matchesFirstCursorPosition() {
+        let positions = [
+            MousePositionData(time: 0, position: NormalizedPoint(x: 0.4, y: 0.6))
+        ]
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: 1.0,
+            settings: defaultSettings
         )
         guard let first = result.first else {
             XCTFail("Expected at least one sample")
             return
         }
-        XCTAssertEqual(first.transform.zoom, 1.5, accuracy: 0.001)
         XCTAssertEqual(first.transform.center.x, 0.4, accuracy: 0.001)
         XCTAssertEqual(first.transform.center.y, 0.6, accuracy: 0.001)
     }
 
-    // MARK: - No Overshoot (Critically Damped / Overdamped)
+    // MARK: - Zoom from Waypoints
 
-    func test_simulate_criticallyDamped_noZoomOvershoot() {
-        var settings = ContinuousCameraSettings()
-        settings.positionDampingRatio = 1.0  // critically damped
-        settings.zoomDampingRatio = 1.0
-
-        let wp = makeWaypoint(time: 0, zoom: 2.0, x: 0.5, y: 0.5, urgency: .normal)
+    func test_simulate_zoomWaypoint_zoomConverges() {
+        let positions = (0..<300).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+        }
+        let zoomWPs = [CameraWaypoint(
+            time: 0, targetZoom: 2.0,
+            targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+            urgency: .normal, source: .clicking
+        )]
         let result = SpringDamperSimulator.simulate(
-            waypoints: [wp], duration: 3.0, settings: settings
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            duration: 5.0,
+            settings: defaultSettings
         )
+        guard let last = result.last else { return }
+        XCTAssertEqual(last.transform.zoom, 2.0, accuracy: 0.05)
+    }
 
-        // Zoom should never exceed target (no overshoot with damping >= 1.0)
-        for sample in result {
-            XCTAssertLessThanOrEqual(sample.transform.zoom, 2.0 + 0.01,
-                                    "Zoom should not overshoot target with critical damping")
+    func test_simulate_multipleZoomWaypoints_transitionsSmooth() {
+        let positions = (0..<300).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+        }
+        let zoomWPs = [
+            CameraWaypoint(time: 0, targetZoom: 1.5, targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .normal, source: .clicking),
+            CameraWaypoint(time: 2.0, targetZoom: 2.0, targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .high, source: .typing(context: .codeEditor))
+        ]
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            duration: 5.0,
+            settings: defaultSettings
+        )
+        for i in 1..<result.count {
+            let dz = abs(result[i].transform.zoom - result[i - 1].transform.zoom)
+            XCTAssertLessThan(dz, 0.2, "Zoom transition should be smooth at t=\(result[i].time)")
         }
     }
 
-    // MARK: - Velocity Continuity
-
-    func test_simulate_twoWaypoints_smoothTransition() {
-        let wp1 = makeWaypoint(time: 0, zoom: 1.5, x: 0.3, y: 0.5, urgency: .normal)
-        let wp2 = makeWaypoint(time: 2, zoom: 2.0, x: 0.7, y: 0.5, urgency: .normal)
+    func test_simulate_noZoomWaypoints_defaultsToZoom1() {
+        let positions = (0..<60).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+        }
         let result = SpringDamperSimulator.simulate(
-            waypoints: [wp1, wp2], duration: 5.0, settings: defaultSettings
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: 1.0,
+            settings: defaultSettings
         )
-
-        // Check velocity continuity: no sudden jumps in position
-        for i in 1..<result.count {
-            let dt = result[i].time - result[i - 1].time
-            guard dt > 0 else { continue }
-            let dx = abs(result[i].transform.center.x - result[i - 1].transform.center.x)
-            let dy = abs(result[i].transform.center.y - result[i - 1].transform.center.y)
-            let dz = abs(result[i].transform.zoom - result[i - 1].transform.zoom)
-            // At 60Hz with dt ~= 0.0167, reasonable max step is ~0.05 for smooth motion
-            XCTAssertLessThan(dx, 0.1, "Position X jump too large at t=\(result[i].time)")
-            XCTAssertLessThan(dy, 0.1, "Position Y jump too large at t=\(result[i].time)")
-            XCTAssertLessThan(dz, 0.2, "Zoom jump too large at t=\(result[i].time)")
+        for sample in result {
+            XCTAssertEqual(sample.transform.zoom, 1.0, accuracy: 0.01)
         }
     }
 
@@ -103,242 +173,155 @@ final class SpringDamperSimulatorTests: XCTestCase {
         var settings = ContinuousCameraSettings()
         settings.minZoom = 1.0
         settings.maxZoom = 2.5
-
-        let wp = makeWaypoint(time: 0, zoom: 2.5, x: 0.5, y: 0.5, urgency: .normal)
-        let result = SpringDamperSimulator.simulate(
-            waypoints: [wp], duration: 3.0, settings: settings
-        )
-
-        for sample in result {
-            XCTAssertGreaterThanOrEqual(sample.transform.zoom, settings.minZoom - 0.001)
-            XCTAssertLessThanOrEqual(sample.transform.zoom, settings.maxZoom + 0.001)
+        let positions = (0..<300).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.5, y: 0.5))
         }
+        let zoomWPs = [CameraWaypoint(
+            time: 0, targetZoom: 3.0,
+            targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+            urgency: .normal, source: .clicking
+        )]
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            duration: 5.0,
+            settings: settings
+        )
+        for sample in result {
+            XCTAssertLessThanOrEqual(sample.transform.zoom, settings.maxZoom + 0.001)
+            XCTAssertGreaterThanOrEqual(sample.transform.zoom, settings.minZoom - 0.001)
+        }
+    }
+
+    // MARK: - Immediate Waypoint (App Switch)
+
+    func test_simulate_immediateWaypoint_snapsZoom() {
+        let positions = (0..<120).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+        }
+        let zoomWPs = [
+            CameraWaypoint(time: 0, targetZoom: 1.0,
+                           targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .lazy, source: .idle),
+            CameraWaypoint(time: 1.0, targetZoom: 2.0,
+                           targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .immediate, source: .switching)
+        ]
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            duration: 2.0,
+            settings: defaultSettings
+        )
+        guard let sampleAfterSwitch = result.first(where: { $0.time >= 1.0 }) else {
+            XCTFail("Expected sample after switch")
+            return
+        }
+        XCTAssertEqual(sampleAfterSwitch.transform.zoom, 2.0, accuracy: 0.001)
     }
 
     // MARK: - Urgency Speed
 
-    func test_simulate_highUrgency_convergesFasterThanLazy() {
-        let targetZoom: CGFloat = 2.0
-        let targetX: CGFloat = 0.4
+    func test_simulate_highUrgencyZoom_convergesFasterThanLazy() {
+        let positions = (0..<120).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+        }
 
-        let wpHigh = makeWaypoint(time: 0, zoom: targetZoom, x: targetX, y: 0.5, urgency: .high)
-        let wpLazy = makeWaypoint(time: 0, zoom: targetZoom, x: targetX, y: 0.5, urgency: .lazy)
-
-        // Start from zoom=1 (not at target) by using an initial waypoint that differs
-        let initWP = makeWaypoint(time: 0, zoom: 1.0, x: 0.5, y: 0.5, urgency: .lazy)
+        let highWPs = [
+            CameraWaypoint(time: 0, targetZoom: 1.0,
+                           targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .lazy, source: .idle),
+            CameraWaypoint(time: 0.1, targetZoom: 2.0,
+                           targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .high, source: .typing(context: .codeEditor))
+        ]
+        let lazyWPs = [
+            CameraWaypoint(time: 0, targetZoom: 1.0,
+                           targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .lazy, source: .idle),
+            CameraWaypoint(time: 0.1, targetZoom: 2.0,
+                           targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                           urgency: .lazy, source: .idle)
+        ]
 
         let highResult = SpringDamperSimulator.simulate(
-            waypoints: [initWP, wpHigh], duration: 2.0, settings: defaultSettings
+            cursorPositions: positions, zoomWaypoints: highWPs,
+            duration: 2.0, settings: defaultSettings
         )
         let lazyResult = SpringDamperSimulator.simulate(
-            waypoints: [initWP, wpLazy], duration: 2.0, settings: defaultSettings
+            cursorPositions: positions, zoomWaypoints: lazyWPs,
+            duration: 2.0, settings: defaultSettings
         )
 
-        // At t=1.0 high urgency should be closer to target than lazy
-        let highAt1 = highResult.first { $0.time >= 0.5 }
-        let lazyAt1 = lazyResult.first { $0.time >= 0.5 }
+        let highAt1 = highResult.first { $0.time >= 1.0 }
+        let lazyAt1 = lazyResult.first { $0.time >= 1.0 }
 
         if let h = highAt1, let l = lazyAt1 {
-            let highDist = abs(h.transform.zoom - targetZoom)
-            let lazyDist = abs(l.transform.zoom - targetZoom)
-            XCTAssertLessThan(highDist, lazyDist,
-                              "High urgency should converge faster than lazy")
+            let highDist = abs(h.transform.zoom - 2.0)
+            let lazyDist = abs(l.transform.zoom - 2.0)
+            XCTAssertLessThan(highDist, lazyDist)
         }
     }
 
-    func test_simulate_immediateWaypoint_snapsWithoutLag() {
-        let wp1 = makeWaypoint(
-            time: 0,
-            zoom: 1.0,
-            x: 0.5,
-            y: 0.5,
-            urgency: .lazy
-        )
-        let wp2 = makeWaypoint(
-            time: 1.0,
-            zoom: 2.2,
-            x: 0.72,
-            y: 0.72,
-            urgency: .immediate
-        )
+    // MARK: - Boundary Clamping
 
+    func test_simulate_cursorAtEdge_cameraClamped() {
+        let positions = (0..<300).map { i in
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.95, y: 0.95))
+        }
+        let zoomWPs = [CameraWaypoint(
+            time: 0, targetZoom: 2.5,
+            targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+            urgency: .normal, source: .clicking
+        )]
         let result = SpringDamperSimulator.simulate(
-            waypoints: [wp1, wp2],
-            duration: 2.0,
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            duration: 5.0,
             settings: defaultSettings
-        )
-
-        guard let sampleAfterSwitch = result.first(where: { $0.time >= 1.0 }) else {
-            XCTFail("Expected sample after switch waypoint")
-            return
-        }
-        XCTAssertEqual(sampleAfterSwitch.transform.zoom, 2.2, accuracy: 0.001)
-        XCTAssertEqual(sampleAfterSwitch.transform.center.x, 0.72, accuracy: 0.001)
-        XCTAssertEqual(sampleAfterSwitch.transform.center.y, 0.72, accuracy: 0.001)
-    }
-
-    func test_simulate_normalUrgency_noEarlyAnticipation() {
-        let wp1 = makeWaypoint(
-            time: 0.0,
-            zoom: 1.4,
-            x: 0.40,
-            y: 0.40,
-            urgency: .normal
-        )
-        let wp2 = makeWaypoint(
-            time: 2.0,
-            zoom: 1.4,
-            x: 0.60,
-            y: 0.40,
-            urgency: .normal
-        )
-
-        let result = SpringDamperSimulator.simulate(
-            waypoints: [wp1, wp2],
-            duration: 3.0,
-            settings: defaultSettings
-        )
-
-        guard let beforeSwitch = result.last(where: { $0.time < 1.95 }) else {
-            XCTFail("Expected sample before switch")
-            return
-        }
-        XCTAssertEqual(
-            beforeSwitch.transform.center.x,
-            0.40,
-            accuracy: 0.03,
-            "Normal urgency should not pre-pan before waypoint time"
-        )
-    }
-
-    func test_simulate_highUrgency_stillAnticipates() {
-        let wp1 = makeWaypoint(
-            time: 0.0,
-            zoom: 1.4,
-            x: 0.40,
-            y: 0.40,
-            urgency: .normal
-        )
-        let wp2 = makeWaypoint(
-            time: 2.0,
-            zoom: 1.4,
-            x: 0.60,
-            y: 0.40,
-            urgency: .high
-        )
-
-        let result = SpringDamperSimulator.simulate(
-            waypoints: [wp1, wp2],
-            duration: 3.0,
-            settings: defaultSettings
-        )
-
-        guard let beforeSwitch = result.last(where: { $0.time < 1.95 }) else {
-            XCTFail("Expected sample before switch")
-            return
-        }
-        XCTAssertGreaterThan(
-            beforeSwitch.transform.center.x,
-            0.40,
-            "High urgency should anticipate upcoming waypoint"
-        )
-    }
-
-    // MARK: - Urgency Blending
-
-    func test_simulate_urgencyTransition_smoothResponseChange() {
-        let wp1 = makeWaypoint(time: 0, zoom: 1.5, x: 0.3, y: 0.5, urgency: .lazy)
-        let wp2 = makeWaypoint(time: 2, zoom: 2.0, x: 0.7, y: 0.5, urgency: .high)
-
-        let result = SpringDamperSimulator.simulate(
-            waypoints: [wp1, wp2], duration: 4.0, settings: defaultSettings
-        )
-
-        // At the transition point (t~2.0), acceleration change should be gradual
-        let samplesAroundTransition = result.filter { $0.time >= 1.9 && $0.time <= 2.5 }
-        guard samplesAroundTransition.count >= 4 else {
-            XCTFail("Need samples around transition")
-            return
-        }
-
-        // Check that no single-frame acceleration spike exists
-        var maxAccelChange: CGFloat = 0
-        for i in 2..<samplesAroundTransition.count {
-            let dt1 = CGFloat(samplesAroundTransition[i].time - samplesAroundTransition[i - 1].time)
-            let dt2 = CGFloat(samplesAroundTransition[i - 1].time - samplesAroundTransition[i - 2].time)
-            guard dt1 > 0, dt2 > 0 else { continue }
-            let v1 = (samplesAroundTransition[i].transform.center.x
-                       - samplesAroundTransition[i - 1].transform.center.x) / dt1
-            let v0 = (samplesAroundTransition[i - 1].transform.center.x
-                       - samplesAroundTransition[i - 2].transform.center.x) / dt2
-            maxAccelChange = max(maxAccelChange, abs(v1 - v0))
-        }
-
-        XCTAssertLessThan(maxAccelChange, 5.0,
-                          "Urgency transition should be gradual, not instant")
-    }
-
-    // MARK: - Center Clamping
-
-    func test_simulate_centerClampedToViewportBounds() {
-        // Target near edge at high zoom — should be clamped
-        let wp = makeWaypoint(time: 0, zoom: 2.5, x: 0.95, y: 0.95, urgency: .normal)
-        let result = SpringDamperSimulator.simulate(
-            waypoints: [wp], duration: 2.0, settings: defaultSettings
         )
         for sample in result {
             let halfCrop = 0.5 / sample.transform.zoom
             XCTAssertGreaterThanOrEqual(sample.transform.center.x, halfCrop - 0.06)
             XCTAssertLessThanOrEqual(sample.transform.center.x, 1.0 - halfCrop + 0.06)
-            XCTAssertGreaterThanOrEqual(sample.transform.center.y, halfCrop - 0.06)
-            XCTAssertLessThanOrEqual(sample.transform.center.y, 1.0 - halfCrop + 0.06)
-        }
-    }
-
-    // MARK: - Soft Clamping
-
-    func test_simulate_nearBoundary_velocityNotZeroed() {
-        let wp1 = makeWaypoint(time: 0, zoom: 2.0, x: 0.5, y: 0.5, urgency: .normal)
-        let wp2 = makeWaypoint(time: 1, zoom: 2.0, x: 0.95, y: 0.5, urgency: .normal)
-
-        let result = SpringDamperSimulator.simulate(
-            waypoints: [wp1, wp2], duration: 3.0, settings: defaultSettings
-        )
-
-        // Find samples near the right boundary (at zoom 2.0, max center.x ~ 0.75)
-        let nearBoundary = result.filter {
-            $0.transform.center.x > 0.70 && $0.time > 1.0
-        }
-        guard nearBoundary.count >= 3 else { return }
-
-        // With soft clamping, velocity should decelerate gradually near boundaries.
-        // Verify the camera actually reaches the boundary region and doesn't just
-        // stop far away. The soft clamp allows slight overshoot beyond hard clamp.
-        let maxX = nearBoundary.map { $0.transform.center.x }.max() ?? 0
-        // At zoom 2.0, hard clamp limit is 0.75. Soft clamp should allow approaching it.
-        XCTAssertGreaterThan(maxX, 0.72,
-                             "Camera should reach near boundary with soft clamping")
-
-        // Check that position changes smoothly (no single-frame position snap)
-        for i in 1..<nearBoundary.count {
-            let dx = abs(nearBoundary[i].transform.center.x
-                          - nearBoundary[i - 1].transform.center.x)
-            XCTAssertLessThan(dx, 0.05,
-                              "Position should change smoothly near boundary")
         }
     }
 
     // MARK: - Sample Count
 
     func test_simulate_sampleCountMatchesTickRate() {
-        let wp = makeWaypoint(time: 0, zoom: 1.5, x: 0.5, y: 0.5, urgency: .normal)
+        let positions = [MousePositionData(time: 0, position: NormalizedPoint(x: 0.5, y: 0.5))]
         let duration = 2.0
         let result = SpringDamperSimulator.simulate(
-            waypoints: [wp], duration: duration, settings: defaultSettings
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: duration,
+            settings: defaultSettings
         )
         let expectedCount = Int(duration * defaultSettings.tickRate) + 1
-        // Allow +-2 for floating point rounding in stride
         XCTAssertEqual(result.count, expectedCount, accuracy: 2)
+    }
+
+    // MARK: - Velocity Continuity
+
+    func test_simulate_positionChanges_areContinuous() {
+        let positions = (0..<180).map { i -> MousePositionData in
+            let t = Double(i) / 60.0
+            let x = 0.5 + 0.2 * sin(CGFloat(t) * 2.0)
+            return MousePositionData(time: t, position: NormalizedPoint(x: x, y: 0.5))
+        }
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: [],
+            duration: 3.0,
+            settings: defaultSettings
+        )
+        for i in 1..<result.count {
+            let dx = abs(result[i].transform.center.x - result[i - 1].transform.center.x)
+            let dy = abs(result[i].transform.center.y - result[i - 1].transform.center.y)
+            XCTAssertLessThan(dx, 0.1, "Position X jump too large at t=\(result[i].time)")
+            XCTAssertLessThan(dy, 0.1, "Position Y jump too large at t=\(result[i].time)")
+        }
     }
 
     // MARK: - Spring Step Math
@@ -348,10 +331,8 @@ final class SpringDamperSimulatorTests: XCTestCase {
             current: 1.0, velocity: 0,
             target: 0.5, omega: 10.0, zeta: 1.0, dt: 0.1
         )
-        // Position should move toward target
         XCTAssertLessThan(pos, 1.0)
         XCTAssertGreaterThan(pos, 0.5)
-        // Velocity should be negative (moving toward target)
         XCTAssertLessThan(vel, 0)
     }
 
@@ -373,11 +354,9 @@ final class SpringDamperSimulatorTests: XCTestCase {
         urgency: WaypointUrgency
     ) -> CameraWaypoint {
         CameraWaypoint(
-            time: time,
-            targetZoom: zoom,
+            time: time, targetZoom: zoom,
             targetCenter: NormalizedPoint(x: x, y: y),
-            urgency: urgency,
-            source: .idle
+            urgency: urgency, source: .idle
         )
     }
 }

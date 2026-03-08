@@ -1,84 +1,104 @@
 import Foundation
 import CoreGraphics
 
-/// Micro tracking layer for the dual-layer camera system.
+/// Idle re-centering layer (Layer 2) for the dual-layer camera system.
 ///
-/// Tracks cursor/caret within the macro frame by computing a small offset.
-/// Uses a dead zone to avoid reacting to small movements near frame center.
-/// The offset is spring-animated for smooth following.
+/// When cursor velocity drops below threshold (idle), slowly applies a
+/// correction offset to drift the camera center toward the cursor.
+/// When cursor is actively moving, correction decays toward zero
+/// (Layer 1's fast spring handles tracking).
 struct MicroTracker {
 
     private let settings: MicroTrackerSettings
-    private(set) var offset: (x: CGFloat, y: CGFloat) = (0, 0)
+    private(set) var correction: (x: CGFloat, y: CGFloat) = (0, 0)
     private var velocityX: CGFloat = 0
     private var velocityY: CGFloat = 0
+    private var previousCursorPosition: NormalizedPoint?
 
     init(settings: MicroTrackerSettings) {
         self.settings = settings
     }
 
-    /// Update micro offset based on cursor position relative to macro center.
+    /// Update re-centering correction based on cursor activity.
     mutating func update(
         cursorPosition: NormalizedPoint,
-        macroCenter: NormalizedPoint,
+        cameraCenter: NormalizedPoint,
         zoom: CGFloat,
-        dt: CGFloat,
-        isIdle: Bool = false
+        dt: CGFloat
     ) {
-        let viewportHalf = 0.5 / max(zoom, 1.0)
-        let deadZone = viewportHalf * settings.deadZoneRatio
-        let maxOffset = viewportHalf * settings.maxOffsetRatio
+        // Compute cursor velocity for idle detection
+        let cursorVelocity: CGFloat
+        if let prev = previousCursorPosition {
+            let dx = cursorPosition.x - prev.x
+            let dy = cursorPosition.y - prev.y
+            cursorVelocity = sqrt(dx * dx + dy * dy) / max(dt, 0.001)
+        } else {
+            cursorVelocity = 0
+        }
+        previousCursorPosition = cursorPosition
 
-        let targetOffset: (x: CGFloat, y: CGFloat)
+        let isIdle = cursorVelocity < settings.idleVelocityThreshold
 
         if isIdle {
-            targetOffset = (0, 0)
+            // Target: correct the gap between camera and cursor
+            var targetX = cursorPosition.x - cameraCenter.x
+            var targetY = cursorPosition.y - cameraCenter.y
+
+            // Clamp target to viewport bounds
+            let halfCrop = 0.5 / max(zoom, 1.0)
+            let maxCenterX = 1.0 - halfCrop
+            let minCenterX = halfCrop
+            let maxCenterY = 1.0 - halfCrop
+            let minCenterY = halfCrop
+
+            if cameraCenter.x + targetX > maxCenterX {
+                targetX = maxCenterX - cameraCenter.x
+            } else if cameraCenter.x + targetX < minCenterX {
+                targetX = minCenterX - cameraCenter.x
+            }
+
+            if cameraCenter.y + targetY > maxCenterY {
+                targetY = maxCenterY - cameraCenter.y
+            } else if cameraCenter.y + targetY < minCenterY {
+                targetY = minCenterY - cameraCenter.y
+            }
+
+            let omega = 2.0 * .pi / max(0.001, settings.response)
+            let zeta = settings.dampingRatio
+
+            let (newX, newVX) = SpringDamperSimulator.springStep(
+                current: correction.x, velocity: velocityX,
+                target: targetX,
+                omega: omega, zeta: zeta, dt: dt
+            )
+            let (newY, newVY) = SpringDamperSimulator.springStep(
+                current: correction.y, velocity: velocityY,
+                target: targetY,
+                omega: omega, zeta: zeta, dt: dt
+            )
+
+            correction = (newX, newY)
+            velocityX = newVX
+            velocityY = newVY
         } else {
-            let relX = cursorPosition.x - macroCenter.x
-            let relY = cursorPosition.y - macroCenter.y
+            // Active: decay correction toward zero
+            let decayOmega = 2.0 * .pi / max(0.001, settings.response * 0.5)
+            let decayZeta: CGFloat = 1.0
 
-            let excessX = abs(relX) - deadZone
-            let excessY = abs(relY) - deadZone
+            let (newX, newVX) = SpringDamperSimulator.springStep(
+                current: correction.x, velocity: velocityX,
+                target: 0,
+                omega: decayOmega, zeta: decayZeta, dt: dt
+            )
+            let (newY, newVY) = SpringDamperSimulator.springStep(
+                current: correction.y, velocity: velocityY,
+                target: 0,
+                omega: decayOmega, zeta: decayZeta, dt: dt
+            )
 
-            var tx: CGFloat = 0
-            var ty: CGFloat = 0
-            if excessX > 0 { tx = copysign(excessX, relX) }
-            if excessY > 0 { ty = copysign(excessY, relY) }
-
-            tx = max(-maxOffset, min(maxOffset, tx))
-            ty = max(-maxOffset, min(maxOffset, ty))
-
-            targetOffset = (tx, ty)
+            correction = (newX, newY)
+            velocityX = newVX
+            velocityY = newVY
         }
-
-        let omega = 2.0 * .pi / max(0.001, settings.response)
-        let zeta = settings.dampingRatio
-
-        let (newX, newVX) = SpringDamperSimulator.springStep(
-            current: offset.x, velocity: velocityX,
-            target: targetOffset.x,
-            omega: omega, zeta: zeta, dt: dt
-        )
-        let (newY, newVY) = SpringDamperSimulator.springStep(
-            current: offset.y, velocity: velocityY,
-            target: targetOffset.y,
-            omega: omega, zeta: zeta, dt: dt
-        )
-
-        offset = (
-            max(-maxOffset, min(maxOffset, newX)),
-            max(-maxOffset, min(maxOffset, newY))
-        )
-        velocityX = newVX
-        velocityY = newVY
-    }
-
-    /// Compensate micro offset when macro center changes to avoid visual jump.
-    mutating func compensateForMacroTransition(
-        oldCenter: NormalizedPoint,
-        newCenter: NormalizedPoint
-    ) {
-        offset.x -= (newCenter.x - oldCenter.x)
-        offset.y -= (newCenter.y - oldCenter.y)
     }
 }
