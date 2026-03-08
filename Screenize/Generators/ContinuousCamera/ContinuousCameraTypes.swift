@@ -6,11 +6,11 @@ import CoreGraphics
 /// Configuration for the idle re-centering layer (Layer 2).
 struct MicroTrackerSettings {
     /// Cursor velocity threshold (normalized units/sec) below which idle re-centering activates.
-    var idleVelocityThreshold: CGFloat = 0.05
+    var idleVelocityThreshold: CGFloat = 0.02
     /// Spring damping ratio for idle re-centering.
     var dampingRatio: CGFloat = 1.0
     /// Spring response time in seconds for idle re-centering.
-    var response: CGFloat = 2.5
+    var response: CGFloat = 3.0
 }
 
 // MARK: - Waypoint Urgency
@@ -57,13 +57,15 @@ struct CameraState {
 /// Configuration for the continuous camera physics simulation.
 struct ContinuousCameraSettings {
     /// Damping ratio for position springs (1.0 = critical, <1 = underdamped).
-    var positionDampingRatio: CGFloat = 0.85
+    var positionDampingRatio: CGFloat = 0.80
     /// Response time in seconds for position springs.
-    var positionResponse: CGFloat = 0.15
+    var positionResponse: CGFloat = 0.12
+    /// Seconds of velocity prediction for cursor lookahead.
+    var positionLookahead: CGFloat = 0.05
     /// Damping ratio for zoom spring.
-    var zoomDampingRatio: CGFloat = 1.0
+    var zoomDampingRatio: CGFloat = 0.90
     /// Response time in seconds for zoom spring.
-    var zoomResponse: CGFloat = 0.7
+    var zoomResponse: CGFloat = 0.55
     /// Duration in seconds over which urgency transitions are blended.
     var urgencyBlendDuration: TimeInterval = 0.5
     /// Multipliers applied to response time per urgency level.
@@ -87,7 +89,7 @@ struct ContinuousCameraSettings {
     /// Post-hoc zoom intensity multiplier.
     var zoomIntensity: CGFloat = 1.0
     /// Stiffness of the soft boundary pushback force. Higher = harder boundary.
-    var boundaryStiffness: CGFloat = 30.0
+    var boundaryStiffness: CGFloat = 12.0
 
     /// Shot settings for zoom range and center calculation.
     var shot = ShotSettings()

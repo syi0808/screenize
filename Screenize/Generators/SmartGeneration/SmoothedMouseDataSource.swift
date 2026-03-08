@@ -24,7 +24,7 @@ struct SmoothedMouseDataSource: MouseDataSource {
     ///   - baseTension: Catmull-Rom tension parameter (default 0.2, matches render pipeline)
     init(
         wrapping source: MouseDataSource,
-        springConfig: SpringCursorConfig = .default,
+        springConfig: SpringCursorConfig? = .default,
         baseTension: CGFloat = 0.2
     ) {
         self.duration = source.duration
@@ -45,7 +45,7 @@ struct SmoothedMouseDataSource: MouseDataSource {
     private static func smoothPositions(
         _ positions: [MousePositionData],
         frameRate: Double,
-        springConfig: SpringCursorConfig,
+        springConfig: SpringCursorConfig?,
         baseTension: CGFloat
     ) -> [MousePositionData] {
         guard positions.count >= 2 else { return positions }

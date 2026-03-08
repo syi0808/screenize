@@ -28,16 +28,13 @@ class ContinuousCameraGenerator {
         screenBounds: CGSize,
         settings: ContinuousCameraSettings
     ) -> GeneratedTimeline {
-        // Step 1: Pre-smooth mouse positions to match render pipeline cursor path
-        let effectiveMouseData: MouseDataSource
-        if let springConfig = settings.springConfig {
-            effectiveMouseData = SmoothedMouseDataSource(
-                wrapping: mouseData,
-                springConfig: springConfig
-            )
-        } else {
-            effectiveMouseData = mouseData
-        }
+        // Step 1: Resample mouse positions via Catmull-Rom only (no spring smoothing).
+        // The camera's own position spring handles all smoothing — adding a
+        // pre-smoothing spring introduces cascaded latency that weakens cursor tracking.
+        let effectiveMouseData: MouseDataSource = SmoothedMouseDataSource(
+            wrapping: mouseData,
+            springConfig: nil
+        )
 
         let duration = effectiveMouseData.duration
 

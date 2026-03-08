@@ -47,6 +47,7 @@ struct SpringDamperSimulator {
             zoomWaypoints.first?.urgency ?? .lazy
         ] ?? 1.0
         var zoomUrgencyTransitionStart: TimeInterval = 0
+        var previousCursorPos = first.position
 
         var t = dt
         let activationTolerance = dt * 0.5
@@ -57,7 +58,31 @@ struct SpringDamperSimulator {
                     && cursorPositions[cursorIndex + 1].time <= t {
                 cursorIndex += 1
             }
-            let cursorPos = cursorPositions[cursorIndex].position
+            let rawCursorPos = cursorPositions[cursorIndex].position
+
+            // Velocity-based lookahead: predict where cursor is heading.
+            // Clamped to prevent overshooting on sudden cursor jumps.
+            let cursorPos: NormalizedPoint
+            if settings.positionLookahead > 0.001 {
+                let vx = (rawCursorPos.x - previousCursorPos.x) / CGFloat(dt)
+                let vy = (rawCursorPos.y - previousCursorPos.y) / CGFloat(dt)
+                let speed = sqrt(vx * vx + vy * vy)
+                // Clamp: lookahead displacement maxes out at 0.05 normalized units
+                let maxLookaheadDisplacement: CGFloat = 0.05
+                let scale: CGFloat
+                if speed * settings.positionLookahead > maxLookaheadDisplacement && speed > 0.001 {
+                    scale = maxLookaheadDisplacement / (speed * settings.positionLookahead)
+                } else {
+                    scale = 1.0
+                }
+                cursorPos = NormalizedPoint(
+                    x: rawCursorPos.x + vx * settings.positionLookahead * scale,
+                    y: rawCursorPos.y + vy * settings.positionLookahead * scale
+                )
+            } else {
+                cursorPos = rawCursorPos
+            }
+            previousCursorPos = rawCursorPos
 
             // Advance zoom waypoint index
             let previousZoomIndex = zoomIndex
@@ -176,17 +201,23 @@ struct SpringDamperSimulator {
         let overflowX = state.positionX - clamped.x
         let overflowY = state.positionY - clamped.y
         let stiffness = settings.boundaryStiffness
+        let maxOverflow: CGFloat = 0.03
 
         if abs(overflowX) > 0.0001 {
-            state.velocityX -= overflowX * stiffness * dt
-            let maxOverflow: CGFloat = 0.05
+            // Progressive velocity damping instead of sudden force
+            let overflowRatio = min(1.0, abs(overflowX) / maxOverflow)
+            let dampFactor = overflowRatio * 0.5
+            state.velocityX *= max(0, 1.0 - dampFactor * dt * stiffness)
+            state.velocityX -= overflowX * stiffness * 0.3 * dt
             if abs(overflowX) > maxOverflow {
                 state.positionX = clamped.x + copysign(maxOverflow, overflowX)
             }
         }
         if abs(overflowY) > 0.0001 {
-            state.velocityY -= overflowY * stiffness * dt
-            let maxOverflow: CGFloat = 0.05
+            let overflowRatio = min(1.0, abs(overflowY) / maxOverflow)
+            let dampFactor = overflowRatio * 0.5
+            state.velocityY *= max(0, 1.0 - dampFactor * dt * stiffness)
+            state.velocityY -= overflowY * stiffness * 0.3 * dt
             if abs(overflowY) > maxOverflow {
                 state.positionY = clamped.y + copysign(maxOverflow, overflowY)
             }
