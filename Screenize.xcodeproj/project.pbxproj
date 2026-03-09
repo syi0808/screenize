@@ -65,6 +65,7 @@
 		D2100002296A0001 /* GIFSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200002296A0001 /* GIFSettingsTests.swift */; };
 		D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200003296A0001 /* RenderSettingsGIFTests.swift */; };
 		D2100004296A0001 /* GIFEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200004296A0001 /* GIFEncoderTests.swift */; };
+		D5100001296A0001 /* ClickScaleModifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5200001296A0001 /* ClickScaleModifierTests.swift */; };
 		D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100001296A0001 /* SmoothedMouseDataSource.swift */; };
 		D3000001VFRRECMG /* VFRRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3000002VFRRECMG /* VFRRecordingManager.swift */; };
 		D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */; };
@@ -264,6 +265,7 @@
 		D2200002296A0001 /* GIFSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFSettingsTests.swift; sourceTree = "<group>"; };
 		D2200003296A0001 /* RenderSettingsGIFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettingsGIFTests.swift; sourceTree = "<group>"; };
 		D2200004296A0001 /* GIFEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoderTests.swift; sourceTree = "<group>"; };
+		D5200001296A0001 /* ClickScaleModifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickScaleModifierTests.swift; sourceTree = "<group>"; };
 		D3000002VFRRECMG /* VFRRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFRRecordingManager.swift; sourceTree = "<group>"; };
 		D3100001296A0001 /* SmoothedMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSource.swift; sourceTree = "<group>"; };
 		D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSourceTests.swift; sourceTree = "<group>"; };
@@ -578,6 +580,7 @@
 		D2300002296A0001 /* Render */ = {
 			isa = PBXGroup;
 			children = (
+				D5200001296A0001 /* ClickScaleModifierTests.swift */,
 				D2200004296A0001 /* GIFEncoderTests.swift */,
 			);
 			path = Render;
@@ -1046,6 +1049,7 @@
 				D2100002296A0001 /* GIFSettingsTests.swift in Sources */,
 				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
 				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
+				D5100001296A0001 /* ClickScaleModifierTests.swift in Sources */,
 				D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */,
 				E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */,
 				E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */,

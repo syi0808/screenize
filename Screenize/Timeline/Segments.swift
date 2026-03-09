@@ -37,10 +37,10 @@ struct ClickFeedbackConfig: Codable, Equatable, Hashable {
     var mouseUpSpring: EasingCurve
 
     static let `default` = Self(
-        mouseDownScale: 0.75,
-        mouseDownDuration: 0.08,
-        mouseUpDuration: 0.15,
-        mouseUpSpring: .spring(dampingRatio: 0.6, response: 0.3)
+        mouseDownScale: 0.78,
+        mouseDownDuration: 0.10,
+        mouseUpDuration: 0.25,
+        mouseUpSpring: .spring(dampingRatio: 0.55, response: 0.25)
     )
 }
 
