@@ -33,38 +33,56 @@ final class SpringDamperSimulatorTests: XCTestCase {
     // MARK: - Cursor Following
 
     func test_simulate_stationaryCursor_convergesOnPosition() {
+        // At zoom > 1.0, cursor outside dead zone causes camera to follow.
+        // At zoom 2.0, viewport half = 0.25, safe half = 0.25 * 0.75 = 0.1875.
+        // Cursor at (0.15, 0.75) is far from center → outside dead zone.
         let positions = (0..<300).map { i in
-            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.4, y: 0.6))
+            MousePositionData(time: Double(i) / 60.0, position: NormalizedPoint(x: 0.15, y: 0.75))
         }
+        let zoomWPs = [CameraWaypoint(
+            time: 0, targetZoom: 2.0,
+            targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+            urgency: .normal, source: .clicking
+        )]
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
-            zoomWaypoints: [],
+            zoomWaypoints: zoomWPs,
             intentSpans: [],
             duration: 5.0,
             settings: defaultSettings
         )
         XCTAssertFalse(result.isEmpty)
         guard let last = result.last else { return }
-        XCTAssertEqual(last.transform.center.x, 0.4, accuracy: 0.02)
-        XCTAssertEqual(last.transform.center.y, 0.6, accuracy: 0.02)
+        // Camera should move toward cursor (partial correction, not exact centering)
+        XCTAssertLessThan(last.transform.center.x, 0.4,
+                          "Camera should move toward cursor at x=0.15")
+        XCTAssertGreaterThan(last.transform.center.y, 0.55,
+                             "Camera should move toward cursor at y=0.75")
     }
 
     func test_simulate_movingCursor_cameraFollows() {
+        // At zoom 2.0, dead zone is active and cursor sweeping from 0.1 to 0.9
+        // will exit the safe zone, causing camera to follow.
         let positions = (0..<180).map { i -> MousePositionData in
             let t = Double(i) / 60.0
-            let x = 0.3 + 0.4 * CGFloat(t / 3.0)
+            let x = 0.1 + 0.8 * CGFloat(t / 3.0)
             return MousePositionData(time: t, position: NormalizedPoint(x: x, y: 0.5))
         }
+        let zoomWPs = [CameraWaypoint(
+            time: 0, targetZoom: 2.0,
+            targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+            urgency: .normal, source: .clicking
+        )]
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
-            zoomWaypoints: [],
+            zoomWaypoints: zoomWPs,
             intentSpans: [],
             duration: 3.0,
             settings: defaultSettings
         )
         guard let last = result.last else { return }
-        XCTAssertGreaterThan(last.transform.center.x, 0.6,
-                             "Camera should follow cursor")
+        XCTAssertGreaterThan(last.transform.center.x, 0.55,
+                             "Camera should follow cursor moving rightward")
     }
 
     func test_simulate_cursorJump_cameraSmooths() {
