@@ -87,6 +87,8 @@
 		E6000015296A0001 /* TimeCodeLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000015296A0001 /* TimeCodeLabel.swift */; };
 		DA000001296A0001 /* MicroTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA100001296A0001 /* MicroTracker.swift */; };
 		DA000002296A0001 /* MicroTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA100002296A0001 /* MicroTrackerTests.swift */; };
+		A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3100001296A0001 /* DeadZoneTargetTests.swift */; };
+		A4000001296A0001 /* DeadZoneTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4100001296A0001 /* DeadZoneTarget.swift */; };
 		E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100001296A0001 /* ContinuousCameraTypes.swift */; };
 		E7000002296A0001 /* WaypointGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100002296A0001 /* WaypointGenerator.swift */; };
 		E7000003296A0001 /* SpringDamperSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100003296A0001 /* SpringDamperSimulator.swift */; };
@@ -282,6 +284,8 @@
 		E5000015296A0001 /* TimeCodeLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCodeLabel.swift; sourceTree = "<group>"; };
 		DA100001296A0001 /* MicroTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroTracker.swift; sourceTree = "<group>"; };
 		DA100002296A0001 /* MicroTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroTrackerTests.swift; sourceTree = "<group>"; };
+		A3100001296A0001 /* DeadZoneTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTargetTests.swift; sourceTree = "<group>"; };
+		A4100001296A0001 /* DeadZoneTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTarget.swift; sourceTree = "<group>"; };
 		E7100001296A0001 /* ContinuousCameraTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraTypes.swift; sourceTree = "<group>"; };
 		E7100002296A0001 /* WaypointGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGenerator.swift; sourceTree = "<group>"; };
 		E7100003296A0001 /* SpringDamperSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulator.swift; sourceTree = "<group>"; };
@@ -611,6 +615,7 @@
 				E7100003296A0001 /* SpringDamperSimulator.swift */,
 				E7100005296A0001 /* ContinuousCameraGenerator.swift */,
 				DA100001296A0001 /* MicroTracker.swift */,
+				A4100001296A0001 /* DeadZoneTarget.swift */,
 			);
 			path = ContinuousCamera;
 			sourceTree = "<group>";
@@ -622,6 +627,7 @@
 				E7100012296A0001 /* SpringDamperSimulatorTests.swift */,
 				E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */,
 				DA100002296A0001 /* MicroTrackerTests.swift */,
+				A3100001296A0001 /* DeadZoneTargetTests.swift */,
 			);
 			path = ContinuousCamera;
 			sourceTree = "<group>";
@@ -1039,6 +1045,7 @@
 				E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */,
 				E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */,
 				DA000002296A0001 /* MicroTrackerTests.swift in Sources */,
+				A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1210,6 +1217,7 @@
 				E7000003296A0001 /* SpringDamperSimulator.swift in Sources */,
 				E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */,
 				DA000001296A0001 /* MicroTracker.swift in Sources */,
+				A4000001296A0001 /* DeadZoneTarget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
