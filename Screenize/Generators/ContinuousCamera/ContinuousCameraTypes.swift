@@ -13,6 +13,30 @@ struct MicroTrackerSettings {
     var response: CGFloat = 3.0
 }
 
+// MARK: - Dead Zone Settings
+
+/// Configuration for viewport-aware dead zone camera targeting.
+struct DeadZoneSettings {
+    /// Fraction of viewport that is the safe zone (no camera movement). 0.75 = 75%.
+    var safeZoneFraction: CGFloat = 0.75
+    /// Safe zone fraction during typing (smaller = more responsive to caret movement).
+    var safeZoneFractionTyping: CGFloat = 0.60
+    /// Width of gradient transition band between safe and trigger zones (fraction of viewport).
+    var gradientBandWidth: CGFloat = 0.10
+    /// Partial correction fraction. 0 = minimal movement, 1 = center cursor.
+    var correctionFraction: CGFloat = 0.60
+    /// Correction fraction during typing (more aggressive caret following).
+    var correctionFractionTyping: CGFloat = 0.80
+    /// Minimum spring response time (when next action is imminent).
+    var minResponse: CGFloat = 0.20
+    /// Maximum spring response time (when next action is far away).
+    var maxResponse: CGFloat = 0.50
+    /// Time-to-next-action threshold below which minResponse is used.
+    var responseFastThreshold: TimeInterval = 0.5
+    /// Time-to-next-action threshold above which maxResponse is used.
+    var responseSlowThreshold: TimeInterval = 2.0
+}
+
 // MARK: - Waypoint Urgency
 
 /// How quickly the camera should reach a waypoint.
@@ -57,11 +81,9 @@ struct CameraState {
 /// Configuration for the continuous camera physics simulation.
 struct ContinuousCameraSettings {
     /// Damping ratio for position springs (1.0 = critical, <1 = underdamped).
-    var positionDampingRatio: CGFloat = 0.80
+    var positionDampingRatio: CGFloat = 1.0
     /// Response time in seconds for position springs.
-    var positionResponse: CGFloat = 0.12
-    /// Seconds of velocity prediction for cursor lookahead.
-    var positionLookahead: CGFloat = 0.05
+    var positionResponse: CGFloat = 0.35
     /// Damping ratio for zoom spring.
     var zoomDampingRatio: CGFloat = 0.90
     /// Response time in seconds for zoom spring.
@@ -101,4 +123,6 @@ struct ContinuousCameraSettings {
     var keystroke = KeystrokeEmissionSettings()
     /// Micro tracking layer settings.
     var micro = MicroTrackerSettings()
+    /// Dead zone targeting settings.
+    var deadZone = DeadZoneSettings()
 }
