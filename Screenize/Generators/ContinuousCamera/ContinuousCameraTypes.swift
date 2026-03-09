@@ -85,7 +85,7 @@ struct CameraState {
 /// Configuration for the continuous camera physics simulation.
 struct ContinuousCameraSettings {
     /// Damping ratio for position springs (1.0 = critical, <1 = underdamped).
-    var positionDampingRatio: CGFloat = 1.0
+    var positionDampingRatio: CGFloat = 0.90
     /// Response time in seconds for position springs.
     var positionResponse: CGFloat = 0.35
     /// Damping ratio for zoom spring.
@@ -129,4 +129,8 @@ struct ContinuousCameraSettings {
     var micro = MicroTrackerSettings()
     /// Dead zone targeting settings.
     var deadZone = DeadZoneSettings()
+    /// Duration in seconds over which waypoint center blends into position target.
+    var waypointCenterCouplingDuration: TimeInterval = 0.4
+    /// Blend strength: 0 = ignore waypoint center, 1 = fully use waypoint center.
+    var waypointCenterCouplingStrength: CGFloat = 0.5
 }

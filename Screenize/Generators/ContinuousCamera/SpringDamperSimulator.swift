@@ -51,6 +51,7 @@ struct SpringDamperSimulator {
             zoomWaypoints.first?.urgency ?? .lazy
         ] ?? 1.0
         var zoomUrgencyTransitionStart: TimeInterval = 0
+        var lastWaypointActivationTime: TimeInterval = 0
         var intentIndex = 0
 
         var t = dt
@@ -81,6 +82,7 @@ struct SpringDamperSimulator {
                     zoomWaypoints[previousZoomIndex].urgency
                 ] ?? 1.0
                 zoomUrgencyTransitionStart = t
+                lastWaypointActivationTime = t
             }
 
             // Determine zoom target
@@ -144,6 +146,17 @@ struct SpringDamperSimulator {
             let posTarget = dzResult.target
             state.deadZoneActive = dzResult.isActive
 
+            // Waypoint center coupling
+            let blendedTarget = blendWithWaypointCenter(
+                posTarget: posTarget,
+                zoomWaypoints: zoomWaypoints,
+                zoomIndex: zoomIndex,
+                currentZoom: state.zoom,
+                time: t,
+                activationTime: lastWaypointActivationTime,
+                settings: settings
+            )
+
             // Adaptive spring response
             let timeToNext = AdaptiveResponse.findNextActionTime(
                 after: t,
@@ -159,12 +172,12 @@ struct SpringDamperSimulator {
 
             let (newX, newVX) = springStep(
                 current: state.positionX, velocity: state.velocityX,
-                target: posTarget.x,
+                target: blendedTarget.x,
                 omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
             )
             let (newY, newVY) = springStep(
                 current: state.positionY, velocity: state.velocityY,
-                target: posTarget.y,
+                target: blendedTarget.y,
                 omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
             )
 
@@ -201,6 +214,37 @@ struct SpringDamperSimulator {
     }
 
     // MARK: - Helpers
+
+    /// Blend waypoint's targetCenter into position target during coupling window.
+    /// Returns the blended target (or original if no coupling applies).
+    private static func blendWithWaypointCenter(
+        posTarget: NormalizedPoint,
+        zoomWaypoints: [CameraWaypoint],
+        zoomIndex: Int,
+        currentZoom: CGFloat,
+        time: TimeInterval,
+        activationTime: TimeInterval,
+        settings: ContinuousCameraSettings
+    ) -> NormalizedPoint {
+        let strength = settings.waypointCenterCouplingStrength
+        let duration = settings.waypointCenterCouplingDuration
+        guard strength > 0.001, duration > 0.001,
+              !zoomWaypoints.isEmpty else {
+            return posTarget
+        }
+        let elapsed = time - activationTime
+        guard elapsed >= 0, elapsed < duration else {
+            return posTarget
+        }
+        let center = zoomWaypoints[zoomIndex].targetCenter
+        let fade = CGFloat(elapsed / duration)
+        let fadedStrength = strength * (1.0 - fade * fade)
+        let blended = NormalizedPoint(
+            x: posTarget.x + (center.x - posTarget.x) * fadedStrength,
+            y: posTarget.y + (center.y - posTarget.y) * fadedStrength
+        )
+        return ShotPlanner.clampCenter(blended, zoom: currentZoom)
+    }
 
     /// Clamp camera state to valid bounds with soft pushback on center axes.
     private static func clampState(

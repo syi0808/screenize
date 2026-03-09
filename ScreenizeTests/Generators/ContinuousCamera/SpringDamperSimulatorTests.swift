@@ -378,6 +378,167 @@ final class SpringDamperSimulatorTests: XCTestCase {
         XCTAssertLessThan(pos, 1.0)
     }
 
+    // MARK: - Zoom-Pan Coupling
+
+    func test_simulate_waypointCenterHint_panStartsBeforeCursorMoves() {
+        // Cursor at 0.3 for first 2s, then jumps to 0.7.
+        // Waypoint at t=1.84 (high urgency lead time) targets center 0.7.
+        // Pan should start moving right BEFORE cursor jumps at t=2.0.
+        var positions: [MousePositionData] = []
+        for i in 0..<300 {
+            let t = Double(i) / 60.0
+            let x: CGFloat = t < 2.0 ? 0.3 : 0.7
+            positions.append(MousePositionData(
+                time: t, position: NormalizedPoint(x: x, y: 0.5)
+            ))
+        }
+        let zoomWPs = [
+            CameraWaypoint(
+                time: 0, targetZoom: 1.5,
+                targetCenter: NormalizedPoint(x: 0.3, y: 0.5),
+                urgency: .normal, source: .clicking),
+            CameraWaypoint(
+                time: 1.84, targetZoom: 1.8,
+                targetCenter: NormalizedPoint(x: 0.7, y: 0.5),
+                urgency: .high,
+                source: .typing(context: .codeEditor))
+        ]
+        let intentSpans = [
+            IntentSpan(
+                startTime: 0, endTime: 1.84, intent: .clicking,
+                confidence: 1.0,
+                focusPosition: NormalizedPoint(x: 0.3, y: 0.5),
+                focusElement: nil),
+            IntentSpan(
+                startTime: 2.0, endTime: 5.0,
+                intent: .typing(context: .codeEditor),
+                confidence: 1.0,
+                focusPosition: NormalizedPoint(x: 0.7, y: 0.5),
+                focusElement: nil)
+        ]
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            intentSpans: intentSpans,
+            duration: 5.0,
+            settings: defaultSettings
+        )
+        // At t=1.95 (after waypoint but before cursor jump),
+        // pan should already be moving right
+        guard let sampleBefore = result.first(
+            where: { $0.time >= 1.95 }
+        ) else {
+            XCTFail("Expected sample at t=1.95")
+            return
+        }
+        // With coupling, camera should have started moving toward 0.7
+        XCTAssertGreaterThan(
+            sampleBefore.transform.center.x, 0.35,
+            "Pan should move toward waypoint center before cursor jump"
+        )
+    }
+
+    func test_simulate_couplingStrengthZero_noCoupling() {
+        // With coupling strength = 0, waypoint center should NOT affect pan
+        var settings = ContinuousCameraSettings()
+        settings.waypointCenterCouplingStrength = 0
+
+        let positions = (0..<300).map { i in
+            MousePositionData(
+                time: Double(i) / 60.0,
+                position: NormalizedPoint(x: 0.5, y: 0.5)
+            )
+        }
+        let zoomWPs = [
+            CameraWaypoint(
+                time: 0, targetZoom: 1.5,
+                targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                urgency: .normal, source: .clicking),
+            CameraWaypoint(
+                time: 1.0, targetZoom: 1.8,
+                targetCenter: NormalizedPoint(x: 0.2, y: 0.2),
+                urgency: .high,
+                source: .typing(context: .codeEditor))
+        ]
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            intentSpans: [],
+            duration: 3.0,
+            settings: settings
+        )
+        // Camera should stay near center since cursor is at center
+        guard let sample = result.first(
+            where: { $0.time >= 1.5 }
+        ) else {
+            XCTFail("Expected sample at t=1.5")
+            return
+        }
+        XCTAssertEqual(
+            sample.transform.center.x, 0.5, accuracy: 0.05,
+            "With zero coupling, camera should not pull toward waypoint"
+        )
+    }
+
+    func test_simulate_couplingFadesOverDuration() {
+        // Coupling should be strongest right after waypoint activation
+        // and fade to zero. After the coupling window the camera should
+        // stop drifting further toward the waypoint center.
+        var settings = ContinuousCameraSettings()
+        settings.waypointCenterCouplingDuration = 0.5
+        settings.waypointCenterCouplingStrength = 0.8
+
+        let positions = (0..<300).map { i in
+            MousePositionData(
+                time: Double(i) / 60.0,
+                position: NormalizedPoint(x: 0.5, y: 0.5)
+            )
+        }
+        let zoomWPs = [
+            CameraWaypoint(
+                time: 0, targetZoom: 1.5,
+                targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                urgency: .normal, source: .clicking),
+            CameraWaypoint(
+                time: 1.0, targetZoom: 1.8,
+                targetCenter: NormalizedPoint(x: 0.3, y: 0.5),
+                urgency: .high,
+                source: .typing(context: .codeEditor))
+        ]
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            intentSpans: [],
+            duration: 5.0,
+            settings: settings
+        )
+        // After coupling window (t=1.0 + 0.5 = 1.5), effect should stop
+        guard let sampleDuring = result.first(
+            where: { $0.time >= 1.1 }
+        ),
+              let sampleAfterWindow = result.first(
+                  where: { $0.time >= 2.0 }
+              ),
+              let sampleLater = result.first(
+                  where: { $0.time >= 4.0 }
+              ) else {
+            XCTFail("Expected samples")
+            return
+        }
+        // During coupling, camera should be moving toward 0.3
+        XCTAssertLessThan(
+            sampleDuring.transform.center.x, 0.5,
+            "During coupling, camera should move toward waypoint center"
+        )
+        // After coupling window ends, camera should stop drifting further
+        // toward 0.3 (it may settle wherever dead zone holds it)
+        XCTAssertGreaterThanOrEqual(
+            sampleLater.transform.center.x,
+            sampleAfterWindow.transform.center.x - 0.02,
+            "After coupling, camera should not keep drifting toward 0.3"
+        )
+    }
+
     // MARK: - Helpers
 
     private func makeWaypoint(
