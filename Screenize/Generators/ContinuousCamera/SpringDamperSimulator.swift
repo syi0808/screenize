@@ -167,7 +167,13 @@ struct SpringDamperSimulator {
                 settings: settings.deadZone
             )
 
-            let posOmega = 2.0 * .pi / max(0.001, adaptiveResponse)
+            // Couple position response to zoom urgency: use the faster of
+            // adaptive response and zoom-matched response so pan keeps up
+            // with zoom transitions.
+            let zoomMatchedResponse = settings.zoomResponse * effectiveZoomMult
+            let effectivePosResponse = min(adaptiveResponse, zoomMatchedResponse)
+
+            let posOmega = 2.0 * .pi / max(0.001, effectivePosResponse)
             let posDamping = settings.positionDampingRatio
 
             let (newX, newVX) = springStep(

@@ -130,7 +130,7 @@ struct ContinuousCameraSettings {
     /// Dead zone targeting settings.
     var deadZone = DeadZoneSettings()
     /// Duration in seconds over which waypoint center blends into position target.
-    var waypointCenterCouplingDuration: TimeInterval = 0.4
+    var waypointCenterCouplingDuration: TimeInterval = 0.6
     /// Blend strength: 0 = ignore waypoint center, 1 = fully use waypoint center.
-    var waypointCenterCouplingStrength: CGFloat = 0.5
+    var waypointCenterCouplingStrength: CGFloat = 0.7
 }

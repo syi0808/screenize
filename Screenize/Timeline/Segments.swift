@@ -40,7 +40,7 @@ struct ClickFeedbackConfig: Codable, Equatable, Hashable {
         mouseDownScale: 0.78,
         mouseDownDuration: 0.10,
         mouseUpDuration: 0.25,
-        mouseUpSpring: .spring(dampingRatio: 0.55, response: 0.25)
+        mouseUpSpring: .spring(dampingRatio: 0.92, response: 0.25)
     )
 }
 
