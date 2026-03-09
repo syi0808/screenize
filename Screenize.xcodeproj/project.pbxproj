@@ -89,6 +89,8 @@
 		DA000002296A0001 /* MicroTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA100002296A0001 /* MicroTrackerTests.swift */; };
 		A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3100001296A0001 /* DeadZoneTargetTests.swift */; };
 		A4000001296A0001 /* DeadZoneTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4100001296A0001 /* DeadZoneTarget.swift */; };
+		A5000001296A0001 /* AdaptiveResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5100001296A0001 /* AdaptiveResponse.swift */; };
+		A6000001296A0001 /* AdaptiveResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6100001296A0001 /* AdaptiveResponseTests.swift */; };
 		E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100001296A0001 /* ContinuousCameraTypes.swift */; };
 		E7000002296A0001 /* WaypointGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100002296A0001 /* WaypointGenerator.swift */; };
 		E7000003296A0001 /* SpringDamperSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100003296A0001 /* SpringDamperSimulator.swift */; };
@@ -286,6 +288,8 @@
 		DA100002296A0001 /* MicroTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroTrackerTests.swift; sourceTree = "<group>"; };
 		A3100001296A0001 /* DeadZoneTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTargetTests.swift; sourceTree = "<group>"; };
 		A4100001296A0001 /* DeadZoneTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTarget.swift; sourceTree = "<group>"; };
+		A5100001296A0001 /* AdaptiveResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveResponse.swift; sourceTree = "<group>"; };
+		A6100001296A0001 /* AdaptiveResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveResponseTests.swift; sourceTree = "<group>"; };
 		E7100001296A0001 /* ContinuousCameraTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraTypes.swift; sourceTree = "<group>"; };
 		E7100002296A0001 /* WaypointGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGenerator.swift; sourceTree = "<group>"; };
 		E7100003296A0001 /* SpringDamperSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulator.swift; sourceTree = "<group>"; };
@@ -616,6 +620,7 @@
 				E7100005296A0001 /* ContinuousCameraGenerator.swift */,
 				DA100001296A0001 /* MicroTracker.swift */,
 				A4100001296A0001 /* DeadZoneTarget.swift */,
+				A5100001296A0001 /* AdaptiveResponse.swift */,
 			);
 			path = ContinuousCamera;
 			sourceTree = "<group>";
@@ -628,6 +633,7 @@
 				E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */,
 				DA100002296A0001 /* MicroTrackerTests.swift */,
 				A3100001296A0001 /* DeadZoneTargetTests.swift */,
+				A6100001296A0001 /* AdaptiveResponseTests.swift */,
 			);
 			path = ContinuousCamera;
 			sourceTree = "<group>";
@@ -1046,6 +1052,7 @@
 				E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */,
 				DA000002296A0001 /* MicroTrackerTests.swift in Sources */,
 				A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */,
+				A6000001296A0001 /* AdaptiveResponseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1218,6 +1225,7 @@
 				E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */,
 				DA000001296A0001 /* MicroTracker.swift in Sources */,
 				A4000001296A0001 /* DeadZoneTarget.swift in Sources */,
+				A5000001296A0001 /* AdaptiveResponse.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
