@@ -11,13 +11,12 @@ import CoreGraphics
 /// Pipeline:
 /// 1. Pre-smooth mouse positions
 /// 2. Build event timeline
-/// 3. Classify intents (for zoom decisions only)
+/// 3. Classify intents
 /// 4. Generate zoom waypoints from intents
-/// 5. Simulate cursor-driven camera path
-/// 6. Apply idle re-centering layer
-/// 7. Apply post-hoc zoom intensity
-/// 8. Create display track
-/// 9. Emit cursor and keystroke tracks
+/// 5. Simulate camera path with dead zone targeting
+/// 6. Apply post-hoc zoom intensity
+/// 7. Create display track
+/// 8. Emit cursor and keystroke tracks
 class ContinuousCameraGenerator {
 
     /// Generate a complete timeline using continuous camera physics.
@@ -59,27 +58,21 @@ class ContinuousCameraGenerator {
             settings: settings
         )
 
-        // Step 5: Simulate cursor-driven camera path
+        // Step 5: Simulate camera path with dead zone targeting
         let rawSamples = SpringDamperSimulator.simulate(
             cursorPositions: effectiveMouseData.positions,
             zoomWaypoints: waypoints,
+            intentSpans: intentSpans,
             duration: duration,
             settings: settings
         )
 
-        // Step 6: Apply idle re-centering layer
-        let recenterSamples = Self.applyIdleRecentering(
-            samples: rawSamples,
-            mouseData: effectiveMouseData,
-            settings: settings
-        )
-
-        // Step 7: Apply post-hoc zoom intensity directly to samples
+        // Step 6: Apply post-hoc zoom intensity directly to samples
         let samples = Self.applyZoomIntensity(
-            to: recenterSamples, intensity: settings.zoomIntensity
+            to: rawSamples, intensity: settings.zoomIntensity
         )
 
-        // Step 8: Create a display-only CameraTrack (single segment for timeline UI)
+        // Step 7: Create a display-only CameraTrack (single segment for timeline UI)
         let displayTrack = Self.createDisplayTrack(from: samples, duration: duration)
 
         #if DEBUG
@@ -91,7 +84,7 @@ class ContinuousCameraGenerator {
         )
         #endif
 
-        // Step 9: Emit cursor and keystroke tracks (reuse V2 emitters)
+        // Step 8: Emit cursor and keystroke tracks (reuse V2 emitters)
         let cursorTrack = CursorTrackEmitter.emit(
             duration: duration,
             settings: settings.cursor
@@ -108,55 +101,6 @@ class ContinuousCameraGenerator {
             keystrokeTrack: keystrokeTrack,
             continuousTransforms: samples
         )
-    }
-
-    // MARK: - Idle Re-centering (Layer 2)
-
-    /// Apply idle re-centering correction to camera samples.
-    private static func applyIdleRecentering(
-        samples: [TimedTransform],
-        mouseData: MouseDataSource,
-        settings: ContinuousCameraSettings
-    ) -> [TimedTransform] {
-        guard !samples.isEmpty else { return samples }
-
-        let positions = mouseData.positions
-        var tracker = MicroTracker(settings: settings.micro)
-        let dt: CGFloat = 1.0 / CGFloat(settings.tickRate)
-        var posIndex = 0
-
-        return samples.map { sample in
-            while posIndex + 1 < positions.count
-                    && positions[posIndex + 1].time <= sample.time {
-                posIndex += 1
-            }
-            let cursorPos = posIndex < positions.count
-                ? positions[posIndex].position
-                : sample.transform.center
-
-            let cameraCenter = sample.transform.center
-            let zoom = sample.transform.zoom
-
-            tracker.update(
-                cursorPosition: cursorPos,
-                cameraCenter: cameraCenter,
-                zoom: zoom,
-                dt: dt
-            )
-
-            let finalCenter = ShotPlanner.clampCenter(
-                NormalizedPoint(
-                    x: cameraCenter.x + tracker.correction.x,
-                    y: cameraCenter.y + tracker.correction.y
-                ),
-                zoom: zoom
-            )
-
-            return TimedTransform(
-                time: sample.time,
-                transform: TransformValue(zoom: zoom, center: finalCenter)
-            )
-        }
     }
 
     // MARK: - Zoom Intensity (Samples)
