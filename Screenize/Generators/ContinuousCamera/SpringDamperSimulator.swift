@@ -3,34 +3,38 @@ import CoreGraphics
 
 /// Continuous 60Hz spring-damper physics simulation producing a smooth camera path.
 ///
-/// Cursor-driven architecture: position always tracks cursor via fast spring,
-/// zoom targets come from intent-derived waypoints via separate spring.
+/// Dead zone architecture: position targeting uses a dead zone around the camera center —
+/// the camera only moves when the cursor exits the dead zone, and the target is the nearest
+/// dead zone edge rather than the cursor itself. Adaptive spring response speeds up the camera
+/// when the next user action is imminent. Zoom targets come from intent-derived waypoints
+/// via a separate spring.
 struct SpringDamperSimulator {
 
     // MARK: - Public API
 
-    /// Simulate a continuous cursor-driven camera path.
+    /// Simulate a continuous camera path with dead zone targeting.
     /// - Parameters:
-    ///   - cursorPositions: Smoothed mouse positions (primary camera target)
+    ///   - cursorPositions: Smoothed mouse positions
     ///   - zoomWaypoints: Intent-derived zoom targets (position data ignored)
+    ///   - intentSpans: Classified user intent spans for dead zone and adaptive response
     ///   - duration: Total recording duration
     ///   - settings: Physics simulation parameters
     /// - Returns: Time-sorted array of per-tick camera transforms
     static func simulate(
         cursorPositions: [MousePositionData],
         zoomWaypoints: [CameraWaypoint],
+        intentSpans: [IntentSpan],
         duration: TimeInterval,
         settings: ContinuousCameraSettings
     ) -> [TimedTransform] {
         guard !cursorPositions.isEmpty, duration > 0 else { return [] }
 
         let dt = 1.0 / settings.tickRate
-        let first = cursorPositions[0]
         let initialZoom = zoomWaypoints.first?.targetZoom ?? 1.0
 
         var state = CameraState(
-            positionX: first.position.x,
-            positionY: first.position.y,
+            positionX: 0.5,
+            positionY: 0.5,
             zoom: initialZoom
         )
         clampState(&state, settings: settings, dt: CGFloat(dt))
@@ -47,7 +51,7 @@ struct SpringDamperSimulator {
             zoomWaypoints.first?.urgency ?? .lazy
         ] ?? 1.0
         var zoomUrgencyTransitionStart: TimeInterval = 0
-        var previousCursorPos = first.position
+        var intentIndex = 0
 
         var t = dt
         let activationTolerance = dt * 0.5
@@ -59,30 +63,7 @@ struct SpringDamperSimulator {
                 cursorIndex += 1
             }
             let rawCursorPos = cursorPositions[cursorIndex].position
-
-            // Velocity-based lookahead: predict where cursor is heading.
-            // Clamped to prevent overshooting on sudden cursor jumps.
-            let cursorPos: NormalizedPoint
-            if settings.positionLookahead > 0.001 {
-                let vx = (rawCursorPos.x - previousCursorPos.x) / CGFloat(dt)
-                let vy = (rawCursorPos.y - previousCursorPos.y) / CGFloat(dt)
-                let speed = sqrt(vx * vx + vy * vy)
-                // Clamp: lookahead displacement maxes out at 0.05 normalized units
-                let maxLookaheadDisplacement: CGFloat = 0.05
-                let scale: CGFloat
-                if speed * settings.positionLookahead > maxLookaheadDisplacement && speed > 0.001 {
-                    scale = maxLookaheadDisplacement / (speed * settings.positionLookahead)
-                } else {
-                    scale = 1.0
-                }
-                cursorPos = NormalizedPoint(
-                    x: rawCursorPos.x + vx * settings.positionLookahead * scale,
-                    y: rawCursorPos.y + vy * settings.positionLookahead * scale
-                )
-            } else {
-                cursorPos = rawCursorPos
-            }
-            previousCursorPos = rawCursorPos
+            let cursorPos = rawCursorPos
 
             // Advance zoom waypoint index
             let previousZoomIndex = zoomIndex
@@ -131,18 +112,54 @@ struct SpringDamperSimulator {
                 effectiveZoomMult = currentZoomMult
             }
 
-            // Position spring: always targets cursor
-            let posOmega = 2.0 * .pi / max(0.001, settings.positionResponse)
+            // Advance intent span index
+            while intentIndex + 1 < intentSpans.count
+                    && intentSpans[intentIndex].endTime <= t {
+                intentIndex += 1
+            }
+
+            // Determine if currently typing
+            let isTyping: Bool
+            if intentIndex < intentSpans.count {
+                if case .typing = intentSpans[intentIndex].intent {
+                    isTyping = true
+                } else {
+                    isTyping = false
+                }
+            } else {
+                isTyping = false
+            }
+
+            // Dead zone targeting
+            let posTarget = DeadZoneTarget.compute(
+                cursorPosition: cursorPos,
+                cameraCenter: NormalizedPoint(x: state.positionX, y: state.positionY),
+                zoom: state.zoom,
+                isTyping: isTyping,
+                settings: settings.deadZone
+            )
+
+            // Adaptive spring response
+            let timeToNext = AdaptiveResponse.findNextActionTime(
+                after: t,
+                intentSpans: intentSpans
+            )
+            let adaptiveResponse = AdaptiveResponse.compute(
+                timeToNextAction: timeToNext,
+                settings: settings.deadZone
+            )
+
+            let posOmega = 2.0 * .pi / max(0.001, adaptiveResponse)
             let posDamping = settings.positionDampingRatio
 
             let (newX, newVX) = springStep(
                 current: state.positionX, velocity: state.velocityX,
-                target: cursorPos.x,
+                target: posTarget.x,
                 omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
             )
             let (newY, newVY) = springStep(
                 current: state.positionY, velocity: state.velocityY,
-                target: cursorPos.y,
+                target: posTarget.y,
                 omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
             )
 
