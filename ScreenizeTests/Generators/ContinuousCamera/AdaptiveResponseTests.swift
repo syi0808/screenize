@@ -50,7 +50,7 @@ final class AdaptiveResponseTests: XCTestCase {
             after: 1.0,
             intentSpans: spans
         )
-        XCTAssertEqual(nextTime, 4.0, accuracy: 0.001)
+        XCTAssertEqual(nextTime!, 4.0, accuracy: 0.001)
     }
 
     func test_findNextActionTime_noFutureAction_returnsNil() {
@@ -74,7 +74,7 @@ final class AdaptiveResponseTests: XCTestCase {
             after: 1.0,
             intentSpans: spans
         )
-        XCTAssertEqual(nextTime, 2.0, accuracy: 0.001)
+        XCTAssertEqual(nextTime!, 2.0, accuracy: 0.001)
     }
 
     private func makeSpan(

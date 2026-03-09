@@ -11,6 +11,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: [],
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 5.0,
             settings: defaultSettings
         )
@@ -22,6 +23,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 0,
             settings: defaultSettings
         )
@@ -37,6 +39,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 5.0,
             settings: defaultSettings
         )
@@ -55,6 +58,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 3.0,
             settings: defaultSettings
         )
@@ -81,6 +85,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 3.0,
             settings: defaultSettings
         )
@@ -91,13 +96,14 @@ final class SpringDamperSimulatorTests: XCTestCase {
         }
     }
 
-    func test_simulate_startPosition_matchesFirstCursorPosition() {
+    func test_simulate_startPosition_isCenter() {
         let positions = [
             MousePositionData(time: 0, position: NormalizedPoint(x: 0.4, y: 0.6))
         ]
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 1.0,
             settings: defaultSettings
         )
@@ -105,8 +111,8 @@ final class SpringDamperSimulatorTests: XCTestCase {
             XCTFail("Expected at least one sample")
             return
         }
-        XCTAssertEqual(first.transform.center.x, 0.4, accuracy: 0.001)
-        XCTAssertEqual(first.transform.center.y, 0.6, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.y, 0.5, accuracy: 0.001)
     }
 
     // MARK: - Zoom from Waypoints
@@ -123,6 +129,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: zoomWPs,
+            intentSpans: [],
             duration: 5.0,
             settings: defaultSettings
         )
@@ -143,6 +150,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: zoomWPs,
+            intentSpans: [],
             duration: 5.0,
             settings: defaultSettings
         )
@@ -159,6 +167,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 1.0,
             settings: defaultSettings
         )
@@ -184,6 +193,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: zoomWPs,
+            intentSpans: [],
             duration: 5.0,
             settings: settings
         )
@@ -210,6 +220,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: zoomWPs,
+            intentSpans: [],
             duration: 2.0,
             settings: defaultSettings
         )
@@ -246,10 +257,12 @@ final class SpringDamperSimulatorTests: XCTestCase {
 
         let highResult = SpringDamperSimulator.simulate(
             cursorPositions: positions, zoomWaypoints: highWPs,
+            intentSpans: [],
             duration: 2.0, settings: defaultSettings
         )
         let lazyResult = SpringDamperSimulator.simulate(
             cursorPositions: positions, zoomWaypoints: lazyWPs,
+            intentSpans: [],
             duration: 2.0, settings: defaultSettings
         )
 
@@ -277,6 +290,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: zoomWPs,
+            intentSpans: [],
             duration: 5.0,
             settings: defaultSettings
         )
@@ -295,6 +309,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: duration,
             settings: defaultSettings
         )
@@ -313,6 +328,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
             zoomWaypoints: [],
+            intentSpans: [],
             duration: 3.0,
             settings: defaultSettings
         )
