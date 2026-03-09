@@ -38,10 +38,10 @@ struct ScreenizeApp: App {
     // MARK: - Initialization
 
     init() {
-        // Only request screen recording at launch if permission setup is already completed
-        if UserDefaults.standard.bool(forKey: "hasCompletedPermissionSetup") {
-            _ = CGRequestScreenCaptureAccess()
-        }
+        // Screen recording permission is requested lazily when user starts recording
+        // (via CaptureToolbarCoordinator → refreshAvailableSources).
+        // Requesting here causes repeated dialogs because Xcode debug builds
+        // change the code signature, invalidating previous TCC authorization.
 
         // Disable automatic window tabbing so Cmd+T is free for Duplicate
         NSWindow.allowsAutomaticWindowTabbing = false
