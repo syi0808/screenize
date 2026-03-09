@@ -65,32 +65,15 @@ final class PermissionsManager: ObservableObject {
     }
 
     private func checkInputMonitoringPermission() {
-        let logPath = "/tmp/screenize_input_monitoring.log"
-        func log(_ msg: String) {
-            let entry = "\(Date()): \(msg)\n"
-            if let data = entry.data(using: .utf8) {
-                if FileManager.default.fileExists(atPath: logPath) {
-                    if let handle = FileHandle(forWritingAtPath: logPath) {
-                        handle.seekToEndOfFile()
-                        handle.write(data)
-                        handle.closeFile()
-                    }
-                } else {
-                    FileManager.default.createFile(atPath: logPath, contents: data)
-                }
+        // 1. Preflight check (no dialog)
+        if #available(macOS 14.0, *) {
+            if CGPreflightListenEventAccess() {
+                inputMonitoringPermission = .granted
+                return
             }
         }
 
-        log("checkInputMonitoringPermission() called")
-
-        // 1. Check preflight status
-        var preflightResult = false
-        if #available(macOS 14.0, *) {
-            preflightResult = CGPreflightListenEventAccess()
-        }
-        log("CGPreflightListenEventAccess() = \(preflightResult)")
-
-        // 2. Try creating a CGEventTap
+        // 2. Try creating a CGEventTap (no dialog)
         let eventMask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
         if let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
@@ -100,31 +83,18 @@ final class PermissionsManager: ObservableObject {
             callback: { _, _, event, _ in Unmanaged.passUnretained(event) },
             userInfo: nil
         ) {
-            log("CGEvent.tapCreate(.listenOnly) = SUCCESS")
             CGEvent.tapEnable(tap: tap, enable: false)
             inputMonitoringPermission = .granted
             return
         }
 
-        log("CGEvent.tapCreate(.listenOnly) = FAILED")
-
-        // 3. Try IOHIDRequestAccess (IOKit path)
-        let iohidCheck = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent)
-        log("IOHIDCheckAccess(ListenEvent) = \(iohidCheck.rawValue) (0=granted, 1=denied, 2=unknown)")
-
-        let iohidResult = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
-        log("IOHIDRequestAccess(ListenEvent) = \(iohidResult)")
-
-        let iohidCheckAfter = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent)
-        log("After IOHIDRequestAccess, check = \(iohidCheckAfter.rawValue)")
-
-        // 4. Also request CGRequestListenEventAccess
-        if #available(macOS 14.0, *) {
-            log("Calling CGRequestListenEventAccess()...")
-            CGRequestListenEventAccess()
-            let afterRequest = CGPreflightListenEventAccess()
-            log("After CGRequestListenEventAccess(), preflight = \(afterRequest)")
+        // 3. IOHIDCheckAccess (no dialog, read-only check)
+        let iohidStatus = IOHIDCheckAccess(kIOHIDRequestTypeListenEvent)
+        if iohidStatus.rawValue == 0 { // 0 = granted
+            inputMonitoringPermission = .granted
+            return
         }
+
         inputMonitoringPermission = .denied
     }
 
@@ -170,6 +140,14 @@ final class PermissionsManager: ObservableObject {
 
     /// Request Input Monitoring permission (registers the app in System Settings)
     func requestInputMonitoringPermission() {
+        // Request via IOKit (may show system dialog)
+        IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+
+        // Also request via CG API on macOS 14+
+        if #available(macOS 14.0, *) {
+            CGRequestListenEventAccess()
+        }
+
         checkInputMonitoringPermission()
     }
 
