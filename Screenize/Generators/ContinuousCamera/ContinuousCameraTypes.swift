@@ -129,8 +129,8 @@ struct ContinuousCameraSettings {
     var micro = MicroTrackerSettings()
     /// Dead zone targeting settings.
     var deadZone = DeadZoneSettings()
-    /// Duration in seconds over which waypoint center blends into position target.
-    var waypointCenterCouplingDuration: TimeInterval = 0.6
-    /// Blend strength: 0 = ignore waypoint center, 1 = fully use waypoint center.
-    var waypointCenterCouplingStrength: CGFloat = 0.7
+    /// Zoom displacement threshold below which zoom is considered settled.
+    /// When zoom is transitioning (above threshold), position targets the
+    /// waypoint center directly for synchronized zoom-pan arrival.
+    var zoomSettleThreshold: CGFloat = 0.02
 }
