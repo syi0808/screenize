@@ -66,7 +66,9 @@ final class DeadZoneTargetTests: XCTestCase {
     }
 
     func test_typingMode_smallerSafeZone() {
-        let cursorPos = NormalizedPoint(x: 0.67, y: 0.5)
+        // Cursor at 0.68: offset 0.18 exceeds typing hysteresis threshold
+        // (~0.1725) but stays within normal threshold (~0.2156).
+        let cursorPos = NormalizedPoint(x: 0.68, y: 0.5)
         let center = NormalizedPoint(x: 0.5, y: 0.5)
         let normalResult = DeadZoneTarget.compute(
             cursorPosition: cursorPos, cameraCenter: center,
@@ -116,5 +118,132 @@ final class DeadZoneTargetTests: XCTestCase {
         )
         XCTAssertLessThanOrEqual(result.x, 0.75)
         XCTAssertLessThanOrEqual(result.y, 0.75)
+    }
+
+    // MARK: - Hysteresis Tests
+
+    func test_hysteresis_enteringRequiresLargerOffset() {
+        // At zoom 2.0: viewportHalf=0.25, safeHalf=0.1875
+        // hysteresisHalf = 0.1875 * 0.15 = 0.028125
+        // Enter threshold = 0.1875 + 0.028125 = 0.215625
+        // Cursor at offset 0.20 — outside safe zone but within
+        // hysteresis band. wasActive=false → should NOT activate.
+        let settings = DeadZoneSettings()
+        let center = NormalizedPoint(x: 0.5, y: 0.5)
+        let cursor = NormalizedPoint(x: 0.70, y: 0.5) // offset 0.20
+        let result = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: false,
+            settings: settings
+        )
+        XCTAssertFalse(result.isActive)
+        XCTAssertEqual(result.target.x, 0.5, accuracy: 0.001)
+    }
+
+    func test_hysteresis_leavingUsesInnerThreshold() {
+        // Leave threshold = safeHalf - hysteresisHalf
+        //                 = 0.1875 - 0.028125 = 0.159375
+        // Cursor at offset 0.17 — inside safe zone by the original
+        // threshold but above the inner hysteresis threshold.
+        // wasActive=true → should STAY active.
+        let settings = DeadZoneSettings()
+        let center = NormalizedPoint(x: 0.5, y: 0.5)
+        let cursor = NormalizedPoint(x: 0.67, y: 0.5) // offset 0.17
+        let result = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: true,
+            settings: settings
+        )
+        XCTAssertTrue(result.isActive)
+    }
+
+    func test_hysteresis_fullyOutside_activatesRegardlessOfState() {
+        // Cursor well outside safe zone (offset 0.24 > 0.2156)
+        let settings = DeadZoneSettings()
+        let center = NormalizedPoint(x: 0.5, y: 0.5)
+        let cursor = NormalizedPoint(x: 0.74, y: 0.5)
+        let fromInactive = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: false,
+            settings: settings
+        )
+        let fromActive = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: true,
+            settings: settings
+        )
+        XCTAssertTrue(fromInactive.isActive)
+        XCTAssertTrue(fromActive.isActive)
+    }
+
+    func test_hysteresis_fullyInside_deactivatesRegardlessOfState() {
+        // Cursor well inside safe zone (offset 0.05 < 0.159375)
+        let settings = DeadZoneSettings()
+        let center = NormalizedPoint(x: 0.5, y: 0.5)
+        let cursor = NormalizedPoint(x: 0.55, y: 0.5)
+        let fromInactive = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: false,
+            settings: settings
+        )
+        let fromActive = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: true,
+            settings: settings
+        )
+        XCTAssertFalse(fromInactive.isActive)
+        XCTAssertFalse(fromActive.isActive)
+    }
+
+    func test_widerGradient_smootherTransition() {
+        // Sample multiple points across the gradient band and verify
+        // monotonic, increasing target offsets.
+        let settings = DeadZoneSettings()
+        let center = NormalizedPoint(x: 0.5, y: 0.5)
+        let zoom: CGFloat = 2.0
+        let viewportHalf = 0.5 / zoom // 0.25
+        let safeHalf = viewportHalf * settings.safeZoneFraction // 0.1875
+        let hysteresisHalf = safeHalf * settings.hysteresisMargin
+        let gradientEnd = safeHalf + viewportHalf * settings.gradientBandWidth
+
+        // Start just past the enter threshold so wasActive=false activates
+        let enterThreshold = safeHalf + hysteresisHalf
+        let step = (gradientEnd - enterThreshold) / 5.0
+        var previousX: CGFloat = 0.5
+        for i in 1...5 {
+            let offset = enterThreshold + step * CGFloat(i)
+            let cursor = NormalizedPoint(x: 0.5 + offset, y: 0.5)
+            let result = DeadZoneTarget.computeWithState(
+                cursorPosition: cursor,
+                cameraCenter: center,
+                zoom: zoom,
+                isTyping: false,
+                wasActive: true,
+                settings: settings
+            )
+            XCTAssertGreaterThanOrEqual(
+                result.target.x, previousX,
+                "Target should increase monotonically at offset \(offset)"
+            )
+            previousX = result.target.x
+        }
     }
 }

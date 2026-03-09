@@ -22,9 +22,13 @@ struct DeadZoneSettings {
     /// Safe zone fraction during typing (smaller = more responsive to caret movement).
     var safeZoneFractionTyping: CGFloat = 0.60
     /// Width of gradient transition band between safe and trigger zones (fraction of viewport).
-    var gradientBandWidth: CGFloat = 0.10
+    var gradientBandWidth: CGFloat = 0.25
     /// Partial correction fraction. 0 = minimal movement, 1 = center cursor.
-    var correctionFraction: CGFloat = 0.60
+    var correctionFraction: CGFloat = 0.45
+    /// Hysteresis margin as fraction of safe zone half-width.
+    /// Entering dead zone requires exceeding safeHalf + hysteresisHalf;
+    /// leaving requires dropping below safeHalf - hysteresisHalf.
+    var hysteresisMargin: CGFloat = 0.15
     /// Correction fraction during typing (more aggressive caret following).
     var correctionFractionTyping: CGFloat = 0.80
     /// Minimum spring response time (when next action is imminent).
@@ -73,7 +77,7 @@ struct CameraState {
     var velocityX: CGFloat = 0
     var velocityY: CGFloat = 0
     var velocityZoom: CGFloat = 0
-
+    var deadZoneActive: Bool = false
 }
 
 // MARK: - Continuous Camera Settings

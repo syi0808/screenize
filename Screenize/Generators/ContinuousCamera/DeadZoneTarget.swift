@@ -8,6 +8,13 @@ import CoreGraphics
 /// visibility with partial correction (not centering).
 enum DeadZoneTarget {
 
+    /// Result of dead zone computation including activation state.
+    struct Result {
+        let target: NormalizedPoint
+        let isActive: Bool
+    }
+
+    /// Backwards-compatible wrapper that delegates to `computeWithState`.
     static func compute(
         cursorPosition: NormalizedPoint,
         cameraCenter: NormalizedPoint,
@@ -15,18 +22,65 @@ enum DeadZoneTarget {
         isTyping: Bool,
         settings: DeadZoneSettings
     ) -> NormalizedPoint {
+        computeWithState(
+            cursorPosition: cursorPosition,
+            cameraCenter: cameraCenter,
+            zoom: zoom,
+            isTyping: isTyping,
+            wasActive: false,
+            settings: settings
+        ).target
+    }
+
+    /// Compute dead zone target with hysteresis state tracking.
+    ///
+    /// - Parameters:
+    ///   - wasActive: Whether the dead zone was active on the previous tick.
+    /// - Returns: The target position and whether the dead zone is now active.
+    static func computeWithState(
+        cursorPosition: NormalizedPoint,
+        cameraCenter: NormalizedPoint,
+        zoom: CGFloat,
+        isTyping: Bool,
+        wasActive: Bool,
+        settings: DeadZoneSettings
+    ) -> Result {
         guard zoom > 1.001 else {
-            return NormalizedPoint(x: 0.5, y: 0.5)
+            return Result(
+                target: NormalizedPoint(x: 0.5, y: 0.5),
+                isActive: false
+            )
         }
 
         let viewportHalf = 0.5 / zoom
-        let safeFraction = isTyping ? settings.safeZoneFractionTyping : settings.safeZoneFraction
-        let correction = isTyping ? settings.correctionFractionTyping : settings.correctionFraction
+        let safeFraction = isTyping
+            ? settings.safeZoneFractionTyping
+            : settings.safeZoneFraction
+        let correction = isTyping
+            ? settings.correctionFractionTyping
+            : settings.correctionFraction
         let safeHalf = viewportHalf * safeFraction
         let gradientHalf = viewportHalf * settings.gradientBandWidth
+        let hysteresisHalf = safeHalf * settings.hysteresisMargin
 
         let offsetX = cursorPosition.x - cameraCenter.x
         let offsetY = cursorPosition.y - cameraCenter.y
+        let maxOffset = max(abs(offsetX), abs(offsetY))
+
+        // Hysteresis: different thresholds for entering vs leaving
+        let isActive: Bool
+        if wasActive {
+            // Stay active until cursor retreats well inside safe zone
+            isActive = maxOffset >= (safeHalf - hysteresisHalf)
+        } else {
+            // Require cursor to push further out before activating
+            isActive = maxOffset > (safeHalf + hysteresisHalf)
+        }
+
+        guard isActive else {
+            let clamped = ShotPlanner.clampCenter(cameraCenter, zoom: zoom)
+            return Result(target: clamped, isActive: false)
+        }
 
         let targetX = axisTarget(
             offset: offsetX,
@@ -47,10 +101,11 @@ enum DeadZoneTarget {
             correction: correction
         )
 
-        return ShotPlanner.clampCenter(
+        let clamped = ShotPlanner.clampCenter(
             NormalizedPoint(x: targetX, y: targetY),
             zoom: zoom
         )
+        return Result(target: clamped, isActive: true)
     }
 
     private static func axisTarget(
@@ -70,13 +125,16 @@ enum DeadZoneTarget {
 
         let minimalTarget = cursorPos - copysign(safeHalf, offset)
         let idealTarget = cursorPos
-        let correctedTarget = minimalTarget + (idealTarget - minimalTarget) * correction
+        let correctedTarget = minimalTarget
+            + (idealTarget - minimalTarget) * correction
 
         let gradientEnd = safeHalf + gradientHalf
         if absOffset < gradientEnd && gradientHalf > 0.001 {
             let gradientProgress = (absOffset - safeHalf) / gradientHalf
-            let smoothProgress = gradientProgress * gradientProgress * (3 - 2 * gradientProgress)
-            return cameraPos + (correctedTarget - cameraPos) * smoothProgress
+            let smoothProgress = gradientProgress * gradientProgress
+                * (3 - 2 * gradientProgress)
+            return cameraPos
+                + (correctedTarget - cameraPos) * smoothProgress
         }
 
         return correctedTarget

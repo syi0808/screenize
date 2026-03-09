@@ -130,14 +130,19 @@ struct SpringDamperSimulator {
                 isTyping = false
             }
 
-            // Dead zone targeting
-            let posTarget = DeadZoneTarget.compute(
+            // Dead zone targeting with hysteresis
+            let dzResult = DeadZoneTarget.computeWithState(
                 cursorPosition: cursorPos,
-                cameraCenter: NormalizedPoint(x: state.positionX, y: state.positionY),
+                cameraCenter: NormalizedPoint(
+                    x: state.positionX, y: state.positionY
+                ),
                 zoom: state.zoom,
                 isTyping: isTyping,
+                wasActive: state.deadZoneActive,
                 settings: settings.deadZone
             )
+            let posTarget = dzResult.target
+            state.deadZoneActive = dzResult.isActive
 
             // Adaptive spring response
             let timeToNext = AdaptiveResponse.findNextActionTime(

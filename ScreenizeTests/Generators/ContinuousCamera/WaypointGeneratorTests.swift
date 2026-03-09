@@ -482,7 +482,9 @@ final class WaypointGeneratorTests: XCTestCase {
         // Dead zone settings
         XCTAssertEqual(settings.deadZone.safeZoneFraction, 0.75, accuracy: 0.001)
         XCTAssertEqual(settings.deadZone.safeZoneFractionTyping, 0.60, accuracy: 0.001)
-        XCTAssertEqual(settings.deadZone.correctionFraction, 0.60, accuracy: 0.001)
+        XCTAssertEqual(settings.deadZone.correctionFraction, 0.45, accuracy: 0.001)
+        XCTAssertEqual(settings.deadZone.gradientBandWidth, 0.25, accuracy: 0.001)
+        XCTAssertEqual(settings.deadZone.hysteresisMargin, 0.15, accuracy: 0.001)
         XCTAssertEqual(settings.deadZone.minResponse, 0.20, accuracy: 0.001)
         XCTAssertEqual(settings.deadZone.maxResponse, 0.50, accuracy: 0.001)
     }
