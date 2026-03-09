@@ -15,6 +15,10 @@
 		A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A1296A0001 /* PermissionSetupWizardView.swift */; };
 		A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A3296A0001 /* PermissionStatusBadge.swift */; };
 		A2000001296A0001 /* EditorViewModel+Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002296A0001 /* EditorViewModel+Clipboard.swift */; };
+		A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3100001296A0001 /* DeadZoneTargetTests.swift */; };
+		A4000001296A0001 /* DeadZoneTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4100001296A0001 /* DeadZoneTarget.swift */; };
+		A5000001296A0001 /* AdaptiveResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5100001296A0001 /* AdaptiveResponse.swift */; };
+		A6000001296A0001 /* AdaptiveResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6100001296A0001 /* AdaptiveResponseTests.swift */; };
 		AA000001296A0001 /* UnifiedEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000001296A0001 /* UnifiedEvent.swift */; };
 		AA000002296A0001 /* UserIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000002296A0001 /* UserIntent.swift */; };
 		AA000003296A0001 /* Scene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000003296A0001 /* Scene.swift */; };
@@ -70,6 +74,8 @@
 		D6000001296A0001 /* LegacyTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6000002296A0001 /* LegacyTrack.swift */; };
 		D8000001296A0001 /* ExportEngine+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8000002296A0001 /* ExportEngine+Helpers.swift */; };
 		D9000001296A0001 /* GeneratedTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9100001296A0001 /* GeneratedTimeline.swift */; };
+		DA000001296A0001 /* MicroTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA100001296A0001 /* MicroTracker.swift */; };
+		DA000002296A0001 /* MicroTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA100002296A0001 /* MicroTrackerTests.swift */; };
 		E0000001296A0001 /* AudioPreviewPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000001296A0001 /* AudioPreviewPlayer.swift */; };
 		E2000001296A0001 /* SpringCursorSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3000001296A0001 /* SpringCursorSimulator.swift */; };
 		E6000001296A0001 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000001296A0001 /* Spacing.swift */; };
@@ -85,12 +91,6 @@
 		E6000013296A0001 /* SheetHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000013296A0001 /* SheetHeader.swift */; };
 		E6000014296A0001 /* DesignEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000014296A0001 /* DesignEmptyState.swift */; };
 		E6000015296A0001 /* TimeCodeLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5000015296A0001 /* TimeCodeLabel.swift */; };
-		DA000001296A0001 /* MicroTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA100001296A0001 /* MicroTracker.swift */; };
-		DA000002296A0001 /* MicroTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA100002296A0001 /* MicroTrackerTests.swift */; };
-		A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3100001296A0001 /* DeadZoneTargetTests.swift */; };
-		A4000001296A0001 /* DeadZoneTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4100001296A0001 /* DeadZoneTarget.swift */; };
-		A5000001296A0001 /* AdaptiveResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5100001296A0001 /* AdaptiveResponse.swift */; };
-		A6000001296A0001 /* AdaptiveResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6100001296A0001 /* AdaptiveResponseTests.swift */; };
 		E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100001296A0001 /* ContinuousCameraTypes.swift */; };
 		E7000002296A0001 /* WaypointGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100002296A0001 /* WaypointGenerator.swift */; };
 		E7000003296A0001 /* SpringDamperSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100003296A0001 /* SpringDamperSimulator.swift */; };
@@ -212,6 +212,10 @@
 		A11000A1296A0001 /* PermissionSetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionSetupWizardView.swift; sourceTree = "<group>"; };
 		A11000A3296A0001 /* PermissionStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusBadge.swift; sourceTree = "<group>"; };
 		A2000002296A0001 /* EditorViewModel+Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+Clipboard.swift"; sourceTree = "<group>"; };
+		A3100001296A0001 /* DeadZoneTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTargetTests.swift; sourceTree = "<group>"; };
+		A4100001296A0001 /* DeadZoneTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTarget.swift; sourceTree = "<group>"; };
+		A5100001296A0001 /* AdaptiveResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveResponse.swift; sourceTree = "<group>"; };
+		A6100001296A0001 /* AdaptiveResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveResponseTests.swift; sourceTree = "<group>"; };
 		AB000001296A0001 /* UnifiedEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedEvent.swift; sourceTree = "<group>"; };
 		AB000002296A0001 /* UserIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIntent.swift; sourceTree = "<group>"; };
 		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
@@ -269,6 +273,8 @@
 		D6000002296A0001 /* LegacyTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyTrack.swift; sourceTree = "<group>"; };
 		D8000002296A0001 /* ExportEngine+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportEngine+Helpers.swift"; sourceTree = "<group>"; };
 		D9100001296A0001 /* GeneratedTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedTimeline.swift; sourceTree = "<group>"; };
+		DA100001296A0001 /* MicroTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroTracker.swift; sourceTree = "<group>"; };
+		DA100002296A0001 /* MicroTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroTrackerTests.swift; sourceTree = "<group>"; };
 		E1000001296A0001 /* AudioPreviewPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPreviewPlayer.swift; sourceTree = "<group>"; };
 		E3000001296A0001 /* SpringCursorSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringCursorSimulator.swift; sourceTree = "<group>"; };
 		E5000001296A0001 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
@@ -284,12 +290,6 @@
 		E5000013296A0001 /* SheetHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetHeader.swift; sourceTree = "<group>"; };
 		E5000014296A0001 /* DesignEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignEmptyState.swift; sourceTree = "<group>"; };
 		E5000015296A0001 /* TimeCodeLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeCodeLabel.swift; sourceTree = "<group>"; };
-		DA100001296A0001 /* MicroTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroTracker.swift; sourceTree = "<group>"; };
-		DA100002296A0001 /* MicroTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicroTrackerTests.swift; sourceTree = "<group>"; };
-		A3100001296A0001 /* DeadZoneTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTargetTests.swift; sourceTree = "<group>"; };
-		A4100001296A0001 /* DeadZoneTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTarget.swift; sourceTree = "<group>"; };
-		A5100001296A0001 /* AdaptiveResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveResponse.swift; sourceTree = "<group>"; };
-		A6100001296A0001 /* AdaptiveResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveResponseTests.swift; sourceTree = "<group>"; };
 		E7100001296A0001 /* ContinuousCameraTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraTypes.swift; sourceTree = "<group>"; };
 		E7100002296A0001 /* WaypointGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGenerator.swift; sourceTree = "<group>"; };
 		E7100003296A0001 /* SpringDamperSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulator.swift; sourceTree = "<group>"; };
@@ -1401,7 +1401,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Screenize/Screenize.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1431,7 +1431,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Screenize/Screenize.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
