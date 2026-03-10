@@ -27,6 +27,9 @@ struct ScreenizeProject: Codable, Identifiable {
     // v4: polyrecorder interop block (nil for v2 projects)
     var interop: InteropBlock?
 
+    // Generation settings override (nil = use app defaults)
+    var generationSettings: GenerationSettings?
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -35,7 +38,8 @@ struct ScreenizeProject: Codable, Identifiable {
         timeline: Timeline = Timeline(),
         renderSettings: RenderSettings = RenderSettings(),
         frameAnalysisCache: [VideoFrameAnalyzer.FrameAnalysis]? = nil,
-        interop: InteropBlock? = nil
+        interop: InteropBlock? = nil,
+        generationSettings: GenerationSettings? = nil
     ) {
         self.id = id
         self.version = 5
@@ -49,6 +53,7 @@ struct ScreenizeProject: Codable, Identifiable {
         self.frameAnalysisCache = frameAnalysisCache
         self.frameAnalysisVersion = 1
         self.interop = interop
+        self.generationSettings = generationSettings
     }
 
     // MARK: - File Operations

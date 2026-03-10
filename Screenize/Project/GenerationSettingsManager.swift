@@ -66,9 +66,9 @@ final class GenerationSettingsManager: ObservableObject {
     }
 
     /// Returns the effective settings for a given project.
-    /// Project-level override will be wired in Task 3.
+    /// Uses the project's override if present, otherwise falls back to app defaults.
     func effectiveSettings(for project: ScreenizeProject?) -> GenerationSettings {
-        return settings
+        project?.generationSettings ?? settings
     }
 
     // MARK: - Presets
