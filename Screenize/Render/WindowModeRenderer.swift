@@ -29,6 +29,15 @@ final class WindowModeRenderer {
 
     // MARK: - Public Methods
 
+    static func previewBackgroundStyle(
+        backgroundEnabled: Bool,
+        configuredStyle: BackgroundStyle,
+        isPreview: Bool
+    ) -> BackgroundStyle {
+        guard !backgroundEnabled else { return configuredStyle }
+        return .solid(isPreview ? TransparentBackgroundFallback.swiftUIColor : .clear)
+    }
+
     /// Render in window mode
     /// - Parameters:
     ///   - sourceFrame: Source window frame
@@ -82,9 +91,11 @@ final class WindowModeRenderer {
         }
 
         // 2. Generate the background (with caching)
-        let backgroundStyle: BackgroundStyle = settings.backgroundEnabled
-            ? settings.backgroundStyle
-            : .solid(isPreview ? .white : .clear)
+        let backgroundStyle = Self.previewBackgroundStyle(
+            backgroundEnabled: settings.backgroundEnabled,
+            configuredStyle: settings.backgroundStyle,
+            isPreview: isPreview
+        )
         let background = getOrCreateBackground(
             style: backgroundStyle,
             outputSize: outputSize

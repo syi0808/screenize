@@ -192,7 +192,7 @@ final class EventStreamAdapterTests: XCTestCase {
         XCTAssertEqual(drag.dragType, .selection)
     }
 
-    func test_dragInference_dragClicksRemovedFromClicks() {
+    func test_dragInference_dragClicksRetainedForCursorAnimation() {
         let sessionStart: Int64 = 1000000
         let meta = makeMetadata(sessionStartMs: sessionStart)
 
@@ -210,8 +210,8 @@ final class EventStreamAdapterTests: XCTestCase {
 
         XCTAssertEqual(adapter.dragEvents.count, 1)
         XCTAssertEqual(
-            adapter.clicks.count, 0,
-            "mouseDown/mouseUp reclassified as drag should be removed from clicks"
+            adapter.clicks.count, 2,
+            "mouseDown/mouseUp should remain so cursor press/release animation can track drags"
         )
     }
 
@@ -317,7 +317,7 @@ final class EventStreamAdapterTests: XCTestCase {
 
     // MARK: - Drag Inference: Multiple Drags
 
-    func test_dragInference_twoDrags_bothDetected() {
+    func test_dragInference_twoDrags_preserveRawClicksForCursorAnimation() {
         let sessionStart: Int64 = 1000000
         let meta = makeMetadata(sessionStartMs: sessionStart)
 
@@ -343,7 +343,7 @@ final class EventStreamAdapterTests: XCTestCase {
         let adapter = makeAdapter(moves: moves, clicks: clicks, metadata: meta)
 
         XCTAssertEqual(adapter.dragEvents.count, 2)
-        XCTAssertEqual(adapter.clicks.count, 0, "All clicks should be removed")
+        XCTAssertEqual(adapter.clicks.count, 4, "All raw mouseDown/mouseUp events should remain")
 
         XCTAssertEqual(adapter.dragEvents[0].startTime, 1.0, accuracy: 0.01)
         XCTAssertEqual(adapter.dragEvents[0].endTime, 2.0, accuracy: 0.01)
@@ -353,7 +353,7 @@ final class EventStreamAdapterTests: XCTestCase {
 
     // MARK: - Drag Inference: Mixed Clicks and Drags
 
-    func test_dragInference_mixedClicksAndDrags_correctClassification() {
+    func test_dragInference_mixedClicksAndDrags_preservesAllRawClicks() {
         let sessionStart: Int64 = 1000000
         let meta = makeMetadata(sessionStartMs: sessionStart)
 
@@ -383,8 +383,8 @@ final class EventStreamAdapterTests: XCTestCase {
 
         XCTAssertEqual(adapter.dragEvents.count, 1, "Only the 3-4s sequence is a drag")
         XCTAssertEqual(
-            adapter.clicks.count, 4,
-            "Two normal clicks (down+up each) should remain"
+            adapter.clicks.count, 6,
+            "Normal clicks and drag mouseDown/mouseUp events should all remain for cursor animation"
         )
 
         // Verify the drag is the correct one

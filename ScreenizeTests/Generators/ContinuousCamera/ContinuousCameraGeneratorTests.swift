@@ -172,6 +172,33 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
         XCTAssertLessThanOrEqual(first.transform.center.y, 1.0)
     }
 
+    func test_fixtureProjectURL_searchesAncestorCheckoutWhenRunningFromWorktree() throws {
+        let tempRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fixtureDirectory = tempRoot
+            .appendingPathComponent("projects", isDirectory: true)
+            .appendingPathComponent("Recording_2026-02-24_02-19-36.screenize", isDirectory: true)
+        let worktreeTestFilePath = tempRoot
+            .appendingPathComponent(".worktrees", isDirectory: true)
+            .appendingPathComponent("codex-transparent-background-fallback", isDirectory: true)
+            .appendingPathComponent("ScreenizeTests", isDirectory: true)
+            .appendingPathComponent("Generators", isDirectory: true)
+            .appendingPathComponent("ContinuousCamera", isDirectory: true)
+            .appendingPathComponent("ContinuousCameraGeneratorTests.swift")
+
+        try FileManager.default.createDirectory(
+            at: fixtureDirectory,
+            withIntermediateDirectories: true
+        )
+        defer {
+            try? FileManager.default.removeItem(at: tempRoot)
+        }
+
+        let resolvedURL = try fixtureProjectURL(fromTestFilePath: worktreeTestFilePath.path)
+
+        XCTAssertEqual(resolvedURL, fixtureDirectory)
+    }
+
     // MARK: - Helpers
 
     private func makeBasicMouseData(duration: TimeInterval) -> MockMouseDataSource {
@@ -271,14 +298,29 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
         )
     }
 
-    private func fixtureProjectURL() throws -> URL {
-        let filePath = #filePath
+    private func fixtureProjectURL(fromTestFilePath filePath: String = #filePath) throws -> URL {
         guard let testsRange = filePath.range(of: "/ScreenizeTests/") else {
             throw FixtureError.invalidTestPath
         }
         let rootPath = String(filePath[..<testsRange.lowerBound])
-        return URL(fileURLWithPath: rootPath)
-            .appendingPathComponent("projects/Recording_2026-02-24_02-19-36.screenize")
+        let fileManager = FileManager.default
+        var searchRootURL = URL(fileURLWithPath: rootPath, isDirectory: true)
+
+        while true {
+            let candidateURL = searchRootURL
+                .appendingPathComponent("projects", isDirectory: true)
+                .appendingPathComponent("Recording_2026-02-24_02-19-36.screenize", isDirectory: true)
+
+            if fileManager.fileExists(atPath: candidateURL.path) {
+                return candidateURL
+            }
+
+            let parentURL = searchRootURL.deletingLastPathComponent()
+            guard parentURL.path != searchRootURL.path else {
+                throw FixtureError.fixtureProjectNotFound
+            }
+            searchRootURL = parentURL
+        }
     }
 
     private func decode<T: Decodable>(from url: URL) throws -> T {
@@ -288,5 +330,6 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
 
     private enum FixtureError: Error {
         case invalidTestPath
+        case fixtureProjectNotFound
     }
 }

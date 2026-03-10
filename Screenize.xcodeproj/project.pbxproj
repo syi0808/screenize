@@ -67,6 +67,8 @@
 		D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200003296A0001 /* RenderSettingsGIFTests.swift */; };
 		D2100004296A0001 /* GIFEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200004296A0001 /* GIFEncoderTests.swift */; };
 		D5100001296A0001 /* ClickScaleModifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5200001296A0001 /* ClickScaleModifierTests.swift */; };
+		E9000001296A0001 /* TransparentBackgroundFallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9100001296A0001 /* TransparentBackgroundFallbackTests.swift */; };
+		E9000002296A0001 /* TransparentBackgroundFallback.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9100002296A0001 /* TransparentBackgroundFallback.swift */; };
 		D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100001296A0001 /* SmoothedMouseDataSource.swift */; };
 		D3000001VFRRECMG /* VFRRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3000002VFRRECMG /* VFRRecordingManager.swift */; };
 		D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */; };
@@ -271,6 +273,8 @@
 		D2200003296A0001 /* RenderSettingsGIFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettingsGIFTests.swift; sourceTree = "<group>"; };
 		D2200004296A0001 /* GIFEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoderTests.swift; sourceTree = "<group>"; };
 		D5200001296A0001 /* ClickScaleModifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickScaleModifierTests.swift; sourceTree = "<group>"; };
+		E9100001296A0001 /* TransparentBackgroundFallbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransparentBackgroundFallbackTests.swift; sourceTree = "<group>"; };
+		E9100002296A0001 /* TransparentBackgroundFallback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransparentBackgroundFallback.swift; sourceTree = "<group>"; };
 		D3000002VFRRECMG /* VFRRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFRRecordingManager.swift; sourceTree = "<group>"; };
 		D3100001296A0001 /* SmoothedMouseDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSource.swift; sourceTree = "<group>"; };
 		D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothedMouseDataSourceTests.swift; sourceTree = "<group>"; };
@@ -590,6 +594,7 @@
 			children = (
 				D5200001296A0001 /* ClickScaleModifierTests.swift */,
 				D2200004296A0001 /* GIFEncoderTests.swift */,
+				E9100001296A0001 /* TransparentBackgroundFallbackTests.swift */,
 			);
 			path = Render;
 			sourceTree = "<group>";
@@ -750,6 +755,7 @@
 				D2000004296A0001 /* AudioMixer.swift */,
 				F100002C296A0001 /* MotionBlurSettings.swift */,
 				F100002D296A0001 /* BackgroundRenderer.swift */,
+				E9100002296A0001 /* TransparentBackgroundFallback.swift */,
 				F100002E296A0001 /* WindowTransformApplicator.swift */,
 				F100002F296A0001 /* WindowEffectApplicator.swift */,
 				F1000100296A0001 /* WindowModeRenderer.swift */,
@@ -1070,6 +1076,7 @@
 				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
 				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
 				D5100001296A0001 /* ClickScaleModifierTests.swift in Sources */,
+				E9000001296A0001 /* TransparentBackgroundFallbackTests.swift in Sources */,
 				D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */,
 				E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */,
 				E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */,
@@ -1147,6 +1154,7 @@
 				D2100001296A0001 /* GIFEncoder.swift in Sources */,
 				F000002C296A0001 /* MotionBlurSettings.swift in Sources */,
 				F000002D296A0001 /* BackgroundRenderer.swift in Sources */,
+				E9000002296A0001 /* TransparentBackgroundFallback.swift in Sources */,
 				F000002E296A0001 /* WindowTransformApplicator.swift in Sources */,
 				F000002F296A0001 /* WindowEffectApplicator.swift in Sources */,
 				F0000100296A0001 /* WindowModeRenderer.swift in Sources */,
