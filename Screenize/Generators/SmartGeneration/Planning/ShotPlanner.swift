@@ -556,17 +556,25 @@ struct ShotSettings {
 // MARK: - GenerationSettings Factory
 
 extension ShotSettings {
+    /// Creates a safe ClosedRange ensuring lowerBound <= upperBound.
+    private static func safeRange(_ lo: CGFloat, _ hi: CGFloat) -> ClosedRange<CGFloat> {
+        min(lo, hi)...max(lo, hi)
+    }
+
     init(from gs: GenerationSettings) {
         self.init()
-        typingCodeZoomRange = gs.zoom.typingCodeZoomMin...gs.zoom.typingCodeZoomMax
-        typingTextFieldZoomRange = gs.zoom.typingTextFieldZoomMin...gs.zoom.typingTextFieldZoomMax
-        typingTerminalZoomRange = gs.zoom.typingTerminalZoomMin...gs.zoom.typingTerminalZoomMax
-        typingRichTextZoomRange = gs.zoom.typingRichTextZoomMin...gs.zoom.typingRichTextZoomMax
-        clickingZoomRange = gs.zoom.clickingZoomMin...gs.zoom.clickingZoomMax
-        navigatingZoomRange = gs.zoom.navigatingZoomMin...gs.zoom.navigatingZoomMax
-        draggingZoomRange = gs.zoom.draggingZoomMin...gs.zoom.draggingZoomMax
-        scrollingZoomRange = gs.zoom.scrollingZoomMin...gs.zoom.scrollingZoomMax
-        readingZoomRange = gs.zoom.readingZoomMin...gs.zoom.readingZoomMax
+        typingCodeZoomRange = Self.safeRange(gs.zoom.typingCodeZoomMin, gs.zoom.typingCodeZoomMax)
+        typingTextFieldZoomRange = Self.safeRange(
+            gs.zoom.typingTextFieldZoomMin, gs.zoom.typingTextFieldZoomMax)
+        typingTerminalZoomRange = Self.safeRange(
+            gs.zoom.typingTerminalZoomMin, gs.zoom.typingTerminalZoomMax)
+        typingRichTextZoomRange = Self.safeRange(
+            gs.zoom.typingRichTextZoomMin, gs.zoom.typingRichTextZoomMax)
+        clickingZoomRange = Self.safeRange(gs.zoom.clickingZoomMin, gs.zoom.clickingZoomMax)
+        navigatingZoomRange = Self.safeRange(gs.zoom.navigatingZoomMin, gs.zoom.navigatingZoomMax)
+        draggingZoomRange = Self.safeRange(gs.zoom.draggingZoomMin, gs.zoom.draggingZoomMax)
+        scrollingZoomRange = Self.safeRange(gs.zoom.scrollingZoomMin, gs.zoom.scrollingZoomMax)
+        readingZoomRange = Self.safeRange(gs.zoom.readingZoomMin, gs.zoom.readingZoomMax)
         switchingZoom = gs.zoom.switchingZoom
         idleZoom = gs.zoom.idleZoom
         targetAreaCoverage = gs.zoom.targetAreaCoverage
