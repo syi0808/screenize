@@ -99,8 +99,7 @@ class ContinuousCameraGenerator {
         return GeneratedTimeline(
             cameraTrack: displayTrack,
             cursorTrack: cursorTrack,
-            keystrokeTrack: keystrokeTrack,
-            continuousTransforms: samples
+            keystrokeTrack: keystrokeTrack
         )
     }
 
@@ -137,7 +136,8 @@ class ContinuousCameraGenerator {
             startTime: first.time,
             endTime: max(first.time + 0.001, last.time > 0 ? last.time : duration),
             startTransform: first.transform,
-            endTransform: last.transform
+            endTransform: last.transform,
+            continuousTransforms: samples
         )
         return CameraTrack(segments: [segment])
     }

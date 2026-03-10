@@ -7,11 +7,6 @@ extension FrameEvaluator {
 
     /// Evaluate the transform track
     func evaluateTransform(at time: TimeInterval) -> TransformState {
-        // Prefer continuous transforms (physics simulation path) when available
-        if let samples = timeline.continuousTransforms, !samples.isEmpty {
-            return evaluateContinuousTransform(at: time, samples: samples)
-        }
-
         guard let track = timeline.cameraTrack, track.isEnabled else {
             return .identity
         }
@@ -20,28 +15,42 @@ extension FrameEvaluator {
             return .identity
         }
 
+        // Continuous segment: use pre-computed physics path
+        if let samples = segment.continuousTransforms, !samples.isEmpty {
+            return evaluateContinuousTransform(at: time, samples: samples)
+        }
+
+        // Manual segment: interpolate between start/end transforms
         let duration = max(0.001, segment.endTime - segment.startTime)
         let rawProgress = CGFloat((time - segment.startTime) / duration)
         let progress = segment.interpolation.apply(rawProgress, duration: CGFloat(duration))
-        let derivative = segment.interpolation.derivative(rawProgress, duration: CGFloat(duration))
+        let derivative = segment.interpolation.derivative(
+            rawProgress, duration: CGFloat(duration)
+        )
         let interpolatedValue: TransformValue
 
         if isWindowMode {
-            interpolatedValue = segment.startTransform.interpolatedForWindowMode(to: segment.endTransform, amount: progress)
+            interpolatedValue = segment.startTransform.interpolatedForWindowMode(
+                to: segment.endTransform, amount: progress
+            )
         } else {
-            interpolatedValue = segment.startTransform.interpolated(to: segment.endTransform, amount: progress)
+            interpolatedValue = segment.startTransform.interpolated(
+                to: segment.endTransform, amount: progress
+            )
         }
 
         let finalCenter = interpolatedValue.center
-
-        // Clamp the center to the zoom-specific valid range (screen mode only)
-        // Window mode allows the window to move freely, so skip clamping
-        let clampedCenter = isWindowMode ? finalCenter : clampCenterForZoom(center: finalCenter, zoom: interpolatedValue.zoom)
+        let clampedCenter = isWindowMode
+            ? finalCenter
+            : clampCenterForZoom(center: finalCenter, zoom: interpolatedValue.zoom)
 
         return TransformState(
             zoom: interpolatedValue.zoom,
             center: clampedCenter,
-            zoomVelocity: abs(derivative * (segment.endTransform.zoom - segment.startTransform.zoom) / CGFloat(duration)),
+            zoomVelocity: abs(
+                derivative * (segment.endTransform.zoom - segment.startTransform.zoom)
+                    / CGFloat(duration)
+            ),
             panVelocity: abs(derivative) * hypot(
                 segment.endTransform.center.x - segment.startTransform.center.x,
                 segment.endTransform.center.y - segment.startTransform.center.y

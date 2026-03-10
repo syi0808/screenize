@@ -62,6 +62,12 @@ struct CameraSegment: Codable, Identifiable, Equatable {
     var cursorFollow: CursorFollowConfig
     var transitionToNext: SegmentTransition
 
+    /// Pre-computed continuous camera path samples.
+    /// When set, FrameEvaluator uses these instead of start/end interpolation.
+    var continuousTransforms: [TimedTransform]?
+
+    var isContinuous: Bool { continuousTransforms != nil }
+
     init(
         id: UUID = UUID(),
         startTime: TimeInterval,
@@ -71,7 +77,8 @@ struct CameraSegment: Codable, Identifiable, Equatable {
         interpolation: EasingCurve = .easeInOut,
         mode: CameraSegmentMode = .manual,
         cursorFollow: CursorFollowConfig = .default,
-        transitionToNext: SegmentTransition = .default
+        transitionToNext: SegmentTransition = .default,
+        continuousTransforms: [TimedTransform]? = nil
     ) {
         self.id = id
         self.startTime = startTime
@@ -82,6 +89,7 @@ struct CameraSegment: Codable, Identifiable, Equatable {
         self.mode = mode
         self.cursorFollow = cursorFollow
         self.transitionToNext = transitionToNext
+        self.continuousTransforms = continuousTransforms
     }
 }
 
