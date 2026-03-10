@@ -160,6 +160,30 @@ final class CaptureToolbarCoordinator: ObservableObject {
         }
     }
 
+    /// Restart: stop current recording, discard, and start a new one
+    func restartRecording() {
+        guard #available(macOS 15.0, *) else { return }
+        Task {
+            guard let appState else { return }
+            _ = await appState.recording.stopRecording()
+            isPaused = false
+            recordingDuration = 0
+            await appState.startRecording()
+        }
+    }
+
+    /// Delete: stop current recording and discard without saving
+    func deleteRecording() {
+        guard #available(macOS 15.0, *) else { return }
+        Task {
+            guard let appState else { return }
+            _ = await appState.recording.stopRecording()
+            toolbarPanel?.dismiss()
+            toolbarPanel = nil
+            appState.captureToolbarDidDismiss()
+        }
+    }
+
     /// Toggle pause/resume
     func togglePause() {
         appState?.togglePause()

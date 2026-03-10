@@ -198,13 +198,27 @@ struct CaptureToolbarView: View {
                     )
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: Spacing.sm)
+
+            // Restart
+            ToolbarIconButton(
+                icon: "arrow.counterclockwise",
+                tooltip: "Restart Recording",
+                action: coordinator.restartRecording
+            )
 
             // Pause/Resume
             ToolbarIconButton(
                 icon: coordinator.isPaused ? "play.fill" : "pause.fill",
                 tooltip: coordinator.isPaused ? "Resume" : "Pause",
                 action: coordinator.togglePause
+            )
+
+            // Delete
+            ToolbarIconButton(
+                icon: "trash",
+                tooltip: "Delete Recording",
+                action: coordinator.deleteRecording
             )
 
             // Stop — distinctive red square
@@ -222,7 +236,7 @@ struct CaptureToolbarView: View {
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
-        .frame(minWidth: 220)
+        .frame(minWidth: 280)
         .background(toolbarBackground)
     }
 
