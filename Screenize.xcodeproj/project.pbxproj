@@ -108,6 +108,7 @@
 		F0000006296A0001 /* ProjectCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000006296A0001 /* ProjectCreator.swift */; };
 		F0000007296A0001 /* RenderSettingsPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000007296A0001 /* RenderSettingsPreset.swift */; };
 		F0000008296A0001 /* PresetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000008296A0001 /* PresetManager.swift */; };
+		DC000001296A0001 /* GenerationSettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC000002296A0001 /* GenerationSettingsManager.swift */; };
 		F0000009296A0001 /* PackageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000009296A0001 /* PackageManager.swift */; };
 		F0000010296A0001 /* EasingCurve.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000010296A0001 /* EasingCurve.swift */; };
 		F0000011296A0001 /* Keyframe.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000011296A0001 /* Keyframe.swift */; };
@@ -128,6 +129,7 @@
 		F000002D296A0001 /* BackgroundRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002D296A0001 /* BackgroundRenderer.swift */; };
 		F000002E296A0001 /* WindowTransformApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002E296A0001 /* WindowTransformApplicator.swift */; };
 		F000002F296A0001 /* WindowEffectApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002F296A0001 /* WindowEffectApplicator.swift */; };
+		DD000001296A0001 /* SettingControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD100001296A0001 /* SettingControls.swift */; };
 		F0000030296A0001 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000030296A0001 /* TimeRulerView.swift */; };
 		F0000031296A0001 /* PlayheadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000031296A0001 /* PlayheadView.swift */; };
 		F0000034296A0001 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000034296A0001 /* TimelineView.swift */; };
@@ -310,6 +312,7 @@
 		F1000006296A0001 /* ProjectCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectCreator.swift; sourceTree = "<group>"; };
 		F1000007296A0001 /* RenderSettingsPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettingsPreset.swift; sourceTree = "<group>"; };
 		F1000008296A0001 /* PresetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetManager.swift; sourceTree = "<group>"; };
+		DC000002296A0001 /* GenerationSettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationSettingsManager.swift; sourceTree = "<group>"; };
 		F1000009296A0001 /* PackageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageManager.swift; sourceTree = "<group>"; };
 		F1000010296A0001 /* EasingCurve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasingCurve.swift; sourceTree = "<group>"; };
 		F1000011296A0001 /* Keyframe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keyframe.swift; sourceTree = "<group>"; };
@@ -692,6 +695,7 @@
 				F1000004296A0001 /* RenderSettings.swift */,
 				F1000007296A0001 /* RenderSettingsPreset.swift */,
 				F1000008296A0001 /* PresetManager.swift */,
+				DC000002296A0001 /* GenerationSettingsManager.swift */,
 				F1000005296A0001 /* ProjectManager.swift */,
 				F1000006296A0001 /* ProjectCreator.swift */,
 				F1000009296A0001 /* PackageManager.swift */,
@@ -1096,6 +1100,7 @@
 				F0000006296A0001 /* ProjectCreator.swift in Sources */,
 				F0000007296A0001 /* RenderSettingsPreset.swift in Sources */,
 				F0000008296A0001 /* PresetManager.swift in Sources */,
+				DC000001296A0001 /* GenerationSettingsManager.swift in Sources */,
 				F0000009296A0001 /* PackageManager.swift in Sources */,
 				F0000010296A0001 /* EasingCurve.swift in Sources */,
 				F0000011296A0001 /* Keyframe.swift in Sources */,
