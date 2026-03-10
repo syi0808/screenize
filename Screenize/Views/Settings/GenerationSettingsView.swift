@@ -1,0 +1,451 @@
+import SwiftUI
+
+struct GenerationSettingsView: View {
+    @EnvironmentObject private var manager: GenerationSettingsManager
+    @State private var showSavePresetSheet = false
+    @State private var presetName = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            topBar
+            Divider()
+            ScrollView {
+                VStack(spacing: 12) {
+                    cameraMotionSection
+                    zoomSection
+                    intentClassificationSection
+                    timingSection
+                    cursorKeystrokeSection
+                }
+                .padding()
+            }
+        }
+        .frame(minWidth: 420, minHeight: 400)
+        .onChange(of: manager.settings) { _ in
+            manager.saveSettings()
+        }
+        .sheet(isPresented: $showSavePresetSheet) {
+            savePresetSheet
+        }
+    }
+
+    // MARK: - Top Bar
+
+    private var topBar: some View {
+        HStack {
+            Menu {
+                Button("Save as Preset...") {
+                    presetName = ""
+                    showSavePresetSheet = true
+                }
+                if !manager.presets.isEmpty {
+                    Divider()
+                    ForEach(manager.presets) { preset in
+                        Button(preset.name) {
+                            manager.loadPreset(preset.id)
+                        }
+                    }
+                    Divider()
+                    Menu("Delete Preset") {
+                        ForEach(manager.presets) { preset in
+                            Button(preset.name, role: .destructive) {
+                                manager.deletePreset(preset.id)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Label("Presets", systemImage: "archivebox")
+            }
+
+            Spacer()
+
+            Button("Reset All") {
+                manager.resetSettings()
+            }
+
+            Button {
+                NotificationCenter.default.post(
+                    name: .regenerateTimeline,
+                    object: nil
+                )
+            } label: {
+                Label("Regenerate", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Camera Motion Section
+
+    private var cameraMotionSection: some View {
+        SettingsSection(title: "Camera Motion") {
+            SettingSlider(
+                label: "Position Damping",
+                value: $manager.settings.cameraMotion.positionDampingRatio,
+                range: 0.1...1.0, defaultValue: 0.90)
+            SettingSlider(
+                label: "Position Response",
+                value: $manager.settings.cameraMotion.positionResponse,
+                range: 0.05...2.0, defaultValue: 0.35, unit: "s")
+            SettingSlider(
+                label: "Zoom Damping",
+                value: $manager.settings.cameraMotion.zoomDampingRatio,
+                range: 0.1...1.0, defaultValue: 0.90)
+            SettingSlider(
+                label: "Zoom Response",
+                value: $manager.settings.cameraMotion.zoomResponse,
+                range: 0.05...2.0, defaultValue: 0.55, unit: "s")
+            SettingSlider(
+                label: "Boundary Stiffness",
+                value: $manager.settings.cameraMotion.boundaryStiffness,
+                range: 1.0...30.0, defaultValue: 12.0)
+            SettingSlider(
+                label: "Zoom Settle Threshold",
+                value: $manager.settings.cameraMotion.zoomSettleThreshold,
+                range: 0.001...0.1, defaultValue: 0.02)
+
+            Divider()
+            Text("Urgency Multipliers")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Immediate",
+                value: $manager.settings.cameraMotion.urgencyImmediateMultiplier,
+                range: 0.01...1.0, defaultValue: 0.05)
+            SettingSlider(
+                label: "High",
+                value: $manager.settings.cameraMotion.urgencyHighMultiplier,
+                range: 0.1...2.0, defaultValue: 0.5)
+            SettingSlider(
+                label: "Normal",
+                value: $manager.settings.cameraMotion.urgencyNormalMultiplier,
+                range: 0.5...3.0, defaultValue: 1.0)
+            SettingSlider(
+                label: "Lazy",
+                value: $manager.settings.cameraMotion.urgencyLazyMultiplier,
+                range: 1.0...5.0, defaultValue: 2.0)
+            SettingSlider(
+                label: "Blend Duration",
+                value: $manager.settings.cameraMotion.urgencyBlendDuration,
+                range: 0.1...2.0, defaultValue: 0.5, unit: "s")
+
+            Divider()
+            Text("Dead Zone")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Safe Zone Fraction",
+                value: $manager.settings.cameraMotion.safeZoneFraction,
+                range: 0.3...1.0, defaultValue: 0.75)
+            SettingSlider(
+                label: "Safe Zone (Typing)",
+                value: $manager.settings.cameraMotion.safeZoneFractionTyping,
+                range: 0.3...1.0, defaultValue: 0.60)
+            SettingSlider(
+                label: "Gradient Band Width",
+                value: $manager.settings.cameraMotion.gradientBandWidth,
+                range: 0.05...0.5, defaultValue: 0.25)
+            SettingSlider(
+                label: "Correction Fraction",
+                value: $manager.settings.cameraMotion.correctionFraction,
+                range: 0.1...1.0, defaultValue: 0.45)
+            SettingSlider(
+                label: "Hysteresis Margin",
+                value: $manager.settings.cameraMotion.hysteresisMargin,
+                range: 0.01...0.5, defaultValue: 0.15)
+            SettingSlider(
+                label: "Correction (Typing)",
+                value: $manager.settings.cameraMotion.correctionFractionTyping,
+                range: 0.1...1.0, defaultValue: 0.80)
+            SettingSlider(
+                label: "Min Response",
+                value: $manager.settings.cameraMotion.deadZoneMinResponse,
+                range: 0.05...1.0, defaultValue: 0.20, unit: "s")
+            SettingSlider(
+                label: "Max Response",
+                value: $manager.settings.cameraMotion.deadZoneMaxResponse,
+                range: 0.1...2.0, defaultValue: 0.50, unit: "s")
+
+            Divider()
+            Text("Micro Tracker")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Idle Velocity Threshold",
+                value: $manager.settings.cameraMotion.idleVelocityThreshold,
+                range: 0.001...0.1, defaultValue: 0.02)
+            SettingSlider(
+                label: "Damping Ratio",
+                value: $manager.settings.cameraMotion.microTrackerDampingRatio,
+                range: 0.1...2.0, defaultValue: 1.0)
+            SettingSlider(
+                label: "Response",
+                value: $manager.settings.cameraMotion.microTrackerResponse,
+                range: 0.5...10.0, defaultValue: 3.0, unit: "s")
+        }
+    }
+
+    // MARK: - Zoom Section
+
+    private var zoomSection: some View {
+        SettingsSection(title: "Zoom Levels") {
+            Text("Per-Activity Zoom Ranges")
+                .font(.caption).foregroundColor(.secondary)
+            RangeSettingSlider(
+                label: "Typing (Code)",
+                min: $manager.settings.zoom.typingCodeZoomMin,
+                max: $manager.settings.zoom.typingCodeZoomMax,
+                range: 1.0...4.0, defaultMin: 2.0, defaultMax: 2.5)
+            RangeSettingSlider(
+                label: "Typing (Text Field)",
+                min: $manager.settings.zoom.typingTextFieldZoomMin,
+                max: $manager.settings.zoom.typingTextFieldZoomMax,
+                range: 1.0...4.0, defaultMin: 2.2, defaultMax: 2.8)
+            RangeSettingSlider(
+                label: "Typing (Terminal)",
+                min: $manager.settings.zoom.typingTerminalZoomMin,
+                max: $manager.settings.zoom.typingTerminalZoomMax,
+                range: 1.0...4.0, defaultMin: 1.6, defaultMax: 2.0)
+            RangeSettingSlider(
+                label: "Typing (Rich Text)",
+                min: $manager.settings.zoom.typingRichTextZoomMin,
+                max: $manager.settings.zoom.typingRichTextZoomMax,
+                range: 1.0...4.0, defaultMin: 1.8, defaultMax: 2.2)
+            RangeSettingSlider(
+                label: "Clicking",
+                min: $manager.settings.zoom.clickingZoomMin,
+                max: $manager.settings.zoom.clickingZoomMax,
+                range: 1.0...4.0, defaultMin: 1.5, defaultMax: 2.5)
+            RangeSettingSlider(
+                label: "Navigating",
+                min: $manager.settings.zoom.navigatingZoomMin,
+                max: $manager.settings.zoom.navigatingZoomMax,
+                range: 1.0...4.0, defaultMin: 1.5, defaultMax: 1.8)
+            RangeSettingSlider(
+                label: "Dragging",
+                min: $manager.settings.zoom.draggingZoomMin,
+                max: $manager.settings.zoom.draggingZoomMax,
+                range: 1.0...4.0, defaultMin: 1.3, defaultMax: 1.6)
+            RangeSettingSlider(
+                label: "Scrolling",
+                min: $manager.settings.zoom.scrollingZoomMin,
+                max: $manager.settings.zoom.scrollingZoomMax,
+                range: 1.0...4.0, defaultMin: 1.3, defaultMax: 1.5)
+            RangeSettingSlider(
+                label: "Reading",
+                min: $manager.settings.zoom.readingZoomMin,
+                max: $manager.settings.zoom.readingZoomMax,
+                range: 1.0...4.0, defaultMin: 1.0, defaultMax: 1.3)
+
+            Divider()
+            Text("Fixed Zoom Levels")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Switching",
+                value: $manager.settings.zoom.switchingZoom,
+                range: 0.5...3.0, defaultValue: 1.0)
+            SettingSlider(
+                label: "Idle",
+                value: $manager.settings.zoom.idleZoom,
+                range: 0.5...3.0, defaultValue: 1.0)
+
+            Divider()
+            Text("Global Limits")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Target Area Coverage",
+                value: $manager.settings.zoom.targetAreaCoverage,
+                range: 0.3...1.0, defaultValue: 0.7)
+            SettingSlider(
+                label: "Work Area Padding",
+                value: $manager.settings.zoom.workAreaPadding,
+                range: 0.0...0.3, defaultValue: 0.08)
+            SettingSlider(
+                label: "Min Zoom",
+                value: $manager.settings.zoom.minZoom,
+                range: 0.5...2.0, defaultValue: 1.0)
+            SettingSlider(
+                label: "Max Zoom",
+                value: $manager.settings.zoom.maxZoom,
+                range: 1.5...5.0, defaultValue: 2.8)
+            SettingSlider(
+                label: "Idle Zoom Decay",
+                value: $manager.settings.zoom.idleZoomDecay,
+                range: 0.0...1.0, defaultValue: 0.5)
+            SettingSlider(
+                label: "Zoom Intensity",
+                value: $manager.settings.zoom.zoomIntensity,
+                range: 0.0...3.0, defaultValue: 1.0)
+        }
+    }
+
+    // MARK: - Intent Classification Section
+
+    private var intentClassificationSection: some View {
+        SettingsSection(title: "Intent Classification") {
+            SettingSlider(
+                label: "Typing Session Timeout",
+                value: $manager.settings.intentClassification.typingSessionTimeout,
+                range: 0.5...5.0, defaultValue: 1.5, unit: "s")
+            SettingSlider(
+                label: "Navigating Click Window",
+                value: $manager.settings.intentClassification.navigatingClickWindow,
+                range: 0.5...5.0, defaultValue: 2.0, unit: "s")
+            SettingSlider(
+                label: "Nav Click Distance",
+                value: $manager.settings.intentClassification.navigatingClickDistance,
+                range: 0.1...1.0, defaultValue: 0.5)
+            SettingStepper(
+                label: "Nav Min Clicks",
+                value: $manager.settings.intentClassification.navigatingMinClicks,
+                range: 1...10, defaultValue: 2)
+            SettingSlider(
+                label: "Idle Threshold",
+                value: $manager.settings.intentClassification.idleThreshold,
+                range: 1.0...15.0, defaultValue: 5.0, unit: "s")
+            SettingSlider(
+                label: "Continuation Gap",
+                value: $manager.settings.intentClassification.continuationGapThreshold,
+                range: 0.5...5.0, defaultValue: 1.5, unit: "s")
+            SettingSlider(
+                label: "Continuation Max Distance",
+                value: $manager.settings.intentClassification.continuationMaxDistance,
+                range: 0.05...0.5, defaultValue: 0.20)
+            SettingSlider(
+                label: "Scroll Merge Gap",
+                value: $manager.settings.intentClassification.scrollMergeGap,
+                range: 0.2...3.0, defaultValue: 1.0, unit: "s")
+            SettingSlider(
+                label: "Point Span Duration",
+                value: $manager.settings.intentClassification.pointSpanDuration,
+                range: 0.1...2.0, defaultValue: 0.5, unit: "s")
+            SettingSlider(
+                label: "Context Change Window",
+                value: $manager.settings.intentClassification.contextChangeWindow,
+                range: 0.2...3.0, defaultValue: 0.8, unit: "s")
+            SettingSlider(
+                label: "Typing Anticipation",
+                value: $manager.settings.intentClassification.typingAnticipation,
+                range: 0.0...1.5, defaultValue: 0.4, unit: "s")
+        }
+    }
+
+    // MARK: - Timing Section
+
+    private var timingSection: some View {
+        SettingsSection(title: "Timing") {
+            Text("Lead Times")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Immediate",
+                value: $manager.settings.timing.leadTimeImmediate,
+                range: 0.0...1.0, defaultValue: 0.24, unit: "s")
+            SettingSlider(
+                label: "High",
+                value: $manager.settings.timing.leadTimeHigh,
+                range: 0.0...1.0, defaultValue: 0.16, unit: "s")
+            SettingSlider(
+                label: "Normal",
+                value: $manager.settings.timing.leadTimeNormal,
+                range: 0.0...1.0, defaultValue: 0.08, unit: "s")
+            SettingSlider(
+                label: "Lazy",
+                value: $manager.settings.timing.leadTimeLazy,
+                range: 0.0...1.0, defaultValue: 0.0, unit: "s")
+
+            Divider()
+            Text("Simulation")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Tick Rate",
+                value: $manager.settings.timing.tickRate,
+                range: 24.0...120.0, defaultValue: 60.0, unit: "Hz")
+            SettingSlider(
+                label: "Typing Detail Min Interval",
+                value: $manager.settings.timing.typingDetailMinInterval,
+                range: 0.05...1.0, defaultValue: 0.2, unit: "s")
+            SettingSlider(
+                label: "Typing Detail Min Distance",
+                value: $manager.settings.timing.typingDetailMinDistance,
+                range: 0.005...0.1, defaultValue: 0.025)
+
+            Divider()
+            Text("Response Thresholds")
+                .font(.caption).foregroundColor(.secondary)
+            SettingSlider(
+                label: "Fast Threshold",
+                value: $manager.settings.timing.responseFastThreshold,
+                range: 0.1...2.0, defaultValue: 0.5, unit: "s")
+            SettingSlider(
+                label: "Slow Threshold",
+                value: $manager.settings.timing.responseSlowThreshold,
+                range: 1.0...5.0, defaultValue: 2.0, unit: "s")
+        }
+    }
+
+    // MARK: - Cursor & Keystroke Section
+
+    private var cursorKeystrokeSection: some View {
+        SettingsSection(title: "Cursor & Keystroke") {
+            SettingSlider(
+                label: "Cursor Scale",
+                value: $manager.settings.cursorKeystroke.cursorScale,
+                range: 0.5...5.0, defaultValue: 2.0, unit: "x")
+
+            Divider()
+            Text("Keystroke Overlay")
+                .font(.caption).foregroundColor(.secondary)
+            Toggle(
+                "Enabled",
+                isOn: $manager.settings.cursorKeystroke.keystrokeEnabled)
+            Toggle(
+                "Shortcuts Only",
+                isOn: $manager.settings.cursorKeystroke.shortcutsOnly)
+            SettingSlider(
+                label: "Display Duration",
+                value: $manager.settings.cursorKeystroke.displayDuration,
+                range: 0.5...5.0, defaultValue: 1.5, unit: "s")
+            SettingSlider(
+                label: "Fade In",
+                value: $manager.settings.cursorKeystroke.fadeInDuration,
+                range: 0.0...1.0, defaultValue: 0.15, unit: "s")
+            SettingSlider(
+                label: "Fade Out",
+                value: $manager.settings.cursorKeystroke.fadeOutDuration,
+                range: 0.0...1.0, defaultValue: 0.3, unit: "s")
+            SettingSlider(
+                label: "Min Interval",
+                value: $manager.settings.cursorKeystroke.minInterval,
+                range: 0.01...0.5, defaultValue: 0.05, unit: "s")
+        }
+    }
+
+    // MARK: - Save Preset Sheet
+
+    private var savePresetSheet: some View {
+        VStack(spacing: 16) {
+            Text("Save Preset").font(.headline)
+            TextField("Preset Name", text: $presetName)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Button("Cancel") { showSavePresetSheet = false }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") {
+                    guard !presetName.isEmpty else { return }
+                    manager.savePreset(name: presetName)
+                    showSavePresetSheet = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(presetName.isEmpty)
+            }
+        }
+        .padding()
+        .frame(width: 300)
+    }
+}
+
+// MARK: - Notification
+
+extension Notification.Name {
+    static let regenerateTimeline = Notification.Name("regenerateTimeline")
+}

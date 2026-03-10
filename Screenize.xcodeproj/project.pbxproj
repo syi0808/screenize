@@ -130,6 +130,8 @@
 		F000002E296A0001 /* WindowTransformApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002E296A0001 /* WindowTransformApplicator.swift */; };
 		F000002F296A0001 /* WindowEffectApplicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F100002F296A0001 /* WindowEffectApplicator.swift */; };
 		DD000001296A0001 /* SettingControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD100001296A0001 /* SettingControls.swift */; };
+		DE000001296A0001 /* GenerationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE100001296A0001 /* GenerationSettingsView.swift */; };
+		DF000001296A0001 /* GenerationSettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF100001296A0001 /* GenerationSettingsWindowController.swift */; };
 		F0000030296A0001 /* TimeRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000030296A0001 /* TimeRulerView.swift */; };
 		F0000031296A0001 /* PlayheadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000031296A0001 /* PlayheadView.swift */; };
 		F0000034296A0001 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1000034296A0001 /* TimelineView.swift */; };
@@ -334,6 +336,8 @@
 		F100002E296A0001 /* WindowTransformApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowTransformApplicator.swift; sourceTree = "<group>"; };
 		F100002F296A0001 /* WindowEffectApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowEffectApplicator.swift; sourceTree = "<group>"; };
 		DD100001296A0001 /* SettingControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingControls.swift; sourceTree = "<group>"; };
+		DE100001296A0001 /* GenerationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationSettingsView.swift; sourceTree = "<group>"; };
+		DF100001296A0001 /* GenerationSettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationSettingsWindowController.swift; sourceTree = "<group>"; };
 		F1000030296A0001 /* TimeRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
 		F1000031296A0001 /* PlayheadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayheadView.swift; sourceTree = "<group>"; };
 		F1000034296A0001 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
@@ -791,6 +795,8 @@
 		DD200001296A0001 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				DE100001296A0001 /* GenerationSettingsView.swift */,
+				DF100001296A0001 /* GenerationSettingsWindowController.swift */,
 				DD100001296A0001 /* SettingControls.swift */,
 			);
 			path = Settings;
@@ -1171,6 +1177,8 @@
 				F0000045296A0001 /* SettingsInspector.swift in Sources */,
 				F0000046296A0001 /* PresetPickerView.swift in Sources */,
 				DD000001296A0001 /* SettingControls.swift in Sources */,
+				DE000001296A0001 /* GenerationSettingsView.swift in Sources */,
+				DF000001296A0001 /* GenerationSettingsWindowController.swift in Sources */,
 				F0000050296A0001 /* PreviewView.swift in Sources */,
 				F0000051296A0001 /* ExportView.swift in Sources */,
 				CB000001296A0001 /* ExportView+Settings.swift in Sources */,
