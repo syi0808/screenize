@@ -134,3 +134,61 @@ struct ContinuousCameraSettings {
     /// waypoint center directly for synchronized zoom-pan arrival.
     var zoomSettleThreshold: CGFloat = 0.02
 }
+
+// MARK: - GenerationSettings Factory
+
+extension ContinuousCameraSettings {
+    /// Initialize from unified GenerationSettings
+    init(from gs: GenerationSettings) {
+        self.init()
+        positionDampingRatio = gs.cameraMotion.positionDampingRatio
+        positionResponse = gs.cameraMotion.positionResponse
+        zoomDampingRatio = gs.cameraMotion.zoomDampingRatio
+        zoomResponse = gs.cameraMotion.zoomResponse
+        boundaryStiffness = gs.cameraMotion.boundaryStiffness
+        zoomSettleThreshold = gs.cameraMotion.zoomSettleThreshold
+        urgencyBlendDuration = TimeInterval(gs.cameraMotion.urgencyBlendDuration)
+        urgencyMultipliers = [
+            .immediate: gs.cameraMotion.urgencyImmediateMultiplier,
+            .high: gs.cameraMotion.urgencyHighMultiplier,
+            .normal: gs.cameraMotion.urgencyNormalMultiplier,
+            .lazy: gs.cameraMotion.urgencyLazyMultiplier
+        ]
+        tickRate = Double(gs.timing.tickRate)
+        typingDetailMinInterval = TimeInterval(gs.timing.typingDetailMinInterval)
+        typingDetailMinDistance = gs.timing.typingDetailMinDistance
+        minZoom = gs.zoom.minZoom
+        maxZoom = gs.zoom.maxZoom
+        zoomIntensity = gs.zoom.zoomIntensity
+        shot = ShotSettings(from: gs)
+        micro = MicroTrackerSettings(from: gs)
+        deadZone = DeadZoneSettings(from: gs)
+        cursor = CursorEmissionSettings(from: gs)
+        keystroke = KeystrokeEmissionSettings(from: gs)
+    }
+}
+
+extension MicroTrackerSettings {
+    init(from gs: GenerationSettings) {
+        self.init()
+        idleVelocityThreshold = gs.cameraMotion.idleVelocityThreshold
+        dampingRatio = gs.cameraMotion.microTrackerDampingRatio
+        response = gs.cameraMotion.microTrackerResponse
+    }
+}
+
+extension DeadZoneSettings {
+    init(from gs: GenerationSettings) {
+        self.init()
+        safeZoneFraction = gs.cameraMotion.safeZoneFraction
+        safeZoneFractionTyping = gs.cameraMotion.safeZoneFractionTyping
+        gradientBandWidth = gs.cameraMotion.gradientBandWidth
+        correctionFraction = gs.cameraMotion.correctionFraction
+        hysteresisMargin = gs.cameraMotion.hysteresisMargin
+        correctionFractionTyping = gs.cameraMotion.correctionFractionTyping
+        minResponse = gs.cameraMotion.deadZoneMinResponse
+        maxResponse = gs.cameraMotion.deadZoneMaxResponse
+        responseFastThreshold = TimeInterval(gs.timing.responseFastThreshold)
+        responseSlowThreshold = TimeInterval(gs.timing.responseSlowThreshold)
+    }
+}

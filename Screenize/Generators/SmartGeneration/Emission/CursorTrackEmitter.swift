@@ -35,3 +35,12 @@ struct CursorTrackEmitter {
 struct CursorEmissionSettings {
     var cursorScale: CGFloat = 2.0
 }
+
+// MARK: - GenerationSettings Factory
+
+extension CursorEmissionSettings {
+    init(from gs: GenerationSettings) {
+        self.init()
+        cursorScale = gs.cursorKeystroke.cursorScale
+    }
+}

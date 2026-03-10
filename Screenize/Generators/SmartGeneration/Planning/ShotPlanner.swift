@@ -552,3 +552,27 @@ struct ShotSettings {
     var maxZoom: CGFloat = 2.8
     var idleZoomDecay: CGFloat = 0.5
 }
+
+// MARK: - GenerationSettings Factory
+
+extension ShotSettings {
+    init(from gs: GenerationSettings) {
+        self.init()
+        typingCodeZoomRange = gs.zoom.typingCodeZoomMin...gs.zoom.typingCodeZoomMax
+        typingTextFieldZoomRange = gs.zoom.typingTextFieldZoomMin...gs.zoom.typingTextFieldZoomMax
+        typingTerminalZoomRange = gs.zoom.typingTerminalZoomMin...gs.zoom.typingTerminalZoomMax
+        typingRichTextZoomRange = gs.zoom.typingRichTextZoomMin...gs.zoom.typingRichTextZoomMax
+        clickingZoomRange = gs.zoom.clickingZoomMin...gs.zoom.clickingZoomMax
+        navigatingZoomRange = gs.zoom.navigatingZoomMin...gs.zoom.navigatingZoomMax
+        draggingZoomRange = gs.zoom.draggingZoomMin...gs.zoom.draggingZoomMax
+        scrollingZoomRange = gs.zoom.scrollingZoomMin...gs.zoom.scrollingZoomMax
+        readingZoomRange = gs.zoom.readingZoomMin...gs.zoom.readingZoomMax
+        switchingZoom = gs.zoom.switchingZoom
+        idleZoom = gs.zoom.idleZoom
+        targetAreaCoverage = gs.zoom.targetAreaCoverage
+        workAreaPadding = gs.zoom.workAreaPadding
+        minZoom = gs.zoom.minZoom
+        maxZoom = gs.zoom.maxZoom
+        idleZoomDecay = gs.zoom.idleZoomDecay
+    }
+}

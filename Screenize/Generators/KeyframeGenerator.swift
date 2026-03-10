@@ -548,3 +548,17 @@ struct GeneratorStatistics {
     /// Additional info
     let additionalInfo: [String: Any]
 }
+
+// MARK: - GenerationSettings Factory
+
+extension KeystrokeEmissionSettings {
+    init(from gs: GenerationSettings) {
+        self.init()
+        enabled = gs.cursorKeystroke.keystrokeEnabled
+        shortcutsOnly = gs.cursorKeystroke.shortcutsOnly
+        displayDuration = TimeInterval(gs.cursorKeystroke.displayDuration)
+        fadeInDuration = TimeInterval(gs.cursorKeystroke.fadeInDuration)
+        fadeOutDuration = TimeInterval(gs.cursorKeystroke.fadeOutDuration)
+        minInterval = TimeInterval(gs.cursorKeystroke.minInterval)
+    }
+}
