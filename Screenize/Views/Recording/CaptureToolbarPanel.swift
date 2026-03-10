@@ -58,7 +58,7 @@ final class CaptureToolbarPanel: NSPanel {
         let panelSize = self.frame.size
         let origin = NSPoint(
             x: screenFrame.midX - panelSize.width / 2,
-            y: screenFrame.minY + 80
+            y: screenFrame.minY + 60
         )
         self.setFrameOrigin(origin)
     }
