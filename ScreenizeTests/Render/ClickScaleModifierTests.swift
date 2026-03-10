@@ -7,7 +7,7 @@ final class ClickScaleModifierTests: XCTestCase {
     // MARK: - Helpers
 
     private func makeEvaluator(
-        clickEvents: [RenderClickEvent] = [],
+        mouseButtonEvents: [RenderMouseButtonEvent] = [],
         cursorSegment: CursorSegment? = nil,
         duration: TimeInterval = 10.0
     ) -> FrameEvaluator {
@@ -25,21 +25,20 @@ final class ClickScaleModifierTests: XCTestCase {
 
         return FrameEvaluator(
             timeline: timeline,
-            clickEvents: clickEvents
+            mouseButtonEvents: mouseButtonEvents
         )
     }
 
-    private func makeClick(
+    /// Create a pair of mouseDown + mouseUp events simulating a click
+    private func makeClickEvents(
         at time: TimeInterval,
-        duration: TimeInterval = 0.2
-    ) -> RenderClickEvent {
-        RenderClickEvent(
-            timestamp: time,
-            duration: duration,
-            x: 0.5,
-            y: 0.5,
-            clickType: .left
-        )
+        duration: TimeInterval = 0.2,
+        clickType: ClickType = .left
+    ) -> [RenderMouseButtonEvent] {
+        [
+            RenderMouseButtonEvent(timestamp: time, isDown: true, clickType: clickType),
+            RenderMouseButtonEvent(timestamp: time + duration, isDown: false, clickType: clickType)
+        ]
     }
 
     private func makeCursorSegment(
@@ -66,10 +65,10 @@ final class ClickScaleModifierTests: XCTestCase {
 
     func testDuringPress_scaleDecreasesToConfigValue() {
         let config = ClickFeedbackConfig.default
-        let click = makeClick(at: 1.0, duration: 0.5)
+        let events = makeClickEvents(at: 1.0, duration: 0.5)
         let segment = makeCursorSegment(clickFeedback: config)
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -83,10 +82,10 @@ final class ClickScaleModifierTests: XCTestCase {
     }
 
     func testDuringPress_scaleStartsAtOne() {
-        let click = makeClick(at: 1.0, duration: 0.5)
+        let events = makeClickEvents(at: 1.0, duration: 0.5)
         let segment = makeCursorSegment()
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -99,10 +98,10 @@ final class ClickScaleModifierTests: XCTestCase {
 
     func testDuringHold_scaleStaysAtMouseDownScale() {
         let config = ClickFeedbackConfig.default
-        let click = makeClick(at: 1.0, duration: 0.5)
+        let events = makeClickEvents(at: 1.0, duration: 0.5)
         let segment = makeCursorSegment(clickFeedback: config)
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -119,10 +118,10 @@ final class ClickScaleModifierTests: XCTestCase {
 
     func testAfterReleaseSettles_scaleReturnsToOne() {
         let config = ClickFeedbackConfig.default
-        let click = makeClick(at: 1.0, duration: 0.3)
+        let events = makeClickEvents(at: 1.0, duration: 0.3)
         let segment = makeCursorSegment(clickFeedback: config)
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -144,10 +143,10 @@ final class ClickScaleModifierTests: XCTestCase {
             mouseUpDuration: 0.3,
             mouseUpSpring: .spring(dampingRatio: 0.6, response: 0.3)
         )
-        let click = makeClick(at: 1.0, duration: 0.5)
+        let events = makeClickEvents(at: 1.0, duration: 0.5)
         let segment = makeCursorSegment(clickFeedback: customConfig)
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -179,10 +178,10 @@ final class ClickScaleModifierTests: XCTestCase {
             mouseUpDuration: 0.4,
             mouseUpSpring: .spring(dampingRatio: 0.4, response: 0.3)
         )
-        let click = makeClick(at: 1.0, duration: 0.3)
+        let events = makeClickEvents(at: 1.0, duration: 0.3)
         let segment = makeCursorSegment(clickFeedback: config)
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -200,10 +199,10 @@ final class ClickScaleModifierTests: XCTestCase {
 
     func testReleaseRespectsConfiguredDuration() {
         let config = ClickFeedbackConfig.default
-        let click = makeClick(at: 1.0, duration: 0.3)
+        let events = makeClickEvents(at: 1.0, duration: 0.3)
         let segment = makeCursorSegment(clickFeedback: config)
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -225,9 +224,9 @@ final class ClickScaleModifierTests: XCTestCase {
 
     func testNoSegment_usesDefaultConfig() {
         let defaultConfig = ClickFeedbackConfig.default
-        let click = makeClick(at: 1.0, duration: 0.5)
+        let events = makeClickEvents(at: 1.0, duration: 0.5)
         // No cursor segment
-        let evaluator = makeEvaluator(clickEvents: [click])
+        let evaluator = makeEvaluator(mouseButtonEvents: events)
 
         // At end of press phase with default config
         let pressEnd = 1.0 + defaultConfig.mouseDownDuration
@@ -241,10 +240,10 @@ final class ClickScaleModifierTests: XCTestCase {
     // MARK: - Before Click
 
     func testBeforeClick_returnsOne() {
-        let click = makeClick(at: 2.0, duration: 0.3)
+        let events = makeClickEvents(at: 2.0, duration: 0.3)
         let segment = makeCursorSegment()
         let evaluator = makeEvaluator(
-            clickEvents: [click],
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
@@ -252,26 +251,91 @@ final class ClickScaleModifierTests: XCTestCase {
         XCTAssertEqual(scale, 1.0, accuracy: 0.001)
     }
 
-    // MARK: - Multiple Clicks
+    // MARK: - Long Press (Drag)
 
-    func testMultipleClicks_picksExtreme() {
+    func testLongPress_scaleStaysSmallDuringHold() {
         let config = ClickFeedbackConfig.default
-        let clicks = [
-            makeClick(at: 1.0, duration: 0.3),
-            makeClick(at: 1.05, duration: 0.3)
-        ]
+        // Simulate a 3-second drag: mouseDown at 1.0, mouseUp at 4.0
+        let events = makeClickEvents(at: 1.0, duration: 3.0)
         let segment = makeCursorSegment(clickFeedback: config)
         let evaluator = makeEvaluator(
-            clickEvents: clicks,
+            mouseButtonEvents: events,
             cursorSegment: segment
         )
 
-        // During overlapping press phases, should pick most extreme
+        // During the drag (well after press animation ends)
+        let midDrag = 2.5
+        let scale = evaluator.computeClickScaleModifier(at: midDrag)
+        XCTAssertEqual(
+            scale, config.mouseDownScale, accuracy: 0.01,
+            "During a long press/drag, cursor should stay at mouseDownScale"
+        )
+    }
+
+    func testLongPress_releasesOnMouseUp() {
+        let config = ClickFeedbackConfig.default
+        let events = makeClickEvents(at: 1.0, duration: 3.0)
+        let segment = makeCursorSegment(clickFeedback: config)
+        let evaluator = makeEvaluator(
+            mouseButtonEvents: events,
+            cursorSegment: segment
+        )
+
+        // After mouseUp + release animation
+        let settledTime = 4.0 + config.mouseUpDuration + 0.5
+        let scale = evaluator.computeClickScaleModifier(at: settledTime)
+        XCTAssertEqual(
+            scale, 1.0, accuracy: 0.01,
+            "After drag release settles, scale should return to 1.0"
+        )
+    }
+
+    // MARK: - Multiple Clicks
+
+    func testMultipleButtons_picksExtreme() {
+        let config = ClickFeedbackConfig.default
+        // Left click and right click at the same time
+        let events = [
+            RenderMouseButtonEvent(timestamp: 1.0, isDown: true, clickType: .left),
+            RenderMouseButtonEvent(timestamp: 1.0, isDown: true, clickType: .right),
+            RenderMouseButtonEvent(timestamp: 1.3, isDown: false, clickType: .left),
+            RenderMouseButtonEvent(timestamp: 1.3, isDown: false, clickType: .right)
+        ]
+        let segment = makeCursorSegment(clickFeedback: config)
+        let evaluator = makeEvaluator(
+            mouseButtonEvents: events,
+            cursorSegment: segment
+        )
+
+        // During press phase, should produce scale less than 1.0
         let midPress = 1.0 + config.mouseDownDuration * 0.5
         let scale = evaluator.computeClickScaleModifier(at: midPress)
         XCTAssertLessThan(
             scale, 1.0,
-            "Overlapping clicks should produce scale less than 1.0"
+            "Simultaneous button presses should produce scale less than 1.0"
+        )
+    }
+
+    // MARK: - Only MouseDown (no mouseUp yet)
+
+    func testMouseDownOnly_staysPressed() {
+        let config = ClickFeedbackConfig.default
+        // Only a mouseDown event, no mouseUp
+        let events = [
+            RenderMouseButtonEvent(timestamp: 1.0, isDown: true, clickType: .left)
+        ]
+        let segment = makeCursorSegment(clickFeedback: config)
+        let evaluator = makeEvaluator(
+            mouseButtonEvents: events,
+            cursorSegment: segment
+        )
+
+        // Well after press animation, should stay at mouseDownScale
+        let holdTime = 5.0
+        let scale = evaluator.computeClickScaleModifier(at: holdTime)
+        XCTAssertEqual(
+            scale, config.mouseDownScale, accuracy: 0.01,
+            "Without mouseUp, cursor should stay pressed"
         )
     }
 }

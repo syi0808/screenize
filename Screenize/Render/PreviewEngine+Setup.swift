@@ -86,7 +86,7 @@ extension PreviewEngine {
             // Load raw mouse data
             let rawResult = MouseDataConverter.loadAndConvert(from: project)
             rawMousePositions = rawResult.positions
-            renderClickEvents = rawResult.clicks
+            renderMouseButtonEvents = rawResult.mouseButtonEvents
 
             // Load smoothed mouse data (spring-based or legacy interpolation)
             let springConfig = project.timeline.cursorTrackV2?.springConfig
@@ -103,7 +103,7 @@ extension PreviewEngine {
                 project: project,
                 rawMousePositions: rawMousePositions,
                 smoothedMousePositions: smoothedMousePositions,
-                clickEvents: renderClickEvents,
+                mouseButtonEvents: renderMouseButtonEvents,
                 frameRate: frameRate,
                 sourceSize: extractor.videoSize,
                 scale: previewScale

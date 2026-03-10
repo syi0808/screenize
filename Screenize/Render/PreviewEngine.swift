@@ -114,8 +114,8 @@ final class PreviewEngine: ObservableObject {
     /// Last spring config used for interpolation (to detect changes)
     var lastSpringConfig: SpringCursorConfig?
 
-    /// Click event data (reused during timeline updates)
-    var renderClickEvents: [RenderClickEvent] = []
+    /// Mouse button events (reused during timeline updates)
+    var renderMouseButtonEvents: [RenderMouseButtonEvent] = []
 
     // MARK: - Initialization
 

@@ -16,8 +16,8 @@ final class FrameEvaluator {
     /// Smoothed mouse position data (Catmull-Rom interpolated)
     let smoothedMousePositions: [RenderMousePosition]
 
-    /// Click event data (for cursor state)
-    let clickEvents: [RenderClickEvent]
+    /// Mouse button events for cursor press/release animation (sorted by timestamp)
+    let mouseButtonEvents: [RenderMouseButtonEvent]
 
     /// Frame rate
     let frameRate: Double
@@ -43,7 +43,7 @@ final class FrameEvaluator {
         timeline: Timeline,
         rawMousePositions: [RenderMousePosition] = [],
         smoothedMousePositions: [RenderMousePosition] = [],
-        clickEvents: [RenderClickEvent] = [],
+        mouseButtonEvents: [RenderMouseButtonEvent] = [],
         frameRate: Double = 60.0,
         scaleFactor: CGFloat = 1.0,
         screenBoundsPixel: CGSize = .zero,
@@ -52,7 +52,7 @@ final class FrameEvaluator {
         self.timeline = timeline
         self.rawMousePositions = rawMousePositions
         self.smoothedMousePositions = smoothedMousePositions
-        self.clickEvents = clickEvents
+        self.mouseButtonEvents = mouseButtonEvents
         self.frameRate = frameRate
         self.scaleFactor = scaleFactor
         self.screenBoundsPixel = screenBoundsPixel
@@ -103,25 +103,11 @@ struct RenderMousePosition {
     }
 }
 
-/// Click event data for rendering
-struct RenderClickEvent {
+/// Individual mouse button event (mouseDown or mouseUp) for cursor animation.
+/// Cursor animation is driven directly by down/up events rather than paired click events,
+/// so that press/hold/release phases work correctly for drags and rapid clicks.
+struct RenderMouseButtonEvent {
     let timestamp: TimeInterval
-    let duration: TimeInterval
-    let position: CGPoint
-    let clickType: ClickType
-
-    var endTimestamp: TimeInterval {
-        timestamp + duration
-    }
-
-    func isActive(at time: TimeInterval) -> Bool {
-        time >= timestamp && time <= endTimestamp
-    }
-
-    init(timestamp: TimeInterval, duration: TimeInterval, x: CGFloat, y: CGFloat, clickType: ClickType) {
-        self.timestamp = timestamp
-        self.duration = duration
-        self.position = CGPoint(x: x, y: y)
-        self.clickType = clickType
-    }
+    let isDown: Bool          // true = mouseDown, false = mouseUp
+    let clickType: ClickType  // .left or .right
 }

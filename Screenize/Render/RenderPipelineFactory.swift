@@ -14,14 +14,14 @@ struct RenderPipelineFactory {
         project: ScreenizeProject,
         rawMousePositions: [RenderMousePosition],
         smoothedMousePositions: [RenderMousePosition],
-        clickEvents: [RenderClickEvent],
+        mouseButtonEvents: [RenderMouseButtonEvent],
         frameRate: Double
     ) -> FrameEvaluator {
         FrameEvaluator(
             timeline: project.timeline,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
-            clickEvents: clickEvents,
+            mouseButtonEvents: mouseButtonEvents,
             frameRate: frameRate,
             scaleFactor: project.captureMeta.scaleFactor,
             screenBoundsPixel: project.captureMeta.sizePixel,
@@ -35,14 +35,14 @@ struct RenderPipelineFactory {
         project: ScreenizeProject,
         rawMousePositions: [RenderMousePosition],
         smoothedMousePositions: [RenderMousePosition],
-        clickEvents: [RenderClickEvent],
+        mouseButtonEvents: [RenderMouseButtonEvent],
         frameRate: Double
     ) -> FrameEvaluator {
         FrameEvaluator(
             timeline: timeline,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
-            clickEvents: clickEvents,
+            mouseButtonEvents: mouseButtonEvents,
             frameRate: frameRate,
             scaleFactor: project.captureMeta.scaleFactor,
             screenBoundsPixel: project.captureMeta.sizePixel,
@@ -109,7 +109,7 @@ struct RenderPipelineFactory {
         project: ScreenizeProject,
         rawMousePositions: [RenderMousePosition],
         smoothedMousePositions: [RenderMousePosition],
-        clickEvents: [RenderClickEvent],
+        mouseButtonEvents: [RenderMouseButtonEvent],
         frameRate: Double,
         sourceSize: CGSize,
         scale: CGFloat = 0.5
@@ -118,7 +118,7 @@ struct RenderPipelineFactory {
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
-            clickEvents: clickEvents,
+            mouseButtonEvents: mouseButtonEvents,
             frameRate: frameRate
         )
         let renderer = createPreviewRenderer(
@@ -134,7 +134,7 @@ struct RenderPipelineFactory {
         project: ScreenizeProject,
         rawMousePositions: [RenderMousePosition],
         smoothedMousePositions: [RenderMousePosition],
-        clickEvents: [RenderClickEvent],
+        mouseButtonEvents: [RenderMouseButtonEvent],
         frameRate: Double,
         sourceSize: CGSize,
         outputSize: CGSize? = nil
@@ -143,7 +143,7 @@ struct RenderPipelineFactory {
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
-            clickEvents: clickEvents,
+            mouseButtonEvents: mouseButtonEvents,
             frameRate: frameRate
         )
         let renderer = createExportRenderer(

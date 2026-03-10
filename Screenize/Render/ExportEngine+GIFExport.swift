@@ -50,7 +50,7 @@ extension ExportEngine {
                 project: project,
                 rawMousePositions: rawResult.positions,
                 smoothedMousePositions: smoothedResult.positions,
-                clickEvents: rawResult.clicks,
+                mouseButtonEvents: rawResult.mouseButtonEvents,
                 frameRate: frameRate,
                 sourceSize: naturalSize,
                 outputSize: outputSize

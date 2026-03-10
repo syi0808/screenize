@@ -44,7 +44,7 @@ extension ExportEngine {
                 MouseDataConverter.loadAndConvert(from: project)
             }
             let rawMousePositions = rawResult.positions
-            let clickEvents = rawResult.clicks
+            let mouseButtonEvents = rawResult.mouseButtonEvents
 
             let springConfig = project.timeline.cursorTrackV2?.springConfig
             let smoothedResult = await MainActor.run {
@@ -55,7 +55,7 @@ extension ExportEngine {
                 )
             }
             let smoothedMousePositions = smoothedResult.positions
-            Log.export.info("Export: Loaded mouse data - \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions, \(clickEvents.count) clicks")
+            Log.export.info("Export: Loaded mouse data - \(rawMousePositions.count) raw, \(smoothedMousePositions.count) smoothed positions, \(mouseButtonEvents.count) button events")
 
             // 3. Determine output size
             let outputSize = project.renderSettings.outputResolution.size(sourceSize: naturalSize)
@@ -65,7 +65,7 @@ extension ExportEngine {
                 project: project,
                 rawMousePositions: rawMousePositions,
                 smoothedMousePositions: smoothedMousePositions,
-                clickEvents: clickEvents,
+                mouseButtonEvents: mouseButtonEvents,
                 frameRate: frameRate,
                 sourceSize: naturalSize,
                 outputSize: outputSize

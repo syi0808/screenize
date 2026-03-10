@@ -48,7 +48,7 @@ struct EventStreamAdapter: MouseDataSource {
         // Infer drag events from mouseDown+mouseMoved+mouseUp sequences.
         // Polyrecorder-v2 doesn't store explicit drag events, so we detect them
         // by checking mouse displacement between mouseDown and mouseUp.
-        let (inferredDrags, dragClickIndices) = Self.synthesizeDragEvents(
+        let (inferredDrags, _) = Self.synthesizeDragEvents(
             clicks: mouseClicks,
             moves: mouseMoves,
             displayWidth: displayWidth,
@@ -57,12 +57,11 @@ struct EventStreamAdapter: MouseDataSource {
         )
         self.dragEventsData = inferredDrags
 
-        // Mouse clicks -> ClickEventData (excluding events reclassified as drags)
+        // Mouse clicks -> ClickEventData
+        // Keep all click events including those associated with drags, so that
+        // cursor press/release animation works correctly during drag operations.
         self.mouseClicksData = mouseClicks
-            .enumerated()
-            .compactMap { index, event in
-                if dragClickIndices.contains(index) { return nil }
-
+            .compactMap { event in
                 let timelineSec = Double(event.processTimeMs - sessionStartMs) / 1000.0
                 let xNorm = event.x / displayWidth
                 let yNorm = 1.0 - (event.y / displayHeight)

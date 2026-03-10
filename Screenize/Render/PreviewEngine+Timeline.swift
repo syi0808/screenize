@@ -26,7 +26,7 @@ extension PreviewEngine {
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
-            clickEvents: renderClickEvents,
+            mouseButtonEvents: renderMouseButtonEvents,
             frameRate: frameRate
         )
 
@@ -91,7 +91,7 @@ extension PreviewEngine {
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
-            clickEvents: renderClickEvents,
+            mouseButtonEvents: renderMouseButtonEvents,
             frameRate: frameRate
         )
 
@@ -118,7 +118,7 @@ extension PreviewEngine {
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
-            clickEvents: renderClickEvents,
+            mouseButtonEvents: renderMouseButtonEvents,
             frameRate: frameRate
         )
 

@@ -68,11 +68,6 @@ final class ClickEventHandler {
                 targetElement: targetElement
             )
         }
-
-        // Set a timeout for short clicks (auto finalize after 1 second)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.finalizePendingClick(id: clickId)
-        }
     }
 
     func handleMouseUp(_ event: NSEvent) {

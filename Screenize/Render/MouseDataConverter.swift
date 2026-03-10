@@ -7,10 +7,13 @@ import CoreGraphics
 /// Shared by ExportEngine and PreviewEngine
 struct MouseDataConverter {
 
-    /// Convert from a MouseDataSource (v4 event streams or legacy adapter) to render data
+    /// Convert from a MouseDataSource (v4 event streams or legacy adapter) to render data.
+    /// Mouse button events are passed through as individual down/up events (no pairing)
+    /// so that cursor press/release animation works correctly for clicks, drags, and
+    /// rapid sequences.
     static func convertFromMouseDataSource(
         _ source: MouseDataSource
-    ) -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
+    ) -> (positions: [RenderMousePosition], mouseButtonEvents: [RenderMouseButtonEvent]) {
         let positions = source.positions.map { pos in
             RenderMousePosition(
                 timestamp: pos.time,
@@ -19,53 +22,51 @@ struct MouseDataConverter {
                 velocity: 0
             )
         }
+
         let sortedClicks = source.clicks.sorted { $0.time < $1.time }
-        var pendingDownByType: [ClickEventData.ClickType: ClickEventData] = [:]
-        var clicks: [RenderClickEvent] = []
+        var buttonEvents: [RenderMouseButtonEvent] = []
 
         for click in sortedClicks {
+            let clickType: ClickType
+            let isDown: Bool
+
             switch click.clickType {
-            case .leftDown, .rightDown:
-                pendingDownByType[click.clickType] = click
-
-            case .leftUp, .rightUp:
-                let downType: ClickEventData.ClickType = (click.clickType == .leftUp) ? .leftDown : .rightDown
-                guard let down = pendingDownByType[downType] else { continue }
-
-                let clickType: ClickType = (downType == .leftDown) ? .left : .right
-                let duration = max(0.03, click.time - down.time)
-                clicks.append(RenderClickEvent(
-                    timestamp: down.time,
-                    duration: duration,
-                    x: down.position.x,
-                    y: down.position.y,
-                    clickType: clickType
-                ))
-                pendingDownByType.removeValue(forKey: downType)
-
+            case .leftDown:
+                clickType = .left
+                isDown = true
+            case .leftUp:
+                clickType = .left
+                isDown = false
+            case .rightDown:
+                clickType = .right
+                isDown = true
+            case .rightUp:
+                clickType = .right
+                isDown = false
             case .doubleClick:
-                clicks.append(RenderClickEvent(
+                // Synthesize a quick down+up pair for double-click events
+                buttonEvents.append(RenderMouseButtonEvent(
                     timestamp: click.time,
-                    duration: 0.1,
-                    x: click.position.x,
-                    y: click.position.y,
+                    isDown: true,
                     clickType: .left
                 ))
+                buttonEvents.append(RenderMouseButtonEvent(
+                    timestamp: click.time + 0.05,
+                    isDown: false,
+                    clickType: .left
+                ))
+                continue
             }
-        }
 
-        for pending in pendingDownByType.values {
-            let clickType: ClickType = (pending.clickType == .leftDown) ? .left : .right
-            clicks.append(RenderClickEvent(
-                timestamp: pending.time,
-                duration: 0.1,
-                x: pending.position.x,
-                y: pending.position.y,
+            buttonEvents.append(RenderMouseButtonEvent(
+                timestamp: click.time,
+                isDown: isDown,
                 clickType: clickType
             ))
         }
 
-        return (positions, clicks)
+        // Already sorted since source was sorted by time
+        return (positions, buttonEvents)
     }
 
     // MARK: - Load and Convert
@@ -73,7 +74,7 @@ struct MouseDataConverter {
     /// Load and convert mouse data from a project (without interpolation)
     static func loadAndConvert(
         from project: ScreenizeProject
-    ) -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
+    ) -> (positions: [RenderMousePosition], mouseButtonEvents: [RenderMouseButtonEvent]) {
         guard let source = loadMouseDataSourceFromEventStreams(project: project) else {
             return ([], [])
         }
@@ -86,7 +87,7 @@ struct MouseDataConverter {
         from project: ScreenizeProject,
         frameRate: Double,
         springConfig: SpringCursorConfig? = nil
-    ) -> (positions: [RenderMousePosition], clicks: [RenderClickEvent]) {
+    ) -> (positions: [RenderMousePosition], mouseButtonEvents: [RenderMouseButtonEvent]) {
         guard let source = loadMouseDataSourceFromEventStreams(project: project) else {
             return ([], [])
         }
@@ -100,7 +101,7 @@ struct MouseDataConverter {
             cameraTransforms: project.timeline.cameraTrack?.segments
                 .first(where: { $0.isContinuous })?.continuousTransforms
         )
-        return (interpolatedPositions, result.clicks)
+        return (interpolatedPositions, result.mouseButtonEvents)
     }
 
     // MARK: - Private
