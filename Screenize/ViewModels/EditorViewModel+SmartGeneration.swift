@@ -76,8 +76,7 @@ extension EditorViewModel {
             updateTimeline(
                 cameraTrack: selection.contains(.transform) ? generated.cameraTrack : nil,
                 cursorTrack: selection.contains(.cursor) ? generated.cursorTrack : nil,
-                keystrokeTrack: selection.contains(.keystroke) ? generated.keystrokeTrack : nil,
-                continuousTransforms: selection.contains(.transform) ? generated.continuousTransforms : nil
+                keystrokeTrack: selection.contains(.keystroke) ? generated.keystrokeTrack : nil
             )
 
             Log.generator.info("Smart generation V2 completed for \(selection.count) track type(s)")
@@ -120,8 +119,7 @@ extension EditorViewModel {
     private func updateTimeline(
         cameraTrack: CameraTrack? = nil,
         cursorTrack: CursorTrackV2? = nil,
-        keystrokeTrack: KeystrokeTrackV2? = nil,
-        continuousTransforms: [TimedTransform]? = nil
+        keystrokeTrack: KeystrokeTrackV2? = nil
     ) {
         if let cameraTrack = cameraTrack {
             if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .transform }) {
@@ -130,9 +128,6 @@ extension EditorViewModel {
                 project.timeline.tracks.insert(.camera(cameraTrack), at: 0)
             }
         }
-
-        // Store continuous transforms (nil clears any previous continuous path)
-        project.timeline.continuousTransforms = continuousTransforms
 
         if let cursorTrack = cursorTrack {
             if let index = project.timeline.tracks.firstIndex(where: { $0.trackType == .cursor }) {

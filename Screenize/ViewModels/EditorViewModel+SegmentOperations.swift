@@ -15,7 +15,6 @@ extension EditorViewModel {
         switch trackType {
         case .transform:
             addTransformSegment(at: time)
-            project.timeline.continuousTransforms = nil
         case .cursor:
             addCursorSegment(at: time)
         case .keystroke:
@@ -131,7 +130,6 @@ extension EditorViewModel {
         switch trackType {
         case .transform:
             deleteTransformSegment(id)
-            project.timeline.continuousTransforms = nil
         case .cursor:
             deleteCursorSegment(id)
         case .keystroke:
@@ -251,7 +249,6 @@ extension EditorViewModel {
                 segment.endTime = clampedEnd
                 guard track.updateSegment(segment) else { return false }
                 project.timeline.tracks[trackIndex] = .camera(track)
-                project.timeline.continuousTransforms = nil
                 return true
 
             case .cursor(var track):
@@ -312,7 +309,6 @@ extension EditorViewModel {
             }
         }
 
-        project.timeline.continuousTransforms = nil
         selection.clear()
         hasUnsavedChanges = true
         invalidatePreviewCache()

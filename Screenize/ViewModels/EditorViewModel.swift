@@ -428,7 +428,6 @@ final class EditorViewModel: ObservableObject {
 
     /// Notify that a segment changed (called from the inspector)
     func notifySegmentChanged() {
-        project.timeline.continuousTransforms = nil
         hasUnsavedChanges = true
         invalidatePreviewCache()
     }
