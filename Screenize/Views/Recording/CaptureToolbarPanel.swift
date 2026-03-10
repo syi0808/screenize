@@ -387,14 +387,6 @@ private struct ToolbarMicMenu: View {
                 }
             }
         } label: {
-            Color.white.opacity(0.001)
-                .frame(width: 44, height: 36)
-                .contentShape(Rectangle())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .frame(width: 44, height: 36)
-        .overlay(
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
                     .font(.system(size: 13, weight: .medium))
@@ -404,12 +396,15 @@ private struct ToolbarMicMenu: View {
             .foregroundColor(.white.opacity(isEnabled
                 ? (isHovering ? DesignOpacity.opaque : DesignOpacity.strong)
                 : (isHovering ? DesignOpacity.strong : DesignOpacity.prominent)))
-            .allowsHitTesting(false)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
-        )
+            .frame(width: 44, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+            )
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .onHover { isHovering = $0 }
         .help(isEnabled ? "Microphone Source" : "Enable Microphone")
         .onAppear { refreshDevices() }
@@ -453,14 +448,6 @@ private struct ToolbarFrameRateMenu: View {
                 }
             }
         } label: {
-            Color.white.opacity(0.001)
-                .frame(width: 44, height: 36)
-                .contentShape(Rectangle())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .frame(width: 44, height: 36)
-        .overlay(
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: "gauge.with.dots.needle.67percent")
                     .font(.system(size: 13, weight: .medium))
@@ -468,12 +455,15 @@ private struct ToolbarFrameRateMenu: View {
                     .font(.system(size: 9, weight: .medium))
             }
             .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
-            .allowsHitTesting(false)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
-        )
+            .frame(width: 44, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+            )
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .onHover { isHovering = $0 }
         .help("Capture Frame Rate")
     }
