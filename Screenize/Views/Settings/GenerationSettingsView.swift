@@ -119,9 +119,15 @@ struct GenerationSettingsView: View {
         .padding(.vertical, 8)
     }
 
+}
+
+// MARK: - Section Views
+
+extension GenerationSettingsView {
+
     // MARK: - Camera Motion Section
 
-    private var cameraMotionSection: some View {
+    var cameraMotionSection: some View {
         SettingsSection(title: "Camera Motion") {
             SettingSlider(
                 label: "Position Damping",
@@ -228,7 +234,7 @@ struct GenerationSettingsView: View {
 
     // MARK: - Zoom Section
 
-    private var zoomSection: some View {
+    var zoomSection: some View {
         SettingsSection(title: "Zoom Levels") {
             Text("Per-Activity Zoom Ranges")
                 .font(.caption).foregroundColor(.secondary)
@@ -322,7 +328,7 @@ struct GenerationSettingsView: View {
 
     // MARK: - Intent Classification Section
 
-    private var intentClassificationSection: some View {
+    var intentClassificationSection: some View {
         SettingsSection(title: "Intent Classification") {
             SettingSlider(
                 label: "Typing Session Timeout",
@@ -373,7 +379,7 @@ struct GenerationSettingsView: View {
 
     // MARK: - Timing Section
 
-    private var timingSection: some View {
+    var timingSection: some View {
         SettingsSection(title: "Timing") {
             Text("Lead Times")
                 .font(.caption).foregroundColor(.secondary)
@@ -426,7 +432,7 @@ struct GenerationSettingsView: View {
 
     // MARK: - Cursor & Keystroke Section
 
-    private var cursorKeystrokeSection: some View {
+    var cursorKeystrokeSection: some View {
         SettingsSection(title: "Cursor & Keystroke") {
             SettingSlider(
                 label: "Cursor Scale",
@@ -463,7 +469,7 @@ struct GenerationSettingsView: View {
 
     // MARK: - Save Preset Sheet
 
-    private var savePresetSheet: some View {
+    var savePresetSheet: some View {
         VStack(spacing: 16) {
             Text("Save Preset").font(.headline)
             TextField("Preset Name", text: $presetName)

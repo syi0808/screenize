@@ -13,7 +13,7 @@ struct GenerationSettings: Codable, Equatable {
     var timing = TimingSettings()
     var cursorKeystroke = CursorKeystrokeSettings()
 
-    static let `default` = GenerationSettings()
+    static let `default` = Self()
 }
 
 // MARK: - Camera Motion Settings
