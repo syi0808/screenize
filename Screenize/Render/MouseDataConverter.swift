@@ -96,7 +96,8 @@ struct MouseDataConverter {
             result.positions,
             outputFrameRate: interpolationFrameRate,
             springConfig: springConfig,
-            cameraTransforms: project.timeline.continuousTransforms
+            cameraTransforms: project.timeline.cameraTrack?.segments
+                .first(where: { $0.isContinuous })?.continuousTransforms
         )
         return (interpolatedPositions, result.clicks)
     }

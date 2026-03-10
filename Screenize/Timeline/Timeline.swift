@@ -26,11 +26,6 @@ struct Timeline: Codable, Equatable {
         self.trimEnd = trimEnd
     }
 
-    /// Convenience: continuous transforms from the first continuous camera segment.
-    var continuousTransforms: [TimedTransform]? {
-        cameraTrack?.segments.first(where: { $0.isContinuous })?.continuousTransforms
-    }
-
     // MARK: - Trim
 
     var effectiveTrimStart: TimeInterval {

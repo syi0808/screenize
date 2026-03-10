@@ -157,7 +157,7 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
             settings: ContinuousCameraSettings()
         )
 
-        guard let first = result.continuousTransforms?.first else {
+        guard let first = result.cameraTrack.segments.first?.continuousTransforms?.first else {
             XCTFail("Expected continuous transforms for fixture project")
             return
         }
