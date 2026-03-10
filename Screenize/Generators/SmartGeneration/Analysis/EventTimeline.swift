@@ -114,12 +114,19 @@ struct EventTimeline {
     /// Return all events within the given closed time range (inclusive).
     /// Uses binary search for start index, then linear scan.
     func events(in range: ClosedRange<TimeInterval>) -> [UnifiedEvent] {
-        // Binary search for first event with time >= range.lowerBound
+        events(from: range.lowerBound, to: range.upperBound)
+    }
+
+    /// Return all events between two times (inclusive). Safely handles from > to.
+    func events(from start: TimeInterval, to end: TimeInterval) -> [UnifiedEvent] {
+        let lo = min(start, end)
+        let hi = max(start, end)
+        // Binary search for first event with time >= lo
         var low = 0
         var high = events.count
         while low < high {
             let mid = (low + high) / 2
-            if events[mid].time < range.lowerBound {
+            if events[mid].time < lo {
                 low = mid + 1
             } else {
                 high = mid
@@ -128,7 +135,7 @@ struct EventTimeline {
 
         var result: [UnifiedEvent] = []
         for i in low..<events.count {
-            if events[i].time > range.upperBound { break }
+            if events[i].time > hi { break }
             result.append(events[i])
         }
         return result

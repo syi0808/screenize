@@ -188,7 +188,7 @@ struct ShotPlanner {
         }
 
         // 1.5. UIStateSample fallback: use nearest UI state element when no FocusRegion
-        let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        let sceneEvents = eventTimeline.events(from: scene.startTime, to: scene.endTime)
         if scene.focusRegions.first(where: { if case .activeElement = $0.source { return true }; return false }) == nil {
             if let elemFrame = nearestUIStateElementFrame(
                 events: sceneEvents, screenBounds: screenBounds
@@ -322,7 +322,7 @@ struct ShotPlanner {
         eventTimeline: EventTimeline,
         settings: ShotSettings
     ) -> NormalizedPoint {
-        let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        let sceneEvents = eventTimeline.events(from: scene.startTime, to: scene.endTime)
         var center: NormalizedPoint
 
         // Prefer first caret position: the camera starts at idealCenter
@@ -374,7 +374,7 @@ struct ShotPlanner {
         settings: ShotSettings
     ) -> NormalizedPoint {
         // Use intent-relevant event positions; fall back to focus regions
-        let sceneEvents = eventTimeline.events(in: scene.startTime...scene.endTime)
+        let sceneEvents = eventTimeline.events(from: scene.startTime, to: scene.endTime)
         let relevant = relevantPositions(
             for: scene.primaryIntent, events: sceneEvents
         )

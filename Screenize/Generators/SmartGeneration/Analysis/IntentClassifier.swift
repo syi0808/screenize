@@ -80,7 +80,7 @@ struct IntentClassifier {
 
         // Click/navigating detection excludes events already covered by typing/dragging
         let excludedRanges = (typingSpans + draggingSpans).map {
-            $0.startTime...$0.endTime
+            min($0.startTime, $0.endTime)...max($0.startTime, $0.endTime)
         }
         let clickSpans = detectClickSpans(
             from: timeline, excludingTimeRanges: excludedRanges,
@@ -221,7 +221,7 @@ struct IntentClassifier {
 
         let rangeStart = max(0, typingStart - 0.5)
         let rangeEnd = min(timeline.duration, typingEnd + 0.5)
-        let nearbyEvents = timeline.events(in: rangeStart...rangeEnd)
+        let nearbyEvents = timeline.events(from: rangeStart, to: rangeEnd)
         let bundleID = nearbyEvents.first {
             $0.metadata.appBundleID != nil
         }?.metadata.appBundleID?.lowercased() ?? ""

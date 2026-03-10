@@ -235,7 +235,7 @@ struct WaypointGenerator {
             )
         }
 
-        let appContext = eventTimeline.events(in: span.startTime...span.endTime)
+        let appContext = eventTimeline.events(from: span.startTime, to: span.endTime)
             .first { $0.metadata.appBundleID != nil }?.metadata.appBundleID
 
         let scene = CameraScene(
@@ -268,7 +268,7 @@ struct WaypointGenerator {
         screenBounds: CGSize,
         settings: ContinuousCameraSettings
     ) -> [CameraWaypoint] {
-        let events = eventTimeline.events(in: span.startTime...span.endTime)
+        let events = eventTimeline.events(from: span.startTime, to: span.endTime)
         guard !events.isEmpty else { return [] }
 
         var results: [CameraWaypoint] = []
@@ -315,7 +315,7 @@ struct WaypointGenerator {
     ) -> [CameraWaypoint] {
         let anchors = detailAnchorEvents(
             for: span.intent,
-            events: eventTimeline.events(in: span.startTime...span.endTime)
+            events: eventTimeline.events(from: span.startTime, to: span.endTime)
         )
         guard !anchors.isEmpty else { return [] }
 
