@@ -142,7 +142,7 @@ struct CaptureToolbarView: View {
     // MARK: - Selecting Phase
 
     private var selectingContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Spacing.sm) {
             ToolbarModeButton(
                 icon: "display",
                 label: "Entire Screen",
@@ -169,7 +169,11 @@ struct CaptureToolbarView: View {
 
             toolbarDivider
 
-            closeButton
+            ToolbarIconButton(
+                icon: "xmark",
+                tooltip: "Close",
+                action: coordinator.cancel
+            )
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
@@ -255,21 +259,8 @@ struct CaptureToolbarView: View {
 
     private var toolbarDivider: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.2))
+            .fill(Color.white.opacity(DesignOpacity.light))
             .frame(width: 0.5, height: 20)
-    }
-
-    private var closeButton: some View {
-        Button {
-            coordinator.cancel()
-        } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white.opacity(0.5))
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     private var formattedDuration: String {
@@ -311,8 +302,12 @@ private struct ToolbarIconButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.white.opacity(isHovering ? 0.9 : 0.7))
+                .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
                 .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                        .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+                )
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -331,14 +326,20 @@ private struct ToolbarSystemAudioToggle: View {
         Button {
             isEnabled.toggle()
         } label: {
-            VStack(spacing: 2) {
+            VStack(spacing: Spacing.xxs) {
                 Image(systemName: isEnabled ? "speaker.wave.2.fill" : "speaker.slash")
                     .font(.system(size: 13, weight: .medium))
                 Text("System")
                     .font(.system(size: 9, weight: .medium))
             }
-            .foregroundColor(isEnabled ? .white.opacity(0.7) : .white.opacity(0.5))
+            .foregroundColor(.white.opacity(isEnabled
+                ? (isHovering ? DesignOpacity.opaque : DesignOpacity.strong)
+                : (isHovering ? DesignOpacity.strong : DesignOpacity.prominent)))
             .frame(width: 44, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -382,14 +383,20 @@ private struct ToolbarMicMenu: View {
                 }
             }
         } label: {
-            VStack(spacing: 2) {
+            VStack(spacing: Spacing.xxs) {
                 Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
                     .font(.system(size: 13, weight: .medium))
                 Text("Mic")
                     .font(.system(size: 9, weight: .medium))
             }
-            .foregroundColor(isEnabled ? .red : .white.opacity(0.5))
+            .foregroundColor(.white.opacity(isEnabled
+                ? (isHovering ? DesignOpacity.opaque : DesignOpacity.strong)
+                : (isHovering ? DesignOpacity.strong : DesignOpacity.prominent)))
             .frame(width: 44, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+            )
             .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
@@ -438,14 +445,18 @@ private struct ToolbarFrameRateMenu: View {
                 }
             }
         } label: {
-            VStack(spacing: 2) {
+            VStack(spacing: Spacing.xxs) {
                 Image(systemName: "gauge.with.dots.needle.67percent")
                     .font(.system(size: 13, weight: .medium))
                 Text("\(frameRate)fps")
                     .font(.system(size: 9, weight: .medium))
             }
-            .foregroundColor(frameRate > 60 ? .orange : .white.opacity(0.5))
+            .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
             .frame(width: 44, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+            )
             .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
@@ -468,16 +479,18 @@ private struct ToolbarModeButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 2) {
+            VStack(spacing: Spacing.xxs) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                 Text(label)
                     .font(.system(size: 9, weight: .medium))
             }
-            .foregroundColor(isSelected ? .white : .white.opacity(0.5))
+            .foregroundColor(.white.opacity(isSelected
+                ? 1.0
+                : (isHovering ? DesignOpacity.strong : DesignOpacity.prominent)))
             .frame(width: 88, height: 36)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
                     .fill(backgroundColor)
             )
         }
@@ -486,8 +499,8 @@ private struct ToolbarModeButton: View {
     }
 
     private var backgroundColor: Color {
-        if isSelected { return Color.white.opacity(0.15) }
-        if isHovering { return Color.white.opacity(0.08) }
+        if isSelected { return Color.white.opacity(DesignOpacity.faint) }
+        if isHovering { return Color.white.opacity(DesignOpacity.whisper) }
         return Color.clear
     }
 }
