@@ -5,6 +5,9 @@ import SwiftUI
 /// Semantic opacity values for consistent layering and depth.
 /// Replaces scattered hardcoded opacity values throughout the codebase.
 enum DesignOpacity {
+    /// 0.08 — Barely visible borders, ultra-subtle shadows
+    static let whisper: Double = 0.08
+
     /// 0.1 — Tinted backgrounds, very subtle overlays
     static let subtle: Double = 0.1
 

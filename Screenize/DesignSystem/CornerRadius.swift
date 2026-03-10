@@ -21,4 +21,7 @@ enum CornerRadius {
 
     /// 12pt — Drop zones, permission list, large containers
     static let xxl: CGFloat = 12
+
+    /// 16pt — Floating toolbar
+    static let toolbar: CGFloat = 16
 }
