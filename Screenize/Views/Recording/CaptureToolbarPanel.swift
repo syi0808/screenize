@@ -171,6 +171,7 @@ struct CaptureToolbarView: View {
 
             ToolbarIconButton(
                 icon: "xmark",
+                label: "Close",
                 tooltip: "Close",
                 action: coordinator.cancel
             )
@@ -207,6 +208,7 @@ struct CaptureToolbarView: View {
             // Restart
             ToolbarIconButton(
                 icon: "arrow.counterclockwise",
+                label: "Restart",
                 tooltip: "Restart Recording",
                 action: coordinator.restartRecording
             )
@@ -214,6 +216,7 @@ struct CaptureToolbarView: View {
             // Pause/Resume
             ToolbarIconButton(
                 icon: coordinator.isPaused ? "play.fill" : "pause.fill",
+                label: coordinator.isPaused ? "Resume" : "Pause",
                 tooltip: coordinator.isPaused ? "Resume" : "Pause",
                 action: coordinator.togglePause
             )
@@ -221,22 +224,18 @@ struct CaptureToolbarView: View {
             // Delete
             ToolbarIconButton(
                 icon: "trash",
+                label: "Delete",
                 tooltip: "Delete Recording",
                 action: coordinator.deleteRecording
             )
 
-            // Stop — distinctive red square
-            Button {
-                coordinator.stopRecording()
-            } label: {
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(Color.red)
-                    .frame(width: 12, height: 12)
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("Stop Recording")
+            // Stop
+            ToolbarIconButton(
+                icon: "stop.fill",
+                label: "Stop",
+                tooltip: "Stop Recording",
+                action: coordinator.stopRecording
+            )
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm)
@@ -293,6 +292,7 @@ private struct RecordingDot: View {
 
 private struct ToolbarIconButton: View {
     let icon: String
+    let label: String
     let tooltip: String
     let action: () -> Void
 
@@ -300,15 +300,19 @@ private struct ToolbarIconButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
-                .frame(width: 28, height: 28)
-                .background(
-                    RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                        .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
-                )
-                .contentShape(Rectangle())
+            VStack(spacing: Spacing.xxs) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .medium))
+                Text(label)
+                    .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
+            .frame(width: 44, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
