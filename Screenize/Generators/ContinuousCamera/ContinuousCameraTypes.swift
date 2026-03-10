@@ -129,6 +129,14 @@ struct ContinuousCameraSettings {
     var micro = MicroTrackerSettings()
     /// Dead zone targeting settings.
     var deadZone = DeadZoneSettings()
+    /// Lead time for immediate-urgency waypoints (camera starts moving this far ahead).
+    var leadTimeImmediate: TimeInterval = 0.24
+    /// Lead time for high-urgency waypoints.
+    var leadTimeHigh: TimeInterval = 0.16
+    /// Lead time for normal-urgency waypoints.
+    var leadTimeNormal: TimeInterval = 0.08
+    /// Lead time for lazy-urgency waypoints.
+    var leadTimeLazy: TimeInterval = 0.0
     /// Zoom displacement threshold below which zoom is considered settled.
     /// When zoom is transitioning (above threshold), position targets the
     /// waypoint center directly for synchronized zoom-pan arrival.
@@ -163,6 +171,10 @@ extension ContinuousCameraSettings {
         shot = ShotSettings(from: gs)
         micro = MicroTrackerSettings(from: gs)
         deadZone = DeadZoneSettings(from: gs)
+        leadTimeImmediate = TimeInterval(gs.timing.leadTimeImmediate)
+        leadTimeHigh = TimeInterval(gs.timing.leadTimeHigh)
+        leadTimeNormal = TimeInterval(gs.timing.leadTimeNormal)
+        leadTimeLazy = TimeInterval(gs.timing.leadTimeLazy)
         cursor = CursorEmissionSettings(from: gs)
         keystroke = KeystrokeEmissionSettings(from: gs)
     }

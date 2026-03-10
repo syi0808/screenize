@@ -79,7 +79,7 @@ struct WaypointGenerator {
             let baseUrgency = urgency(for: span.intent)
             let entryTime = max(
                 0,
-                span.startTime - entryLeadTime(for: baseUrgency)
+                span.startTime - entryLeadTime(for: baseUrgency, settings: settings)
             )
             let waypoint = CameraWaypoint(
                 time: entryTime,
@@ -111,16 +111,15 @@ struct WaypointGenerator {
     }
 
     /// Move high-urgency targets slightly earlier so the camera starts before the action.
-    private static func entryLeadTime(for urgency: WaypointUrgency) -> TimeInterval {
+    private static func entryLeadTime(
+        for urgency: WaypointUrgency,
+        settings: ContinuousCameraSettings
+    ) -> TimeInterval {
         switch urgency {
-        case .immediate:
-            return 0.24
-        case .high:
-            return 0.16
-        case .normal:
-            return 0.08
-        case .lazy:
-            return 0.0
+        case .immediate: return settings.leadTimeImmediate
+        case .high: return settings.leadTimeHigh
+        case .normal: return settings.leadTimeNormal
+        case .lazy: return settings.leadTimeLazy
         }
     }
 
