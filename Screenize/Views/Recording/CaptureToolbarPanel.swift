@@ -101,6 +101,22 @@ final class CaptureToolbarPanel: NSPanel {
         self.orderOut(nil)
     }
 
+    override func setFrameOrigin(_ point: NSPoint) {
+        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(
+            NSPoint(x: point.x + frame.width / 2, y: point.y + frame.height / 2)
+        ) }) ?? NSScreen.main else {
+            super.setFrameOrigin(point)
+            return
+        }
+
+        let screenFrame = screen.visibleFrame
+        let constrained = NSPoint(
+            x: min(max(point.x, screenFrame.minX), screenFrame.maxX - frame.width),
+            y: min(max(point.y, screenFrame.minY), screenFrame.maxY - frame.height)
+        )
+        super.setFrameOrigin(constrained)
+    }
+
     // Toolbar needs key status to receive ESC
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
