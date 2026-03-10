@@ -361,51 +361,53 @@ private struct ToolbarMicMenu: View {
     @State private var isHovering = false
 
     var body: some View {
-        Menu {
-            ForEach(availableDevices, id: \.uniqueID) { device in
-                Button {
-                    selectedDeviceID = device.uniqueID
-                    isEnabled = true
-                } label: {
-                    if isEnabled && selectedDeviceID == device.uniqueID {
-                        Label(device.localizedName, systemImage: "checkmark")
-                    } else {
-                        Text(device.localizedName)
+        VStack(spacing: Spacing.xxs) {
+            Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
+                .font(.system(size: 13, weight: .medium))
+            Text("Mic")
+                .font(.system(size: 9, weight: .medium))
+        }
+        .foregroundColor(.white.opacity(isEnabled
+            ? (isHovering ? DesignOpacity.opaque : DesignOpacity.strong)
+            : (isHovering ? DesignOpacity.strong : DesignOpacity.prominent)))
+        .frame(width: 44, height: 36)
+        .background(
+            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+        )
+        .contentShape(Rectangle())
+        .overlay {
+            Menu {
+                ForEach(availableDevices, id: \.uniqueID) { device in
+                    Button {
+                        selectedDeviceID = device.uniqueID
+                        isEnabled = true
+                    } label: {
+                        if isEnabled && selectedDeviceID == device.uniqueID {
+                            Label(device.localizedName, systemImage: "checkmark")
+                        } else {
+                            Text(device.localizedName)
+                        }
                     }
                 }
-            }
 
-            Divider()
+                Divider()
 
-            Button {
-                isEnabled = false
-            } label: {
-                if !isEnabled {
-                    Label("Off", systemImage: "checkmark")
-                } else {
-                    Text("Off")
+                Button {
+                    isEnabled = false
+                } label: {
+                    if !isEnabled {
+                        Label("Off", systemImage: "checkmark")
+                    } else {
+                        Text("Off")
+                    }
                 }
+            } label: {
+                Color.clear
             }
-        } label: {
-            VStack(spacing: Spacing.xxs) {
-                Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
-                    .font(.system(size: 13, weight: .medium))
-                Text("Mic")
-                    .font(.system(size: 9, weight: .medium))
-            }
-            .foregroundColor(.white.opacity(isEnabled
-                ? (isHovering ? DesignOpacity.opaque : DesignOpacity.strong)
-                : (isHovering ? DesignOpacity.strong : DesignOpacity.prominent)))
-            .frame(width: 44, height: 36)
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
-            )
-            .contentShape(Rectangle())
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
         .onHover { isHovering = $0 }
         .help(isEnabled ? "Microphone Source" : "Enable Microphone")
         .onAppear { refreshDevices() }
@@ -436,36 +438,38 @@ private struct ToolbarFrameRateMenu: View {
     private let options = [30, 60, 120, 240]
 
     var body: some View {
-        Menu {
-            ForEach(options, id: \.self) { fps in
-                Button {
-                    frameRate = fps
-                } label: {
-                    if frameRate == fps {
-                        Label("\(fps) fps", systemImage: "checkmark")
-                    } else {
-                        Text("\(fps) fps")
+        VStack(spacing: Spacing.xxs) {
+            Image(systemName: "gauge.with.dots.needle.67percent")
+                .font(.system(size: 13, weight: .medium))
+            Text("\(frameRate)fps")
+                .font(.system(size: 9, weight: .medium))
+        }
+        .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
+        .frame(width: 44, height: 36)
+        .background(
+            RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
+        )
+        .contentShape(Rectangle())
+        .overlay {
+            Menu {
+                ForEach(options, id: \.self) { fps in
+                    Button {
+                        frameRate = fps
+                    } label: {
+                        if frameRate == fps {
+                            Label("\(fps) fps", systemImage: "checkmark")
+                        } else {
+                            Text("\(fps) fps")
+                        }
                     }
                 }
+            } label: {
+                Color.clear
             }
-        } label: {
-            VStack(spacing: Spacing.xxs) {
-                Image(systemName: "gauge.with.dots.needle.67percent")
-                    .font(.system(size: 13, weight: .medium))
-                Text("\(frameRate)fps")
-                    .font(.system(size: 9, weight: .medium))
-            }
-            .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
-            .frame(width: 44, height: 36)
-            .background(
-                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
-                    .fill(Color.white.opacity(isHovering ? DesignOpacity.whisper : 0))
-            )
-            .contentShape(Rectangle())
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
         .onHover { isHovering = $0 }
         .help("Capture Frame Rate")
     }
