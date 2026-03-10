@@ -172,8 +172,7 @@ struct ScreenizeApp: App {
 
     private func openProjectFile() {
         let panel = NSOpenPanel()
-        let contentTypes = [UTType(filenameExtension: ScreenizeProject.packageExtension)!]
-        panel.allowedContentTypes = contentTypes
+        panel.allowedContentTypes = [UTType("com.screenize.project")!]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.treatsFilePackagesAsDirectories = false
