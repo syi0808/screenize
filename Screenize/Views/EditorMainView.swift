@@ -172,6 +172,11 @@ struct EditorMainView: View {
         .onReceive(NotificationCenter.default.publisher(for: .editorDuplicate)) { _ in
             viewModel.duplicateSelectedSegments()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .regenerateTimeline)) { _ in
+            Task {
+                await viewModel.runSmartGeneration()
+            }
+        }
         .onReceive(viewModel.undoStack.$canUndo) { canUndo in
             AppState.shared.canUndo = canUndo
         }
@@ -272,6 +277,14 @@ struct EditorMainView: View {
             .popover(isPresented: $showGeneratorPanel) {
                 GeneratorPanelView(viewModel: viewModel)
             }
+
+            // Advanced generation settings
+            Button {
+                GenerationSettingsWindowController.shared.showWindow()
+            } label: {
+                Image(systemName: "gearshape.2")
+            }
+            .help("Advanced Generation Settings")
 
             Divider()
                 .frame(height: Spacing.xl)

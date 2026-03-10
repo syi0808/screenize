@@ -115,6 +115,13 @@ struct ScreenizeApp: App {
                 .keyboardShortcut("t", modifiers: .command)
             }
 
+            CommandGroup(after: .appSettings) {
+                Button("Advanced Generation Settings...") {
+                    GenerationSettingsWindowController.shared.showWindow()
+                }
+                .keyboardShortcut(",", modifiers: [.command, .option])
+            }
+
             CommandGroup(replacing: .help) {
                 Button("Keyboard Shortcuts") {
                     NotificationCenter.default.post(name: .showKeyboardShortcuts, object: nil)
