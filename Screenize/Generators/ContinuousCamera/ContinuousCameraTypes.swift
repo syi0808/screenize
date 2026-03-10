@@ -41,6 +41,22 @@ struct DeadZoneSettings {
     var responseSlowThreshold: TimeInterval = 2.0
 }
 
+// MARK: - Startup Camera Settings
+
+/// Configuration for centered startup camera bias before the first meaningful action.
+struct StartupCameraSettings {
+    /// Whether startup center bias is enabled.
+    var enabled: Bool = true
+    /// Preferred establishing-shot center.
+    var initialCenter: NormalizedPoint = .center
+    /// Distance required to treat early cursor motion as deliberate.
+    var deliberateMotionDistance: CGFloat = 0.08
+    /// Time window at recording start used to detect deliberate motion.
+    var deliberateMotionWindow: TimeInterval = 0.35
+    /// Motion smaller than this is treated as capture jitter.
+    var jitterDistance: CGFloat = 0.02
+}
+
 // MARK: - Waypoint Urgency
 
 /// How quickly the camera should reach a waypoint.
@@ -129,6 +145,8 @@ struct ContinuousCameraSettings {
     var micro = MicroTrackerSettings()
     /// Dead zone targeting settings.
     var deadZone = DeadZoneSettings()
+    /// Startup center-bias settings.
+    var startup = StartupCameraSettings()
     /// Intent classification settings.
     var intentClassification = IntentClassificationSettings()
     /// Lead time for immediate-urgency waypoints (camera starts moving this far ahead).

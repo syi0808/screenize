@@ -10,6 +10,12 @@ import CoreGraphics
 /// via a separate spring.
 struct SpringDamperSimulator {
 
+    private struct PositionTargeting {
+        let target: NormalizedPoint
+        let omega: CGFloat
+        let damping: CGFloat
+    }
+
     // MARK: - Public API
 
     /// Simulate a continuous camera path with dead zone targeting.
@@ -22,6 +28,9 @@ struct SpringDamperSimulator {
     /// - Returns: Time-sorted array of per-tick camera transforms
     static func simulate(
         cursorPositions: [MousePositionData],
+        clickEvents: [ClickEventData] = [],
+        keyboardEvents: [KeyboardEventData] = [],
+        dragEvents: [DragEventData] = [],
         zoomWaypoints: [CameraWaypoint],
         intentSpans: [IntentSpan],
         duration: TimeInterval,
@@ -31,9 +40,17 @@ struct SpringDamperSimulator {
 
         let dt = 1.0 / settings.tickRate
         let initialZoom = zoomWaypoints.first?.targetZoom ?? 1.0
+        let startupState = StartupCameraPolicy.resolve(
+            cursorPositions: cursorPositions,
+            clickEvents: clickEvents,
+            keyboardEvents: keyboardEvents,
+            dragEvents: dragEvents,
+            intentSpans: intentSpans,
+            settings: settings.startup
+        )
 
         let initialCenter = ShotPlanner.clampCenter(
-            cursorPositions[0].position,
+            startupState.initialCenter,
             zoom: initialZoom
         )
         var state = CameraState(
@@ -145,45 +162,35 @@ struct SpringDamperSimulator {
             let isZoomTransitioning = zoomDisplacement
                 > settings.zoomSettleThreshold
                 && !zoomWaypoints.isEmpty
+            let startupBiasActive = startupState.releaseTime.map { t < $0 } ?? true
 
-            let effectivePosTarget: NormalizedPoint
-            let posOmega: CGFloat
-            let posDamping: CGFloat
-
-            if isZoomTransitioning {
-                let waypointCenter = zoomWaypoints[zoomIndex].targetCenter
-                let clamped = ShotPlanner.clampCenter(
-                    waypointCenter, zoom: targetZoom
-                )
-                effectivePosTarget = clamped
-                // Match zoom spring exactly for synchronized arrival
-                posOmega = 2.0 * .pi / max(
-                    0.001, settings.zoomResponse * effectiveZoomMult
-                )
-                posDamping = settings.zoomDampingRatio
-            } else {
-                effectivePosTarget = posTarget
-                let timeToNext = AdaptiveResponse.findNextActionTime(
-                    after: t,
-                    intentSpans: intentSpans
-                )
-                let adaptiveResponse = AdaptiveResponse.compute(
-                    timeToNextAction: timeToNext,
-                    settings: settings.deadZone
-                )
-                posOmega = 2.0 * .pi / max(0.001, adaptiveResponse)
-                posDamping = settings.positionDampingRatio
-            }
+            let positionTargeting = resolvePositionTargeting(
+                zoomWaypoints: zoomWaypoints,
+                zoomIndex: zoomIndex,
+                targetZoom: targetZoom,
+                effectiveZoomMult: effectiveZoomMult,
+                isZoomTransitioning: isZoomTransitioning,
+                startupBiasActive: startupBiasActive,
+                initialCenter: initialCenter,
+                posTarget: posTarget,
+                time: t,
+                intentSpans: intentSpans,
+                settings: settings
+            )
 
             let (newX, newVX) = springStep(
                 current: state.positionX, velocity: state.velocityX,
-                target: effectivePosTarget.x,
-                omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
+                target: positionTargeting.target.x,
+                omega: positionTargeting.omega,
+                zeta: positionTargeting.damping,
+                dt: CGFloat(dt)
             )
             let (newY, newVY) = springStep(
                 current: state.positionY, velocity: state.velocityY,
-                target: effectivePosTarget.y,
-                omega: posOmega, zeta: posDamping, dt: CGFloat(dt)
+                target: positionTargeting.target.y,
+                omega: positionTargeting.omega,
+                zeta: positionTargeting.damping,
+                dt: CGFloat(dt)
             )
 
             // Zoom spring: targets intent-derived zoom with urgency scaling
@@ -219,6 +226,52 @@ struct SpringDamperSimulator {
     }
 
     // MARK: - Helpers
+
+    private static func resolvePositionTargeting(
+        zoomWaypoints: [CameraWaypoint],
+        zoomIndex: Int,
+        targetZoom: CGFloat,
+        effectiveZoomMult: CGFloat,
+        isZoomTransitioning: Bool,
+        startupBiasActive: Bool,
+        initialCenter: NormalizedPoint,
+        posTarget: NormalizedPoint,
+        time: TimeInterval,
+        intentSpans: [IntentSpan],
+        settings: ContinuousCameraSettings
+    ) -> PositionTargeting {
+        if isZoomTransitioning {
+            let waypointCenter = zoomWaypoints[zoomIndex].targetCenter
+            let clampedCenter = ShotPlanner.clampCenter(waypointCenter, zoom: targetZoom)
+            return PositionTargeting(
+                target: clampedCenter,
+                omega: 2.0 * .pi / max(0.001, settings.zoomResponse * effectiveZoomMult),
+                damping: settings.zoomDampingRatio
+            )
+        }
+
+        if startupBiasActive {
+            return PositionTargeting(
+                target: initialCenter,
+                omega: 2.0 * .pi / max(0.001, settings.positionResponse),
+                damping: settings.positionDampingRatio
+            )
+        }
+
+        let timeToNext = AdaptiveResponse.findNextActionTime(
+            after: time,
+            intentSpans: intentSpans
+        )
+        let adaptiveResponse = AdaptiveResponse.compute(
+            timeToNextAction: timeToNext,
+            settings: settings.deadZone
+        )
+        return PositionTargeting(
+            target: posTarget,
+            omega: 2.0 * .pi / max(0.001, adaptiveResponse),
+            damping: settings.positionDampingRatio
+        )
+    }
 
     /// Clamp camera state to valid bounds with soft pushback on center axes.
     private static func clampState(

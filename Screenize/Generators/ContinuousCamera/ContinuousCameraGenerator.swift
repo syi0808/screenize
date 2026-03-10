@@ -62,6 +62,9 @@ class ContinuousCameraGenerator {
         // Step 5: Simulate camera path with dead zone targeting
         let rawSamples = SpringDamperSimulator.simulate(
             cursorPositions: effectiveMouseData.positions,
+            clickEvents: effectiveMouseData.clicks,
+            keyboardEvents: effectiveMouseData.keyboardEvents,
+            dragEvents: effectiveMouseData.dragEvents,
             zoomWaypoints: waypoints,
             intentSpans: intentSpans,
             duration: duration,

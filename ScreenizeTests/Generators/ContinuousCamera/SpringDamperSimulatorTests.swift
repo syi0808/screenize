@@ -32,8 +32,9 @@ final class SpringDamperSimulatorTests: XCTestCase {
 
     // MARK: - Cursor Following
 
-    func test_simulate_stationaryCursor_convergesOnPosition() {
-        // At zoom > 1.0, cursor outside dead zone causes camera to follow.
+    func test_simulate_stationaryCursor_afterClick_convergesOnPosition() {
+        // After startup bias is released by a click, a stationary cursor outside
+        // the dead zone should still pull the camera toward it.
         // At zoom 2.0, viewport half = 0.25, safe half = 0.25 * 0.75 = 0.1875.
         // Cursor at (0.15, 0.75) is far from center → outside dead zone.
         let positions = (0..<300).map { i in
@@ -46,6 +47,13 @@ final class SpringDamperSimulatorTests: XCTestCase {
         )]
         let result = SpringDamperSimulator.simulate(
             cursorPositions: positions,
+            clickEvents: [
+                ClickEventData(
+                    time: 0.05,
+                    position: NormalizedPoint(x: 0.15, y: 0.75),
+                    clickType: .leftDown
+                )
+            ],
             zoomWaypoints: zoomWPs,
             intentSpans: [],
             duration: 5.0,
@@ -114,7 +122,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         }
     }
 
-    func test_simulate_startPosition_matchesFirstCursorPosition() {
+    func test_simulate_quietStart_beginsAtScreenCenter() {
         let positions = [
             MousePositionData(time: 0, position: NormalizedPoint(x: 0.4, y: 0.6))
         ]
@@ -129,8 +137,87 @@ final class SpringDamperSimulatorTests: XCTestCase {
             XCTFail("Expected at least one sample")
             return
         }
-        XCTAssertEqual(first.transform.center.x, 0.4, accuracy: 0.001)
-        XCTAssertEqual(first.transform.center.y, 0.6, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.y, 0.5, accuracy: 0.001)
+    }
+
+    func test_simulate_immediateClick_releasesStartupBias() {
+        let positions = (0..<90).map { i in
+            MousePositionData(
+                time: Double(i) / 60.0,
+                position: NormalizedPoint(x: 0.15, y: 0.80)
+            )
+        }
+
+        let zoomWPs = [CameraWaypoint(
+            time: 0,
+            targetZoom: 2.0,
+            targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+            urgency: .normal,
+            source: .clicking
+        )]
+
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            clickEvents: [
+                ClickEventData(
+                    time: 0.05,
+                    position: NormalizedPoint(x: 0.15, y: 0.80),
+                    clickType: .leftDown
+                )
+            ],
+            zoomWaypoints: zoomWPs,
+            intentSpans: [],
+            duration: 1.5,
+            settings: defaultSettings
+        )
+
+        guard let first = result.first,
+              let postRelease = result.first(where: { $0.time >= 0.35 }) else {
+            XCTFail("Expected startup and post-release samples")
+            return
+        }
+
+        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.001)
+        XCTAssertLessThan(postRelease.transform.center.x, 0.45)
+        XCTAssertGreaterThan(postRelease.transform.center.y, 0.55)
+    }
+
+    func test_simulate_deliberateEarlyMotion_releasesStartupBiasWithoutClick() {
+        let positions = [
+            MousePositionData(time: 0.0, position: NormalizedPoint(x: 0.10, y: 0.90)),
+            MousePositionData(time: 0.10, position: NormalizedPoint(x: 0.12, y: 0.88)),
+            MousePositionData(time: 0.20, position: NormalizedPoint(x: 0.22, y: 0.78)),
+            MousePositionData(time: 0.30, position: NormalizedPoint(x: 0.22, y: 0.78)),
+            MousePositionData(time: 0.40, position: NormalizedPoint(x: 0.22, y: 0.78)),
+            MousePositionData(time: 0.50, position: NormalizedPoint(x: 0.22, y: 0.78))
+        ]
+
+        let zoomWPs = [CameraWaypoint(
+            time: 0,
+            targetZoom: 2.0,
+            targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+            urgency: .normal,
+            source: .clicking
+        )]
+
+        let result = SpringDamperSimulator.simulate(
+            cursorPositions: positions,
+            zoomWaypoints: zoomWPs,
+            intentSpans: [],
+            duration: 1.0,
+            settings: defaultSettings
+        )
+
+        guard let first = result.first,
+              let postRelease = result.first(where: { $0.time >= 0.55 }) else {
+            XCTFail("Expected startup and post-release samples")
+            return
+        }
+
+        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.001)
+        XCTAssertLessThan(postRelease.transform.center.x, 0.45)
+        XCTAssertGreaterThan(postRelease.transform.center.y, 0.55)
     }
 
     // MARK: - Zoom from Waypoints

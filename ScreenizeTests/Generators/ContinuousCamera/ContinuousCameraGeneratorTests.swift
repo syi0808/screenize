@@ -147,29 +147,49 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
                       "Clicking activity should produce zoomed-in segments")
     }
 
-    func test_generate_fixtureProject_startsWithEstablishingShot() throws {
-        let fixture = try loadFixtureProjectInput()
+    func test_generate_quietStart_startsWithEstablishingShot() {
+        let quietStart = makeQuietOffCenterMouseData(duration: 2.0)
         let result = generator.generate(
-            from: fixture.mouseData,
-            uiStateSamples: fixture.uiStateSamples,
+            from: quietStart,
+            uiStateSamples: [],
             frameAnalysis: [],
-            screenBounds: fixture.screenBounds,
+            screenBounds: screenBounds,
             settings: ContinuousCameraSettings()
         )
 
         guard let first = result.cameraTrack.segments.first?.continuousTransforms?.first else {
-            XCTFail("Expected continuous transforms for fixture project")
+            XCTFail("Expected continuous transforms for quiet-start recording")
             return
         }
 
         XCTAssertEqual(first.time, 0, accuracy: 0.001)
         XCTAssertEqual(first.transform.zoom, 1.0, accuracy: 0.05)
-        // Camera starts at cursor's initial position (cursor-driven architecture)
-        // Just verify center is within valid bounds
-        XCTAssertGreaterThanOrEqual(first.transform.center.x, 0.0)
-        XCTAssertLessThanOrEqual(first.transform.center.x, 1.0)
-        XCTAssertGreaterThanOrEqual(first.transform.center.y, 0.0)
-        XCTAssertLessThanOrEqual(first.transform.center.y, 1.0)
+        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.05)
+        XCTAssertEqual(first.transform.center.y, 0.5, accuracy: 0.05)
+    }
+
+    func test_generate_immediateClick_releasesStartupBiasEarly() {
+        let mockData = makeImmediateClickMouseData(duration: 2.0)
+
+        let result = generator.generate(
+            from: mockData,
+            uiStateSamples: [],
+            frameAnalysis: [],
+            screenBounds: screenBounds,
+            settings: ContinuousCameraSettings()
+        )
+
+        guard let samples = result.cameraTrack.segments.first?.continuousTransforms,
+              let first = samples.first,
+              let postRelease = samples.first(where: { $0.time >= 0.35 }) else {
+            XCTFail("Expected generated continuous transforms")
+            return
+        }
+
+        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.01)
+        XCTAssertEqual(first.transform.center.y, 0.5, accuracy: 0.01)
+        XCTAssertLessThan(postRelease.transform.center.x, 0.45)
+        XCTAssertGreaterThan(postRelease.transform.center.y, 0.55)
     }
 
     func test_fixtureProjectURL_searchesAncestorCheckoutWhenRunningFromWorktree() throws {
@@ -253,6 +273,51 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
             frameRate: 60.0,
             positions: positions,
             clicks: clicks
+        )
+    }
+
+    private func makeImmediateClickMouseData(duration: TimeInterval) -> MockMouseDataSource {
+        let posCount = Int(duration * 10)
+        let positions = (0..<posCount).map { i -> MousePositionData in
+            let t = Double(i) / 10.0
+            return MousePositionData(
+                time: t,
+                position: NormalizedPoint(x: 0.15, y: 0.80)
+            )
+        }
+        let clicks = [
+            ClickEventData(
+                time: 0.05,
+                position: NormalizedPoint(x: 0.15, y: 0.80),
+                clickType: .leftDown
+            ),
+            ClickEventData(
+                time: 0.15,
+                position: NormalizedPoint(x: 0.15, y: 0.80),
+                clickType: .leftUp
+            )
+        ]
+        return MockMouseDataSource(
+            duration: duration,
+            frameRate: 60.0,
+            positions: positions,
+            clicks: clicks
+        )
+    }
+
+    private func makeQuietOffCenterMouseData(duration: TimeInterval) -> MockMouseDataSource {
+        let posCount = Int(duration * 10)
+        let positions = (0..<posCount).map { i -> MousePositionData in
+            let t = Double(i) / 10.0
+            return MousePositionData(
+                time: t,
+                position: NormalizedPoint(x: 0.20, y: 0.80)
+            )
+        }
+        return MockMouseDataSource(
+            duration: duration,
+            frameRate: 60.0,
+            positions: positions
         )
     }
 

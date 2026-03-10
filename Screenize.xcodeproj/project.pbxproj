@@ -69,7 +69,9 @@
 		D5100001296A0001 /* ClickScaleModifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5200001296A0001 /* ClickScaleModifierTests.swift */; };
 		E9000001296A0001 /* TransparentBackgroundFallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9100001296A0001 /* TransparentBackgroundFallbackTests.swift */; };
 		E9000002296A0001 /* TransparentBackgroundFallback.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9100002296A0001 /* TransparentBackgroundFallback.swift */; };
+		E7000015296A0001 /* StartupCameraPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100015296A0001 /* StartupCameraPolicyTests.swift */; };
 		D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100001296A0001 /* SmoothedMouseDataSource.swift */; };
+		E7000004296A0001 /* StartupCameraPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7100004296A0001 /* StartupCameraPolicy.swift */; };
 		D3000001VFRRECMG /* VFRRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3000002VFRRECMG /* VFRRecordingManager.swift */; };
 		D3000002296A0001 /* SmoothedMouseDataSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3100002296A0001 /* SmoothedMouseDataSourceTests.swift */; };
 		D4000001296A0001 /* TimelineView+SegmentBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4000002296A0001 /* TimelineView+SegmentBlock.swift */; };
@@ -304,10 +306,12 @@
 		E7100001296A0001 /* ContinuousCameraTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraTypes.swift; sourceTree = "<group>"; };
 		E7100002296A0001 /* WaypointGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGenerator.swift; sourceTree = "<group>"; };
 		E7100003296A0001 /* SpringDamperSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulator.swift; sourceTree = "<group>"; };
+		E7100004296A0001 /* StartupCameraPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupCameraPolicy.swift; sourceTree = "<group>"; };
 		E7100005296A0001 /* ContinuousCameraGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGenerator.swift; sourceTree = "<group>"; };
 		E7100011296A0001 /* WaypointGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaypointGeneratorTests.swift; sourceTree = "<group>"; };
 		E7100012296A0001 /* SpringDamperSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringDamperSimulatorTests.swift; sourceTree = "<group>"; };
 		E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousCameraGeneratorTests.swift; sourceTree = "<group>"; };
+		E7100015296A0001 /* StartupCameraPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupCameraPolicyTests.swift; sourceTree = "<group>"; };
 		F0A00000296A0001 /* Screenize.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Screenize.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1000001296A0001 /* ScreenizeProject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenizeProject.swift; sourceTree = "<group>"; };
 		F1000002296A0001 /* MediaAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaAsset.swift; sourceTree = "<group>"; };
@@ -633,6 +637,7 @@
 				E7100001296A0001 /* ContinuousCameraTypes.swift */,
 				E7100002296A0001 /* WaypointGenerator.swift */,
 				E7100003296A0001 /* SpringDamperSimulator.swift */,
+				E7100004296A0001 /* StartupCameraPolicy.swift */,
 				E7100005296A0001 /* ContinuousCameraGenerator.swift */,
 				DA100001296A0001 /* MicroTracker.swift */,
 				A4100001296A0001 /* DeadZoneTarget.swift */,
@@ -647,6 +652,7 @@
 				E7100011296A0001 /* WaypointGeneratorTests.swift */,
 				E7100012296A0001 /* SpringDamperSimulatorTests.swift */,
 				E7100014296A0001 /* ContinuousCameraGeneratorTests.swift */,
+				E7100015296A0001 /* StartupCameraPolicyTests.swift */,
 				DA100002296A0001 /* MicroTrackerTests.swift */,
 				A3100001296A0001 /* DeadZoneTargetTests.swift */,
 				A6100001296A0001 /* AdaptiveResponseTests.swift */,
@@ -1081,6 +1087,7 @@
 				E7000011296A0001 /* WaypointGeneratorTests.swift in Sources */,
 				E7000012296A0001 /* SpringDamperSimulatorTests.swift in Sources */,
 				E7000014296A0001 /* ContinuousCameraGeneratorTests.swift in Sources */,
+				E7000015296A0001 /* StartupCameraPolicyTests.swift in Sources */,
 				DA000002296A0001 /* MicroTrackerTests.swift in Sources */,
 				A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */,
 				A6000001296A0001 /* AdaptiveResponseTests.swift in Sources */,
@@ -1258,6 +1265,7 @@
 				E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */,
 				E7000002296A0001 /* WaypointGenerator.swift in Sources */,
 				E7000003296A0001 /* SpringDamperSimulator.swift in Sources */,
+				E7000004296A0001 /* StartupCameraPolicy.swift in Sources */,
 				E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */,
 				DA000001296A0001 /* MicroTracker.swift in Sources */,
 				A4000001296A0001 /* DeadZoneTarget.swift in Sources */,
