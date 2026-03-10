@@ -71,19 +71,19 @@ extension PreviewEngine {
     /// Recreate the evaluator when the timeline updates
     /// - Parameter timeline: New timeline
     func updateTimeline(_ timeline: Timeline) {
-        guard let project = project else { return }
+        self.project?.timeline = timeline
+        guard let project = self.project else { return }
 
-        // Re-interpolate mouse positions if spring config changed
+        // Camera-relative cursor smoothing depends on both the spring config and camera path.
+        // Rebuild smoothed positions whenever the timeline changes.
         let newSpringConfig = timeline.cursorTrackV2?.springConfig
-        if newSpringConfig != lastSpringConfig {
-            let smoothedResult = MouseDataConverter.loadAndConvertWithInterpolation(
-                from: project,
-                frameRate: frameRate,
-                springConfig: newSpringConfig
-            )
-            smoothedMousePositions = smoothedResult.positions
-            lastSpringConfig = newSpringConfig
-        }
+        let smoothedResult = MouseDataConverter.loadAndConvertWithInterpolation(
+            from: project,
+            frameRate: frameRate,
+            springConfig: newSpringConfig
+        )
+        smoothedMousePositions = smoothedResult.positions
+        lastSpringConfig = newSpringConfig
 
         // Create a new evaluator (reuse stored mouse data)
         let newEvaluator = RenderPipelineFactory.createEvaluator(

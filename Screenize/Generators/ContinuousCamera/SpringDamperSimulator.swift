@@ -32,9 +32,13 @@ struct SpringDamperSimulator {
         let dt = 1.0 / settings.tickRate
         let initialZoom = zoomWaypoints.first?.targetZoom ?? 1.0
 
+        let initialCenter = ShotPlanner.clampCenter(
+            cursorPositions[0].position,
+            zoom: initialZoom
+        )
         var state = CameraState(
-            positionX: 0.5,
-            positionY: 0.5,
+            positionX: initialCenter.x,
+            positionY: initialCenter.y,
             zoom: initialZoom
         )
         clampState(&state, settings: settings, dt: CGFloat(dt))
@@ -62,8 +66,7 @@ struct SpringDamperSimulator {
                     && cursorPositions[cursorIndex + 1].time <= t {
                 cursorIndex += 1
             }
-            let rawCursorPos = cursorPositions[cursorIndex].position
-            let cursorPos = rawCursorPos
+            let cursorPos = cursorPositions[cursorIndex].position
 
             // Advance zoom waypoint index
             let previousZoomIndex = zoomIndex
@@ -118,17 +121,7 @@ struct SpringDamperSimulator {
                 intentIndex += 1
             }
 
-            // Determine if currently typing
-            let isTyping: Bool
-            if intentIndex < intentSpans.count {
-                if case .typing = intentSpans[intentIndex].intent {
-                    isTyping = true
-                } else {
-                    isTyping = false
-                }
-            } else {
-                isTyping = false
-            }
+            let isTyping = isTypingIntent(intentSpans, at: intentIndex)
 
             // Dead zone targeting with hysteresis
             let dzResult = DeadZoneTarget.computeWithState(
@@ -283,6 +276,17 @@ struct SpringDamperSimulator {
                 center: NormalizedPoint(x: state.positionX, y: state.positionY)
             )
         )
+    }
+
+    private static func isTypingIntent(
+        _ intentSpans: [IntentSpan],
+        at index: Int
+    ) -> Bool {
+        guard index < intentSpans.count else { return false }
+        if case .typing = intentSpans[index].intent {
+            return true
+        }
+        return false
     }
 
     // MARK: - Spring Math

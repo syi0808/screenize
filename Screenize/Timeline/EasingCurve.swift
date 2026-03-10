@@ -59,8 +59,11 @@ enum EasingCurve: Codable, Equatable, Hashable {
         return clamp(result, min: 0, max: 1)
     }
 
-    /// Return the raw value without clamping
-    func applyUnclamped(_ t: Double) -> Double {
+    /// Return the raw value without clamping.
+    /// - Parameters:
+    ///   - t: Normalized progress (0.0–1.0)
+    ///   - duration: Actual animation duration in seconds for duration-aware curves like spring
+    func applyUnclamped(_ t: Double, duration: Double = 1.0) -> Double {
         switch self {
         case .linear:
             return t
@@ -74,11 +77,16 @@ enum EasingCurve: Codable, Equatable, Hashable {
             return Double(cubicBezierValue(t: CGFloat(t), p1x: p1x, p1y: p1y, p2x: p2x, p2y: p2y))
         case .spring(let zeta, let responseParam):
             let omega = 2.0 * .pi / max(0.01, Double(responseParam))
+            let clampedDuration = max(0.001, duration)
             let raw = Double(springRawValue(
-                zeta: CGFloat(zeta), omega: CGFloat(omega), actualTime: CGFloat(t)
+                zeta: CGFloat(zeta),
+                omega: CGFloat(omega),
+                actualTime: CGFloat(t * clampedDuration)
             ))
             let endVal = Double(springRawValue(
-                zeta: CGFloat(zeta), omega: CGFloat(omega), actualTime: 1.0
+                zeta: CGFloat(zeta),
+                omega: CGFloat(omega),
+                actualTime: CGFloat(clampedDuration)
             ))
             guard abs(endVal) > 0.001 else { return t }
             return raw / endVal
@@ -142,9 +150,7 @@ enum EasingCurve: Codable, Equatable, Hashable {
             let wd = omega * sqrt(1.0 - zeta * zeta)
             let zo = zeta * omega
             let decay = exp(-zo * actualTime)
-            let cosVal = cos(wd * actualTime)
             let sinVal = sin(wd * actualTime)
-            let ratio = zo / wd
             // d/dt = e^(-ζωt) * [(ζω)(cos + ratio·sin) + (wd·sin - ratio·wd·cos)]
             //       = e^(-ζωt) * [ζω·cos + ζω·ratio·sin + wd·sin - ratio·wd·cos]
             //       = e^(-ζωt) * [(ζω - ratio·wd)cos + (ζω·ratio + wd)sin]

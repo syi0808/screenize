@@ -114,7 +114,7 @@ final class SpringDamperSimulatorTests: XCTestCase {
         }
     }
 
-    func test_simulate_startPosition_isCenter() {
+    func test_simulate_startPosition_matchesFirstCursorPosition() {
         let positions = [
             MousePositionData(time: 0, position: NormalizedPoint(x: 0.4, y: 0.6))
         ]
@@ -129,8 +129,8 @@ final class SpringDamperSimulatorTests: XCTestCase {
             XCTFail("Expected at least one sample")
             return
         }
-        XCTAssertEqual(first.transform.center.x, 0.5, accuracy: 0.001)
-        XCTAssertEqual(first.transform.center.y, 0.5, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.x, 0.4, accuracy: 0.001)
+        XCTAssertEqual(first.transform.center.y, 0.6, accuracy: 0.001)
     }
 
     // MARK: - Zoom from Waypoints

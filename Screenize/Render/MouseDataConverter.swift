@@ -91,10 +91,12 @@ struct MouseDataConverter {
             return ([], [])
         }
         let result = convertFromMouseDataSource(source)
+        let interpolationFrameRate = max(frameRate, 60.0)
         let interpolatedPositions = PreviewEngine.interpolateMousePositions(
             result.positions,
-            outputFrameRate: frameRate,
-            springConfig: springConfig
+            outputFrameRate: interpolationFrameRate,
+            springConfig: springConfig,
+            cameraTransforms: project.timeline.continuousTransforms
         )
         return (interpolatedPositions, result.clicks)
     }

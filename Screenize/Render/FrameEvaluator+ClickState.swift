@@ -74,7 +74,10 @@ extension FrameEvaluator {
                 clickModifier = pressedScale
             } else {
                 let t = (time - upTime) / releaseDuration
-                let eased = config.mouseUpSpring.applyUnclamped(t)
+                let eased = config.mouseUpSpring.applyUnclamped(
+                    t,
+                    duration: releaseDuration
+                )
                 clickModifier = pressedScale + (1.0 - pressedScale) * CGFloat(eased)
             }
 

@@ -198,6 +198,29 @@ final class ClickScaleModifierTests: XCTestCase {
         )
     }
 
+    func testReleaseRespectsConfiguredDuration() {
+        let config = ClickFeedbackConfig.default
+        let click = makeClick(at: 1.0, duration: 0.3)
+        let segment = makeCursorSegment(clickFeedback: config)
+        let evaluator = makeEvaluator(
+            clickEvents: [click],
+            cursorSegment: segment
+        )
+
+        let upTime = 1.3
+        let quarterRelease = upTime + config.mouseUpDuration * 0.25
+        let scale = evaluator.computeClickScaleModifier(at: quarterRelease)
+
+        XCTAssertLessThan(
+            scale, 0.95,
+            "Release should still be visibly animating at 25% progress"
+        )
+        XCTAssertGreaterThan(
+            scale, config.mouseDownScale,
+            "Release should move back toward the resting scale"
+        )
+    }
+
     // MARK: - Fallback to Default Config
 
     func testNoSegment_usesDefaultConfig() {
