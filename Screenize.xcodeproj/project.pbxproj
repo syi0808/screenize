@@ -333,6 +333,7 @@
 		F100002D296A0001 /* BackgroundRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRenderer.swift; sourceTree = "<group>"; };
 		F100002E296A0001 /* WindowTransformApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowTransformApplicator.swift; sourceTree = "<group>"; };
 		F100002F296A0001 /* WindowEffectApplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowEffectApplicator.swift; sourceTree = "<group>"; };
+		DD100001296A0001 /* SettingControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingControls.swift; sourceTree = "<group>"; };
 		F1000030296A0001 /* TimeRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRulerView.swift; sourceTree = "<group>"; };
 		F1000031296A0001 /* PlayheadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayheadView.swift; sourceTree = "<group>"; };
 		F1000034296A0001 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
@@ -772,6 +773,7 @@
 				F2000042296A0001 /* Inspector */,
 				F20000F0296A0001 /* Recording */,
 				A12000A0296A0001 /* Onboarding */,
+				DD200001296A0001 /* Settings */,
 				F1000050296A0001 /* PreviewView.swift */,
 				CA100002296A0001 /* MetalPreviewView.swift */,
 				F1000051296A0001 /* ExportView.swift */,
@@ -784,6 +786,14 @@
 				2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		DD200001296A0001 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				DD100001296A0001 /* SettingControls.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		F2000041296A0001 /* Timeline */ = {
@@ -1160,6 +1170,7 @@
 				C1000001296A0001 /* InspectorView+SegmentBindings.swift in Sources */,
 				F0000045296A0001 /* SettingsInspector.swift in Sources */,
 				F0000046296A0001 /* PresetPickerView.swift in Sources */,
+				DD000001296A0001 /* SettingControls.swift in Sources */,
 				F0000050296A0001 /* PreviewView.swift in Sources */,
 				F0000051296A0001 /* ExportView.swift in Sources */,
 				CB000001296A0001 /* ExportView+Settings.swift in Sources */,
