@@ -59,7 +59,8 @@ extension EditorViewModel {
             let generated: GeneratedTimeline
             let springConfig = project.timeline.cursorTrackV2?.springConfig ?? .default
 
-            var ccSettings = ContinuousCameraSettings()
+            let generationSettings = GenerationSettingsManager.shared.effectiveSettings(for: project)
+            var ccSettings = ContinuousCameraSettings(from: generationSettings)
             ccSettings.springConfig = springConfig
             generated = ContinuousCameraGenerator().generate(
                 from: mouseDataSource,
