@@ -403,7 +403,8 @@ private struct ToolbarMicMenu: View {
                     }
                 }
             } label: {
-                Color.clear
+                Color.white.opacity(0.001)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -465,7 +466,8 @@ private struct ToolbarFrameRateMenu: View {
                     }
                 }
             } label: {
-                Color.clear
+                Color.white.opacity(0.001)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
