@@ -93,14 +93,16 @@ final class MouseDataRecorder {
         isRecording = false
         stopPositionSampling()
         stopUIStateSampling()
-        eventMonitor.removeAllMonitors()
-        keyboardHandler?.stop()
 
         let duration = ProcessInfo.processInfo.systemUptime - recordingStartTime
 
-        // Handle any unfinished clicks and drags
-        clickHandler?.finalizePendingClicks()
+        // Finalize pending clicks/drags BEFORE removing monitors, so that
+        // any in-flight mouseUp events can still arrive and be processed.
+        clickHandler?.finalizePendingClicks(recordingDuration: duration)
         dragHandler?.finalizePendingDrag(screenBounds: screenBounds)
+
+        eventMonitor.removeAllMonitors()
+        keyboardHandler?.stop()
 
         // Lock to safely capture final arrays (timer callback may still be in-flight)
         let (finalPositions, finalUISamples) = lock.withLock {

@@ -104,32 +104,24 @@ final class ClickEventHandler {
 
     // MARK: - Finalization
 
-    private func finalizePendingClick(id: UUID) {
-        lock.withLock {
-            guard let pending = pendingClicks[id] else { return }
-
-            let clickEvent = MouseClickEvent(
-                timestamp: pending.start,
-                x: pending.position.x,
-                y: pending.position.y,
-                type: pending.type,
-                duration: 0.1,  // Default duration
-                targetElement: pending.targetElement
-            )
-            clicks.append(clickEvent)
-            pendingClicks.removeValue(forKey: id)
-        }
-    }
-
-    func finalizePendingClicks() {
+    /// Finalize any pending clicks that never received a mouseUp event.
+    /// Uses the recording duration to compute the actual hold time instead of a
+    /// hardcoded fallback, so that drags held until recording end get correct durations.
+    func finalizePendingClicks(recordingDuration: TimeInterval? = nil) {
         lock.withLock {
             for (_, pending) in pendingClicks {
+                let duration: TimeInterval
+                if let recordingDuration {
+                    duration = max(0.05, recordingDuration - pending.start)
+                } else {
+                    duration = 0.1
+                }
                 let clickEvent = MouseClickEvent(
                     timestamp: pending.start,
                     x: pending.position.x,
                     y: pending.position.y,
                     type: pending.type,
-                    duration: 0.1,
+                    duration: duration,
                     targetElement: pending.targetElement
                 )
                 clicks.append(clickEvent)
