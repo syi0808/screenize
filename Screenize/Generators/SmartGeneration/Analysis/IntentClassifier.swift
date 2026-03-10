@@ -53,7 +53,8 @@ struct IntentClassifier {
     /// Classify an event timeline into intent spans.
     static func classify(
         events timeline: EventTimeline,
-        uiStateSamples: [UIStateSample]
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings = IntentClassificationSettings()
     ) -> [IntentSpan] {
         guard timeline.duration > 0 else { return [] }
 
@@ -71,11 +72,11 @@ struct IntentClassifier {
 
         // Detect each intent type independently
         let typingSpans = detectTypingSpans(
-            from: timeline, uiStateSamples: uiStateSamples
+            from: timeline, uiStateSamples: uiStateSamples, settings: settings
         )
         let draggingSpans = detectDraggingSpans(from: timeline)
-        let scrollingSpans = detectScrollingSpans(from: timeline)
-        let switchingSpans = detectSwitchingSpans(from: timeline)
+        let scrollingSpans = detectScrollingSpans(from: timeline, settings: settings)
+        let switchingSpans = detectSwitchingSpans(from: timeline, settings: settings)
 
         // Click/navigating detection excludes events already covered by typing/dragging
         let excludedRanges = (typingSpans + draggingSpans).map {
@@ -83,7 +84,7 @@ struct IntentClassifier {
         }
         let clickSpans = detectClickSpans(
             from: timeline, excludingTimeRanges: excludedRanges,
-            uiStateSamples: uiStateSamples
+            uiStateSamples: uiStateSamples, settings: settings
         )
 
         // Merge all spans and sort by start time
@@ -95,14 +96,15 @@ struct IntentClassifier {
         allSpans = resolveOverlaps(allSpans)
 
         // Fill gaps with idle spans
-        return fillGaps(spans: allSpans, duration: timeline.duration)
+        return fillGaps(spans: allSpans, duration: timeline.duration, settings: settings)
     }
 
     // MARK: - Typing Detection
 
     private static func detectTypingSpans(
         from timeline: EventTimeline,
-        uiStateSamples: [UIStateSample]
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings
     ) -> [IntentSpan] {
         let keyDownEvents = timeline.events.filter { event in
             if case .keyDown(let data) = event.kind {
@@ -119,11 +121,11 @@ struct IntentClassifier {
 
         for i in 1..<keyDownEvents.count {
             let event = keyDownEvents[i]
-            if event.time - lastKeyTime > typingSessionTimeout {
+            if event.time - lastKeyTime > TimeInterval(settings.typingSessionTimeout) {
                 spans.append(makeTypingSpan(
                     start: sessionStart, end: lastKeyTime,
                     keyCount: keyCount, timeline: timeline,
-                    uiStateSamples: uiStateSamples
+                    uiStateSamples: uiStateSamples, settings: settings
                 ))
                 sessionStart = event.time
                 keyCount = 1
@@ -136,7 +138,7 @@ struct IntentClassifier {
         spans.append(makeTypingSpan(
             start: sessionStart, end: lastKeyTime,
             keyCount: keyCount, timeline: timeline,
-            uiStateSamples: uiStateSamples
+            uiStateSamples: uiStateSamples, settings: settings
         ))
 
         return spans
@@ -147,7 +149,8 @@ struct IntentClassifier {
         end: TimeInterval,
         keyCount: Int,
         timeline: EventTimeline,
-        uiStateSamples: [UIStateSample]
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings
     ) -> IntentSpan {
         // Use original keystroke time for focus position (before anticipation shift).
         // Prefer caret/cursor signal from nearest UI sample when available.
@@ -166,7 +169,7 @@ struct IntentClassifier {
         let confidence: Float = keyCount > 3 ? 0.9 : (keyCount > 1 ? 0.7 : 0.5)
         // Shift start time backward so the camera transition completes before
         // actual typing begins, giving a natural anticipation feel.
-        let anticipatedStart = max(0, start - typingAnticipation)
+        let anticipatedStart = max(0, start - TimeInterval(settings.typingAnticipation))
         return IntentSpan(
             startTime: anticipatedStart,
             endTime: end,
@@ -309,7 +312,8 @@ struct IntentClassifier {
     // MARK: - Scrolling Detection
 
     private static func detectScrollingSpans(
-        from timeline: EventTimeline
+        from timeline: EventTimeline,
+        settings: IntentClassificationSettings
     ) -> [IntentSpan] {
         var spans: [IntentSpan] = []
         var scrollStart: TimeInterval?
@@ -321,7 +325,8 @@ struct IntentClassifier {
                 if scrollStart == nil {
                     scrollStart = event.time
                     scrollPosition = event.position
-                } else if let start = scrollStart, event.time - scrollEnd > scrollMergeGap {
+                } else if let start = scrollStart,
+                          event.time - scrollEnd > TimeInterval(settings.scrollMergeGap) {
                     spans.append(IntentSpan(
                         startTime: start,
                         endTime: scrollEnd,
@@ -354,7 +359,8 @@ struct IntentClassifier {
     // MARK: - Switching Detection
 
     private static func detectSwitchingSpans(
-        from timeline: EventTimeline
+        from timeline: EventTimeline,
+        settings: IntentClassificationSettings
     ) -> [IntentSpan] {
         var spans: [IntentSpan] = []
         var lastAppIdentifier: String?
@@ -368,13 +374,14 @@ struct IntentClassifier {
             if let lastApp = lastAppIdentifier,
                !appIdentifiersEquivalent(lastApp, currentApp) {
                 let switchTime = event.time
-                guard switchTime - lastSwitchTime > pointSpanDuration * 0.5 else {
+                guard switchTime - lastSwitchTime
+                    > TimeInterval(settings.pointSpanDuration) * 0.5 else {
                     lastAppIdentifier = currentApp
                     continue
                 }
                 spans.append(IntentSpan(
-                    startTime: max(0, switchTime - pointSpanDuration),
-                    endTime: switchTime + pointSpanDuration,
+                    startTime: max(0, switchTime - TimeInterval(settings.pointSpanDuration)),
+                    endTime: switchTime + TimeInterval(settings.pointSpanDuration),
                     intent: .switching,
                     confidence: 0.85,
                     focusPosition: event.position,
@@ -393,7 +400,8 @@ struct IntentClassifier {
     private static func detectClickSpans(
         from timeline: EventTimeline,
         excludingTimeRanges: [ClosedRange<TimeInterval>],
-        uiStateSamples: [UIStateSample]
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings
     ) -> [IntentSpan] {
         let leftDownClicks = timeline.events.filter { event in
             if case .click(let data) = event.kind, data.clickType == .leftDown {
@@ -412,18 +420,18 @@ struct IntentClassifier {
             let timeDelta = click.time - lastClick.time
             let distance = click.position.distance(to: lastClick.position)
 
-            if timeDelta <= navigatingClickWindow
-                && distance <= navigatingClickDistance {
+            if timeDelta <= TimeInterval(settings.navigatingClickWindow)
+                && distance <= settings.navigatingClickDistance {
                 group.append(click)
             } else {
                 spans.append(contentsOf: emitClickGroup(
-                    group, uiStateSamples: uiStateSamples
+                    group, uiStateSamples: uiStateSamples, settings: settings
                 ))
                 group = [click]
             }
         }
         spans.append(contentsOf: emitClickGroup(
-            group, uiStateSamples: uiStateSamples
+            group, uiStateSamples: uiStateSamples, settings: settings
         ))
 
         return spans
@@ -431,20 +439,22 @@ struct IntentClassifier {
 
     private static func emitClickGroup(
         _ group: [UnifiedEvent],
-        uiStateSamples: [UIStateSample]
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings
     ) -> [IntentSpan] {
         guard !group.isEmpty else { return [] }
 
-        if group.count >= navigatingMinClicks {
+        if group.count >= settings.navigatingMinClicks {
             guard let firstEvent = group.first, let lastEvent = group.last else { return [] }
             let focus = recencyWeightedFocusPosition(for: group)
             // Use last click's context change for the navigating span
             let change = detectPostClickChange(
-                clickTime: lastEvent.time, uiStateSamples: uiStateSamples
+                clickTime: lastEvent.time, uiStateSamples: uiStateSamples,
+                settings: settings
             )
             var span = IntentSpan(
                 startTime: firstEvent.time,
-                endTime: lastEvent.time + pointSpanDuration,
+                endTime: lastEvent.time + TimeInterval(settings.pointSpanDuration),
                 intent: .navigating,
                 confidence: 0.8,
                 focusPosition: focus,
@@ -455,11 +465,12 @@ struct IntentClassifier {
         } else {
             return group.map { event in
                 let change = detectPostClickChange(
-                    clickTime: event.time, uiStateSamples: uiStateSamples
+                    clickTime: event.time, uiStateSamples: uiStateSamples,
+                    settings: settings
                 )
                 var span = IntentSpan(
                     startTime: event.time,
-                    endTime: event.time + pointSpanDuration,
+                    endTime: event.time + TimeInterval(settings.pointSpanDuration),
                     intent: .clicking,
                     confidence: 0.9,
                     focusPosition: event.position,
@@ -474,7 +485,8 @@ struct IntentClassifier {
     /// Find nearest pre-click and post-click UI state samples and detect context change.
     private static func detectPostClickChange(
         clickTime: TimeInterval,
-        uiStateSamples: [UIStateSample]
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings
     ) -> UIStateSample.ContextChange? {
         guard !uiStateSamples.isEmpty else { return nil }
 
@@ -487,7 +499,7 @@ struct IntentClassifier {
         let postSample = uiStateSamples
             .filter {
                 $0.timestamp > clickTime
-                    && $0.timestamp <= clickTime + contextChangeWindow
+                    && $0.timestamp <= clickTime + TimeInterval(settings.contextChangeWindow)
             }
             .min(by: { $0.timestamp < $1.timestamp })
 
@@ -596,7 +608,8 @@ struct IntentClassifier {
 
     private static func fillGaps(
         spans: [IntentSpan],
-        duration: TimeInterval
+        duration: TimeInterval,
+        settings: IntentClassificationSettings
     ) -> [IntentSpan] {
         guard !spans.isEmpty else {
             return [makeIdleSpan(start: 0, end: duration)]
@@ -611,7 +624,8 @@ struct IntentClassifier {
 
             if gapEnd - gapStart > 0.01 {
                 let canContinue: Bool
-                if gapEnd - gapStart <= continuationGapThreshold && !result.isEmpty {
+                if gapEnd - gapStart <= TimeInterval(settings.continuationGapThreshold)
+                    && !result.isEmpty {
                     let previousSpan = result[result.count - 1]
                     let lastPos = previousSpan.focusPosition
                     let nextPos = span.focusPosition
@@ -621,7 +635,7 @@ struct IntentClassifier {
                         next: span.intent
                     )
                     canContinue = compatible
-                        && distance < continuationMaxDistance
+                        && distance < settings.continuationMaxDistance
                 } else {
                     canContinue = false
                 }

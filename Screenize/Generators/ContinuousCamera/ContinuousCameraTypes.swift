@@ -129,6 +129,8 @@ struct ContinuousCameraSettings {
     var micro = MicroTrackerSettings()
     /// Dead zone targeting settings.
     var deadZone = DeadZoneSettings()
+    /// Intent classification settings.
+    var intentClassification = IntentClassificationSettings()
     /// Lead time for immediate-urgency waypoints (camera starts moving this far ahead).
     var leadTimeImmediate: TimeInterval = 0.24
     /// Lead time for high-urgency waypoints.
@@ -175,6 +177,7 @@ extension ContinuousCameraSettings {
         leadTimeHigh = TimeInterval(gs.timing.leadTimeHigh)
         leadTimeNormal = TimeInterval(gs.timing.leadTimeNormal)
         leadTimeLazy = TimeInterval(gs.timing.leadTimeLazy)
+        intentClassification = gs.intentClassification
         cursor = CursorEmissionSettings(from: gs)
         keystroke = KeystrokeEmissionSettings(from: gs)
     }

@@ -46,7 +46,8 @@ class ContinuousCameraGenerator {
         // Step 3: Classify intents
         let intentSpans = IntentClassifier.classify(
             events: timeline,
-            uiStateSamples: uiStateSamples
+            uiStateSamples: uiStateSamples,
+            settings: settings.intentClassification
         )
 
         // Step 4: Generate waypoints from intents
