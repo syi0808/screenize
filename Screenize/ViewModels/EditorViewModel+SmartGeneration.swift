@@ -55,20 +55,22 @@ extension EditorViewModel {
                 uiStateSamples = []
             }
 
-            // 4. Run generation pipeline
-            let generated: GeneratedTimeline
+            // 4. Run generation pipeline (off main thread to avoid UI freeze)
             let springConfig = project.timeline.cursorTrackV2?.springConfig ?? .default
 
             let generationSettings = GenerationSettingsManager.shared.effectiveSettings(for: project)
             var ccSettings = ContinuousCameraSettings(from: generationSettings)
             ccSettings.springConfig = springConfig
-            generated = ContinuousCameraGenerator().generate(
-                from: mouseDataSource,
-                uiStateSamples: uiStateSamples,
-                frameAnalysis: frameAnalysis,
-                screenBounds: project.media.pixelSize,
-                settings: ccSettings
-            )
+            let screenBounds = project.media.pixelSize
+            let generated: GeneratedTimeline = try await Task.detached(priority: .userInitiated) {
+                ContinuousCameraGenerator().generate(
+                    from: mouseDataSource,
+                    uiStateSamples: uiStateSamples,
+                    frameAnalysis: frameAnalysis,
+                    screenBounds: screenBounds,
+                    settings: ccSettings
+                )
+            }.value
 
             // 5. Apply selected tracks
             updateTimeline(
