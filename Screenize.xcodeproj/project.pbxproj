@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DB000001296A0001 /* GenerationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000002296A0001 /* GenerationSettings.swift */; };
 		2A626F2C2F2A24C100510712 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 2A626F2B2F2A24C100510712 /* Sparkle */; };
 		2A626F302F2A280000510712 /* SparkleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A626F2E2F2A280000510712 /* SparkleController.swift */; };
 		2A626F312F2A280000510712 /* CheckForUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */; };
@@ -207,6 +208,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		DB000002296A0001 /* GenerationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationSettings.swift; sourceTree = "<group>"; };
 		2A626F2E2F2A280000510712 /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
 		2A626F2F2F2A280000510712 /* CheckForUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckForUpdatesView.swift; sourceTree = "<group>"; };
 		A11000A0296A0001 /* PermissionWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionWizardViewModel.swift; sourceTree = "<group>"; };
@@ -823,6 +825,7 @@
 		F2000060296A0001 /* Generators */ = {
 			isa = PBXGroup;
 			children = (
+				DB000002296A0001 /* GenerationSettings.swift */,
 				F1000070296A0001 /* KeyframeGenerator.swift */,
 				AC000001296A0001 /* SmartGeneration */,
 				E7200001296A0001 /* ContinuousCamera */,
@@ -1064,6 +1067,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DB000001296A0001 /* GenerationSettings.swift in Sources */,
 				A2000001296A0001 /* EditorViewModel+Clipboard.swift in Sources */,
 				C3000001296A0001 /* EditorViewModel+SmartGeneration.swift in Sources */,
 				C4000001296A0001 /* EditorViewModel+SegmentOperations.swift in Sources */,
