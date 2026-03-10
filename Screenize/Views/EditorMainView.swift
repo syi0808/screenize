@@ -177,6 +177,12 @@ struct EditorMainView: View {
                 await viewModel.runSmartGeneration()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .projectGenerationSettingsChanged)) { notification in
+            if let settings = notification.userInfo?["settings"] as? GenerationSettings {
+                viewModel.project.generationSettings = settings
+                viewModel.hasUnsavedChanges = true
+            }
+        }
         .onReceive(viewModel.undoStack.$canUndo) { canUndo in
             AppState.shared.canUndo = canUndo
         }
