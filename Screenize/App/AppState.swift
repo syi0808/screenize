@@ -218,11 +218,6 @@ final class AppState: ObservableObject {
 
         do {
             try await recording.startRecording(appState: self)
-
-            // Only show standalone panel when capture toolbar is not managing the UI
-            if !showCaptureToolbar {
-                recording.showRecordingFloatingPanel(appState: self)
-            }
         } catch {
             errorMessage = "Failed to start recording: \(error.localizedDescription)"
         }
@@ -230,11 +225,6 @@ final class AppState: ObservableObject {
 
     func stopRecording() async {
         guard #available(macOS 15.0, *) else { return }
-
-        // Only hide standalone panel when capture toolbar is not managing the UI
-        if !showCaptureToolbar {
-            recording.hideRecordingFloatingPanel()
-        }
 
         if let videoURL = await recording.stopRecording() {
             showEditor = true

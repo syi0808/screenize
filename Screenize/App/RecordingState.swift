@@ -31,8 +31,6 @@ final class RecordingState: ObservableObject {
 
     private var durationTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    private var recordingFloatingPanel: RecordingFloatingPanel?
-
     // MARK: - Dependencies
 
     private weak var captureSettings: CaptureSettings?
@@ -106,19 +104,6 @@ final class RecordingState: ObservableObject {
         } else {
             recordingCoordinator?.resumeRecording()
         }
-    }
-
-    // MARK: - Recording Floating Panel
-
-    func showRecordingFloatingPanel(appState: AppState) {
-        let panel = RecordingFloatingPanel(appState: appState)
-        panel.show()
-        self.recordingFloatingPanel = panel
-    }
-
-    func hideRecordingFloatingPanel() {
-        recordingFloatingPanel?.dismiss()
-        recordingFloatingPanel = nil
     }
 
     // MARK: - Private Helpers
