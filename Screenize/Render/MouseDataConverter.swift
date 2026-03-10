@@ -96,6 +96,7 @@ struct MouseDataConverter {
             result.positions,
             outputFrameRate: interpolationFrameRate,
             springConfig: springConfig,
+            // Uses first continuous segment's transforms (generator produces exactly one)
             cameraTransforms: project.timeline.cameraTrack?.segments
                 .first(where: { $0.isContinuous })?.continuousTransforms
         )

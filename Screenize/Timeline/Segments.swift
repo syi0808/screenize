@@ -66,7 +66,7 @@ struct CameraSegment: Codable, Identifiable, Equatable {
     /// When set, FrameEvaluator uses these instead of start/end interpolation.
     var continuousTransforms: [TimedTransform]?
 
-    var isContinuous: Bool { continuousTransforms != nil }
+    var isContinuous: Bool { !(continuousTransforms ?? []).isEmpty }
 
     init(
         id: UUID = UUID(),
