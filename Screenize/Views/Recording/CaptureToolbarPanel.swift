@@ -361,31 +361,8 @@ private struct ToolbarMicMenu: View {
     @State private var isHovering = false
 
     var body: some View {
-        Menu {
-            ForEach(availableDevices, id: \.uniqueID) { device in
-                Button {
-                    selectedDeviceID = device.uniqueID
-                    isEnabled = true
-                } label: {
-                    if isEnabled && selectedDeviceID == device.uniqueID {
-                        Label(device.localizedName, systemImage: "checkmark")
-                    } else {
-                        Text(device.localizedName)
-                    }
-                }
-            }
-
-            Divider()
-
-            Button {
-                isEnabled = false
-            } label: {
-                if !isEnabled {
-                    Label("Off", systemImage: "checkmark")
-                } else {
-                    Text("Off")
-                }
-            }
+        Button {
+            showMenu()
         } label: {
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
@@ -403,8 +380,7 @@ private struct ToolbarMicMenu: View {
             )
             .contentShape(Rectangle())
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .help(isEnabled ? "Microphone Source" : "Enable Microphone")
         .onAppear { refreshDevices() }
@@ -414,6 +390,44 @@ private struct ToolbarMicMenu: View {
         .onReceive(
             NotificationCenter.default.publisher(for: .AVCaptureDeviceWasDisconnected)
         ) { _ in refreshDevices() }
+    }
+
+    private func showMenu() {
+        refreshDevices()
+        let menu = NSMenu()
+
+        for device in availableDevices {
+            let item = NSMenuItem(title: device.localizedName, action: nil, keyEquivalent: "")
+            item.state = (isEnabled && selectedDeviceID == device.uniqueID) ? .on : .off
+            item.target = nil
+            let deviceID = device.uniqueID
+            item.representedObject = deviceID
+            item.action = #selector(ToolbarMenuActionTarget.micDeviceSelected(_:))
+            menu.addItem(item)
+        }
+
+        menu.addItem(.separator())
+
+        let offItem = NSMenuItem(title: "Off", action: #selector(ToolbarMenuActionTarget.micOff(_:)), keyEquivalent: "")
+        offItem.state = isEnabled ? .off : .on
+        menu.addItem(offItem)
+
+        let target = ToolbarMenuActionTarget { deviceID in
+            if let deviceID {
+                selectedDeviceID = deviceID
+                isEnabled = true
+            } else {
+                isEnabled = false
+            }
+        }
+        // Keep target alive during menu tracking
+        objc_setAssociatedObject(menu, "target", target, .OBJC_ASSOCIATION_RETAIN)
+        for item in menu.items where !item.isSeparatorItem {
+            item.target = target
+        }
+
+        let position = NSEvent.mouseLocation
+        menu.popUp(positioning: nil, at: NSPoint(x: position.x, y: position.y), in: nil)
     }
 
     private func refreshDevices() {
@@ -435,18 +449,8 @@ private struct ToolbarFrameRateMenu: View {
     private let options = [30, 60, 120, 240]
 
     var body: some View {
-        Menu {
-            ForEach(options, id: \.self) { fps in
-                Button {
-                    frameRate = fps
-                } label: {
-                    if frameRate == fps {
-                        Label("\(fps) fps", systemImage: "checkmark")
-                    } else {
-                        Text("\(fps) fps")
-                    }
-                }
-            }
+        Button {
+            showMenu()
         } label: {
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: "gauge.with.dots.needle.67percent")
@@ -462,10 +466,59 @@ private struct ToolbarFrameRateMenu: View {
             )
             .contentShape(Rectangle())
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .help("Capture Frame Rate")
+    }
+
+    private func showMenu() {
+        let menu = NSMenu()
+
+        for fps in options {
+            let item = NSMenuItem(title: "\(fps) fps", action: #selector(ToolbarMenuActionTarget.fpsSelected(_:)), keyEquivalent: "")
+            item.tag = fps
+            item.state = (frameRate == fps) ? .on : .off
+            menu.addItem(item)
+        }
+
+        let currentFrameRate = frameRate
+        let target = ToolbarMenuActionTarget { deviceID in
+            // unused for fps
+        }
+        target.fpsHandler = { fps in
+            self.frameRate = fps
+        }
+        objc_setAssociatedObject(menu, "target", target, .OBJC_ASSOCIATION_RETAIN)
+        for item in menu.items {
+            item.target = target
+        }
+
+        _ = currentFrameRate
+        let position = NSEvent.mouseLocation
+        menu.popUp(positioning: nil, at: NSPoint(x: position.x, y: position.y), in: nil)
+    }
+}
+
+// MARK: - Menu Action Target
+
+private final class ToolbarMenuActionTarget: NSObject {
+    let micHandler: (String?) -> Void
+    var fpsHandler: ((Int) -> Void)?
+
+    init(micHandler: @escaping (String?) -> Void) {
+        self.micHandler = micHandler
+    }
+
+    @objc func micDeviceSelected(_ sender: NSMenuItem) {
+        micHandler(sender.representedObject as? String)
+    }
+
+    @objc func micOff(_ sender: NSMenuItem) {
+        micHandler(nil)
+    }
+
+    @objc func fpsSelected(_ sender: NSMenuItem) {
+        fpsHandler?(sender.tag)
     }
 }
 
