@@ -387,7 +387,7 @@ private struct ToolbarMicMenu: View {
                 }
             }
         } label: {
-            Color.clear
+            Color.white.opacity(0.001)
                 .frame(width: 44, height: 36)
                 .contentShape(Rectangle())
         }
@@ -453,7 +453,7 @@ private struct ToolbarFrameRateMenu: View {
                 }
             }
         } label: {
-            Color.clear
+            Color.white.opacity(0.001)
                 .frame(width: 44, height: 36)
                 .contentShape(Rectangle())
         }
