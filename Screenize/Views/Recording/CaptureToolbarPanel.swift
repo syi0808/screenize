@@ -155,15 +155,15 @@ struct CaptureToolbarView: View {
 
             closeButton
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
         .background(toolbarBackground)
     }
 
     // MARK: - Recording Phase
 
     private var recordingContent: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Spacing.sm) {
             RecordingDot()
 
             Text(formattedDuration)
@@ -204,8 +204,8 @@ struct CaptureToolbarView: View {
             .buttonStyle(.plain)
             .help("Stop Recording")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
         .frame(minWidth: 220)
         .background(toolbarBackground)
     }
@@ -213,15 +213,14 @@ struct CaptureToolbarView: View {
     // MARK: - Shared Components
 
     private var toolbarBackground: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(.ultraThickMaterial)
+        RoundedRectangle(cornerRadius: CornerRadius.toolbar, style: .continuous)
+            .fill(.ultraThinMaterial)
             .environment(\.colorScheme, .dark)
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: CornerRadius.toolbar, style: .continuous)
+                    .strokeBorder(Color.white.opacity(DesignOpacity.whisper), lineWidth: 0.5)
             )
-            .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
-            .shadow(color: .black.opacity(0.15), radius: 16, y: 6)
+            .shadow(color: .black.opacity(DesignOpacity.whisper), radius: 8, y: 3)
     }
 
     private var toolbarDivider: some View {
