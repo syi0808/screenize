@@ -154,15 +154,14 @@ struct SegmentPlanner {
 
             let startTransform = previousEnd ?? endTransform
 
-            let easing = easingForIntent(plan.scene.primaryIntent)
-
             let segment = CameraSegment(
                 startTime: plan.scene.startTime,
                 endTime: plan.scene.endTime,
                 startTransform: startTransform,
                 endTransform: endTransform,
-                interpolation: easing,
+                interpolation: .spring(dampingRatio: 0.90, response: 0.35),
                 mode: .manual,
+                transitionToNext: SegmentTransition(duration: 0, easing: .linear),
                 continuousTransforms: nil
             )
 
@@ -173,15 +172,4 @@ struct SegmentPlanner {
         return segments
     }
 
-    /// Choose easing curve based on intent type.
-    private static func easingForIntent(_ intent: UserIntent) -> EasingCurve {
-        switch intent {
-        case .switching:
-            return .easeInOut
-        case .idle, .reading:
-            return .easeOut
-        default:
-            return .easeInOut
-        }
-    }
 }
