@@ -159,7 +159,7 @@ struct SegmentPlanner {
                 endTime: plan.scene.endTime,
                 startTransform: startTransform,
                 endTransform: endTransform,
-                interpolation: .spring(dampingRatio: 0.90, response: 0.35),
+                interpolation: .easeInOut,
                 mode: .manual,
                 transitionToNext: SegmentTransition(duration: 0, easing: .linear),
                 continuousTransforms: nil
