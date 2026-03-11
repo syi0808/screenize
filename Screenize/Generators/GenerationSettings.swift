@@ -109,6 +109,10 @@ struct IntentClassificationSettings: Codable, Equatable {
     var pointSpanDuration: CGFloat = 0.5
     var contextChangeWindow: CGFloat = 0.8
     var typingAnticipation: CGFloat = 0.4
+    var clickAnticipation: CGFloat = 0.15
+    var dragAnticipation: CGFloat = 0.25
+    var scrollAnticipation: CGFloat = 0.25
+    var switchAnticipation: CGFloat = 0.25
 }
 
 // MARK: - Timing Settings

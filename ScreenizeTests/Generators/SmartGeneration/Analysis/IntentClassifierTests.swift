@@ -34,6 +34,16 @@ final class IntentClassifierTests: XCTestCase {
         return IntentClassifier.classify(events: timeline, uiStateSamples: [])
     }
 
+    private func classify(
+        _ mouseData: MockMouseDataSource,
+        settings: IntentClassificationSettings
+    ) -> [IntentSpan] {
+        let timeline = EventTimeline.build(from: mouseData)
+        return IntentClassifier.classify(
+            events: timeline, uiStateSamples: [], settings: settings
+        )
+    }
+
     private func firstTypingContext(in spans: [IntentSpan]) -> TypingContext? {
         for span in spans {
             if case .typing(let context) = span.intent {
@@ -349,8 +359,9 @@ final class IntentClassifierTests: XCTestCase {
             if case .dragging = $0.intent { return true }
             return false
         }
-        XCTAssertEqual(draggingSpans[0].startTime, 2.0, accuracy: 0.01)
-        XCTAssertEqual(draggingSpans[0].endTime, 3.5, accuracy: 0.01)
+        let anticipation = IntentClassifier.dragAnticipation
+        XCTAssertEqual(draggingSpans[0].startTime, 2.0 - anticipation, accuracy: 0.01)
+        XCTAssertEqual(draggingSpans[0].endTime, 3.5 - anticipation, accuracy: 0.01)
     }
 
     // MARK: - Switching Detection
@@ -655,8 +666,9 @@ final class IntentClassifierTests: XCTestCase {
         let mouseData = MockMouseDataSource(duration: 6.0, clicks: clicks)
         let spans = classify(mouseData)
 
+        // With click anticipation (0.15s), click1 ends at 1.0 + 0.5 - 0.15 = 1.35
         guard let idle = spans.first(where: {
-            $0.intent == .idle && $0.startTime >= 1.4 && $0.endTime <= 4.0
+            $0.intent == .idle && $0.startTime >= 1.2 && $0.endTime <= 4.0
         }) else {
             XCTFail("Expected an idle span between click actions")
             return
@@ -757,8 +769,9 @@ final class IntentClassifierTests: XCTestCase {
             if case .idle = span.intent { return true }
             return false
         }
+        // With click anticipation (0.15s), click ends at 1.0 + 0.5 - 0.15 = 1.35
         let idleBetweenClickAndTyping = idleSpans.contains {
-            $0.startTime >= 1.45 && $0.endTime <= 1.85
+            $0.startTime >= 1.2 && $0.endTime <= 1.85
         }
         XCTAssertTrue(
             idleBetweenClickAndTyping,
@@ -903,6 +916,137 @@ final class IntentClassifierTests: XCTestCase {
         )
         XCTAssertEqual(
             typingSpans[1].startTime, 5.0 - anticipation, accuracy: 0.01
+        )
+    }
+
+    // MARK: - Click Anticipation
+
+    func test_classify_clickSpan_shiftedByAnticipation() {
+        let clicks = [makeClick(at: 3.0, position: NormalizedPoint(x: 0.5, y: 0.5))]
+        let mouseData = MockMouseDataSource(clicks: clicks)
+        let spans = classify(mouseData)
+
+        let clickSpans = spans.filter { $0.intent == .clicking }
+        XCTAssertEqual(clickSpans.count, 1)
+
+        let anticipation: TimeInterval = 0.15
+        // startTime should be shifted earlier by anticipation
+        XCTAssertEqual(
+            clickSpans[0].startTime, 3.0 - anticipation, accuracy: 0.01,
+            "Click span should start \(anticipation)s before the click event"
+        )
+        // endTime should also be shifted earlier by anticipation
+        let pointSpanDuration: TimeInterval = 0.5
+        XCTAssertEqual(
+            clickSpans[0].endTime, 3.0 + pointSpanDuration - anticipation, accuracy: 0.01,
+            "Click span end should also be shifted by anticipation"
+        )
+    }
+
+    func test_classify_clickAnticipation_clampedToZero() {
+        let clicks = [makeClick(at: 0.05, position: NormalizedPoint(x: 0.5, y: 0.5))]
+        let mouseData = MockMouseDataSource(clicks: clicks)
+        let spans = classify(mouseData)
+
+        let clickSpans = spans.filter { $0.intent == .clicking }
+        XCTAssertEqual(clickSpans.count, 1)
+        XCTAssertGreaterThanOrEqual(
+            clickSpans[0].startTime, 0,
+            "Click anticipation should not produce negative start time"
+        )
+    }
+
+    // MARK: - Drag Anticipation
+
+    func test_classify_dragSpan_shiftedByAnticipation() {
+        let drags = [
+            DragEventData(
+                startTime: 3.0, endTime: 5.0,
+                startPosition: NormalizedPoint(x: 0.2, y: 0.3),
+                endPosition: NormalizedPoint(x: 0.8, y: 0.7),
+                dragType: .selection
+            ),
+        ]
+        let mouseData = MockMouseDataSource(dragEvents: drags)
+        let spans = classify(mouseData)
+
+        let dragSpans = spans.filter {
+            if case .dragging = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(dragSpans.count, 1)
+
+        let anticipation = IntentClassifier.dragAnticipation
+        XCTAssertEqual(
+            dragSpans[0].startTime, 3.0 - anticipation, accuracy: 0.01,
+            "Drag span should start before drag begins"
+        )
+        XCTAssertEqual(
+            dragSpans[0].endTime, 5.0 - anticipation, accuracy: 0.01,
+            "Drag span end should also shift by anticipation"
+        )
+    }
+
+    // MARK: - Scroll Anticipation
+
+    func test_classify_scrollSpan_shiftedByAnticipation() {
+        let pos = NormalizedPoint(x: 0.5, y: 0.5)
+        let meta = EventMetadata()
+        let scrollEvents = [
+            UnifiedEvent(time: 3.0, kind: .scroll(direction: .down, magnitude: 10), position: pos, metadata: meta),
+            UnifiedEvent(time: 3.2, kind: .scroll(direction: .down, magnitude: 10), position: pos, metadata: meta),
+            UnifiedEvent(time: 3.4, kind: .scroll(direction: .down, magnitude: 10), position: pos, metadata: meta),
+        ]
+        let timeline = EventTimeline(events: scrollEvents, duration: 10.0)
+        let spans = IntentClassifier.classify(events: timeline, uiStateSamples: [])
+
+        let scrollSpans = spans.filter { $0.intent == .scrolling }
+        XCTAssertEqual(scrollSpans.count, 1)
+
+        let anticipation = IntentClassifier.scrollAnticipation
+        XCTAssertEqual(
+            scrollSpans[0].startTime, 3.0 - anticipation, accuracy: 0.01,
+            "Scroll span should start before scrolling begins"
+        )
+        XCTAssertEqual(
+            scrollSpans[0].endTime, 3.4 - anticipation, accuracy: 0.01,
+            "Scroll span end should also shift by anticipation"
+        )
+    }
+
+    // MARK: - Switch Anticipation
+
+    func test_classify_switchSpan_shiftedByAnticipation() {
+        let clicks = [
+            makeClick(
+                at: 1.0, position: NormalizedPoint(x: 0.1, y: 0.1),
+                appBundleID: "com.app.one"
+            ),
+            makeClick(
+                at: 4.0, position: NormalizedPoint(x: 0.9, y: 0.9),
+                appBundleID: "com.app.two"
+            ),
+        ]
+        let mouseData = MockMouseDataSource(clicks: clicks)
+        let spans = classify(mouseData)
+
+        let switchSpans = spans.filter { $0.intent == .switching }
+        XCTAssertGreaterThanOrEqual(switchSpans.count, 1)
+
+        let anticipation = IntentClassifier.switchAnticipation
+        let pointSpan = IntentClassifier.pointSpanDuration
+        let switchSpan = switchSpans[0]
+        XCTAssertEqual(
+            switchSpan.startTime,
+            max(0, 4.0 - pointSpan - anticipation),
+            accuracy: 0.01,
+            "Switch span should be shifted by anticipation"
+        )
+        XCTAssertEqual(
+            switchSpan.endTime,
+            4.0 + pointSpan - anticipation,
+            accuracy: 0.01,
+            "Switch span end should also shift by anticipation"
         )
     }
 }

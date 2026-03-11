@@ -48,6 +48,18 @@ struct IntentClassifier {
     /// first keystroke so the transition completes before typing begins.
     static let typingAnticipation: TimeInterval = 0.4
 
+    /// Anticipation time for click scenes.
+    static let clickAnticipation: TimeInterval = 0.15
+
+    /// Anticipation time for drag scenes.
+    static let dragAnticipation: TimeInterval = 0.25
+
+    /// Anticipation time for scroll scenes.
+    static let scrollAnticipation: TimeInterval = 0.25
+
+    /// Anticipation time for switching scenes.
+    static let switchAnticipation: TimeInterval = 0.25
+
     // MARK: - Classification
 
     /// Classify an event timeline into intent spans.
@@ -74,7 +86,7 @@ struct IntentClassifier {
         let typingSpans = detectTypingSpans(
             from: timeline, uiStateSamples: uiStateSamples, settings: settings
         )
-        let draggingSpans = detectDraggingSpans(from: timeline)
+        let draggingSpans = detectDraggingSpans(from: timeline, settings: settings)
         let scrollingSpans = detectScrollingSpans(from: timeline, settings: settings)
         let switchingSpans = detectSwitchingSpans(from: timeline, settings: settings)
 
@@ -282,7 +294,8 @@ struct IntentClassifier {
     // MARK: - Dragging Detection
 
     private static func detectDraggingSpans(
-        from timeline: EventTimeline
+        from timeline: EventTimeline,
+        settings: IntentClassificationSettings
     ) -> [IntentSpan] {
         var spans: [IntentSpan] = []
 
@@ -296,8 +309,8 @@ struct IntentClassifier {
                 }
 
                 spans.append(IntentSpan(
-                    startTime: data.startTime,
-                    endTime: data.endTime,
+                    startTime: max(0, data.startTime - TimeInterval(settings.dragAnticipation)),
+                    endTime: data.endTime - TimeInterval(settings.dragAnticipation),
                     intent: .dragging(dragContext),
                     confidence: 0.95,
                     focusPosition: data.startPosition,
@@ -328,8 +341,8 @@ struct IntentClassifier {
                 } else if let start = scrollStart,
                           event.time - scrollEnd > TimeInterval(settings.scrollMergeGap) {
                     spans.append(IntentSpan(
-                        startTime: start,
-                        endTime: scrollEnd,
+                        startTime: max(0, start - TimeInterval(settings.scrollAnticipation)),
+                        endTime: scrollEnd - TimeInterval(settings.scrollAnticipation),
                         intent: .scrolling,
                         confidence: 0.9,
                         focusPosition: scrollPosition,
@@ -344,8 +357,8 @@ struct IntentClassifier {
 
         if let start = scrollStart {
             spans.append(IntentSpan(
-                startTime: start,
-                endTime: scrollEnd,
+                startTime: max(0, start - TimeInterval(settings.scrollAnticipation)),
+                endTime: scrollEnd - TimeInterval(settings.scrollAnticipation),
                 intent: .scrolling,
                 confidence: 0.9,
                 focusPosition: scrollPosition,
@@ -380,8 +393,10 @@ struct IntentClassifier {
                     continue
                 }
                 spans.append(IntentSpan(
-                    startTime: max(0, switchTime - TimeInterval(settings.pointSpanDuration)),
-                    endTime: switchTime + TimeInterval(settings.pointSpanDuration),
+                    startTime: max(0, switchTime - TimeInterval(settings.pointSpanDuration)
+                        - TimeInterval(settings.switchAnticipation)),
+                    endTime: switchTime + TimeInterval(settings.pointSpanDuration)
+                        - TimeInterval(settings.switchAnticipation),
                     intent: .switching,
                     confidence: 0.85,
                     focusPosition: event.position,
@@ -448,8 +463,9 @@ struct IntentClassifier {
                 settings: settings
             )
             var span = IntentSpan(
-                startTime: event.time,
-                endTime: event.time + TimeInterval(settings.pointSpanDuration),
+                startTime: max(0, event.time - TimeInterval(settings.clickAnticipation)),
+                endTime: event.time + TimeInterval(settings.pointSpanDuration)
+                    - TimeInterval(settings.clickAnticipation),
                 intent: .clicking,
                 confidence: 0.9,
                 focusPosition: event.position,
