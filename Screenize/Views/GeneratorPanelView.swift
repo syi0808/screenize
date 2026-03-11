@@ -192,7 +192,7 @@ struct GeneratorPanelView: View {
                         name: "Camera",
                         isEnabled: true,
                         segments: [
-                            CameraSegment(startTime: 0, endTime: 5, startTransform: .identity, endTransform: .identity),
+                            CameraSegment(startTime: 0, endTime: 5, kind: .manual(startTransform: .identity, endTransform: .identity, interpolation: .easeInOut)),
                         ]
                     )),
                     AnySegmentTrack.cursor(CursorTrackV2(
