@@ -10,9 +10,6 @@ import CoreGraphics
 /// 4. Build chained CameraSegments (each start = previous end)
 struct SegmentPlanner {
 
-    /// Minimum scene duration. Scenes shorter than this are merged with neighbors.
-    static let minimumSceneDuration: TimeInterval = 1.0
-
     /// Plan camera segments from classified intent spans.
     static func plan(
         intentSpans: [IntentSpan],
@@ -87,7 +84,7 @@ struct SegmentPlanner {
 
     // MARK: - Scene Merging
 
-    /// Merge scenes that are too short or have the same intent as their neighbor.
+    /// Merge scenes only when they target the same position within a short time gap.
     private static func mergeScenes(_ scenes: [CameraScene]) -> [CameraScene] {
         guard scenes.count > 1 else { return scenes }
 
@@ -98,22 +95,16 @@ struct SegmentPlanner {
             let previous = result[result.count - 1]
 
             let shouldMerge: Bool = {
-                // Merge if current scene is too short
-                let currentDuration = current.endTime - current.startTime
-                if currentDuration < minimumSceneDuration {
-                    return true
-                }
+                // Only merge if positions are very close AND time gap is tiny
+                let prevCenter = focusCenter(of: previous)
+                let currCenter = focusCenter(of: current)
+                let distance = prevCenter.distance(to: currCenter)
+                let gap = current.startTime - previous.endTime
 
-                // Merge if same intent type as previous
-                if intentKey(current.primaryIntent) == intentKey(previous.primaryIntent) {
-                    return true
-                }
-
-                return false
+                return distance < 0.05 && gap < 0.5
             }()
 
             if shouldMerge {
-                // Extend previous scene to cover current
                 let merged = CameraScene(
                     id: previous.id,
                     startTime: previous.startTime,
@@ -132,18 +123,15 @@ struct SegmentPlanner {
         return result
     }
 
-    /// Intent classification key for merging. Groups similar intents.
-    private static func intentKey(_ intent: UserIntent) -> String {
-        switch intent {
-        case .typing: return "typing"
-        case .clicking: return "clicking"
-        case .navigating: return "navigating"
-        case .dragging: return "dragging"
-        case .scrolling: return "scrolling"
-        case .switching: return "switching"
-        case .reading: return "reading"
-        case .idle: return "idle"
+    /// Compute the center of a scene's focus regions.
+    private static func focusCenter(of scene: CameraScene) -> NormalizedPoint {
+        guard !scene.focusRegions.isEmpty else {
+            return NormalizedPoint(x: 0.5, y: 0.5)
         }
+        let sumX = scene.focusRegions.reduce(CGFloat(0)) { $0 + $1.region.midX }
+        let sumY = scene.focusRegions.reduce(CGFloat(0)) { $0 + $1.region.midY }
+        let count = CGFloat(scene.focusRegions.count)
+        return NormalizedPoint(x: sumX / count, y: sumY / count)
     }
 
     // MARK: - Segment Building
