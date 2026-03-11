@@ -462,7 +462,7 @@ struct ShotPlanner {
     static func clampCenter(
         _ center: NormalizedPoint, zoom: CGFloat
     ) -> NormalizedPoint {
-        guard zoom > 1.0 else { return center }
+        guard zoom > 1.0 else { return NormalizedPoint(x: 0.5, y: 0.5) }
         let halfCrop = 0.5 / zoom
         let x = max(halfCrop, min(1.0 - halfCrop, center.x))
         let y = max(halfCrop, min(1.0 - halfCrop, center.y))
