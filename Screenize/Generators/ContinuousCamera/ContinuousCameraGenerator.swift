@@ -138,9 +138,7 @@ class ContinuousCameraGenerator {
         let segment = CameraSegment(
             startTime: first.time,
             endTime: max(first.time + 0.001, last.time > 0 ? last.time : duration),
-            startTransform: first.transform,
-            endTransform: last.transform,
-            continuousTransforms: samples
+            kind: .continuous(transforms: samples)
         )
         return CameraTrack(segments: [segment])
     }
