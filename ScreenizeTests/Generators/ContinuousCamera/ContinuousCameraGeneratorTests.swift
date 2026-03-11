@@ -87,10 +87,11 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
             settings: settings
         )
         for segment in result.cameraTrack.segments {
-            XCTAssertGreaterThanOrEqual(segment.startTransform.zoom, 0.99)
-            XCTAssertLessThanOrEqual(segment.startTransform.zoom, 2.81)
-            XCTAssertGreaterThanOrEqual(segment.endTransform.zoom, 0.99)
-            XCTAssertLessThanOrEqual(segment.endTransform.zoom, 2.81)
+            let zooms = extractZooms(from: segment)
+            XCTAssertGreaterThanOrEqual(zooms.start, 0.99)
+            XCTAssertLessThanOrEqual(zooms.start, 2.81)
+            XCTAssertGreaterThanOrEqual(zooms.end, 0.99)
+            XCTAssertLessThanOrEqual(zooms.end, 2.81)
         }
     }
 
@@ -121,9 +122,9 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
 
         // Higher intensity should produce higher max zoom
         let defaultMaxZoom = defaultResult.cameraTrack.segments
-            .flatMap { [$0.startTransform.zoom, $0.endTransform.zoom] }.max() ?? 1.0
+            .flatMap { seg in let z = extractZooms(from: seg); return [z.start, z.end] }.max() ?? 1.0
         let highMaxZoom = highResult.cameraTrack.segments
-            .flatMap { [$0.startTransform.zoom, $0.endTransform.zoom] }.max() ?? 1.0
+            .flatMap { seg in let z = extractZooms(from: seg); return [z.start, z.end] }.max() ?? 1.0
         XCTAssertGreaterThanOrEqual(highMaxZoom, defaultMaxZoom - 0.01,
                                    "Higher intensity should produce equal or higher zoom")
     }
@@ -141,7 +142,8 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
         )
         // At least some segments should have zoom > 1.0 due to clicking intent
         let hasZoomedSegment = result.cameraTrack.segments.contains {
-            $0.startTransform.zoom > 1.01 || $0.endTransform.zoom > 1.01
+            let zooms = extractZooms(from: $0)
+            return zooms.start > 1.01 || zooms.end > 1.01
         }
         XCTAssertTrue(hasZoomedSegment,
                       "Clicking activity should produce zoomed-in segments")
@@ -157,7 +159,8 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
             settings: ContinuousCameraSettings()
         )
 
-        guard let first = result.cameraTrack.segments.first?.continuousTransforms?.first else {
+        guard let firstSeg = result.cameraTrack.segments.first,
+              let first = extractContinuousTransforms(from: firstSeg)?.first else {
             XCTFail("Expected continuous transforms for quiet-start recording")
             return
         }
@@ -179,7 +182,8 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
             settings: ContinuousCameraSettings()
         )
 
-        guard let samples = result.cameraTrack.segments.first?.continuousTransforms,
+        guard let firstSeg = result.cameraTrack.segments.first,
+              let samples = extractContinuousTransforms(from: firstSeg),
               let first = samples.first,
               let postRelease = samples.first(where: { $0.time >= 0.35 }) else {
             XCTFail("Expected generated continuous transforms")
@@ -217,6 +221,24 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
         let resolvedURL = try fixtureProjectURL(fromTestFilePath: worktreeTestFilePath.path)
 
         XCTAssertEqual(resolvedURL, fixtureDirectory)
+    }
+
+    // MARK: - Kind Helpers
+
+    private func extractZooms(from segment: CameraSegment) -> (start: CGFloat, end: CGFloat) {
+        switch segment.kind {
+        case .manual(let start, let end, _):
+            return (start.zoom, end.zoom)
+        case .continuous(let transforms):
+            return (transforms.first?.transform.zoom ?? 1.0, transforms.last?.transform.zoom ?? 1.0)
+        }
+    }
+
+    private func extractContinuousTransforms(from segment: CameraSegment) -> [TimedTransform]? {
+        if case .continuous(let transforms) = segment.kind {
+            return transforms
+        }
+        return nil
     }
 
     // MARK: - Helpers
