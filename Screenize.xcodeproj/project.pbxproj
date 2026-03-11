@@ -66,6 +66,7 @@
 		D2100002296A0001 /* GIFSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200002296A0001 /* GIFSettingsTests.swift */; };
 		D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200003296A0001 /* RenderSettingsGIFTests.swift */; };
 		D2100004296A0001 /* GIFEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200004296A0001 /* GIFEncoderTests.swift */; };
+		D2100005296A0001 /* GenerationSettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2200005296A0001 /* GenerationSettingsViewTests.swift */; };
 		D5100001296A0001 /* ClickScaleModifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5200001296A0001 /* ClickScaleModifierTests.swift */; };
 		E9000001296A0001 /* TransparentBackgroundFallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9100001296A0001 /* TransparentBackgroundFallbackTests.swift */; };
 		E9000002296A0001 /* TransparentBackgroundFallback.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9100002296A0001 /* TransparentBackgroundFallback.swift */; };
@@ -274,6 +275,7 @@
 		D2200002296A0001 /* GIFSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFSettingsTests.swift; sourceTree = "<group>"; };
 		D2200003296A0001 /* RenderSettingsGIFTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderSettingsGIFTests.swift; sourceTree = "<group>"; };
 		D2200004296A0001 /* GIFEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoderTests.swift; sourceTree = "<group>"; };
+		D2200005296A0001 /* GenerationSettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationSettingsViewTests.swift; sourceTree = "<group>"; };
 		D5200001296A0001 /* ClickScaleModifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickScaleModifierTests.swift; sourceTree = "<group>"; };
 		E9100001296A0001 /* TransparentBackgroundFallbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransparentBackgroundFallbackTests.swift; sourceTree = "<group>"; };
 		E9100002296A0001 /* TransparentBackgroundFallback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransparentBackgroundFallback.swift; sourceTree = "<group>"; };
@@ -588,6 +590,7 @@
 			isa = PBXGroup;
 			children = (
 				D2200002296A0001 /* GIFSettingsTests.swift */,
+				D2200005296A0001 /* GenerationSettingsViewTests.swift */,
 				D2200003296A0001 /* RenderSettingsGIFTests.swift */,
 			);
 			path = Project;
@@ -1079,6 +1082,7 @@
 				B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */,
 				B5000001296A0001 /* EasingCurveTests.swift in Sources */,
 				D2100002296A0001 /* GIFSettingsTests.swift in Sources */,
+				D2100005296A0001 /* GenerationSettingsViewTests.swift in Sources */,
 				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
 				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
 				D5100001296A0001 /* ClickScaleModifierTests.swift in Sources */,

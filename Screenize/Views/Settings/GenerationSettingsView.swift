@@ -1,5 +1,10 @@
 import SwiftUI
 
+enum GenerationSettingsResetNotification: Equatable {
+    case none
+    case projectSettingsChanged(GenerationSettings)
+}
+
 struct GenerationSettingsView: View {
     @EnvironmentObject private var manager: GenerationSettingsManager
     @State private var showSavePresetSheet = false
@@ -102,7 +107,7 @@ struct GenerationSettingsView: View {
             Spacer()
 
             Button("Reset All") {
-                manager.resetSettings()
+                resetAll()
             }
 
             Button {
@@ -119,11 +124,42 @@ struct GenerationSettingsView: View {
         .padding(.vertical, 8)
     }
 
+    private func resetAll() {
+        let notification = Self.resetAllState(
+            scope: scope,
+            appSettings: &manager.settings,
+            projectSettings: &projectSettings
+        )
+
+        if case let .projectSettingsChanged(settings) = notification {
+            NotificationCenter.default.post(
+                name: .projectGenerationSettingsChanged,
+                object: nil,
+                userInfo: ["settings": settings]
+            )
+        }
+    }
+
 }
 
 // MARK: - Section Views
 
 extension GenerationSettingsView {
+
+    static func resetAllState(
+        scope: SettingsScope,
+        appSettings: inout GenerationSettings,
+        projectSettings: inout GenerationSettings?
+    ) -> GenerationSettingsResetNotification {
+        switch scope {
+        case .appDefaults:
+            appSettings = .default
+            return .none
+        case .thisProject:
+            projectSettings = .default
+            return .projectSettingsChanged(.default)
+        }
+    }
 
     // MARK: - Camera Motion Section
 
