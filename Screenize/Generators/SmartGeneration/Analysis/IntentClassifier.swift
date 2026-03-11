@@ -442,43 +442,21 @@ struct IntentClassifier {
         uiStateSamples: [UIStateSample],
         settings: IntentClassificationSettings
     ) -> [IntentSpan] {
-        guard !group.isEmpty else { return [] }
-
-        if group.count >= settings.navigatingMinClicks {
-            guard let firstEvent = group.first, let lastEvent = group.last else { return [] }
-            let focus = recencyWeightedFocusPosition(for: group)
-            // Use last click's context change for the navigating span
+        return group.map { event in
             let change = detectPostClickChange(
-                clickTime: lastEvent.time, uiStateSamples: uiStateSamples,
+                clickTime: event.time, uiStateSamples: uiStateSamples,
                 settings: settings
             )
             var span = IntentSpan(
-                startTime: firstEvent.time,
-                endTime: lastEvent.time + TimeInterval(settings.pointSpanDuration),
-                intent: .navigating,
-                confidence: 0.8,
-                focusPosition: focus,
-                focusElement: lastEvent.metadata.elementInfo
+                startTime: event.time,
+                endTime: event.time + TimeInterval(settings.pointSpanDuration),
+                intent: .clicking,
+                confidence: 0.9,
+                focusPosition: event.position,
+                focusElement: event.metadata.elementInfo
             )
             span.contextChange = change
-            return [span]
-        } else {
-            return group.map { event in
-                let change = detectPostClickChange(
-                    clickTime: event.time, uiStateSamples: uiStateSamples,
-                    settings: settings
-                )
-                var span = IntentSpan(
-                    startTime: event.time,
-                    endTime: event.time + TimeInterval(settings.pointSpanDuration),
-                    intent: .clicking,
-                    confidence: 0.9,
-                    focusPosition: event.position,
-                    focusElement: event.metadata.elementInfo
-                )
-                span.contextChange = change
-                return span
-            }
+            return span
         }
     }
 
