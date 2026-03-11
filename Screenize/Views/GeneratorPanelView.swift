@@ -55,6 +55,16 @@ struct GeneratorPanelView: View {
             // Header
             SectionHeader(title: "Smart Generation", icon: "wand.and.stars")
 
+            // Mode picker
+            Picker("Mode", selection: Binding(
+                get: { GenerationSettingsManager.shared.settings.mode },
+                set: { GenerationSettingsManager.shared.settings.mode = $0 }
+            )) {
+                Text("Continuous").tag(GenerationMode.continuous)
+                Text("Segment").tag(GenerationMode.segmentBased)
+            }
+            .pickerStyle(.segmented)
+
             // Per-type toggles
             VStack(alignment: .leading, spacing: Spacing.xl - Spacing.sm) {
                 ForEach(generatorOptions) { option in
