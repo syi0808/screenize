@@ -62,14 +62,27 @@ extension EditorViewModel {
             var ccSettings = ContinuousCameraSettings(from: generationSettings)
             ccSettings.springConfig = springConfig
             let screenBounds = project.media.pixelSize
+            let mode = generationSettings.mode
+
             let generated: GeneratedTimeline = try await Task.detached(priority: .userInitiated) {
-                ContinuousCameraGenerator().generate(
-                    from: mouseDataSource,
-                    uiStateSamples: uiStateSamples,
-                    frameAnalysis: frameAnalysis,
-                    screenBounds: screenBounds,
-                    settings: ccSettings
-                )
+                switch mode {
+                case .continuous:
+                    return ContinuousCameraGenerator().generate(
+                        from: mouseDataSource,
+                        uiStateSamples: uiStateSamples,
+                        frameAnalysis: frameAnalysis,
+                        screenBounds: screenBounds,
+                        settings: ccSettings
+                    )
+                case .segmentBased:
+                    return SegmentCameraGenerator().generate(
+                        from: mouseDataSource,
+                        uiStateSamples: uiStateSamples,
+                        frameAnalysis: frameAnalysis,
+                        screenBounds: screenBounds,
+                        settings: ccSettings
+                    )
+                }
             }.value
 
             // 5. Apply selected tracks
