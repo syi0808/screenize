@@ -30,7 +30,13 @@ struct SegmentSpringSimulator {
         let cgDt = CGFloat(dt)
 
         // Initialize state from first segment's startTransform
-        let initial = segments[0].startTransform
+        let initial: TransformValue
+        switch segments[0].kind {
+        case .manual(let start, _, _):
+            initial = start
+        case .continuous(let transforms):
+            initial = transforms.first?.transform ?? TransformValue(zoom: 1.0, center: NormalizedPoint(x: 0.5, y: 0.5))
+        }
         var state = CameraState(
             positionX: initial.center.x,
             positionY: initial.center.y,
@@ -43,7 +49,13 @@ struct SegmentSpringSimulator {
         var result: [CameraSegment] = []
 
         for segment in segments {
-            let target = segment.endTransform
+            let target: TransformValue
+            switch segment.kind {
+            case .manual(_, let end, _):
+                target = end
+            case .continuous(let transforms):
+                target = transforms.last?.transform ?? TransformValue(zoom: 1.0, center: NormalizedPoint(x: 0.5, y: 0.5))
+            }
             let targetCenter = ShotPlanner.clampCenter(target.center, zoom: target.zoom)
             let targetZoom = target.zoom
 
@@ -115,7 +127,7 @@ struct SegmentSpringSimulator {
             }
 
             var updated = segment
-            updated.continuousTransforms = samples
+            updated.kind = .continuous(transforms: samples)
             result.append(updated)
         }
 
