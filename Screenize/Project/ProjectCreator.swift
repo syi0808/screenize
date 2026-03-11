@@ -192,9 +192,11 @@ struct ProjectCreator {
                     CameraSegment(
                         startTime: 0,
                         endTime: max(0.1, duration),
-                        startTransform: .identity,
-                        endTransform: .identity,
-                        interpolation: .easeInOut
+                        kind: .manual(
+                            startTransform: .identity,
+                            endTransform: .identity,
+                            interpolation: .easeInOut
+                        )
                     ),
                 ]
             )),
