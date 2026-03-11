@@ -46,50 +46,87 @@ struct ClickFeedbackConfig: Codable, Equatable, Hashable {
 
 // MARK: - Camera Segment
 
-enum CameraSegmentMode: String, Codable {
-    case manual
-    case followCursor
+enum CameraSegmentKind: Codable, Equatable {
+    case continuous(transforms: [TimedTransform])
+    case manual(
+        startTransform: TransformValue,
+        endTransform: TransformValue,
+        interpolation: EasingCurve
+    )
+
+    // MARK: - Codable
+
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case transforms
+        case startTransform
+        case endTransform
+        case interpolation
+    }
+
+    private enum KindType: String, Codable {
+        case continuous
+        case manual
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(KindType.self, forKey: .type)
+        switch type {
+        case .continuous:
+            let transforms = try container.decode([TimedTransform].self, forKey: .transforms)
+            self = .continuous(transforms: transforms)
+        case .manual:
+            let startTransform = try container.decode(TransformValue.self, forKey: .startTransform)
+            let endTransform = try container.decode(TransformValue.self, forKey: .endTransform)
+            let interpolation = try container.decode(EasingCurve.self, forKey: .interpolation)
+            self = .manual(
+                startTransform: startTransform,
+                endTransform: endTransform,
+                interpolation: interpolation
+            )
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .continuous(let transforms):
+            try container.encode(KindType.continuous, forKey: .type)
+            try container.encode(transforms, forKey: .transforms)
+        case .manual(let startTransform, let endTransform, let interpolation):
+            try container.encode(KindType.manual, forKey: .type)
+            try container.encode(startTransform, forKey: .startTransform)
+            try container.encode(endTransform, forKey: .endTransform)
+            try container.encode(interpolation, forKey: .interpolation)
+        }
+    }
 }
 
 struct CameraSegment: Codable, Identifiable, Equatable {
     let id: UUID
     var startTime: TimeInterval
     var endTime: TimeInterval
-    var startTransform: TransformValue
-    var endTransform: TransformValue
-    var interpolation: EasingCurve
-    var mode: CameraSegmentMode
-    var cursorFollow: CursorFollowConfig
+    var kind: CameraSegmentKind
     var transitionToNext: SegmentTransition
 
-    /// Pre-computed continuous camera path samples.
-    /// When set, FrameEvaluator uses these instead of start/end interpolation.
-    var continuousTransforms: [TimedTransform]?
-
-    var isContinuous: Bool { !(continuousTransforms ?? []).isEmpty }
+    var isContinuous: Bool {
+        if case .continuous = kind { return true }
+        return false
+    }
 
     init(
         id: UUID = UUID(),
         startTime: TimeInterval,
         endTime: TimeInterval,
-        startTransform: TransformValue,
-        endTransform: TransformValue,
-        interpolation: EasingCurve = .easeInOut,
-        mode: CameraSegmentMode = .manual,
-        cursorFollow: CursorFollowConfig = .default,
-        transitionToNext: SegmentTransition = .default,
-        continuousTransforms: [TimedTransform]? = nil
+        kind: CameraSegmentKind,
+        transitionToNext: SegmentTransition = .default
     ) {
         self.id = id
         self.startTime = startTime
         self.endTime = endTime
-        self.startTransform = startTransform
-        self.endTransform = endTransform
-        self.interpolation = interpolation
-        self.mode = mode
-        self.cursorFollow = cursorFollow
+        self.kind = kind
         self.transitionToNext = transitionToNext
-        self.continuousTransforms = continuousTransforms
     }
 }
 
