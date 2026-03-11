@@ -7,6 +7,28 @@ import AppKit
 /// Renders cursor and keystroke overlays
 final class EffectCompositor {
 
+    static func zoomNormalizedClickScale(
+        rawClickScale: CGFloat,
+        zoomLevel: CGFloat,
+        minimumScale: CGFloat = 0.1
+    ) -> CGFloat {
+        guard rawClickScale < 1.0 else { return rawClickScale }
+
+        let rawDepth = 1.0 - rawClickScale
+        let zoomNormalization = sqrt(max(1.0, zoomLevel))
+        let adjustedDepth = rawDepth * zoomNormalization
+
+        return max(minimumScale, 1.0 - adjustedDepth)
+    }
+
+    static func cursorRasterScale(
+        targetPixelHeight: CGFloat,
+        rasterizedPixelHeight: CGFloat
+    ) -> CGFloat {
+        guard targetPixelHeight.isFinite, rasterizedPixelHeight > 0 else { return 1.0 }
+        return targetPixelHeight / rasterizedPixelHeight
+    }
+
     /// CoreImage context
     private let ciContext: CIContext
 
@@ -184,7 +206,11 @@ final class EffectCompositor {
     ) -> CIImage? {
         guard cursor.visible else { return nil }
 
-        let effectiveScale = cursor.scale * cursor.clickScaleModifier
+        let normalizedClickScale = Self.zoomNormalizedClickScale(
+            rawClickScale: cursor.clickScaleModifier,
+            zoomLevel: zoomLevel
+        )
+        let effectiveScale = cursor.scale * normalizedClickScale
 
         // Base cursor height matches the NSCursor image size (~28 design units for arrow).
         // The final pixel height accounts for user scale, zoom level, and output/source ratio.
@@ -195,7 +221,14 @@ final class EffectCompositor {
             return nil
         }
 
-        let cursorSize = cursorImage.extent.size
+        let cursorRasterScale = Self.cursorRasterScale(
+            targetPixelHeight: cursorPixelHeight,
+            rasterizedPixelHeight: cursorImage.extent.height
+        )
+        let cursorSize = CGSize(
+            width: cursorImage.extent.width * cursorRasterScale,
+            height: cursorImage.extent.height * cursorRasterScale
+        )
         let hotspot = cursorImageProvider.normalizedHotspot(style: cursor.style)
 
         // Hotspot pixel offset (hotspot is in top-left origin, convert for CoreImage bottom-left)
@@ -207,7 +240,11 @@ final class EffectCompositor {
         let finalX = outputPosition.x - hotspotPixelX
         let finalY = outputPosition.y - cursorSize.height + hotspotPixelY
 
-        let translated = cursorImage.transformed(by: CGAffineTransform(
+        let scaledCursorImage = abs(cursorRasterScale - 1.0) > 0.000_1
+            ? cursorImage.transformed(by: CGAffineTransform(scaleX: cursorRasterScale, y: cursorRasterScale))
+            : cursorImage
+
+        let translated = scaledCursorImage.transformed(by: CGAffineTransform(
             translationX: finalX,
             y: finalY
         ))

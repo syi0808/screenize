@@ -53,6 +53,57 @@ final class ClickScaleModifierTests: XCTestCase {
         )
     }
 
+    // MARK: - Zoom Normalization
+
+    func testZoomNormalizedClickScale_preservesScaleAtUnitZoom() {
+        let normalized = EffectCompositor.zoomNormalizedClickScale(
+            rawClickScale: 0.75,
+            zoomLevel: 1.0
+        )
+
+        XCTAssertEqual(normalized, 0.75, accuracy: 0.001)
+    }
+
+    func testZoomNormalizedClickScale_deepensPressAtHigherZoom() {
+        let normalized = EffectCompositor.zoomNormalizedClickScale(
+            rawClickScale: 0.75,
+            zoomLevel: 1.44
+        )
+
+        XCTAssertLessThan(normalized, 0.75)
+    }
+
+    func testZoomNormalizedClickScale_clampsToSafeLowerBound() {
+        let normalized = EffectCompositor.zoomNormalizedClickScale(
+            rawClickScale: 0.10,
+            zoomLevel: 9.0
+        )
+
+        XCTAssertGreaterThanOrEqual(normalized, 0.1)
+    }
+
+    func testDefaultClickFeedback_usesModeratePressScale() {
+        XCTAssertEqual(ClickFeedbackConfig.default.mouseDownScale, 0.75, accuracy: 0.001)
+    }
+
+    func testCursorImageProvider_usesNextWholePixelInsteadOfFourPixelQuantization() throws {
+        let provider = CursorImageProvider()
+        let image = try XCTUnwrap(
+            provider.cursorImage(style: .arrow, pixelHeight: 33.1)
+        )
+
+        XCTAssertEqual(image.extent.height, 34, accuracy: 0.001)
+    }
+
+    func testCursorRasterScale_preservesRequestedPixelHeight() {
+        let rasterScale = EffectCompositor.cursorRasterScale(
+            targetPixelHeight: 33.1,
+            rasterizedPixelHeight: 34.0
+        )
+
+        XCTAssertEqual(34.0 * rasterScale, 33.1, accuracy: 0.001)
+    }
+
     // MARK: - No Clicks
 
     func testNoClicks_returnsOne() {

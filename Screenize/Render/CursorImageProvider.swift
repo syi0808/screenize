@@ -11,7 +11,7 @@ final class CursorImageProvider {
 
     private struct CacheKey: Hashable {
         let style: CursorStyle
-        let pixelSize: Int
+        let rasterPixelHeight: Int
     }
 
     private var imageCache: [CacheKey: CIImage] = [:]
@@ -23,6 +23,7 @@ final class CursorImageProvider {
     /// Base design size for the arrow cursor (matches macOS cursor proportions).
     /// All styles are drawn relative to this reference height.
     private static let arrowDesignSize = CGSize(width: 17, height: 25)
+    private static let minimumPixelHeight: CGFloat = 8.0
 
     // MARK: - Public API
 
@@ -32,8 +33,9 @@ final class CursorImageProvider {
     ///   - pixelHeight: Target image height in pixels
     /// - Returns: CIImage with transparency, or nil on failure
     func cursorImage(style: CursorStyle, pixelHeight: CGFloat) -> CIImage? {
-        let rounded = roundToGrid(pixelHeight)
-        let key = CacheKey(style: style, pixelSize: rounded)
+        let targetPixelHeight = sanitizedPixelHeight(pixelHeight)
+        let rasterPixelHeight = rasterPixelHeight(for: targetPixelHeight)
+        let key = CacheKey(style: style, rasterPixelHeight: rasterPixelHeight)
 
         if let cached = imageCache[key] {
             accessOrder.removeAll { $0 == key }
@@ -41,7 +43,7 @@ final class CursorImageProvider {
             return cached
         }
 
-        guard let image = renderCursor(style: style, pixelHeight: CGFloat(rounded)) else {
+        guard let image = renderCursor(style: style, pixelHeight: CGFloat(rasterPixelHeight)) else {
             return nil
         }
 
@@ -88,9 +90,13 @@ final class CursorImageProvider {
 
     // MARK: - Private Helpers
 
-    /// Round pixel size to a 4px grid to avoid cache thrashing.
-    private func roundToGrid(_ value: CGFloat) -> Int {
-        max(8, Int(ceil(value / 4.0)) * 4)
+    private func sanitizedPixelHeight(_ value: CGFloat) -> CGFloat {
+        guard value.isFinite else { return Self.minimumPixelHeight }
+        return max(Self.minimumPixelHeight, value)
+    }
+
+    private func rasterPixelHeight(for value: CGFloat) -> Int {
+        max(Int(Self.minimumPixelHeight.rounded(.up)), Int(ceil(value)))
     }
 
     // MARK: - Rendering Dispatch
