@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B4000001296A0001 /* SegmentPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000002296A0001 /* SegmentPlanner.swift */; };
+		A0000001296A0001 /* SegmentSpringSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000002296A0001 /* SegmentSpringSimulator.swift */; };
 		B4000005296A0001 /* SegmentCameraGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000004296A0001 /* SegmentCameraGenerator.swift */; };
 		DB000001296A0001 /* GenerationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB000002296A0001 /* GenerationSettings.swift */; };
 		2A626F2C2F2A24C100510712 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 2A626F2B2F2A24C100510712 /* Sparkle */; };
@@ -219,6 +220,7 @@
 
 /* Begin PBXFileReference section */
 		B4000002296A0001 /* SegmentPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentPlanner.swift; sourceTree = "<group>"; };
+		A0000002296A0001 /* SegmentSpringSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentSpringSimulator.swift; sourceTree = "<group>"; };
 		B4000004296A0001 /* SegmentCameraGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentCameraGenerator.swift; sourceTree = "<group>"; };
 		DB000002296A0001 /* GenerationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationSettings.swift; sourceTree = "<group>"; };
 		2A626F2E2F2A280000510712 /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
@@ -876,6 +878,7 @@
 			children = (
 				B4000004296A0001 /* SegmentCameraGenerator.swift */,
 				B4000002296A0001 /* SegmentPlanner.swift */,
+				A0000002296A0001 /* SegmentSpringSimulator.swift */,
 			);
 			path = SegmentCamera;
 			sourceTree = "<group>";
@@ -1287,6 +1290,7 @@
 				E7000005296A0001 /* ContinuousCameraGenerator.swift in Sources */,
 				B4000001296A0001 /* SegmentPlanner.swift in Sources */,
 				B4000005296A0001 /* SegmentCameraGenerator.swift in Sources */,
+				A0000001296A0001 /* SegmentSpringSimulator.swift in Sources */,
 				DA000001296A0001 /* MicroTracker.swift in Sources */,
 				A4000001296A0001 /* DeadZoneTarget.swift in Sources */,
 				A5000001296A0001 /* AdaptiveResponse.swift in Sources */,
