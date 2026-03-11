@@ -121,10 +121,12 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
         )
 
         // Higher intensity should produce higher max zoom
-        let defaultMaxZoom = defaultResult.cameraTrack.segments
-            .flatMap { seg in let z = extractZooms(from: seg); return [z.start, z.end] }.max() ?? 1.0
-        let highMaxZoom = highResult.cameraTrack.segments
-            .flatMap { seg in let z = extractZooms(from: seg); return [z.start, z.end] }.max() ?? 1.0
+        let defaultZooms: [Double] = defaultResult.cameraTrack.segments
+            .flatMap { seg in let z = extractZooms(from: seg); return [Double(z.start), Double(z.end)] }
+        let defaultMaxZoom = defaultZooms.max() ?? 1.0
+        let highZooms: [Double] = highResult.cameraTrack.segments
+            .flatMap { seg in let z = extractZooms(from: seg); return [Double(z.start), Double(z.end)] }
+        let highMaxZoom = highZooms.max() ?? 1.0
         XCTAssertGreaterThanOrEqual(highMaxZoom, defaultMaxZoom - 0.01,
                                    "Higher intensity should produce equal or higher zoom")
     }
