@@ -99,7 +99,10 @@ struct MouseDataConverter {
             springConfig: springConfig,
             // Uses first continuous segment's transforms (generator produces exactly one)
             cameraTransforms: project.timeline.cameraTrack?.segments
-                .first(where: { $0.isContinuous })?.continuousTransforms
+                .first(where: { $0.isContinuous }).flatMap {
+                    if case .continuous(let transforms) = $0.kind { return transforms }
+                    return nil
+                }
         )
         return (interpolatedPositions, result.mouseButtonEvents)
     }
