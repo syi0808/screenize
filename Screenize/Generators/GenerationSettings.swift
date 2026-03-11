@@ -1,12 +1,21 @@
 import Foundation
 import CoreGraphics
 
+// MARK: - Generation Mode
+
+/// Smart generation mode selection.
+enum GenerationMode: String, Codable, CaseIterable {
+    case continuous
+    case segmentBased
+}
+
 // MARK: - Generation Settings
 
 /// User-configurable settings for the smart generation pipeline.
 /// Persisted at app level and optionally overridden per project.
 struct GenerationSettings: Codable, Equatable {
 
+    var mode: GenerationMode = .continuous
     var cameraMotion = CameraMotionSettings()
     var zoom = ZoomSettings()
     var intentClassification = IntentClassificationSettings()
