@@ -157,12 +157,12 @@ struct SegmentPlanner {
             let segment = CameraSegment(
                 startTime: plan.scene.startTime,
                 endTime: plan.scene.endTime,
-                startTransform: startTransform,
-                endTransform: endTransform,
-                interpolation: .easeInOut,
-                mode: .manual,
-                transitionToNext: SegmentTransition(duration: 0, easing: .linear),
-                continuousTransforms: nil
+                kind: .manual(
+                    startTransform: startTransform,
+                    endTransform: endTransform,
+                    interpolation: .easeInOut
+                ),
+                transitionToNext: SegmentTransition(duration: 0, easing: .linear)
             )
 
             segments.append(segment)
