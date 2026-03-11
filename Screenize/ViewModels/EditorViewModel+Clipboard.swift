@@ -166,11 +166,7 @@ extension EditorViewModel {
         let duplicate = CameraSegment(
             startTime: newStart,
             endTime: newEnd,
-            startTransform: original.startTransform,
-            endTransform: original.endTransform,
-            interpolation: original.interpolation,
-            mode: original.mode,
-            cursorFollow: original.cursorFollow,
+            kind: original.kind,
             transitionToNext: original.transitionToNext
         )
         guard track.addSegment(duplicate) else { return nil }
@@ -234,11 +230,7 @@ extension EditorViewModel {
         let pasted = CameraSegment(
             startTime: startTime,
             endTime: endTime,
-            startTransform: original.startTransform,
-            endTransform: original.endTransform,
-            interpolation: original.interpolation,
-            mode: original.mode,
-            cursorFollow: original.cursorFollow,
+            kind: original.kind,
             transitionToNext: original.transitionToNext
         )
         guard track.addSegment(pasted) else { return nil }
