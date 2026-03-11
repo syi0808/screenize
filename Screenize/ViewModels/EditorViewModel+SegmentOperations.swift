@@ -46,8 +46,11 @@ extension EditorViewModel {
         let newSegment = CameraSegment(
             startTime: time,
             endTime: max(time + 0.05, endTime),
-            startTransform: .identity,
-            endTransform: .identity
+            kind: .manual(
+                startTransform: .identity,
+                endTransform: .identity,
+                interpolation: .easeInOut
+            )
         )
 
         _ = track.addSegment(newSegment)
