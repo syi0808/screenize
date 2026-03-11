@@ -37,9 +37,7 @@ struct SegmentSpringSimulator {
             zoom: initial.zoom
         )
 
-        let posOmega = 2.0 * .pi / max(0.001, config.positionResponse)
         let posDamping = config.positionDampingRatio
-        let zoomOmega = 2.0 * .pi / max(0.001, config.zoomResponse)
         let zoomDamping = config.zoomDampingRatio
 
         var result: [CameraSegment] = []
@@ -48,6 +46,15 @@ struct SegmentSpringSimulator {
             let target = segment.endTransform
             let targetCenter = ShotPlanner.clampCenter(target.center, zoom: target.zoom)
             let targetZoom = target.zoom
+
+            // Scale spring response to segment duration so the camera movement
+            // fills the available time. The spring should use ~70% of the segment
+            // to reach the target, leaving natural settling for the rest.
+            let segmentDuration = CGFloat(segment.endTime - segment.startTime)
+            let adaptedPosResponse = max(config.positionResponse, segmentDuration * 0.4)
+            let adaptedZoomResponse = max(config.zoomResponse, segmentDuration * 0.45)
+            let posOmega = 2.0 * .pi / max(0.001, adaptedPosResponse)
+            let zoomOmega = 2.0 * .pi / max(0.001, adaptedZoomResponse)
 
             var samples: [TimedTransform] = []
             let tickCount = max(1, Int((segment.endTime - segment.startTime) * config.tickRate))
