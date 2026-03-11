@@ -12,7 +12,9 @@ import CoreGraphics
 /// 2. Build event timeline
 /// 3. Classify intents
 /// 4. Plan and build segments via SegmentPlanner
-/// 5. Emit cursor and keystroke tracks
+/// 5. Spring-simulate segment transitions
+/// 6. Emit cursor track
+/// 7. Emit keystroke track
 class SegmentCameraGenerator {
 
     func generate(
@@ -44,7 +46,7 @@ class SegmentCameraGenerator {
         )
 
         // Step 4: Plan segments
-        let segments = SegmentPlanner.plan(
+        let rawSegments = SegmentPlanner.plan(
             intentSpans: intentSpans,
             screenBounds: screenBounds,
             eventTimeline: timeline,
@@ -53,20 +55,35 @@ class SegmentCameraGenerator {
             zoomIntensity: settings.zoomIntensity
         )
 
+        // Step 5: Spring-simulate segment transitions
+        let segments = SegmentSpringSimulator.simulate(
+            segments: rawSegments,
+            config: SegmentSpringSimulator.Config(
+                positionDampingRatio: settings.positionDampingRatio,
+                positionResponse: settings.positionResponse,
+                zoomDampingRatio: settings.zoomDampingRatio,
+                zoomResponse: settings.zoomResponse,
+                tickRate: settings.tickRate,
+                minZoom: settings.minZoom,
+                maxZoom: settings.maxZoom
+            )
+        )
+
         let cameraTrack = CameraTrack(
             name: "Camera (Segment)",
             segments: segments
         )
 
         #if DEBUG
-        print("[SegmentCamera] Generated \(segments.count) segments from \(intentSpans.count) intent spans")
+        print("[SegmentCamera] Generated \(segments.count) spring-simulated segments from \(intentSpans.count) intent spans")
         #endif
 
-        // Step 5: Emit cursor and keystroke tracks
+        // Step 6: Emit cursor track
         let cursorTrack = CursorTrackEmitter.emit(
             duration: duration,
             settings: settings.cursor
         )
+        // Step 7: Emit keystroke track
         let keystrokeTrack = KeystrokeTrackEmitter.emit(
             eventTimeline: timeline,
             duration: duration,
