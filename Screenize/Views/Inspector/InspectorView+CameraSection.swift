@@ -22,35 +22,9 @@ extension InspectorView {
                     )
                 )
 
-                // Start Zoom
-                zoomControl(
-                    label: "Start Zoom",
-                    segment: binding,
-                    keyPath: \.startTransform
-                )
-
-                // End Zoom
-                zoomControl(
-                    label: "End Zoom",
-                    segment: binding,
-                    keyPath: \.endTransform
-                )
-
-                Divider()
-
-                // Start Position
-                positionControl(
-                    label: "Start Position",
-                    segment: binding,
-                    keyPath: \.startTransform
-                )
-
-                // End Position
-                positionControl(
-                    label: "End Position",
-                    segment: binding,
-                    keyPath: \.endTransform
-                )
+                if !binding.wrappedValue.isContinuous {
+                    manualCameraControls(segment: binding)
+                }
             }
         } else {
             Text("Camera segment not found")
@@ -59,38 +33,49 @@ extension InspectorView {
         }
     }
 
+    @ViewBuilder
+    private func manualCameraControls(segment: Binding<CameraSegment>) -> some View {
+        if case .manual = segment.wrappedValue.kind {
+            zoomControl(label: "Start Zoom", segment: segment, isStart: true)
+            zoomControl(label: "End Zoom", segment: segment, isStart: false)
+            Divider()
+            positionControl(label: "Start Position", segment: segment, isStart: true)
+            positionControl(label: "End Position", segment: segment, isStart: false)
+        }
+    }
+
     func zoomControl(
         label: String,
         segment: Binding<CameraSegment>,
-        keyPath: WritableKeyPath<CameraSegment, TransformValue>
+        isStart: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
+            let currentZoom = extractTransform(from: segment.wrappedValue, isStart: isStart).zoom
+
             HStack {
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
                 Spacer()
-                Text("\(Int(segment.wrappedValue[keyPath: keyPath].zoom * 100))%")
+                Text("\(Int(currentZoom * 100))%")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.secondary)
             }
             HStack(spacing: 8) {
                 Slider(value: Binding(
-                    get: { Double(segment.wrappedValue[keyPath: keyPath].zoom) },
-                    set: {
-                        let current = segment.wrappedValue[keyPath: keyPath]
-                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
-                            zoom: CGFloat($0), center: current.center
-                        )
+                    get: { Double(extractTransform(from: segment.wrappedValue, isStart: isStart).zoom) },
+                    set: { newZoom in
+                        updateTransform(in: &segment.wrappedValue, isStart: isStart) { transform in
+                            TransformValue(zoom: CGFloat(newZoom), center: transform.center)
+                        }
                     }
                 ), in: 1...5, step: 0.1)
                 TextField("", value: Binding(
-                    get: { Double(segment.wrappedValue[keyPath: keyPath].zoom) },
-                    set: {
-                        let current = segment.wrappedValue[keyPath: keyPath]
-                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
-                            zoom: max(1, min(5, CGFloat($0))), center: current.center
-                        )
+                    get: { Double(extractTransform(from: segment.wrappedValue, isStart: isStart).zoom) },
+                    set: { newZoom in
+                        updateTransform(in: &segment.wrappedValue, isStart: isStart) { transform in
+                            TransformValue(zoom: max(1, min(5, CGFloat(newZoom))), center: transform.center)
+                        }
                     }
                 ), format: .number.precision(.fractionLength(1)))
                     .textFieldStyle(.roundedBorder)
@@ -102,7 +87,7 @@ extension InspectorView {
     func positionControl(
         label: String,
         segment: Binding<CameraSegment>,
-        keyPath: WritableKeyPath<CameraSegment, TransformValue>
+        isStart: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
@@ -111,23 +96,19 @@ extension InspectorView {
 
             CenterPointPicker(
                 centerX: Binding(
-                    get: { segment.wrappedValue[keyPath: keyPath].center.x },
+                    get: { extractTransform(from: segment.wrappedValue, isStart: isStart).center.x },
                     set: { newX in
-                        let current = segment.wrappedValue[keyPath: keyPath]
-                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
-                            zoom: current.zoom,
-                            center: NormalizedPoint(x: newX, y: current.center.y)
-                        )
+                        updateTransform(in: &segment.wrappedValue, isStart: isStart) { transform in
+                            TransformValue(zoom: transform.zoom, center: NormalizedPoint(x: newX, y: transform.center.y))
+                        }
                     }
                 ),
                 centerY: Binding(
-                    get: { segment.wrappedValue[keyPath: keyPath].center.y },
+                    get: { extractTransform(from: segment.wrappedValue, isStart: isStart).center.y },
                     set: { newY in
-                        let current = segment.wrappedValue[keyPath: keyPath]
-                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
-                            zoom: current.zoom,
-                            center: NormalizedPoint(x: current.center.x, y: newY)
-                        )
+                        updateTransform(in: &segment.wrappedValue, isStart: isStart) { transform in
+                            TransformValue(zoom: transform.zoom, center: NormalizedPoint(x: transform.center.x, y: newY))
+                        }
                     }
                 ),
                 onChange: onSegmentChange
@@ -140,16 +121,14 @@ extension InspectorView {
                     .foregroundColor(.secondary)
                     .frame(width: 12)
                 TextField("", value: Binding(
-                    get: { Double(segment.wrappedValue[keyPath: keyPath].center.x) },
+                    get: { Double(extractTransform(from: segment.wrappedValue, isStart: isStart).center.x) },
                     set: { newX in
-                        let current = segment.wrappedValue[keyPath: keyPath]
-                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
-                            zoom: current.zoom,
-                            center: NormalizedPoint(
-                                x: max(0, min(1, CGFloat(newX))),
-                                y: current.center.y
+                        updateTransform(in: &segment.wrappedValue, isStart: isStart) { transform in
+                            TransformValue(
+                                zoom: transform.zoom,
+                                center: NormalizedPoint(x: max(0, min(1, CGFloat(newX))), y: transform.center.y)
                             )
-                        )
+                        }
                         onSegmentChange?()
                     }
                 ), format: .number.precision(.fractionLength(2)))
@@ -159,22 +138,49 @@ extension InspectorView {
                     .foregroundColor(.secondary)
                     .frame(width: 12)
                 TextField("", value: Binding(
-                    get: { Double(segment.wrappedValue[keyPath: keyPath].center.y) },
+                    get: { Double(extractTransform(from: segment.wrappedValue, isStart: isStart).center.y) },
                     set: { newY in
-                        let current = segment.wrappedValue[keyPath: keyPath]
-                        segment.wrappedValue[keyPath: keyPath] = TransformValue(
-                            zoom: current.zoom,
-                            center: NormalizedPoint(
-                                x: current.center.x,
-                                y: max(0, min(1, CGFloat(newY)))
+                        updateTransform(in: &segment.wrappedValue, isStart: isStart) { transform in
+                            TransformValue(
+                                zoom: transform.zoom,
+                                center: NormalizedPoint(x: transform.center.x, y: max(0, min(1, CGFloat(newY))))
                             )
-                        )
+                        }
                         onSegmentChange?()
                     }
                 ), format: .number.precision(.fractionLength(2)))
                     .textFieldStyle(.roundedBorder)
             }
         }
+    }
+
+    // MARK: - Transform Helpers
+
+    private func extractTransform(from segment: CameraSegment, isStart: Bool) -> TransformValue {
+        guard case .manual(let startTransform, let endTransform, _) = segment.kind else {
+            return .identity
+        }
+        return isStart ? startTransform : endTransform
+    }
+
+    private func updateTransform(
+        in segment: inout CameraSegment,
+        isStart: Bool,
+        update: (TransformValue) -> TransformValue
+    ) {
+        guard case .manual(var startTransform, var endTransform, let interpolation) = segment.kind else {
+            return
+        }
+        if isStart {
+            startTransform = update(startTransform)
+        } else {
+            endTransform = update(endTransform)
+        }
+        segment.kind = .manual(
+            startTransform: startTransform,
+            endTransform: endTransform,
+            interpolation: interpolation
+        )
     }
 }
 
