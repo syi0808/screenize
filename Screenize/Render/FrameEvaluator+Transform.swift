@@ -10,32 +10,42 @@ extension FrameEvaluator {
         guard let track = timeline.cameraTrack, track.isEnabled else {
             return .identity
         }
-
         guard let segment = track.activeSegment(at: time) else {
             return .identity
         }
-
-        // Continuous segment: use pre-computed physics path
-        if let samples = segment.continuousTransforms, !samples.isEmpty {
+        switch segment.kind {
+        case .continuous(let samples):
+            guard !samples.isEmpty else { return .identity }
             return evaluateContinuousTransform(at: time, samples: samples)
+        case .manual(let startTransform, let endTransform, let interpolation):
+            return evaluateManualTransform(
+                at: time, segment: segment,
+                startTransform: startTransform, endTransform: endTransform,
+                interpolation: interpolation
+            )
         }
+    }
 
-        // Manual segment: interpolate between start/end transforms
+    private func evaluateManualTransform(
+        at time: TimeInterval,
+        segment: CameraSegment,
+        startTransform: TransformValue,
+        endTransform: TransformValue,
+        interpolation: EasingCurve
+    ) -> TransformState {
         let duration = max(0.001, segment.endTime - segment.startTime)
         let rawProgress = CGFloat((time - segment.startTime) / duration)
-        let progress = segment.interpolation.apply(rawProgress, duration: CGFloat(duration))
-        let derivative = segment.interpolation.derivative(
-            rawProgress, duration: CGFloat(duration)
-        )
+        let progress = interpolation.apply(rawProgress, duration: CGFloat(duration))
+        let derivative = interpolation.derivative(rawProgress, duration: CGFloat(duration))
         let interpolatedValue: TransformValue
 
         if isWindowMode {
-            interpolatedValue = segment.startTransform.interpolatedForWindowMode(
-                to: segment.endTransform, amount: progress
+            interpolatedValue = startTransform.interpolatedForWindowMode(
+                to: endTransform, amount: progress
             )
         } else {
-            interpolatedValue = segment.startTransform.interpolated(
-                to: segment.endTransform, amount: progress
+            interpolatedValue = startTransform.interpolated(
+                to: endTransform, amount: progress
             )
         }
 
@@ -48,16 +58,16 @@ extension FrameEvaluator {
             zoom: interpolatedValue.zoom,
             center: clampedCenter,
             zoomVelocity: abs(
-                derivative * (segment.endTransform.zoom - segment.startTransform.zoom)
+                derivative * (endTransform.zoom - startTransform.zoom)
                     / CGFloat(duration)
             ),
             panVelocity: abs(derivative) * hypot(
-                segment.endTransform.center.x - segment.startTransform.center.x,
-                segment.endTransform.center.y - segment.startTransform.center.y
+                endTransform.center.x - startTransform.center.x,
+                endTransform.center.y - startTransform.center.y
             ) / CGFloat(duration),
             panDirection: atan2(
-                segment.endTransform.center.y - segment.startTransform.center.y,
-                segment.endTransform.center.x - segment.startTransform.center.x
+                endTransform.center.y - startTransform.center.y,
+                endTransform.center.x - startTransform.center.x
             )
         )
     }
