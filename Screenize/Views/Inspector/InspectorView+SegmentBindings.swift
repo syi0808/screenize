@@ -18,7 +18,11 @@ extension InspectorView {
                     return track.segments[segmentIndex]
                 }
 
-                return CameraSegment(startTime: 0, endTime: 1, startTransform: .identity, endTransform: .identity)
+                return CameraSegment(
+                    startTime: 0,
+                    endTime: 1,
+                    kind: .manual(startTransform: .identity, endTransform: .identity, interpolation: .easeInOut)
+                )
             },
             set: { updated in
                 if case .camera(var track) = self.timeline.tracks[trackIndex],
