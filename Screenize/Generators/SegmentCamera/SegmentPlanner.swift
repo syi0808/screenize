@@ -200,7 +200,7 @@ struct SegmentPlanner {
             let spanEnd = plan.scene.endTime
 
             let needsSplit: Bool = {
-                guard previousEnd != nil, let _ = mouseData else { return false }
+                guard previousEnd != nil, mouseData != nil else { return false }
                 let dx = startTransform.center.x - endTransform.center.x
                 let dy = startTransform.center.y - endTransform.center.y
                 let distance = sqrt(dx * dx + dy * dy)
