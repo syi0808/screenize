@@ -497,6 +497,120 @@ final class WaypointGeneratorTests: XCTestCase {
         XCTAssertNotNil(settings.urgencyMultipliers[.immediate])
     }
 
+    // MARK: - Zoom Transition Optimization
+
+    func test_optimizeZoomTransitions_nearbyClicks_removesIntermediateZoomOut() {
+        let spans = [
+            makeIntentSpan(start: 1, end: 2, intent: .clicking, focus: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeIntentSpan(start: 2, end: 3, intent: .idle, focus: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeIntentSpan(start: 3, end: 4, intent: .clicking, focus: NormalizedPoint(x: 0.35, y: 0.5)),
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans, screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil, frameAnalysis: [], settings: defaultSettings
+        )
+        // Filter intermediate idle waypoints (exclude initial establishing waypoint at t≈0)
+        let intermediateIdleWaypoints = waypoints.filter {
+            if case .idle = $0.source { return $0.time > 0.5 }
+            return false
+        }
+        XCTAssertEqual(intermediateIdleWaypoints.count, 0, "Nearby clicks should eliminate intermediate idle waypoint")
+    }
+
+    func test_optimizeZoomTransitions_farApartClicks_keepsReducedZoomOut() {
+        let spans = [
+            makeIntentSpan(start: 1, end: 2, intent: .clicking, focus: NormalizedPoint(x: 0.1, y: 0.5)),
+            makeIntentSpan(start: 4, end: 6, intent: .idle, focus: NormalizedPoint(x: 0.5, y: 0.5)),
+            makeIntentSpan(start: 6, end: 7, intent: .clicking, focus: NormalizedPoint(x: 0.9, y: 0.5)),
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans, screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil, frameAnalysis: [], settings: defaultSettings
+        )
+        // Filter intermediate idle waypoints (exclude initial establishing waypoint at t≈0)
+        let intermediateIdleWaypoints = waypoints.filter {
+            if case .idle = $0.source { return $0.time > 0.5 }
+            return false
+        }
+        XCTAssertEqual(intermediateIdleWaypoints.count, 1, "Far-apart clicks should keep idle waypoint")
+        if let idleWP = intermediateIdleWaypoints.first {
+            XCTAssertGreaterThan(idleWP.targetZoom, 1.0,
+                "Reduced zoom should be above 1.0 (partial zoom-out, not full)")
+        }
+    }
+
+    func test_optimizeZoomTransitions_quickSuccession_removesZoomOut() {
+        let spans = [
+            makeIntentSpan(start: 1, end: 1.5, intent: .clicking, focus: NormalizedPoint(x: 0.2, y: 0.5)),
+            makeIntentSpan(start: 1.5, end: 2, intent: .idle, focus: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeIntentSpan(start: 2, end: 2.5, intent: .clicking, focus: NormalizedPoint(x: 0.45, y: 0.5)),
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans, screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil, frameAnalysis: [], settings: defaultSettings
+        )
+        // Filter intermediate idle waypoints (exclude initial establishing waypoint at t≈0)
+        let intermediateIdleWaypoints = waypoints.filter {
+            if case .idle = $0.source { return $0.time > 0.5 }
+            return false
+        }
+        XCTAssertEqual(intermediateIdleWaypoints.count, 0, "Quick succession should remove idle waypoint")
+    }
+
+    func test_optimizeZoomTransitions_differentZoomLevels_keepsZoomOut() {
+        let spans = [
+            makeIntentSpan(start: 1, end: 2, intent: .clicking, focus: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeIntentSpan(start: 2, end: 2.5, intent: .idle, focus: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeIntentSpan(start: 2.5, end: 5, intent: .typing(context: .textField), focus: NormalizedPoint(x: 0.35, y: 0.5)),
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans, screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil, frameAnalysis: [], settings: defaultSettings
+        )
+        let clickWP = waypoints.first { if case .clicking = $0.source { return true }; return false }
+        let typingWP = waypoints.first { if case .typing = $0.source { return true }; return false }
+        if let c = clickWP, let t = typingWP, abs(c.targetZoom - t.targetZoom) >= 0.3 {
+            // Filter intermediate idle waypoints (exclude initial establishing waypoint at t≈0)
+            let intermediateIdleWaypoints = waypoints.filter {
+                if case .idle = $0.source { return $0.time > 0.5 }
+                return false
+            }
+            XCTAssertGreaterThanOrEqual(intermediateIdleWaypoints.count, 1,
+                "Different zoom levels should preserve idle waypoint for natural transition")
+        }
+    }
+
+    func test_optimizeZoomTransitions_singleClick_noChange() {
+        let spans = [
+            makeIntentSpan(start: 1, end: 2, intent: .clicking, focus: NormalizedPoint(x: 0.5, y: 0.5)),
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans, screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil, frameAnalysis: [], settings: defaultSettings
+        )
+        XCTAssertGreaterThanOrEqual(waypoints.count, 1)
+    }
+
+    func test_optimizeZoomTransitions_threeConsecutiveClicks_removesAllIdleWaypoints() {
+        let spans = [
+            makeIntentSpan(start: 1, end: 1.5, intent: .clicking, focus: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeIntentSpan(start: 1.5, end: 2, intent: .idle, focus: NormalizedPoint(x: 0.3, y: 0.5)),
+            makeIntentSpan(start: 2, end: 2.5, intent: .clicking, focus: NormalizedPoint(x: 0.32, y: 0.5)),
+            makeIntentSpan(start: 2.5, end: 3, intent: .idle, focus: NormalizedPoint(x: 0.32, y: 0.5)),
+            makeIntentSpan(start: 3, end: 3.5, intent: .clicking, focus: NormalizedPoint(x: 0.34, y: 0.5)),
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans, screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil, frameAnalysis: [], settings: defaultSettings
+        )
+        // Filter intermediate idle waypoints (exclude initial establishing waypoint at t≈0)
+        let intermediateIdleWaypoints = waypoints.filter {
+            if case .idle = $0.source { return $0.time > 0.5 }
+            return false
+        }
+        XCTAssertEqual(intermediateIdleWaypoints.count, 0, "All intermediate idle waypoints should be removed for nearby consecutive clicks")
+    }
+
     // MARK: - Helpers
 
     private func makeIntentSpan(

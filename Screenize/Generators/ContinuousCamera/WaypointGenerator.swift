@@ -91,7 +91,9 @@ struct WaypointGenerator {
             waypoints.append(waypoint)
         }
 
-        return sortAndCoalesce(waypoints)
+        var result = sortAndCoalesce(waypoints)
+        optimizeZoomTransitions(&result)
+        return result
     }
 
     // MARK: - Urgency Mapping
@@ -480,6 +482,71 @@ struct WaypointGenerator {
     }
 
     // MARK: - Helpers
+
+    // MARK: - Zoom Transition Optimization
+
+    private static let nearThreshold: CGFloat = 0.15
+    private static let farThreshold: CGFloat = 0.35
+    private static let quickThreshold: TimeInterval = 1.5
+    private static let zoomSimilarityThreshold: CGFloat = 0.3
+    private static let zoomReductionFactor: CGFloat = 0.7
+
+    /// Whether this intent is an active (zoom-in) intent.
+    private static func isActiveIntent(_ intent: UserIntent) -> Bool {
+        switch intent {
+        case .clicking, .navigating, .scrolling: return true
+        case .typing: return true
+        case .dragging: return true
+        case .idle, .reading, .switching: return false
+        }
+    }
+
+    /// Post-process waypoints to remove unnecessary zoomOut between active intents.
+    static func optimizeZoomTransitions(_ waypoints: inout [CameraWaypoint]) {
+        guard waypoints.count >= 3 else { return }
+
+        var i = 0
+        while i + 2 < waypoints.count {
+            let first = waypoints[i]
+            let mid = waypoints[i + 1]
+            let third = waypoints[i + 2]
+
+            guard isActiveIntent(first.source),
+                  !isActiveIntent(mid.source),
+                  isActiveIntent(third.source) else {
+                i += 1
+                continue
+            }
+
+            guard abs(first.targetZoom - third.targetZoom) < zoomSimilarityThreshold else {
+                i += 1
+                continue
+            }
+
+            let dx = first.targetCenter.x - third.targetCenter.x
+            let dy = first.targetCenter.y - third.targetCenter.y
+            let distance = sqrt(dx * dx + dy * dy)
+            let timeGap = third.time - first.time
+
+            if distance < nearThreshold {
+                waypoints.remove(at: i + 1)
+                i = max(0, i - 1)
+            } else if distance < farThreshold && timeGap < quickThreshold {
+                waypoints.remove(at: i + 1)
+                i = max(0, i - 1)
+            } else {
+                let reducedZoom = max(first.targetZoom * zoomReductionFactor, 1.0)
+                waypoints[i + 1] = CameraWaypoint(
+                    time: mid.time,
+                    targetZoom: reducedZoom,
+                    targetCenter: mid.targetCenter,
+                    urgency: mid.urgency,
+                    source: mid.source
+                )
+                i += 1
+            }
+        }
+    }
 
     /// Default initial waypoint at t=0 with no zoom.
     private static func initialWaypoint() -> CameraWaypoint {
