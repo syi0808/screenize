@@ -18,11 +18,24 @@ struct SegmentSpringSimulator {
         var maxZoom: CGFloat = 2.8
     }
 
+    /// Maps cursor speed (normalized units/sec) to a response factor.
+    /// Slow (< 0.3): 1.0, Medium (0.3–0.8): linear 1.0→0.5, Fast (> 0.8): 0.5
+    private static func speedFactor(for speed: CGFloat) -> CGFloat {
+        let slowThreshold: CGFloat = 0.3
+        let fastThreshold: CGFloat = 0.8
+        let minFactor: CGFloat = 0.5
+        if speed <= slowThreshold { return 1.0 }
+        if speed >= fastThreshold { return minFactor }
+        let t = (speed - slowThreshold) / (fastThreshold - slowThreshold)
+        return 1.0 - t * (1.0 - minFactor)
+    }
+
     /// Simulate spring physics across all segments and return segments with
     /// populated `continuousTransforms`.
     static func simulate(
         segments: [CameraSegment],
-        config: Config = Config()
+        config: Config = Config(),
+        cursorSpeeds: [UUID: CGFloat] = [:]
     ) -> [CameraSegment] {
         guard !segments.isEmpty else { return [] }
 
@@ -63,8 +76,10 @@ struct SegmentSpringSimulator {
             // fills the available time. The spring should use ~70% of the segment
             // to reach the target, leaving natural settling for the rest.
             let segmentDuration = CGFloat(segment.endTime - segment.startTime)
-            let adaptedPosResponse = max(config.positionResponse, segmentDuration * 0.4)
-            let adaptedZoomResponse = max(config.zoomResponse, segmentDuration * 0.45)
+            let factor = speedFactor(for: cursorSpeeds[segment.id] ?? 0)
+            let minResponse: CGFloat = 0.15
+            let adaptedPosResponse = max(minResponse, max(config.positionResponse, segmentDuration * 0.4) * factor)
+            let adaptedZoomResponse = max(minResponse, max(config.zoomResponse, segmentDuration * 0.45) * factor)
             let posOmega = 2.0 * .pi / max(0.001, adaptedPosResponse)
             let zoomOmega = 2.0 * .pi / max(0.001, adaptedZoomResponse)
 
