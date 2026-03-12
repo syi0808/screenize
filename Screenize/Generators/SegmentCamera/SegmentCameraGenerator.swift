@@ -96,4 +96,42 @@ class SegmentCameraGenerator {
             keystrokeTrack: keystrokeTrack
         )
     }
+
+    /// Compute cursor velocity at the start of each segment.
+    /// Returns a dictionary mapping segment ID to speed in normalized units/sec.
+    /// Speed is net displacement over the first 0.3s (or segment duration if shorter).
+    static func cursorSpeeds(
+        for segments: [CameraSegment],
+        mouseData: MouseDataSource
+    ) -> [UUID: CGFloat] {
+        let sampleWindow: TimeInterval = 0.3
+        var result: [UUID: CGFloat] = [:]
+
+        for segment in segments {
+            let windowEnd = min(segment.startTime + sampleWindow, segment.endTime)
+            let samples = mouseData.positions.filter {
+                $0.time >= segment.startTime && $0.time <= windowEnd
+            }
+
+            guard samples.count >= 2,
+                  let first = samples.first,
+                  let last = samples.last else {
+                result[segment.id] = 0
+                continue
+            }
+
+            let timeDelta = last.time - first.time
+            guard timeDelta > 0.001 else {
+                result[segment.id] = 0
+                continue
+            }
+
+            let dx = last.position.x - first.position.x
+            let dy = last.position.y - first.position.y
+            let distance = sqrt(dx * dx + dy * dy)
+            result[segment.id] = distance / CGFloat(timeDelta)
+        }
+
+        return result
+    }
 }
