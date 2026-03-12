@@ -17,7 +17,8 @@ struct SegmentPlanner {
         eventTimeline: EventTimeline,
         frameAnalysis: [VideoFrameAnalyzer.FrameAnalysis],
         settings: ShotSettings,
-        zoomIntensity: CGFloat = 1.0
+        zoomIntensity: CGFloat = 1.0,
+        mouseData: MouseDataSource? = nil
     ) -> [CameraSegment] {
         guard !intentSpans.isEmpty else { return [] }
 
@@ -45,7 +46,7 @@ struct SegmentPlanner {
         )
 
         // Step 4: Build chained camera segments
-        return buildSegments(from: shotPlans, zoomIntensity: zoomIntensity)
+        return buildSegments(from: shotPlans, zoomIntensity: zoomIntensity, mouseData: mouseData)
     }
 
     // MARK: - Focus Regions
@@ -176,9 +177,12 @@ struct SegmentPlanner {
     // MARK: - Segment Building
 
     /// Convert shot plans to chained CameraSegments.
+    /// When mouseData is provided, splits segments into transition + hold
+    /// when the camera needs to move a significant distance.
     private static func buildSegments(
         from plans: [ShotPlan],
-        zoomIntensity: CGFloat
+        zoomIntensity: CGFloat,
+        mouseData: MouseDataSource? = nil
     ) -> [CameraSegment] {
         guard !plans.isEmpty else { return [] }
 
@@ -192,19 +196,80 @@ struct SegmentPlanner {
             let endTransform = TransformValue(zoom: zoom, center: center)
 
             let startTransform = previousEnd ?? endTransform
+            let spanStart = plan.scene.startTime
+            let spanEnd = plan.scene.endTime
 
-            let segment = CameraSegment(
-                startTime: plan.scene.startTime,
-                endTime: plan.scene.endTime,
-                kind: .manual(
-                    startTransform: startTransform,
-                    endTransform: endTransform,
-                    interpolation: .easeInOut
-                ),
-                transitionToNext: SegmentTransition(duration: 0, easing: .linear)
-            )
+            let needsSplit: Bool = {
+                guard previousEnd != nil, let _ = mouseData else { return false }
+                let dx = startTransform.center.x - endTransform.center.x
+                let dy = startTransform.center.y - endTransform.center.y
+                let distance = sqrt(dx * dx + dy * dy)
+                let zoomDiff = abs(startTransform.zoom - endTransform.zoom)
+                return distance > splitDistanceThreshold || zoomDiff > splitZoomThreshold
+            }()
 
-            segments.append(segment)
+            if needsSplit, let mouseData = mouseData {
+                let travelTime = cursorTravelTime(
+                    from: startTransform.center,
+                    to: endTransform.center,
+                    mouseData: mouseData,
+                    searchStart: spanStart,
+                    searchEnd: spanEnd
+                )
+
+                let transitionEnd = spanStart + travelTime
+                let holdDuration = spanEnd - transitionEnd
+
+                if holdDuration >= minHoldDuration {
+                    let transition = CameraSegment(
+                        startTime: spanStart,
+                        endTime: transitionEnd,
+                        kind: .manual(
+                            startTransform: startTransform,
+                            endTransform: endTransform,
+                            interpolation: .easeInOut
+                        ),
+                        transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                    )
+                    let hold = CameraSegment(
+                        startTime: transitionEnd,
+                        endTime: spanEnd,
+                        kind: .manual(
+                            startTransform: endTransform,
+                            endTransform: endTransform,
+                            interpolation: .linear
+                        ),
+                        transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                    )
+                    segments.append(transition)
+                    segments.append(hold)
+                } else {
+                    let transition = CameraSegment(
+                        startTime: spanStart,
+                        endTime: spanEnd,
+                        kind: .manual(
+                            startTransform: startTransform,
+                            endTransform: endTransform,
+                            interpolation: .easeInOut
+                        ),
+                        transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                    )
+                    segments.append(transition)
+                }
+            } else {
+                let segment = CameraSegment(
+                    startTime: spanStart,
+                    endTime: spanEnd,
+                    kind: .manual(
+                        startTransform: startTransform,
+                        endTransform: endTransform,
+                        interpolation: .easeInOut
+                    ),
+                    transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                )
+                segments.append(segment)
+            }
+
             previousEnd = endTransform
         }
 
