@@ -84,12 +84,10 @@ struct SegmentSpringSimulator {
                 return false
             }()
             if isHoldSegment {
-                state.velocityX = 0
-                state.velocityY = 0
-                state.velocityZoom = 0
-                state.positionX = targetCenter.x
-                state.positionY = targetCenter.y
-                state.zoom = targetZoom
+                let dampenFactor: CGFloat = 0.15
+                state.velocityX *= dampenFactor
+                state.velocityY *= dampenFactor
+                state.velocityZoom *= dampenFactor
             }
 
             // Scale spring response to segment duration so the camera movement
