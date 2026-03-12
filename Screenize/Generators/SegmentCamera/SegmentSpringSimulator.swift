@@ -72,6 +72,26 @@ struct SegmentSpringSimulator {
             let targetCenter = ShotPlanner.clampCenter(target.center, zoom: target.zoom)
             let targetZoom = target.zoom
 
+            // Reset velocity for hold segments (startTransform ≈ endTransform)
+            // to prevent spring overshoot causing jitter after transitions
+            let isHoldSegment: Bool = {
+                if case .manual(let start, let end, _) = segment.kind {
+                    let dx = abs(start.center.x - end.center.x)
+                    let dy = abs(start.center.y - end.center.y)
+                    let dz = abs(start.zoom - end.zoom)
+                    return dx < 0.001 && dy < 0.001 && dz < 0.001
+                }
+                return false
+            }()
+            if isHoldSegment {
+                state.velocityX = 0
+                state.velocityY = 0
+                state.velocityZoom = 0
+                state.positionX = targetCenter.x
+                state.positionY = targetCenter.y
+                state.zoom = targetZoom
+            }
+
             // Scale spring response to segment duration so the camera movement
             // fills the available time. The spring should use ~70% of the segment
             // to reach the target, leaving natural settling for the rest.

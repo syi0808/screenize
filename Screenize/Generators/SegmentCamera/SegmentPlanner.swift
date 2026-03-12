@@ -273,6 +273,17 @@ struct SegmentPlanner {
             previousEnd = endTransform
         }
 
+        // Ensure no segments overlap: clamp each segment's startTime to previous endTime
+        for i in 1..<segments.count {
+            if segments[i].startTime < segments[i - 1].endTime {
+                segments[i].startTime = segments[i - 1].endTime
+            }
+            // Ensure valid duration after clamping
+            if segments[i].endTime <= segments[i].startTime {
+                segments[i].endTime = segments[i].startTime + 0.01
+            }
+        }
+
         return segments
     }
 
