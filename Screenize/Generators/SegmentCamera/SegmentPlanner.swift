@@ -134,6 +134,45 @@ struct SegmentPlanner {
         return NormalizedPoint(x: sumX / count, y: sumY / count)
     }
 
+    // MARK: - Cursor Travel Time
+
+    private static let splitDistanceThreshold: CGFloat = 0.05
+    private static let splitZoomThreshold: CGFloat = 0.1
+    static let arrivalRadius: CGFloat = 0.08
+    private static let minTransitionDuration: TimeInterval = 0.15
+    private static let maxTransitionDuration: TimeInterval = 0.8
+    private static let minHoldDuration: TimeInterval = 0.1
+    private static let fallbackSpeedFactor: TimeInterval = 1.0
+
+    /// Compute how long the cursor takes to arrive near the target position.
+    static func cursorTravelTime(
+        from startPosition: NormalizedPoint,
+        to targetPosition: NormalizedPoint,
+        mouseData: MouseDataSource,
+        searchStart: TimeInterval,
+        searchEnd: TimeInterval
+    ) -> TimeInterval {
+        let positions = mouseData.positions.filter {
+            $0.time >= searchStart && $0.time <= searchEnd
+        }
+
+        for pos in positions {
+            let dx = pos.position.x - targetPosition.x
+            let dy = pos.position.y - targetPosition.y
+            let dist = sqrt(dx * dx + dy * dy)
+            if dist <= arrivalRadius {
+                let elapsed = pos.time - searchStart
+                return min(max(elapsed, minTransitionDuration), maxTransitionDuration)
+            }
+        }
+
+        let dx = targetPosition.x - startPosition.x
+        let dy = targetPosition.y - startPosition.y
+        let distance = sqrt(dx * dx + dy * dy)
+        let fallback = Double(distance) * fallbackSpeedFactor
+        return min(max(fallback, minTransitionDuration), maxTransitionDuration)
+    }
+
     // MARK: - Segment Building
 
     /// Convert shot plans to chained CameraSegments.

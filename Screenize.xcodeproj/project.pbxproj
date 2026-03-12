@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A9000001296A0001 /* SegmentPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9100001296A0001 /* SegmentPlannerTests.swift */; };
 		A8000001296A0001 /* SegmentSpringSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8100001296A0001 /* SegmentSpringSimulatorTests.swift */; };
 		A7000001296A0001 /* SegmentCameraGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7100001296A0001 /* SegmentCameraGeneratorTests.swift */; };
 		B4000001296A0001 /* SegmentPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000002296A0001 /* SegmentPlanner.swift */; };
@@ -237,6 +238,7 @@
 		A6100001296A0001 /* AdaptiveResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveResponseTests.swift; sourceTree = "<group>"; };
 		A7100001296A0001 /* SegmentCameraGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentCameraGeneratorTests.swift; sourceTree = "<group>"; };
 		A8100001296A0001 /* SegmentSpringSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentSpringSimulatorTests.swift; sourceTree = "<group>"; };
+		A9100001296A0001 /* SegmentPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentPlannerTests.swift; sourceTree = "<group>"; };
 		AB000001296A0001 /* UnifiedEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedEvent.swift; sourceTree = "<group>"; };
 		AB000002296A0001 /* UserIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIntent.swift; sourceTree = "<group>"; };
 		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
@@ -678,6 +680,7 @@
 			isa = PBXGroup;
 			children = (
 				A7100001296A0001 /* SegmentCameraGeneratorTests.swift */,
+				A9100001296A0001 /* SegmentPlannerTests.swift */,
 				A8100001296A0001 /* SegmentSpringSimulatorTests.swift */,
 			);
 			path = SegmentCamera;
@@ -1128,6 +1131,7 @@
 				A6000001296A0001 /* AdaptiveResponseTests.swift in Sources */,
 				A7000001296A0001 /* SegmentCameraGeneratorTests.swift in Sources */,
 				A8000001296A0001 /* SegmentSpringSimulatorTests.swift in Sources */,
+				A9000001296A0001 /* SegmentPlannerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
