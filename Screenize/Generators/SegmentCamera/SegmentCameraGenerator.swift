@@ -55,6 +55,12 @@ class SegmentCameraGenerator {
             zoomIntensity: settings.zoomIntensity
         )
 
+        // Step 4.5: Compute cursor speeds for adaptive spring response
+        let speeds = SegmentCameraGenerator.cursorSpeeds(
+            for: rawSegments,
+            mouseData: effectiveMouseData
+        )
+
         // Step 5: Spring-simulate segment transitions
         let segments = SegmentSpringSimulator.simulate(
             segments: rawSegments,
@@ -66,7 +72,8 @@ class SegmentCameraGenerator {
                 tickRate: settings.tickRate,
                 minZoom: settings.minZoom,
                 maxZoom: settings.maxZoom
-            )
+            ),
+            cursorSpeeds: speeds
         )
 
         let cameraTrack = CameraTrack(
