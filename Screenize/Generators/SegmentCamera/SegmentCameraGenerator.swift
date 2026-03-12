@@ -52,7 +52,8 @@ class SegmentCameraGenerator {
             eventTimeline: timeline,
             frameAnalysis: frameAnalysis,
             settings: settings.shot,
-            zoomIntensity: settings.zoomIntensity
+            zoomIntensity: settings.zoomIntensity,
+            mouseData: effectiveMouseData
         )
 
         // Step 4.5: Compute cursor speeds for adaptive spring response
