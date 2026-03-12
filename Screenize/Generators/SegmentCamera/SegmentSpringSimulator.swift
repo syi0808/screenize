@@ -84,7 +84,7 @@ struct SegmentSpringSimulator {
                 return false
             }()
             if isHoldSegment {
-                let dampenFactor: CGFloat = 0.15
+                let dampenFactor: CGFloat = 0.3
                 state.velocityX *= dampenFactor
                 state.velocityY *= dampenFactor
                 state.velocityZoom *= dampenFactor
