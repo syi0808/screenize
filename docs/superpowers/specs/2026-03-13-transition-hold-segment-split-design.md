@@ -22,12 +22,13 @@ Currently `SegmentPlanner.buildSegments()` creates one `.manual(start, end, ease
 For each shot plan, compare `previousEnd` transform with the current target transform:
 
 **No split needed (hold only):**
-- When distance between `previousEnd.center` and `target.center` is below `splitDistanceThreshold` (e.g., 0.05 normalized units) AND zoom difference is below `splitZoomThreshold` (e.g., 0.1)
+- When distance between `previousEnd.center` and `target.center` is below `splitDistanceThreshold` (0.05 normalized units) AND zoom difference is below `splitZoomThreshold` (0.1)
 - Create a single hold segment spanning the full intent duration
 
 **Split needed (transition + hold):**
 - When distance or zoom difference exceeds thresholds
 - Create a transition segment followed by a hold segment
+- Exception: if the hold segment would be shorter than `minHoldDuration` (0.1s), create transition-only (no hold) — transition endTime extends to intent span's endTime
 
 ### Transition Segment
 
@@ -51,19 +52,21 @@ static func cursorTravelTime(
 ) -> TimeInterval
 ```
 
-- Scan mouse positions from `searchStart` forward
-- Find when cursor arrives within `arrivalRadius` (e.g., 0.08 normalized) of `targetPosition`
+- Scan `mouseData.positions` array (time-sorted `[MousePositionData]`) from `searchStart` forward
+- `targetPosition` is the **zoom-intensity-adjusted, clamped center** (same value used for the segment's `endTransform.center`) — this ensures we measure travel time to where the camera actually needs to be
+- Find when cursor arrives within `arrivalRadius` (0.08 normalized) of `targetPosition`
 - Return elapsed time from `searchStart` to arrival
-- Clamp result: `min(0.15s) ... max(0.8s)`
-- If cursor never arrives (e.g., target is derived from UI element, not cursor): use fallback duration based on distance (e.g., `distance * 1.0s`, clamped)
+- Clamp result: `minTransitionDuration (0.15s) ... maxTransitionDuration (0.8s)`
+- If cursor never arrives within `searchEnd` (e.g., target is derived from UI element, not cursor): use fallback duration `min(max(distance * fallbackSpeedFactor, minTransitionDuration), maxTransitionDuration)`
 
 ### Hold Segment
 
 - `kind: .manual(startTransform: target, endTransform: target, interpolation: .linear)`
-- `startTransform == endTransform` → camera stays fixed
+- `startTransform == endTransform` → camera target is fixed
 - `startTime`: transition segment's endTime
 - `endTime`: intent span's endTime
-- Spring simulator will naturally settle any residual velocity from the transition
+
+**Spring velocity carry-over:** `SegmentSpringSimulator` carries velocity between segments. When the hold segment starts, residual velocity from the transition causes the camera to slightly overshoot and settle back to target. This is acceptable and produces natural-feeling motion (like a camera arriving and settling). Settling is best-effort — short hold segments may not fully settle, and residual velocity will carry into the next transition segment. This is fine because the next transition will absorb it naturally. No velocity reset is needed.
 
 ### MouseDataSource Threading
 
@@ -84,7 +87,7 @@ static func cursorTravelTime(
 - `SegmentPlanner.buildSegments()` — implement split logic with distance/zoom thresholds
 - New function: `SegmentPlanner.cursorTravelTime(from:to:mouseData:searchStart:searchEnd:)`
 - `SegmentCameraGenerator.generate()` — pass `effectiveMouseData` to `plan()`
-- `SegmentSpringSimulator` — no changes needed (short transition segments naturally produce fast spring response)
+- `SegmentSpringSimulator` — no changes needed
 
 ## Constants
 
@@ -95,4 +98,5 @@ static func cursorTravelTime(
 | `arrivalRadius` | 0.08 | How close cursor must be to count as "arrived" |
 | `minTransitionDuration` | 0.15s | Floor for transition segment duration |
 | `maxTransitionDuration` | 0.8s | Ceiling for transition segment duration |
+| `minHoldDuration` | 0.1s | Min hold duration; if less, omit hold segment |
 | `fallbackSpeedFactor` | 1.0 | seconds per normalized unit for distance-based fallback |
