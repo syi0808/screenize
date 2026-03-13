@@ -53,7 +53,8 @@ extension ExportEngine {
                 mouseButtonEvents: rawResult.mouseButtonEvents,
                 frameRate: frameRate,
                 sourceSize: naturalSize,
-                outputSize: outputSize
+                outputSize: outputSize,
+                springCache: springCache
             )
             evaluator = pipeline.evaluator
             renderer = pipeline.renderer

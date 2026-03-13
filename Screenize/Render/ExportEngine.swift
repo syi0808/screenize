@@ -36,6 +36,9 @@ final class ExportEngine: ObservableObject {
     /// Audio mixer
     let audioMixer = AudioMixer()
 
+    /// Spring simulation cache for smooth camera transitions
+    var springCache: SpringSimulationCache?
+
     // MARK: - Initialization
 
     init() {}

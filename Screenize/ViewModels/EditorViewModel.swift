@@ -44,6 +44,9 @@ final class EditorViewModel: ObservableObject {
     /// Export engine
     let exportEngine: ExportEngine
 
+    /// Spring simulation cache for smooth camera transitions
+    let springCache = SpringSimulationCache()
+
     // MARK: - Properties
 
     /// Undo stack for snapshot-based undo/redo
@@ -159,6 +162,8 @@ final class EditorViewModel: ObservableObject {
         self.projectURL = projectURL
         self.previewEngine = PreviewEngine(previewScale: 0.5)
         self.exportEngine = ExportEngine()
+        self.previewEngine.springCache = springCache
+        self.exportEngine.springCache = springCache
 
         if self.project.timeline.cameraTrack == nil {
             self.project.timeline.tracks.insert(.camera(CameraTrack()), at: 0)
@@ -422,6 +427,20 @@ final class EditorViewModel: ObservableObject {
     /// Update render settings (for window-style changes)
     func updateRenderSettings() {
         previewEngine.updateRenderSettings(project.renderSettings)
+    }
+
+    // MARK: - Spring Cache
+
+    /// Invalidate the spring simulation cache
+    func invalidateSpringCache() {
+        springCache.invalidate()
+    }
+
+    /// Populate the spring cache if it is not already valid
+    func populateSpringCacheIfNeeded() {
+        guard !springCache.isValid else { return }
+        guard let cameraTrack = project.timeline.cameraTrack else { return }
+        springCache.populate(segments: cameraTrack.segments)
     }
 
     // MARK: - Segment Change Notification

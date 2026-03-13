@@ -18,6 +18,13 @@ extension FrameEvaluator {
             guard !samples.isEmpty else { return .identity }
             return evaluateContinuousTransform(at: time, samples: samples)
         case .manual(let startTransform, let endTransform):
+            // Check spring cache first
+            if let cachedTransforms = springCache?.transforms(for: segment.id),
+               !cachedTransforms.isEmpty {
+                return evaluateContinuousTransform(
+                    at: time, samples: cachedTransforms
+                )
+            }
             return evaluateManualTransform(
                 at: time, segment: segment,
                 startTransform: startTransform, endTransform: endTransform

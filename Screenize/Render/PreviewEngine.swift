@@ -117,6 +117,9 @@ final class PreviewEngine: ObservableObject {
     /// Mouse button events (reused during timeline updates)
     var renderMouseButtonEvents: [RenderMouseButtonEvent] = []
 
+    /// Spring simulation cache for smooth camera transitions
+    var springCache: SpringSimulationCache?
+
     // MARK: - Initialization
 
     init(previewScale: CGFloat = 0.5, cacheSize: Int = 180) {

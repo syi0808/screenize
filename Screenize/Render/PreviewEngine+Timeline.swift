@@ -27,7 +27,8 @@ extension PreviewEngine {
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
             mouseButtonEvents: renderMouseButtonEvents,
-            frameRate: frameRate
+            frameRate: frameRate,
+            springCache: springCache
         )
 
         renderCoordinator.updateEvaluator(newEvaluator)
@@ -92,7 +93,8 @@ extension PreviewEngine {
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
             mouseButtonEvents: renderMouseButtonEvents,
-            frameRate: frameRate
+            frameRate: frameRate,
+            springCache: springCache
         )
 
         renderCoordinator.updateEvaluator(newEvaluator)
@@ -119,7 +121,8 @@ extension PreviewEngine {
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
             mouseButtonEvents: renderMouseButtonEvents,
-            frameRate: frameRate
+            frameRate: frameRate,
+            springCache: springCache
         )
 
         // Recreate the renderer

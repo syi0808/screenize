@@ -15,7 +15,8 @@ struct RenderPipelineFactory {
         rawMousePositions: [RenderMousePosition],
         smoothedMousePositions: [RenderMousePosition],
         mouseButtonEvents: [RenderMouseButtonEvent],
-        frameRate: Double
+        frameRate: Double,
+        springCache: SpringSimulationCache? = nil
     ) -> FrameEvaluator {
         FrameEvaluator(
             timeline: project.timeline,
@@ -25,7 +26,8 @@ struct RenderPipelineFactory {
             frameRate: frameRate,
             scaleFactor: project.captureMeta.scaleFactor,
             screenBoundsPixel: project.captureMeta.sizePixel,
-            isWindowMode: project.isWindowMode
+            isWindowMode: project.isWindowMode,
+            springCache: springCache
         )
     }
 
@@ -36,7 +38,8 @@ struct RenderPipelineFactory {
         rawMousePositions: [RenderMousePosition],
         smoothedMousePositions: [RenderMousePosition],
         mouseButtonEvents: [RenderMouseButtonEvent],
-        frameRate: Double
+        frameRate: Double,
+        springCache: SpringSimulationCache? = nil
     ) -> FrameEvaluator {
         FrameEvaluator(
             timeline: timeline,
@@ -46,7 +49,8 @@ struct RenderPipelineFactory {
             frameRate: frameRate,
             scaleFactor: project.captureMeta.scaleFactor,
             screenBoundsPixel: project.captureMeta.sizePixel,
-            isWindowMode: project.isWindowMode
+            isWindowMode: project.isWindowMode,
+            springCache: springCache
         )
     }
 
@@ -112,14 +116,16 @@ struct RenderPipelineFactory {
         mouseButtonEvents: [RenderMouseButtonEvent],
         frameRate: Double,
         sourceSize: CGSize,
-        scale: CGFloat = 0.5
+        scale: CGFloat = 0.5,
+        springCache: SpringSimulationCache? = nil
     ) -> (evaluator: FrameEvaluator, renderer: Renderer) {
         let evaluator = createEvaluator(
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
             mouseButtonEvents: mouseButtonEvents,
-            frameRate: frameRate
+            frameRate: frameRate,
+            springCache: springCache
         )
         let renderer = createPreviewRenderer(
             project: project,
@@ -137,14 +143,16 @@ struct RenderPipelineFactory {
         mouseButtonEvents: [RenderMouseButtonEvent],
         frameRate: Double,
         sourceSize: CGSize,
-        outputSize: CGSize? = nil
+        outputSize: CGSize? = nil,
+        springCache: SpringSimulationCache? = nil
     ) -> (evaluator: FrameEvaluator, renderer: Renderer) {
         let evaluator = createEvaluator(
             project: project,
             rawMousePositions: rawMousePositions,
             smoothedMousePositions: smoothedMousePositions,
             mouseButtonEvents: mouseButtonEvents,
-            frameRate: frameRate
+            frameRate: frameRate,
+            springCache: springCache
         )
         let renderer = createExportRenderer(
             project: project,

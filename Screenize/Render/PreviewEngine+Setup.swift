@@ -106,7 +106,8 @@ extension PreviewEngine {
                 mouseButtonEvents: renderMouseButtonEvents,
                 frameRate: frameRate,
                 sourceSize: extractor.videoSize,
-                scale: previewScale
+                scale: previewScale,
+                springCache: springCache
             )
 
             // Create sequential frame reader for playback

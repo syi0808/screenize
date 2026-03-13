@@ -31,6 +31,9 @@ final class FrameEvaluator {
     /// Flag for window mode (disables center clamping in window mode)
     let isWindowMode: Bool
 
+    /// Cached spring-simulated transforms for manual segments
+    var springCache: SpringSimulationCache?
+
     /// Effective mouse positions based on smooth cursor toggle
     var mousePositions: [RenderMousePosition] {
         let useSmoothCursor = timeline.cursorTrackV2?.useSmoothCursor ?? true
@@ -47,7 +50,8 @@ final class FrameEvaluator {
         frameRate: Double = 60.0,
         scaleFactor: CGFloat = 1.0,
         screenBoundsPixel: CGSize = .zero,
-        isWindowMode: Bool = false
+        isWindowMode: Bool = false,
+        springCache: SpringSimulationCache? = nil
     ) {
         self.timeline = timeline
         self.rawMousePositions = rawMousePositions
@@ -57,6 +61,7 @@ final class FrameEvaluator {
         self.scaleFactor = scaleFactor
         self.screenBoundsPixel = screenBoundsPixel
         self.isWindowMode = isWindowMode
+        self.springCache = springCache
     }
 
     // MARK: - Main Evaluation
