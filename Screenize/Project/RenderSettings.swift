@@ -5,7 +5,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Rendering settings
-struct RenderSettings: Codable {
+struct RenderSettings: Codable, Equatable {
     /// Output resolution
     var outputResolution: OutputResolution = .original
 
