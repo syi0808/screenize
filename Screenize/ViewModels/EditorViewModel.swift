@@ -286,6 +286,9 @@ final class EditorViewModel: ObservableObject {
             await runSmartGeneration()
         }
 
+        // Populate spring cache for existing projects with .manual segments
+        populateSpringCacheIfNeeded()
+
         isLoading = false
     }
 
@@ -448,6 +451,8 @@ final class EditorViewModel: ObservableObject {
     /// Notify that a segment changed (called from the inspector)
     func notifySegmentChanged() {
         hasUnsavedChanges = true
+        invalidateSpringCache()
+        populateSpringCacheIfNeeded()
         invalidatePreviewCache()
     }
 

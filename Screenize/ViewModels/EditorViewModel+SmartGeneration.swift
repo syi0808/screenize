@@ -92,6 +92,17 @@ extension EditorViewModel {
                 keystrokeTrack: selection.contains(.keystroke) ? generated.keystrokeTrack : nil
             )
 
+            // 6. Populate spring cache from generation metadata
+            if selection.contains(.transform),
+               let cameraTrack = project.timeline.cameraTrack {
+                invalidateSpringCache()
+                springCache.populate(
+                    segments: cameraTrack.segments,
+                    config: generated.springConfig ?? .init(),
+                    cursorSpeeds: generated.cursorSpeeds
+                )
+            }
+
             Log.generator.info("Smart generation V2 completed for \(selection.count) track type(s)")
 
             hasUnsavedChanges = true

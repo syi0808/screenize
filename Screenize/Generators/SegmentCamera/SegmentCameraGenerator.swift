@@ -12,7 +12,7 @@ import CoreGraphics
 /// 2. Build event timeline
 /// 3. Classify intents
 /// 4. Plan and build segments via SegmentPlanner
-/// 5. Spring-simulate segment transitions
+/// 5. Compute spring config (deferred to SpringSimulationCache)
 /// 6. Emit cursor track
 /// 7. Emit keystroke track
 class SegmentCameraGenerator {
@@ -62,20 +62,19 @@ class SegmentCameraGenerator {
             mouseData: effectiveMouseData
         )
 
-        // Step 5: Spring-simulate segment transitions
-        let segments = SegmentSpringSimulator.simulate(
-            segments: rawSegments,
-            config: SegmentSpringSimulator.Config(
-                positionDampingRatio: settings.positionDampingRatio,
-                positionResponse: settings.positionResponse,
-                zoomDampingRatio: settings.zoomDampingRatio,
-                zoomResponse: settings.zoomResponse,
-                tickRate: settings.tickRate,
-                minZoom: settings.minZoom,
-                maxZoom: settings.maxZoom
-            ),
-            cursorSpeeds: speeds
+        // Step 5: Build spring config (stored in GeneratedTimeline for cache use)
+        let springConfig = SegmentSpringSimulator.Config(
+            positionDampingRatio: settings.positionDampingRatio,
+            positionResponse: settings.positionResponse,
+            zoomDampingRatio: settings.zoomDampingRatio,
+            zoomResponse: settings.zoomResponse,
+            tickRate: settings.tickRate,
+            minZoom: settings.minZoom,
+            maxZoom: settings.maxZoom
         )
+
+        // Keep raw .manual segments — spring simulation deferred to cache
+        let segments = rawSegments
 
         let cameraTrack = CameraTrack(
             name: "Camera (Segment)",
@@ -83,7 +82,7 @@ class SegmentCameraGenerator {
         )
 
         #if DEBUG
-        print("[SegmentCamera] Generated \(segments.count) spring-simulated segments from \(intentSpans.count) intent spans")
+        print("[SegmentCamera] Generated \(segments.count) .manual segments from \(intentSpans.count) intent spans")
         #endif
 
         // Step 6: Emit cursor track
@@ -101,7 +100,9 @@ class SegmentCameraGenerator {
         return GeneratedTimeline(
             cameraTrack: cameraTrack,
             cursorTrack: cursorTrack,
-            keystrokeTrack: keystrokeTrack
+            keystrokeTrack: keystrokeTrack,
+            cursorSpeeds: speeds,
+            springConfig: springConfig
         )
     }
 
