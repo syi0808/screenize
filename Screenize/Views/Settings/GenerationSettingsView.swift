@@ -42,6 +42,14 @@ struct GenerationSettingsView: View {
             Divider()
             ScrollView {
                 VStack(spacing: 12) {
+                    // Generation Mode
+                    SettingsSection(title: "Generation Mode") {
+                        Picker("Mode", selection: editingSettings.mode) {
+                            Text("Continuous").tag(GenerationMode.continuous)
+                            Text("Segment Based").tag(GenerationMode.segmentBased)
+                        }
+                        .pickerStyle(.segmented)
+                    }
                     cameraMotionSection
                     zoomSection
                     intentClassificationSection
