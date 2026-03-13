@@ -12,7 +12,17 @@ struct PresetPickerView: View {
     // MARK: - State
 
     @State private var showSavePopover = false
+    @State private var showManagePopover = false
     @State private var newPresetName = ""
+
+    // MARK: - Computed
+
+    private var isModified: Bool {
+        guard let activeID = presetManager.activePresetID,
+              let preset = presetManager.userPresets.first(where: { $0.id == activeID })
+        else { return false }
+        return settings != preset.settings
+    }
 
     // MARK: - Body
 
@@ -24,23 +34,6 @@ struct PresetPickerView: View {
                     .foregroundColor(.secondary)
 
                 Spacer()
-
-                // Load preset menu
-                if !presetManager.userPresets.isEmpty {
-                    Menu {
-                        ForEach(presetManager.userPresets) { preset in
-                            Button(preset.name) {
-                                settings = preset.settings
-                                onChange?()
-                            }
-                        }
-                    } label: {
-                        Label("Load", systemImage: "tray.and.arrow.down")
-                            .font(.system(size: 11))
-                    }
-                    .menuStyle(.borderlessButton)
-                    .frame(width: 70)
-                }
 
                 // Save as preset
                 Button {
@@ -57,12 +50,26 @@ struct PresetPickerView: View {
                 }
             }
 
-            // Show user presets with delete option
+            // Preset chips with gear button
             if !presetManager.userPresets.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         ForEach(presetManager.userPresets) { preset in
                             presetChip(preset)
+                        }
+
+                        Button {
+                            showManagePopover = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                                .padding(4)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Manage Presets")
+                        .popover(isPresented: $showManagePopover) {
+                            managePresetsPopover
                         }
                     }
                 }
@@ -73,26 +80,41 @@ struct PresetPickerView: View {
     // MARK: - Subviews
 
     private func presetChip(_ preset: RenderSettingsPreset) -> some View {
-        Button {
+        let isActive = presetManager.activePresetID == preset.id
+        let chipName = isActive && isModified ? "\(preset.name) *" : preset.name
+
+        return Button {
+            presetManager.activePresetID = preset.id
             settings = preset.settings
             onChange?()
         } label: {
-            Text(preset.name)
+            Text(chipName)
                 .font(.system(size: 10))
                 .lineLimit(1)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(nsColor: .controlBackgroundColor))
+                        .fill(
+                            isActive
+                                ? Color.accentColor.opacity(0.3)
+                                : Color(nsColor: .controlBackgroundColor)
+                        )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(
+                            isActive ? Color.accentColor : Color.clear,
+                            lineWidth: 1
+                        )
                 )
         }
         .buttonStyle(.plain)
-        .contextMenu {
-            Button("Delete", role: .destructive) {
-                presetManager.deletePreset(preset.id)
-            }
-        }
+    }
+
+    private var managePresetsPopover: some View {
+        Text("Manage Presets")
+            .padding(16)
     }
 
     private var savePresetPopover: some View {
@@ -134,3 +156,4 @@ struct PresetPickerView: View {
         showSavePopover = false
     }
 }
+
