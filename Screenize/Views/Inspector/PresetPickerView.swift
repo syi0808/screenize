@@ -40,13 +40,8 @@ struct PresetPickerView: View {
                     newPresetName = ""
                     showSavePopover = true
                 } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 9, weight: .semibold))
-                        Text("Save")
-                            .font(.system(size: 10, weight: .medium))
-                    }
-                    .foregroundColor(.secondary)
+                    Image(systemName: "plus.circle")
+                        .font(.system(size: 12))
                 }
                 .buttonStyle(.plain)
                 .help("Save Current Settings as Preset")
@@ -86,50 +81,62 @@ struct PresetPickerView: View {
 
     private func presetChip(_ preset: RenderSettingsPreset) -> some View {
         let isActive = presetManager.activePresetID == preset.id
-        let chipName = isActive && isModified ? "\(preset.name) *" : preset.name
+        let showUpdate = isActive && isModified
 
-        return Button {
-            presetManager.activePresetID = preset.id
-            settings = preset.settings
-            onChange?()
-        } label: {
-            Text(chipName)
-                .font(.system(size: 10))
-                .lineLimit(1)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(
-                            isActive
-                                ? Color.accentColor.opacity(0.3)
-                                : Color(nsColor: .controlBackgroundColor)
-                        )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(
-                            isActive ? Color.accentColor : Color.clear,
-                            lineWidth: 1
-                        )
-                )
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            if isActive && isModified {
+        return HStack(spacing: 4) {
+            Button {
+                presetManager.activePresetID = preset.id
+                settings = preset.settings
+                onChange?()
+            } label: {
+                Text(preset.name)
+                    .font(.system(size: 10))
+                    .lineLimit(1)
+            }
+            .buttonStyle(.plain)
+
+            if showUpdate {
                 Button {
                     presetManager.updatePreset(preset.id, with: settings)
                 } label: {
-                    Label("Update Preset", systemImage: "square.and.arrow.down")
+                    Image(systemName: "arrow.uturn.backward.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.accentColor)
                 }
+                .buttonStyle(.plain)
+                .help("Update preset with current settings")
             }
-            Divider()
-            Button(role: .destructive) {
+
+            Button {
                 presetManager.deletePreset(preset.id)
             } label: {
-                Label("Delete", systemImage: "trash")
+                Image(systemName: "xmark")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundColor(.secondary)
             }
+            .buttonStyle(.plain)
+            .help("Delete preset")
         }
+        .padding(.leading, 8)
+        .padding(.trailing, 5)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    isActive
+                        ? Color.accentColor.opacity(0.15)
+                        : Color(nsColor: .controlBackgroundColor)
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(
+                    isActive
+                        ? Color.accentColor.opacity(0.5)
+                        : Color(nsColor: .separatorColor),
+                    lineWidth: 1
+                )
+        )
     }
 
     private var managePresetsPopover: some View {
