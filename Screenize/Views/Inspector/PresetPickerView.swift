@@ -40,8 +40,13 @@ struct PresetPickerView: View {
                     newPresetName = ""
                     showSavePopover = true
                 } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 12))
+                    HStack(spacing: 3) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 9, weight: .semibold))
+                        Text("Save")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
                 .help("Save Current Settings as Preset")
@@ -110,6 +115,21 @@ struct PresetPickerView: View {
                 )
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if isActive && isModified {
+                Button {
+                    presetManager.updatePreset(preset.id, with: settings)
+                } label: {
+                    Label("Update Preset", systemImage: "square.and.arrow.down")
+                }
+            }
+            Divider()
+            Button(role: .destructive) {
+                presetManager.deletePreset(preset.id)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 
     private var managePresetsPopover: some View {
