@@ -6,7 +6,7 @@ struct PresetPickerView: View {
     // MARK: - Properties
 
     @Binding var settings: RenderSettings
-    @ObservedObject var presetManager: PresetManager = .shared
+    @StateObject private var presetManager: PresetManager = .shared
     var onChange: (() -> Void)?
 
     // MARK: - State
@@ -202,6 +202,7 @@ private struct PresetManagementRow: View {
 
     @State private var isEditing = false
     @State private var editingName: String = ""
+    @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -217,6 +218,7 @@ private struct PresetManagementRow: View {
                 TextField("Name", text: $editingName)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
+                    .focused($isTextFieldFocused)
                     .onSubmit {
                         finishEditing()
                     }
@@ -230,6 +232,7 @@ private struct PresetManagementRow: View {
                     .onTapGesture {
                         editingName = preset.name
                         isEditing = true
+                        isTextFieldFocused = true
                     }
             }
 
@@ -268,4 +271,3 @@ private struct PresetManagementRow: View {
         isEditing = false
     }
 }
-
