@@ -22,7 +22,15 @@ extension InspectorView {
                     )
                 )
 
-                if !binding.wrappedValue.isContinuous {
+                if binding.wrappedValue.isContinuous {
+                    Label(
+                        "Continuous segment has no configurable options.",
+                        systemImage: "info.circle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+                } else {
                     manualCameraControls(segment: binding)
                 }
             }
