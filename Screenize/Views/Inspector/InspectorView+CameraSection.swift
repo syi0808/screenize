@@ -41,6 +41,15 @@ extension InspectorView {
         }
     }
 
+    private func cameraTrack() -> CameraTrack? {
+        for track in timeline.tracks {
+            if case .camera(let cameraTrack) = track {
+                return cameraTrack
+            }
+        }
+        return nil
+    }
+
     @ViewBuilder
     private func manualCameraControls(segment: Binding<CameraSegment>) -> some View {
         if case .manual = segment.wrappedValue.kind {
@@ -48,8 +57,63 @@ extension InspectorView {
             zoomControl(label: "End Zoom", segment: segment, isStart: false)
             Divider()
             positionControl(label: "Start Position", segment: segment, isStart: true)
+
+            copyFromPreviousButton(segment: segment)
+
             positionControl(label: "End Position", segment: segment, isStart: false)
+
+            copyFromNextButton(segment: segment)
         }
+    }
+
+    @ViewBuilder
+    private func copyFromPreviousButton(segment: Binding<CameraSegment>) -> some View {
+        let prevTransform: TransformValue? = {
+            guard let track = cameraTrack(),
+                  let prevSegment = track.previousManualSegment(before: segment.wrappedValue.id),
+                  case .manual(_, let endTransform) = prevSegment.kind else { return nil }
+            return endTransform
+        }()
+
+        Button {
+            if let transform = prevTransform {
+                var updated = segment.wrappedValue
+                if case .manual(_, let currentEnd) = updated.kind {
+                    updated.kind = .manual(startTransform: transform, endTransform: currentEnd)
+                    segment.wrappedValue = updated
+                }
+            }
+        } label: {
+            Label("Copy from Previous", systemImage: "arrow.left")
+                .font(.caption)
+        }
+        .buttonStyle(.borderless)
+        .disabled(prevTransform == nil)
+    }
+
+    @ViewBuilder
+    private func copyFromNextButton(segment: Binding<CameraSegment>) -> some View {
+        let nextTransform: TransformValue? = {
+            guard let track = cameraTrack(),
+                  let nextSegment = track.nextManualSegment(after: segment.wrappedValue.id),
+                  case .manual(let startTransform, _) = nextSegment.kind else { return nil }
+            return startTransform
+        }()
+
+        Button {
+            if let transform = nextTransform {
+                var updated = segment.wrappedValue
+                if case .manual(let currentStart, _) = updated.kind {
+                    updated.kind = .manual(startTransform: currentStart, endTransform: transform)
+                    segment.wrappedValue = updated
+                }
+            }
+        } label: {
+            Label("Copy from Next", systemImage: "arrow.right")
+                .font(.caption)
+        }
+        .buttonStyle(.borderless)
+        .disabled(nextTransform == nil)
     }
 
     func zoomControl(

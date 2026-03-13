@@ -60,6 +60,28 @@ struct CameraTrack: SegmentTrack, Equatable {
         segments.first { time >= $0.startTime && time < $0.endTime }
     }
 
+    /// Returns the nearest manual segment before the given segment, skipping continuous segments.
+    func previousManualSegment(before segmentID: UUID) -> CameraSegment? {
+        guard let index = segments.firstIndex(where: { $0.id == segmentID }) else { return nil }
+        for i in stride(from: index - 1, through: 0, by: -1) {
+            if case .manual = segments[i].kind {
+                return segments[i]
+            }
+        }
+        return nil
+    }
+
+    /// Returns the nearest manual segment after the given segment, skipping continuous segments.
+    func nextManualSegment(after segmentID: UUID) -> CameraSegment? {
+        guard let index = segments.firstIndex(where: { $0.id == segmentID }) else { return nil }
+        for i in (index + 1)..<segments.count {
+            if case .manual = segments[i].kind {
+                return segments[i]
+            }
+        }
+        return nil
+    }
+
     private func hasOverlap(_ segment: CameraSegment, excluding excludedID: UUID?) -> Bool {
         segments.contains { existing in
             if let excludedID, existing.id == excludedID { return false }
