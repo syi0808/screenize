@@ -227,8 +227,7 @@ struct SegmentPlanner {
                         kind: .manual(
                             startTransform: startTransform,
                             endTransform: endTransform
-                        ),
-                        transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                        )
                     )
                     let hold = CameraSegment(
                         startTime: transitionEnd,
@@ -236,8 +235,7 @@ struct SegmentPlanner {
                         kind: .manual(
                             startTransform: endTransform,
                             endTransform: endTransform
-                        ),
-                        transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                        )
                     )
                     segments.append(transition)
                     segments.append(hold)
@@ -248,8 +246,7 @@ struct SegmentPlanner {
                         kind: .manual(
                             startTransform: startTransform,
                             endTransform: endTransform
-                        ),
-                        transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                        )
                     )
                     segments.append(transition)
                 }
@@ -260,8 +257,7 @@ struct SegmentPlanner {
                     kind: .manual(
                         startTransform: startTransform,
                         endTransform: endTransform
-                    ),
-                    transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+                    )
                 )
                 segments.append(segment)
             }

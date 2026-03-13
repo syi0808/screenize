@@ -95,8 +95,7 @@ final class SegmentCameraGeneratorTests: XCTestCase {
             kind: .manual(
                 startTransform: TransformValue(zoom: 1.5, center: NormalizedPoint(x: 0.3, y: 0.4)),
                 endTransform: TransformValue(zoom: 1.8, center: NormalizedPoint(x: 0.6, y: 0.7))
-            ),
-            transitionToNext: SegmentTransition(duration: 0, easing: .linear)
+            )
         )
     }
 }

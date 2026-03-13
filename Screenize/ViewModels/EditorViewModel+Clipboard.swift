@@ -166,8 +166,7 @@ extension EditorViewModel {
         let duplicate = CameraSegment(
             startTime: newStart,
             endTime: newEnd,
-            kind: original.kind,
-            transitionToNext: original.transitionToNext
+            kind: original.kind
         )
         guard track.addSegment(duplicate) else { return nil }
         project.timeline.tracks[trackIndex] = .camera(track)
@@ -190,8 +189,7 @@ extension EditorViewModel {
             style: original.style,
             visible: original.visible,
             scale: original.scale,
-            clickFeedback: original.clickFeedback,
-            transitionToNext: original.transitionToNext
+            clickFeedback: original.clickFeedback
         )
         guard track.addSegment(duplicate) else { return nil }
         project.timeline.tracks[trackIndex] = .cursor(track)
@@ -230,8 +228,7 @@ extension EditorViewModel {
         let pasted = CameraSegment(
             startTime: startTime,
             endTime: endTime,
-            kind: original.kind,
-            transitionToNext: original.transitionToNext
+            kind: original.kind
         )
         guard track.addSegment(pasted) else { return nil }
         project.timeline.tracks[trackIndex] = .camera(track)
@@ -250,8 +247,7 @@ extension EditorViewModel {
             style: original.style,
             visible: original.visible,
             scale: original.scale,
-            clickFeedback: original.clickFeedback,
-            transitionToNext: original.transitionToNext
+            clickFeedback: original.clickFeedback
         )
         guard track.addSegment(pasted) else { return nil }
         project.timeline.tracks[trackIndex] = .cursor(track)

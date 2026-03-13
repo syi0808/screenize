@@ -1,15 +1,10 @@
 import Foundation
 import CoreGraphics
 
-// MARK: - Segment Transition
-
-/// Transition applied when moving from one segment to the next.
-struct SegmentTransition: Codable, Equatable, Hashable {
+/// Legacy type kept only for backward-compatible decoding of old project files.
+private struct LegacySegmentTransition: Codable {
     var duration: TimeInterval
     var easing: EasingCurve
-
-    static let cut = Self(duration: 0, easing: .linear)
-    static let `default` = Self(duration: 0.35, easing: .easeInOut)
 }
 
 /// Per-segment cursor follow configuration for camera movement.
@@ -101,36 +96,46 @@ enum CameraSegmentKind: Codable, Equatable {
     }
 }
 
-struct CameraSegment: Codable, Identifiable, Equatable {
+struct CameraSegment: Identifiable, Equatable, Codable {
     let id: UUID
     var startTime: TimeInterval
     var endTime: TimeInterval
     var kind: CameraSegmentKind
-    var transitionToNext: SegmentTransition
 
     var isContinuous: Bool {
         if case .continuous = kind { return true }
         return false
     }
 
-    init(
-        id: UUID = UUID(),
-        startTime: TimeInterval,
-        endTime: TimeInterval,
-        kind: CameraSegmentKind,
-        transitionToNext: SegmentTransition = .default
-    ) {
-        self.id = id
-        self.startTime = startTime
-        self.endTime = endTime
-        self.kind = kind
-        self.transitionToNext = transitionToNext
+    init(id: UUID = UUID(), startTime: TimeInterval, endTime: TimeInterval, kind: CameraSegmentKind) {
+        self.id = id; self.startTime = startTime; self.endTime = endTime; self.kind = kind
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, startTime, endTime, kind, transitionToNext
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        startTime = try container.decode(TimeInterval.self, forKey: .startTime)
+        endTime = try container.decode(TimeInterval.self, forKey: .endTime)
+        kind = try container.decode(CameraSegmentKind.self, forKey: .kind)
+        _ = try container.decodeIfPresent(LegacySegmentTransition.self, forKey: .transitionToNext)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(startTime, forKey: .startTime)
+        try container.encode(endTime, forKey: .endTime)
+        try container.encode(kind, forKey: .kind)
     }
 }
 
 // MARK: - Cursor Segment
 
-struct CursorSegment: Codable, Identifiable, Equatable {
+struct CursorSegment: Identifiable, Equatable, Codable {
     let id: UUID
     var startTime: TimeInterval
     var endTime: TimeInterval
@@ -138,26 +143,40 @@ struct CursorSegment: Codable, Identifiable, Equatable {
     var visible: Bool
     var scale: CGFloat
     var clickFeedback: ClickFeedbackConfig
-    var transitionToNext: SegmentTransition
 
-    init(
-        id: UUID = UUID(),
-        startTime: TimeInterval,
-        endTime: TimeInterval,
-        style: CursorStyle = .arrow,
-        visible: Bool = true,
-        scale: CGFloat = 2.5,
-        clickFeedback: ClickFeedbackConfig = .default,
-        transitionToNext: SegmentTransition = .cut
-    ) {
-        self.id = id
-        self.startTime = startTime
-        self.endTime = endTime
-        self.style = style
-        self.visible = visible
-        self.scale = scale
+    init(id: UUID = UUID(), startTime: TimeInterval, endTime: TimeInterval,
+         style: CursorStyle = .arrow, visible: Bool = true, scale: CGFloat = 2.5,
+         clickFeedback: ClickFeedbackConfig = .default) {
+        self.id = id; self.startTime = startTime; self.endTime = endTime
+        self.style = style; self.visible = visible; self.scale = scale
         self.clickFeedback = clickFeedback
-        self.transitionToNext = transitionToNext
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, startTime, endTime, style, visible, scale, clickFeedback, transitionToNext
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        startTime = try container.decode(TimeInterval.self, forKey: .startTime)
+        endTime = try container.decode(TimeInterval.self, forKey: .endTime)
+        style = try container.decode(CursorStyle.self, forKey: .style)
+        visible = try container.decode(Bool.self, forKey: .visible)
+        scale = try container.decode(CGFloat.self, forKey: .scale)
+        clickFeedback = try container.decode(ClickFeedbackConfig.self, forKey: .clickFeedback)
+        _ = try container.decodeIfPresent(LegacySegmentTransition.self, forKey: .transitionToNext)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(startTime, forKey: .startTime)
+        try container.encode(endTime, forKey: .endTime)
+        try container.encode(style, forKey: .style)
+        try container.encode(visible, forKey: .visible)
+        try container.encode(scale, forKey: .scale)
+        try container.encode(clickFeedback, forKey: .clickFeedback)
     }
 }
 
