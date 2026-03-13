@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		A9000001296A0001 /* SegmentPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9100001296A0001 /* SegmentPlannerTests.swift */; };
+		EC000001296A0001 /* SpringSimulationCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC100001296A0001 /* SpringSimulationCache.swift */; };
+		EC000002296A0001 /* SpringSimulationCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC100002296A0001 /* SpringSimulationCacheTests.swift */; };
 		A8000001296A0001 /* SegmentSpringSimulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8100001296A0001 /* SegmentSpringSimulatorTests.swift */; };
 		A7000001296A0001 /* SegmentCameraGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7100001296A0001 /* SegmentCameraGeneratorTests.swift */; };
 		B4000001296A0001 /* SegmentPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4000002296A0001 /* SegmentPlanner.swift */; };
@@ -239,6 +241,8 @@
 		A7100001296A0001 /* SegmentCameraGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentCameraGeneratorTests.swift; sourceTree = "<group>"; };
 		A8100001296A0001 /* SegmentSpringSimulatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentSpringSimulatorTests.swift; sourceTree = "<group>"; };
 		A9100001296A0001 /* SegmentPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentPlannerTests.swift; sourceTree = "<group>"; };
+		EC100001296A0001 /* SpringSimulationCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringSimulationCache.swift; sourceTree = "<group>"; };
+		EC100002296A0001 /* SpringSimulationCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpringSimulationCacheTests.swift; sourceTree = "<group>"; };
 		AB000001296A0001 /* UnifiedEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedEvent.swift; sourceTree = "<group>"; };
 		AB000002296A0001 /* UserIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIntent.swift; sourceTree = "<group>"; };
 		AB000003296A0001 /* Scene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scene.swift; sourceTree = "<group>"; };
@@ -615,6 +619,7 @@
 				D5200001296A0001 /* ClickScaleModifierTests.swift */,
 				D2200004296A0001 /* GIFEncoderTests.swift */,
 				E9100001296A0001 /* TransparentBackgroundFallbackTests.swift */,
+				EC100002296A0001 /* SpringSimulationCacheTests.swift */,
 			);
 			path = Render;
 			sourceTree = "<group>";
@@ -802,6 +807,7 @@
 				C9100003296A0001 /* ScrubController.swift */,
 				C9100004296A0001 /* RenderCoordinator.swift */,
 				CA100001296A0001 /* PreviewTextureCache.swift */,
+				EC100001296A0001 /* SpringSimulationCache.swift */,
 			);
 			path = Render;
 			sourceTree = "<group>";
@@ -1132,6 +1138,7 @@
 				A7000001296A0001 /* SegmentCameraGeneratorTests.swift in Sources */,
 				A8000001296A0001 /* SegmentSpringSimulatorTests.swift in Sources */,
 				A9000001296A0001 /* SegmentPlannerTests.swift in Sources */,
+				EC000002296A0001 /* SpringSimulationCacheTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1217,6 +1224,7 @@
 				C9000003296A0001 /* ScrubController.swift in Sources */,
 				C9000004296A0001 /* RenderCoordinator.swift in Sources */,
 				CA000001296A0001 /* PreviewTextureCache.swift in Sources */,
+				EC000001296A0001 /* SpringSimulationCache.swift in Sources */,
 				CA000002296A0001 /* MetalPreviewView.swift in Sources */,
 				F0000030296A0001 /* TimeRulerView.swift in Sources */,
 				F0000031296A0001 /* PlayheadView.swift in Sources */,
