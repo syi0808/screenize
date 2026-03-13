@@ -113,8 +113,41 @@ struct PresetPickerView: View {
     }
 
     private var managePresetsPopover: some View {
-        Text("Manage Presets")
-            .padding(16)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Manage Presets")
+                .font(.headline)
+
+            List {
+                ForEach(presetManager.userPresets) { preset in
+                    PresetManagementRow(
+                        preset: preset,
+                        isActive: presetManager.activePresetID == preset.id,
+                        isModified: isModified
+                            && presetManager.activePresetID == preset.id,
+                        onRename: { newName in
+                            presetManager.renamePreset(preset.id, to: newName)
+                        },
+                        onOverwrite: {
+                            presetManager.updatePreset(
+                                preset.id, with: settings
+                            )
+                        },
+                        onDelete: {
+                            presetManager.deletePreset(preset.id)
+                        }
+                    )
+                }
+                .onMove { from, to in
+                    presetManager.reorderPresets(
+                        fromOffsets: from, toOffset: to
+                    )
+                }
+            }
+            .listStyle(.plain)
+        }
+        .padding(16)
+        .frame(width: 280)
+        .frame(maxHeight: 300)
     }
 
     private var savePresetPopover: some View {
@@ -154,6 +187,85 @@ struct PresetPickerView: View {
         guard !name.isEmpty else { return }
         presetManager.savePreset(name: name, settings: settings)
         showSavePopover = false
+    }
+}
+
+// MARK: - PresetManagementRow
+
+private struct PresetManagementRow: View {
+    let preset: RenderSettingsPreset
+    let isActive: Bool
+    let isModified: Bool
+    let onRename: (String) -> Void
+    let onOverwrite: () -> Void
+    let onDelete: () -> Void
+
+    @State private var isEditing = false
+    @State private var editingName: String = ""
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+
+            Circle()
+                .fill(isActive ? Color.accentColor : Color.clear)
+                .frame(width: 6, height: 6)
+
+            if isEditing {
+                TextField("Name", text: $editingName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .onSubmit {
+                        finishEditing()
+                    }
+                    .onExitCommand {
+                        isEditing = false
+                    }
+            } else {
+                Text(preset.name)
+                    .font(.system(size: 12))
+                    .lineLimit(1)
+                    .onTapGesture {
+                        editingName = preset.name
+                        isEditing = true
+                    }
+            }
+
+            Spacer()
+
+            if isModified {
+                Button {
+                    onOverwrite()
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 11))
+                        .foregroundColor(.accentColor)
+                }
+                .buttonStyle(.plain)
+                .help("Overwrite with Current Settings")
+            }
+
+            Button {
+                onDelete()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 11))
+                    .foregroundColor(.red)
+            }
+            .buttonStyle(.plain)
+            .help("Delete Preset")
+        }
+    }
+
+    private func finishEditing() {
+        let trimmed = editingName
+            .trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty {
+            onRename(trimmed)
+        }
+        isEditing = false
     }
 }
 
