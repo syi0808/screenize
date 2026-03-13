@@ -45,7 +45,7 @@ struct SegmentSpringSimulator {
         // Initialize state from first segment's startTransform
         let initial: TransformValue
         switch segments[0].kind {
-        case .manual(let start, _, _):
+        case .manual(let start, _):
             initial = start
         case .continuous(let transforms):
             initial = transforms.first?.transform ?? TransformValue(zoom: 1.0, center: NormalizedPoint(x: 0.5, y: 0.5))
@@ -64,7 +64,7 @@ struct SegmentSpringSimulator {
         for segment in segments {
             let target: TransformValue
             switch segment.kind {
-            case .manual(_, let end, _):
+            case .manual(_, let end):
                 target = end
             case .continuous(let transforms):
                 target = transforms.last?.transform ?? TransformValue(zoom: 1.0, center: NormalizedPoint(x: 0.5, y: 0.5))
@@ -75,7 +75,7 @@ struct SegmentSpringSimulator {
             // Reset velocity for hold segments (startTransform ≈ endTransform)
             // to prevent spring overshoot causing jitter after transitions
             let isHoldSegment: Bool = {
-                if case .manual(let start, let end, _) = segment.kind {
+                if case .manual(let start, let end) = segment.kind {
                     let dx = abs(start.center.x - end.center.x)
                     let dy = abs(start.center.y - end.center.y)
                     let dz = abs(start.zoom - end.zoom)

@@ -226,8 +226,7 @@ struct SegmentPlanner {
                         endTime: transitionEnd,
                         kind: .manual(
                             startTransform: startTransform,
-                            endTransform: endTransform,
-                            interpolation: .easeInOut
+                            endTransform: endTransform
                         ),
                         transitionToNext: SegmentTransition(duration: 0, easing: .linear)
                     )
@@ -236,8 +235,7 @@ struct SegmentPlanner {
                         endTime: spanEnd,
                         kind: .manual(
                             startTransform: endTransform,
-                            endTransform: endTransform,
-                            interpolation: .linear
+                            endTransform: endTransform
                         ),
                         transitionToNext: SegmentTransition(duration: 0, easing: .linear)
                     )
@@ -249,8 +247,7 @@ struct SegmentPlanner {
                         endTime: spanEnd,
                         kind: .manual(
                             startTransform: startTransform,
-                            endTransform: endTransform,
-                            interpolation: .easeInOut
+                            endTransform: endTransform
                         ),
                         transitionToNext: SegmentTransition(duration: 0, easing: .linear)
                     )
@@ -262,8 +259,7 @@ struct SegmentPlanner {
                     endTime: spanEnd,
                     kind: .manual(
                         startTransform: startTransform,
-                        endTransform: endTransform,
-                        interpolation: .easeInOut
+                        endTransform: endTransform
                     ),
                     transitionToNext: SegmentTransition(duration: 0, easing: .linear)
                 )

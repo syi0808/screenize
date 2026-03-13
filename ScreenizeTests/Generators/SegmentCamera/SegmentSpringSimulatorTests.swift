@@ -125,8 +125,7 @@ final class SegmentSpringSimulatorTests: XCTestCase {
             startTime: start, endTime: end,
             kind: .manual(
                 startTransform: TransformValue(zoom: startZoom, center: startCenter),
-                endTransform: TransformValue(zoom: endZoom, center: endCenter),
-                interpolation: .easeInOut
+                endTransform: TransformValue(zoom: endZoom, center: endCenter)
             ),
             transitionToNext: SegmentTransition(duration: 0, easing: .linear)
         )

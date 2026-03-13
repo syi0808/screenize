@@ -194,8 +194,7 @@ struct ProjectCreator {
                         endTime: max(0.1, duration),
                         kind: .manual(
                             startTransform: .identity,
-                            endTransform: .identity,
-                            interpolation: .easeInOut
+                            endTransform: .identity
                         )
                     ),
                 ]

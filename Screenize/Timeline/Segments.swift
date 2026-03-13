@@ -50,8 +50,7 @@ enum CameraSegmentKind: Codable, Equatable {
     case continuous(transforms: [TimedTransform])
     case manual(
         startTransform: TransformValue,
-        endTransform: TransformValue,
-        interpolation: EasingCurve
+        endTransform: TransformValue
     )
 
     // MARK: - Codable
@@ -61,7 +60,7 @@ enum CameraSegmentKind: Codable, Equatable {
         case transforms
         case startTransform
         case endTransform
-        case interpolation
+        case interpolation  // kept for backward-compat decoding only
     }
 
     private enum KindType: String, Codable {
@@ -79,11 +78,11 @@ enum CameraSegmentKind: Codable, Equatable {
         case .manual:
             let startTransform = try container.decode(TransformValue.self, forKey: .startTransform)
             let endTransform = try container.decode(TransformValue.self, forKey: .endTransform)
-            let interpolation = try container.decode(EasingCurve.self, forKey: .interpolation)
+            // interpolation was removed; decode and discard for backward compatibility
+            _ = try container.decodeIfPresent(EasingCurve.self, forKey: .interpolation)
             self = .manual(
                 startTransform: startTransform,
-                endTransform: endTransform,
-                interpolation: interpolation
+                endTransform: endTransform
             )
         }
     }
@@ -94,11 +93,10 @@ enum CameraSegmentKind: Codable, Equatable {
         case .continuous(let transforms):
             try container.encode(KindType.continuous, forKey: .type)
             try container.encode(transforms, forKey: .transforms)
-        case .manual(let startTransform, let endTransform, let interpolation):
+        case .manual(let startTransform, let endTransform):
             try container.encode(KindType.manual, forKey: .type)
             try container.encode(startTransform, forKey: .startTransform)
             try container.encode(endTransform, forKey: .endTransform)
-            try container.encode(interpolation, forKey: .interpolation)
         }
     }
 }

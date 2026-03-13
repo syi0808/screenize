@@ -119,7 +119,7 @@ final class SegmentPlannerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(segments.count, 3, "Should have at least 3 segments: hold + transition + hold")
 
         if let lastSegment = segments.last {
-            if case .manual(let start, let end, _) = lastSegment.kind {
+            if case .manual(let start, let end) = lastSegment.kind {
                 XCTAssertEqual(Double(start.center.x), Double(end.center.x), accuracy: 0.01, "Hold segment should have same start/end center")
                 XCTAssertEqual(Double(start.zoom), Double(end.zoom), accuracy: 0.01, "Hold segment should have same start/end zoom")
             }
@@ -143,7 +143,7 @@ final class SegmentPlannerTests: XCTestCase {
         XCTAssertEqual(segments.count, 2, "Near targets should not be split into transition+hold")
         // Verify no segment is a pure hold (same start/end with different from neighbor)
         for segment in segments {
-            if case .manual(let s, let e, _) = segment.kind {
+            if case .manual(let s, let e) = segment.kind {
                 // Both segments should just transition (not split)
                 _ = s
                 _ = e
@@ -180,7 +180,7 @@ final class SegmentPlannerTests: XCTestCase {
         let segments = planWithMouseData(spans: spans, mouseData: mouseData)
 
         XCTAssertEqual(segments.count, 1, "First segment should always be hold-only")
-        if case .manual(let start, let end, _) = segments[0].kind {
+        if case .manual(let start, let end) = segments[0].kind {
             XCTAssertEqual(Double(start.center.x), Double(end.center.x), accuracy: 0.01)
         }
     }

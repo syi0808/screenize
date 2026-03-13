@@ -17,11 +17,10 @@ extension FrameEvaluator {
         case .continuous(let samples):
             guard !samples.isEmpty else { return .identity }
             return evaluateContinuousTransform(at: time, samples: samples)
-        case .manual(let startTransform, let endTransform, let interpolation):
+        case .manual(let startTransform, let endTransform):
             return evaluateManualTransform(
                 at: time, segment: segment,
-                startTransform: startTransform, endTransform: endTransform,
-                interpolation: interpolation
+                startTransform: startTransform, endTransform: endTransform
             )
         }
     }
@@ -30,9 +29,9 @@ extension FrameEvaluator {
         at time: TimeInterval,
         segment: CameraSegment,
         startTransform: TransformValue,
-        endTransform: TransformValue,
-        interpolation: EasingCurve
+        endTransform: TransformValue
     ) -> TransformState {
+        let interpolation: EasingCurve = .easeInOut
         let duration = max(0.001, segment.endTime - segment.startTime)
         let rawProgress = CGFloat((time - segment.startTime) / duration)
         let progress = interpolation.apply(rawProgress, duration: CGFloat(duration))

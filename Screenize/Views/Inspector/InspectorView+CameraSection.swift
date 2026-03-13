@@ -157,7 +157,7 @@ extension InspectorView {
     // MARK: - Transform Helpers
 
     private func extractTransform(from segment: CameraSegment, isStart: Bool) -> TransformValue {
-        guard case .manual(let startTransform, let endTransform, _) = segment.kind else {
+        guard case .manual(let startTransform, let endTransform) = segment.kind else {
             return .identity
         }
         return isStart ? startTransform : endTransform
@@ -168,7 +168,7 @@ extension InspectorView {
         isStart: Bool,
         update: (TransformValue) -> TransformValue
     ) {
-        guard case .manual(var startTransform, var endTransform, let interpolation) = segment.kind else {
+        guard case .manual(var startTransform, var endTransform) = segment.kind else {
             return
         }
         if isStart {
@@ -178,8 +178,7 @@ extension InspectorView {
         }
         segment.kind = .manual(
             startTransform: startTransform,
-            endTransform: endTransform,
-            interpolation: interpolation
+            endTransform: endTransform
         )
     }
 }

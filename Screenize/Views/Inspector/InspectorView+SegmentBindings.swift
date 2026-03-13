@@ -21,7 +21,7 @@ extension InspectorView {
                 return CameraSegment(
                     startTime: 0,
                     endTime: 1,
-                    kind: .manual(startTransform: .identity, endTransform: .identity, interpolation: .easeInOut)
+                    kind: .manual(startTransform: .identity, endTransform: .identity)
                 )
             },
             set: { updated in

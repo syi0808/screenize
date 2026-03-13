@@ -48,8 +48,7 @@ extension EditorViewModel {
             endTime: max(time + 0.05, endTime),
             kind: .manual(
                 startTransform: .identity,
-                endTransform: .identity,
-                interpolation: .easeInOut
+                endTransform: .identity
             )
         )
 

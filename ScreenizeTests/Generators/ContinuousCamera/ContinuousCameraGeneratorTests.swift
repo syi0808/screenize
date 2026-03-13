@@ -229,7 +229,7 @@ final class ContinuousCameraGeneratorTests: XCTestCase {
 
     private func extractZooms(from segment: CameraSegment) -> (start: CGFloat, end: CGFloat) {
         switch segment.kind {
-        case .manual(let start, let end, _):
+        case .manual(let start, let end):
             return (start.zoom, end.zoom)
         case .continuous(let transforms):
             return (transforms.first?.transform.zoom ?? 1.0, transforms.last?.transform.zoom ?? 1.0)
