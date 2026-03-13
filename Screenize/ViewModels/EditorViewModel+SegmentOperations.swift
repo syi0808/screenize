@@ -42,10 +42,12 @@ extension EditorViewModel {
             return
         }
 
-        let endTime = min(duration, time + 1.0)
+        let startTime = max(0, time)
+        let endTime = min(duration, startTime + 2.0)
+        let clampedEndTime = max(startTime + 0.05, endTime)
         let newSegment = CameraSegment(
-            startTime: time,
-            endTime: max(time + 0.05, endTime),
+            startTime: startTime,
+            endTime: clampedEndTime,
             kind: .manual(
                 startTransform: .identity,
                 endTransform: .identity
