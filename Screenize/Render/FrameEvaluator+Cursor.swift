@@ -21,7 +21,7 @@ extension FrameEvaluator {
         return CursorState(
             position: position,
             style: activeSegment?.style ?? .arrow,
-            scale: activeSegment?.scale ?? 2.5,
+            scale: track.scale,
             visible: activeSegment?.visible ?? true,
             isClicking: isClicking,
             clickType: clickType,

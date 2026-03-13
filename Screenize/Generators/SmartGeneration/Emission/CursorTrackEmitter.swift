@@ -17,13 +17,13 @@ struct CursorTrackEmitter {
             startTime: 0,
             endTime: duration,
             style: .arrow,
-            visible: true,
-            scale: settings.cursorScale
+            visible: true
         )
 
         return CursorTrackV2(
             name: "Cursor (Smart V2)",
             isEnabled: true,
+            scale: settings.cursorScale,
             segments: [segment]
         )
     }

@@ -98,39 +98,16 @@ struct SettingsInspector: View {
             SectionHeader(title: "Cursor", icon: "cursorarrow", iconColor: DesignColors.sectionCursor)
 
             // Cursor scale
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                SubSectionLabel(
-                    label: "Cursor Scale",
-                    value: String(format: "%.1fx", cursorScale)
-                )
-
-                HStack(spacing: Spacing.md) {
-                    Slider(value: Binding(
-                        get: { Double(cursorScale) },
-                        set: { updateCursorScale(CGFloat($0)) }
-                    ), in: 0.5...5.0, step: 0.1)
-
-                    TextField("", value: Binding(
-                        get: { Double(cursorScale) },
-                        set: { updateCursorScale(CGFloat($0)) }
-                    ), format: .number.precision(.fractionLength(1)))
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 50)
-                }
-
-                // Preset buttons
-                HStack(spacing: Spacing.sm) {
-                    ForEach([1.0, 1.5, 2.0, 2.5], id: \.self) { value in
-                        Button(String(format: "%.1fx", value)) {
-                            withMotionSafeAnimation(AnimationTokens.standard) {
-                                updateCursorScale(value)
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-            }
+            SliderWithField(
+                label: "Cursor Scale",
+                value: cursorScaleBinding,
+                range: 0.5...5.0,
+                step: 0.1,
+                unit: "x",
+                fractionDigits: 1,
+                presets: [("1.0x", 1.0), ("1.5x", 1.5), ("2.0x", 2.0), ("2.5x", 2.5)],
+                onChange: onChange
+            )
 
             // Smooth cursor interpolation
             Toggle(isOn: smoothCursorBinding) {
@@ -253,23 +230,19 @@ struct SettingsInspector: View {
         )
     }
 
-    private var cursorScale: CGFloat {
-        timeline.cursorTrackV2?.segments.first?.scale ?? 2.5
-    }
-
-    private func updateCursorScale(_ newValue: CGFloat) {
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
-              case .cursor(var track) = timeline.tracks[trackIndex] else {
-            return
-        }
-
-        track.segments = track.segments.map {
-            var segment = $0
-            segment.scale = newValue
-            return segment
-        }
-        timeline.tracks[trackIndex] = .cursor(track)
-        onChange?()
+    private var cursorScaleBinding: Binding<Double> {
+        Binding(
+            get: { Double(timeline.cursorTrackV2?.scale ?? 2.5) },
+            set: { newValue in
+                guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .cursor }),
+                      case .cursor(var track) = timeline.tracks[trackIndex] else {
+                    return
+                }
+                track.scale = CGFloat(newValue)
+                timeline.tracks[trackIndex] = .cursor(track)
+                onChange?()
+            }
+        )
     }
 
     // MARK: - Background
@@ -406,9 +379,9 @@ struct SettingsInspector: View {
             // Shadow opacity
             SliderWithField(
                 label: "Opacity",
-                value: shadowOpacityBinding,
-                range: 0...1,
-                step: 0.05,
+                value: shadowOpacityPercentBinding,
+                range: 0...100,
+                step: 5,
                 unit: "%",
                 fractionDigits: 0,
                 onChange: onChange
@@ -416,10 +389,10 @@ struct SettingsInspector: View {
         }
     }
 
-    private var shadowOpacityBinding: Binding<Double> {
+    private var shadowOpacityPercentBinding: Binding<Double> {
         Binding(
-            get: { Double(settings.shadowOpacity) },
-            set: { settings.shadowOpacity = Float($0) }
+            get: { (Double(settings.shadowOpacity) * 100).rounded() },
+            set: { settings.shadowOpacity = Float($0 / 100) }
         )
     }
 
@@ -564,8 +537,9 @@ private struct SolidColorButton: View {
                     id: UUID(),
                     name: "Cursor",
                     isEnabled: true,
+                    scale: 2.5,
                     segments: [
-                        CursorSegment(startTime: 0, endTime: 10, scale: 2.5),
+                        CursorSegment(startTime: 0, endTime: 10),
                     ]
                 ))
             ],

@@ -203,8 +203,9 @@ struct ProjectCreator {
                 id: UUID(),
                 name: "Cursor",
                 isEnabled: true,
+                scale: 2.5,
                 segments: [
-                    CursorSegment(startTime: 0, endTime: max(0.1, duration), style: .arrow, visible: true, scale: 1.5),
+                    CursorSegment(startTime: 0, endTime: max(0.1, duration), style: .arrow, visible: true),
                 ]
             )),
             .keystroke(KeystrokeTrackV2(
