@@ -117,37 +117,54 @@ struct PresetPickerView: View {
             Text("Manage Presets")
                 .font(.headline)
 
-            List {
-                ForEach(presetManager.userPresets) { preset in
-                    PresetManagementRow(
-                        preset: preset,
-                        isActive: presetManager.activePresetID == preset.id,
-                        isModified: isModified
-                            && presetManager.activePresetID == preset.id,
-                        onRename: { newName in
-                            presetManager.renamePreset(preset.id, to: newName)
-                        },
-                        onOverwrite: {
-                            presetManager.updatePreset(
-                                preset.id, with: settings
-                            )
-                        },
-                        onDelete: {
-                            presetManager.deletePreset(preset.id)
+            ScrollView {
+                VStack(spacing: 4) {
+                    ForEach(presetManager.userPresets) { preset in
+                        PresetManagementRow(
+                            preset: preset,
+                            isActive: presetManager.activePresetID == preset.id,
+                            isModified: isModified
+                                && presetManager.activePresetID == preset.id,
+                            onRename: { newName in
+                                presetManager.renamePreset(preset.id, to: newName)
+                            },
+                            onOverwrite: {
+                                presetManager.updatePreset(preset.id, with: settings)
+                            },
+                            onDelete: {
+                                presetManager.deletePreset(preset.id)
+                            },
+                            onMoveUp: presetManager.userPresets.first?.id != preset.id ? {
+                                movePreset(preset.id, direction: .up)
+                            } : nil,
+                            onMoveDown: presetManager.userPresets.last?.id != preset.id ? {
+                                movePreset(preset.id, direction: .down)
+                            } : nil
+                        )
+                        if preset.id != presetManager.userPresets.last?.id {
+                            Divider()
                         }
-                    )
-                }
-                .onMove { from, to in
-                    presetManager.reorderPresets(
-                        fromOffsets: from, toOffset: to
-                    )
+                    }
                 }
             }
-            .listStyle(.plain)
+            .frame(maxHeight: 300)
         }
         .padding(16)
         .frame(width: 280)
-        .frame(maxHeight: 300)
+    }
+
+    private func movePreset(_ id: UUID, direction: MoveDirection) {
+        guard let index = presetManager.userPresets.firstIndex(where: { $0.id == id }) else { return }
+        let newIndex = direction == .up ? index - 1 : index + 1
+        guard newIndex >= 0, newIndex < presetManager.userPresets.count else { return }
+        presetManager.reorderPresets(
+            fromOffsets: IndexSet(integer: index),
+            toOffset: direction == .up ? newIndex : newIndex + 1
+        )
+    }
+
+    private enum MoveDirection {
+        case up, down
     }
 
     private var savePresetPopover: some View {
@@ -199,21 +216,45 @@ private struct PresetManagementRow: View {
     let onRename: (String) -> Void
     let onOverwrite: () -> Void
     let onDelete: () -> Void
+    let onMoveUp: (() -> Void)?
+    let onMoveDown: (() -> Void)?
 
     @State private var isEditing = false
     @State private var editingName: String = ""
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
+        HStack(spacing: 6) {
+            // Reorder buttons
+            VStack(spacing: 0) {
+                Button {
+                    onMoveUp?()
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 8))
+                        .foregroundColor(onMoveUp != nil ? .secondary : .clear)
+                }
+                .buttonStyle(.plain)
+                .disabled(onMoveUp == nil)
 
+                Button {
+                    onMoveDown?()
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8))
+                        .foregroundColor(onMoveDown != nil ? .secondary : .clear)
+                }
+                .buttonStyle(.plain)
+                .disabled(onMoveDown == nil)
+            }
+            .frame(width: 14)
+
+            // Active indicator
             Circle()
                 .fill(isActive ? Color.accentColor : Color.clear)
                 .frame(width: 6, height: 6)
 
+            // Name (inline editable)
             if isEditing {
                 TextField("Name", text: $editingName)
                     .textFieldStyle(.plain)
@@ -229,6 +270,8 @@ private struct PresetManagementRow: View {
                 Text(preset.name)
                     .font(.system(size: 12))
                     .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                     .onTapGesture {
                         editingName = preset.name
                         isEditing = true
@@ -238,6 +281,7 @@ private struct PresetManagementRow: View {
 
             Spacer()
 
+            // Overwrite button (active + modified only)
             if isModified {
                 Button {
                     onOverwrite()
@@ -250,6 +294,7 @@ private struct PresetManagementRow: View {
                 .help("Overwrite with Current Settings")
             }
 
+            // Delete button
             Button {
                 onDelete()
             } label: {
@@ -260,6 +305,7 @@ private struct PresetManagementRow: View {
             .buttonStyle(.plain)
             .help("Delete Preset")
         }
+        .padding(.vertical, 4)
     }
 
     private func finishEditing() {
