@@ -769,20 +769,49 @@ enum PlaybackMode: Equatable {
 }
 ```
 
+### Ownership & Configuration
+
+**ScenarioPlayer**는 `EditorViewModel`이 소유한다. `AppState`의 `RecordingCoordinator`를 RecordingBridge를 통해 주입받는다.
+
+**ReplayConfiguration**: ScenarioPlayer.start() 호출 시 녹화 설정을 함께 전달한다. 이 설정은 마지막 녹화의 capture target/settings를 `AppState`에서 스냅샷으로 가져온다:
+
+```swift
+struct ReplayConfiguration {
+    let captureTarget: CaptureTarget
+    let backgroundStyle: BackgroundStyle
+    let frameRate: Int
+    let isSystemAudioEnabled: Bool
+    let isMicrophoneEnabled: Bool
+    let microphoneDevice: AVCaptureDevice?
+}
+```
+
+`AppState`는 마지막 녹화의 설정을 `lastCaptureConfiguration: ReplayConfiguration?`으로 보존한다. Replay & Record / Re-rehearse 시 이 설정을 그대로 사용.
+
+### Step Index Convention
+
+UI에서는 1-based (Step 1, Step 2, ...), 코드에서는 0-based (steps[0], steps[1], ...). `PlaybackMode.replayUntilStep(Int)`의 파라미터는 **0-based index**. UI는 표시 시 +1.
+
 ### Step Execution Flow
 
 ```
-ScenarioPlayer.start(scenario:, mode:)
+ScenarioPlayer.start(scenario:, mode:, config: ReplayConfiguration)
     │
-    ├── RecordingBridge: RecordingCoordinator.startRecording() (기존 코드 재사용)
+    ├── RecordingBridge: RecordingCoordinator.startRecording(config) (기존 코드 재사용)
+    │   (isRehearsalMode = false — Replay 구간에서는 ScenarioEventRecorder 미활성)
     ├── Screenize 창 최소화
     ├── ReplayHUD 표시
     │
     ├── Step 루프:
     │   ├── mode == .replayUntilStep(N) && currentIndex == N?
-    │   │   └── YES → state = .waitingForUser → Start 버튼 대기 → 카운트다운 → Rehearsal 전환
+    │   │   └── YES → state = .waitingForUser
+    │   │         → [▶ Start 클릭]
+    │   │         → state = .countdown(3) → .countdown(2) → .countdown(1)
+    │   │         → RecordingCoordinator.activateScenarioRecorder() (mid-session 활성화)
+    │   │         → state = .rehearsing
+    │   │         → (사용자 직접 조작, 루프 종료)
     │   │
-    │   ├── 1. AXTargetResolver: fallback chain으로 타겟 찾기
+    │   ├── 1. AXTargetResolver: fallback chain으로 타겟 찾기 (background queue에서 실행)
     │   ├── 2. StateValidator: 앱 실행 중? 요소 visible? enabled?
     │   │   └── 실패 → state = .error → HUD에 Skip/DoManually/Stop 표시
     │   ├── 3. mouse_move → PathGenerator + EventInjector
@@ -790,11 +819,36 @@ ScenarioPlayer.start(scenario:, mode:)
     │   ├── 4. TimingController: durationMs 대기 → 다음 스텝
     │   └── (implicit drag group: 연속 실행, 추가 대기 없음)
     │
+    ├── ESC 키 → 즉시 중단 → RecordingBridge.stopRecording() → 여기까지 녹화 보존 → state = .completed
+    │
     ├── 재생 완료 → RecordingBridge: RecordingCoordinator.stopRecording()
     └── 새 영상으로 VideoEditor 열림 (ScenarioTrack 포함)
 ```
 
 핵심: CGEvent 주입은 시스템 레벨이므로 기존 마우스/키보드 트래킹이 별도 처리 없이 캡처한다. 녹화 파이프라인 수정 불필요.
+
+### Mid-Session ScenarioEventRecorder Activation
+
+Re-rehearse 시 Replay → Rehearsal 전환을 위해 `RecordingCoordinator`에 새 메서드 추가:
+
+```swift
+/// Activate ScenarioEventRecorder mid-session (for Re-rehearse transition).
+/// Called while recording is already in progress.
+func activateScenarioRecorder() {
+    guard scenarioEventRecorder == nil else { return }
+    scenarioEventRecorder = ScenarioEventRecorder()
+    scenarioEventRecorder?.startRecording(captureArea: captureBounds)
+    isRehearsalMode = true
+}
+```
+
+Replay & Record (전체 재생)에서는 `isRehearsalMode = false`로 시작하고, ScenarioEventRecorder는 활성화되지 않는다. Re-rehearse에서만 Step N 전환 시점에 `activateScenarioRecorder()` 호출.
+
+### AXTargetResolver Threading
+
+AXTargetResolver의 AX API 호출은 동기 Mach IPC (최대 500ms/fallback 단계). 메인 스레드 차단 방지를 위해:
+- AXTargetResolver는 전용 background queue (`DispatchQueue(label: "com.screenize.axResolver", qos: .userInitiated)`)에서 실행
+- ScenarioPlayer는 `await withCheckedContinuation`으로 resolution 결과를 기다린 후 EventInjector에 전달
 
 ### Re-rehearse from Step N Flow
 
@@ -825,7 +879,7 @@ Step N 도달 — Replay 일시정지, 커서/화면 상태 유지
 (사운드 알림으로 전환 시점 전달)
     │
     ▼ Start 클릭
-3초 카운트다운 (기존 CountdownPanel 패턴 재사용)
+3초 카운트다운 (기존 CountdownPanel 시각 효과 재사용, 단 ESC 감지는 global monitor 사용 — Screenize 창이 최소화되어 있으므로 local monitor 무효)
     │
     ▼
 ScenarioEventRecorder 활성화
@@ -851,6 +905,8 @@ VideoEditor (새 영상 + 병합된 시나리오)
 - Replay 구간도 녹화되므로 최종 영상에 자연스럽게 포함
 - 카운트다운 중에도 녹화 계속 (나중에 trim 가능)
 - 시나리오 병합: `steps[0..<N]` (기존) + `ScenarioGenerator.generate(from: newRawEvents)` (새 리허설)
+- **타이밍 오프셋**: 새 리허설 스텝의 `rawTimeRange`는 리허설 시작 기준이므로, 병합 시 Replay duration을 오프셋으로 더한다
+- **scenario-raw.json**: Rehearsal 구간의 raw event만 포함 (Replay 구간은 ScenarioEventRecorder 미활성)
 
 **Re-rehearse 버튼 활성 조건:**
 - ScenarioTrack에서 스텝이 선택되어 있을 때만 활성화
@@ -864,7 +920,7 @@ VideoEditor (새 영상 + 병합된 시나리오)
 
 NSPanel 기반 (기존 CaptureToolbarPanel과 동일한 패턴):
 - `NSPanel(styleMask: [.borderless, .nonactivatingPanel])`, level `.floating`
-- ScreenCaptureKit `SCContentFilter`의 `excludingWindows`에 추가하여 녹화에서 제외
+- 녹화에서 제외: Replay HUD는 Screenize 프로세스 소유의 NSPanel이므로, 기존 `SCContentFilter`의 `excludingApplications`에 Screenize 앱이 포함되어 있으면 자동 제외됨. window capture 모드에서는 대상 윈도우만 캡처하므로 HUD가 포함되지 않음. display capture 모드에서는 `SCStream.updateContentFilter(_:)`로 HUD window를 동적 제외 (macOS 14+) — `ScreenCaptureManager`에 `addExcludedWindow(_ window: NSWindow) async` 메서드 추가 필요.
 - 화면 상단 중앙, 반투명 작은 바
 
 **상태별 HUD 표시:**
@@ -889,7 +945,7 @@ NSPanel 기반 (기존 CaptureToolbarPanel과 동일한 패턴):
 | 우클릭 | `CGEventCreateMouseEvent(.rightMouseDown, ...)` + `.rightMouseUp` |
 | 더블클릭 | clickCount = 2 on mouseDown/mouseUp pair |
 | 키보드 | `CGEventCreateKeyboardEvent(nil, keyCode, true/false)` + modifier flags |
-| 스크롤 | `CGEventCreateScrollWheelEvent2(nil, .line, 1, deltaY, deltaX)` |
+| 스크롤 | `CGEventCreateScrollWheelEvent2(nil, .pixel, 1, deltaY, deltaX)` — `.pixel` 단위 사용 (시나리오의 `amount`는 fixed-point pixels이므로) |
 | 앱 활성화 | `NSWorkspace.shared.open(URL)` 또는 `NSRunningApplication.activate()` |
 
 **주입 방법:** `CGEventPost(.cghidEventTap, event)` — 시스템 레벨 주입.
