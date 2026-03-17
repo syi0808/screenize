@@ -453,16 +453,17 @@ struct ScenarioGenerator {
     }
 
     private static func makeAXTarget(from event: RawEvent, captureArea: CGRect) -> AXTarget? {
-        guard let ax = event.ax, let absX = event.x, let absY = event.y else { return nil }
+        // Coordinates are required; AX info is optional (async query may have failed/timed out)
+        guard let absX = event.x, let absY = event.y else { return nil }
 
         let hintX = captureArea.width > 0 ? (absX - captureArea.origin.x) / captureArea.width : 0
         let hintY = captureArea.height > 0 ? (absY - captureArea.origin.y) / captureArea.height : 0
 
         return AXTarget(
-            role: ax.role,
-            axTitle: ax.axTitle,
-            axValue: ax.axValue,
-            path: ax.path,
+            role: event.ax?.role ?? "unknown",
+            axTitle: event.ax?.axTitle,
+            axValue: event.ax?.axValue,
+            path: event.ax?.path ?? [],
             positionHint: CGPoint(x: hintX, y: hintY),
             absoluteCoord: CGPoint(x: absX, y: absY)
         )
