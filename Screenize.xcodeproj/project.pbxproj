@@ -40,6 +40,9 @@
 		AD000022296A0001 /* EventTimelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100022296A0001 /* EventTimelineTests.swift */; };
 		AD000023296A0001 /* IntentClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD100023296A0001 /* IntentClassifierTests.swift */; };
 		AE000002296A0001 /* ShotPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE100002296A0001 /* ShotPlanner.swift */; };
+		10000001296A0001 /* TransitionStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10100001296A0001 /* TransitionStyle.swift */; };
+		10000002296A0001 /* TransitionResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10100002296A0001 /* TransitionResolver.swift */; };
+		11000001296A0001 /* ConfidenceBands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11100001296A0001 /* ConfidenceBands.swift */; };
 		AF000002296A0001 /* ShotPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF100002296A0001 /* ShotPlannerTests.swift */; };
 		B1000010296A0001 /* TimelineView+MultiMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1100010296A0001 /* TimelineView+MultiMove.swift */; };
 		B2000002296A0001 /* CursorTrackEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100002296A0001 /* CursorTrackEmitter.swift */; };
@@ -282,6 +285,9 @@
 		AD100022296A0001 /* EventTimelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimelineTests.swift; sourceTree = "<group>"; };
 		AD100023296A0001 /* IntentClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentClassifierTests.swift; sourceTree = "<group>"; };
 		AE100002296A0001 /* ShotPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlanner.swift; sourceTree = "<group>"; };
+		10100001296A0001 /* TransitionStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionStyle.swift; sourceTree = "<group>"; };
+		10100002296A0001 /* TransitionResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionResolver.swift; sourceTree = "<group>"; };
+		11100001296A0001 /* ConfidenceBands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfidenceBands.swift; sourceTree = "<group>"; };
 		AF100002296A0001 /* ShotPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotPlannerTests.swift; sourceTree = "<group>"; };
 		B1100010296A0001 /* TimelineView+MultiMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimelineView+MultiMove.swift"; sourceTree = "<group>"; };
 		B2100002296A0001 /* CursorTrackEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorTrackEmitter.swift; sourceTree = "<group>"; };
@@ -543,6 +549,7 @@
 				AB000003296A0001 /* Scene.swift */,
 				AB000004296A0001 /* ShotPlan.swift */,
 				AB000006296A0001 /* TimedTransform.swift */,
+				11100001296A0001 /* ConfidenceBands.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -673,6 +680,8 @@
 			isa = PBXGroup;
 			children = (
 				AE100002296A0001 /* ShotPlanner.swift */,
+				10100001296A0001 /* TransitionStyle.swift */,
+				10100002296A0001 /* TransitionResolver.swift */,
 			);
 			path = Planning;
 			sourceTree = "<group>";
@@ -1448,6 +1457,9 @@
 				AD000010296A0001 /* EventTimeline.swift in Sources */,
 				AD000011296A0001 /* IntentClassifier.swift in Sources */,
 				AE000002296A0001 /* ShotPlanner.swift in Sources */,
+				10000001296A0001 /* TransitionStyle.swift in Sources */,
+				10000002296A0001 /* TransitionResolver.swift in Sources */,
+				11000001296A0001 /* ConfidenceBands.swift in Sources */,
 				B2000002296A0001 /* CursorTrackEmitter.swift in Sources */,
 				B2000003296A0001 /* KeystrokeTrackEmitter.swift in Sources */,
 				E7000001296A0001 /* ContinuousCameraTypes.swift in Sources */,
