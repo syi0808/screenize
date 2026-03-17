@@ -116,42 +116,57 @@ final class RecordingCoordinator: ObservableObject {
             _captureIsPaused = false
         }
 
-        // Setup and start capture with SCRecordingOutput
-        captureManager = ScreenCaptureManager()
-        captureManager?.delegate = self
+        do {
+            // Setup and start capture with SCRecordingOutput
+            captureManager = ScreenCaptureManager()
+            captureManager?.delegate = self
 
-        try await captureManager?.startRecording(
-            target: target,
-            configuration: captureConfig,
-            outputURL: session.outputURL
-        )
+            try await captureManager?.startRecording(
+                target: target,
+                configuration: captureConfig,
+                outputURL: session.outputURL
+            )
 
-        // Start mouse recording after video capture begins (synchronize timestamps)
-        recordingStartDate = Date()
-        processTimeStartMs = Int64(ProcessInfo.processInfo.systemUptime * 1000)
-        mouseDataRecorder = MouseDataRecorder()
-        mouseDataRecorder?.startRecording(
-            screenBounds: captureBounds,
-            scaleFactor: captureConfig.scaleFactor,
-            captureFrameRate: captureConfig.frameRate
-        )
+            // Start mouse recording after video capture begins (synchronize timestamps)
+            recordingStartDate = Date()
+            processTimeStartMs = Int64(ProcessInfo.processInfo.systemUptime * 1000)
+            mouseDataRecorder = MouseDataRecorder()
+            mouseDataRecorder?.startRecording(
+                screenBounds: captureBounds,
+                scaleFactor: captureConfig.scaleFactor,
+                captureFrameRate: captureConfig.frameRate
+            )
 
-        // Start scenario event recorder in rehearsal mode
-        if isRehearsalMode {
-            scenarioEventRecorder = ScenarioEventRecorder()
-            scenarioEventRecorder?.startRecording(captureArea: captureBounds)
-        }
-
-        // Start microphone recording if enabled
-        if isMicrophoneEnabled {
-            let micRecorder = MicrophoneRecorder()
-            let micURL = Self.generateMicOutputURL(for: session.outputURL)
-            do {
-                try micRecorder.startRecording(to: micURL, device: microphoneDevice)
-                self.microphoneRecorder = micRecorder
-            } catch {
-                Log.recording.warning("Mic recording failed (non-fatal): \(error)")
+            // Start scenario event recorder in rehearsal mode
+            if isRehearsalMode {
+                scenarioEventRecorder = ScenarioEventRecorder()
+                scenarioEventRecorder?.startRecording(captureArea: captureBounds)
             }
+
+            // Start microphone recording if enabled
+            if isMicrophoneEnabled {
+                let micRecorder = MicrophoneRecorder()
+                let micURL = Self.generateMicOutputURL(for: session.outputURL)
+                do {
+                    try micRecorder.startRecording(to: micURL, device: microphoneDevice)
+                    self.microphoneRecorder = micRecorder
+                } catch {
+                    Log.recording.warning("Mic recording failed (non-fatal): \(error)")
+                }
+            }
+        } catch {
+            // Clean up on failure so subsequent attempts don't fail with "already recording"
+            Log.recording.error("Recording setup failed: \(error.localizedDescription)")
+            session.transition(to: .failed(error.localizedDescription))
+            currentSession = nil
+            captureManager = nil
+            mouseDataRecorder = nil
+            scenarioEventRecorder = nil
+            captureStateLock.withLock {
+                _captureSession = nil
+                _captureIsPaused = false
+            }
+            throw error
         }
 
         session.transition(to: .recording)

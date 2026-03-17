@@ -83,6 +83,7 @@ final class ScenarioPlayer: ObservableObject {
                 microphoneDevice: config.microphoneDevice
             )
         } catch {
+            Log.recording.error("Replay recording failed to start: \(error)")
             state = .error(
                 stepIndex: 0,
                 message: "Recording failed to start: \(error.localizedDescription)"
