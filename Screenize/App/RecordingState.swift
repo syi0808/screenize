@@ -23,6 +23,7 @@ final class RecordingState: ObservableObject {
     var lastMicAudioURL: URL?
     var lastSystemAudioURL: URL?
     var lastScenarioRawEvents: ScenarioRawEvents?
+    var lastCaptureConfiguration: ReplayConfiguration?
 
     // MARK: - Managers
 
@@ -55,6 +56,16 @@ final class RecordingState: ObservableObject {
         let coordinator = RecordingCoordinator()
         coordinator.isRehearsalMode = (captureSettings.recordingMode == .rehearsal)
         self.recordingCoordinator = coordinator
+
+        // Store configuration for potential replay
+        lastCaptureConfiguration = ReplayConfiguration(
+            captureTarget: target,
+            backgroundStyle: captureSettings.backgroundStyle,
+            frameRate: captureSettings.captureFrameRate,
+            isSystemAudioEnabled: captureSettings.isSystemAudioEnabled,
+            isMicrophoneEnabled: captureSettings.isMicrophoneEnabled,
+            microphoneDevice: captureSettings.selectedMicrophoneDevice
+        )
 
         try await coordinator.startRecording(
             target: target,

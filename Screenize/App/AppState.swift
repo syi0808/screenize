@@ -77,6 +77,10 @@ final class AppState: ObservableObject {
         get { recording.lastScenarioRawEvents }
         set { recording.lastScenarioRawEvents = newValue }
     }
+    var lastCaptureConfiguration: ReplayConfiguration? {
+        get { recording.lastCaptureConfiguration }
+        set { recording.lastCaptureConfiguration = newValue }
+    }
     var recordingCoordinator: RecordingCoordinator? {
         recording.recordingCoordinator
     }

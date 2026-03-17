@@ -224,6 +224,15 @@ final class RecordingCoordinator: ObservableObject {
         scenarioEventRecorder?.pauseRecording()
     }
 
+    /// Activate ScenarioEventRecorder mid-session (for Re-rehearse transition).
+    /// Called while recording is already in progress.
+    func activateScenarioRecorder() {
+        guard scenarioEventRecorder == nil else { return }
+        scenarioEventRecorder = ScenarioEventRecorder()
+        scenarioEventRecorder?.startRecording(captureArea: captureBounds)
+        isRehearsalMode = true
+    }
+
     func resumeRecording() {
         guard isRecording, isPaused else { return }
         isPaused = false

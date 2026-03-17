@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import AppKit
 
 /// Main editor view model
 /// Coordinates project, preview, and timeline state
@@ -595,6 +596,118 @@ final class EditorViewModel: ObservableObject {
         self.scenario = scenario
         self.project.scenario = scenario
         self.hasUnsavedChanges = true
+    }
+
+    // MARK: - Replay
+
+    @Published var isReplaying: Bool = false
+
+    private var replayHUDPanel: (any NSObjectProtocol)?
+
+    /// Start full scenario replay with recording.
+    @available(macOS 15.0, *)
+    func startReplay() async {
+        guard let scenario else { return }
+        let appState = AppState.shared
+
+        guard let target = appState.capture.selectedTarget else {
+            errorMessage = "No capture target selected. Configure a capture target before replaying."
+            return
+        }
+
+        let config = ReplayConfiguration(
+            captureTarget: target,
+            backgroundStyle: appState.capture.backgroundStyle,
+            frameRate: appState.capture.captureFrameRate,
+            isSystemAudioEnabled: appState.capture.isSystemAudioEnabled,
+            isMicrophoneEnabled: appState.capture.isMicrophoneEnabled,
+            microphoneDevice: appState.capture.selectedMicrophoneDevice
+        )
+
+        let coordinator = RecordingCoordinator()
+        let player = ScenarioPlayer()
+        isReplaying = true
+
+        showReplayHUD(player: player)
+
+        await player.start(
+            scenario: scenario,
+            mode: .replayAll,
+            config: config,
+            recordingCoordinator: coordinator
+        )
+
+        dismissReplayHUD()
+        isReplaying = false
+
+        // Recording completed — the coordinator holds the video URL
+    }
+
+    /// Start re-rehearsal from a specific step index.
+    @available(macOS 15.0, *)
+    func startReRehearsal(fromStepIndex: Int) async {
+        guard let scenario else { return }
+        let appState = AppState.shared
+
+        guard let target = appState.capture.selectedTarget else {
+            errorMessage = "No capture target selected. Configure a capture target before replaying."
+            return
+        }
+
+        let config = ReplayConfiguration(
+            captureTarget: target,
+            backgroundStyle: appState.capture.backgroundStyle,
+            frameRate: appState.capture.captureFrameRate,
+            isSystemAudioEnabled: appState.capture.isSystemAudioEnabled,
+            isMicrophoneEnabled: appState.capture.isMicrophoneEnabled,
+            microphoneDevice: appState.capture.selectedMicrophoneDevice
+        )
+
+        let coordinator = RecordingCoordinator()
+        let player = ScenarioPlayer()
+        isReplaying = true
+
+        showReplayHUD(player: player)
+
+        await player.start(
+            scenario: scenario,
+            mode: .replayUntilStep(fromStepIndex),
+            config: config,
+            recordingCoordinator: coordinator
+        )
+
+        dismissReplayHUD()
+        isReplaying = false
+
+        // If re-rehearsal completed, merge scenarios
+        if let newRawEvents = player.getRehearsalRawEvents() {
+            let merged = player.mergeScenarios(
+                original: scenario,
+                newRawEvents: newRawEvents,
+                splitAtIndex: fromStepIndex,
+                replayDurationMs: player.getReplayDurationMs()
+            )
+            saveUndoSnapshot()
+            self.scenario = merged
+            self.project.scenario = merged
+            self.scenarioRawEvents = newRawEvents
+            self.hasUnsavedChanges = true
+        }
+    }
+
+    // MARK: - Replay HUD Lifecycle
+
+    @available(macOS 15.0, *)
+    private func showReplayHUD(player: ScenarioPlayer) {
+        let panel = ReplayHUDPanel(player: player)
+        panel.show()
+        replayHUDPanel = panel
+    }
+
+    @available(macOS 15.0, *)
+    private func dismissReplayHUD() {
+        (replayHUDPanel as? ReplayHUDPanel)?.dismiss()
+        replayHUDPanel = nil
     }
 
 }

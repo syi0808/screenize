@@ -27,6 +27,10 @@ struct EditorMainView: View {
     @State private var showSaveErrorAlert = false
     @State private var saveErrorMessage = ""
 
+    /// Replay confirmation alerts
+    @State private var showReplayConfirmation = false
+    @State private var showReRehearsalConfirmation = false
+
     // MARK: - Initialization
 
     init(project: ScreenizeProject, projectURL: URL? = nil) {
@@ -197,6 +201,29 @@ struct EditorMainView: View {
         } message: {
             Text(saveErrorMessage)
         }
+        .alert("Replay & Record", isPresented: $showReplayConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Start") {
+                if #available(macOS 15.0, *) {
+                    Task { await viewModel.startReplay() }
+                }
+            }
+        } message: {
+            Text("This will replay the scenario automatically and record a new video. Press ESC to stop at any time.")
+        }
+        .alert("Re-rehearse", isPresented: $showReRehearsalConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Start") {
+                if #available(macOS 15.0, *) {
+                    guard let stepId = viewModel.selectedStepId,
+                          let scenario = viewModel.scenario,
+                          let index = scenario.steps.firstIndex(where: { $0.id == stepId }) else { return }
+                    Task { await viewModel.startReRehearsal(fromStepIndex: index) }
+                }
+            }
+        } message: {
+            Text("This will replay steps up to the selected step, then hand control to you. Press ESC to stop at any time.")
+        }
         .onReceive(NotificationCenter.default.publisher(for: .editorUndo)) { _ in
             viewModel.undo()
         }
@@ -331,6 +358,27 @@ struct EditorMainView: View {
                 Image(systemName: "gearshape.2")
             }
             .help("Advanced Generation Settings")
+
+            Divider()
+                .frame(height: Spacing.xl)
+
+            // Replay & Record
+            Button {
+                showReplayConfirmation = true
+            } label: {
+                Label("Replay & Record", systemImage: "play.fill")
+            }
+            .disabled(viewModel.scenario == nil || viewModel.isReplaying)
+            .help("Replay scenario and record a new video")
+
+            // Re-rehearse from selected step
+            Button {
+                showReRehearsalConfirmation = true
+            } label: {
+                Label("Re-rehearse", systemImage: "arrow.counterclockwise")
+            }
+            .disabled(viewModel.selectedStepId == nil || viewModel.isReplaying)
+            .help("Re-rehearse from the selected step")
 
             Divider()
                 .frame(height: Spacing.xl)
