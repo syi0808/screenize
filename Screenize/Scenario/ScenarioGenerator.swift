@@ -75,8 +75,19 @@ struct ScenarioGenerator {
 
         // Find matching mouseUp
         guard let upIndex = findMouseUp(events: events, after: startIndex, button: button) else {
-            // No matching mouseUp found; skip
-            return ConsumeResult(steps: [], nextIndex: startIndex + 1)
+            // No matching mouseUp found (recording stopped mid-click).
+            // Emit a click at the mouseDown position instead of silently dropping it.
+            let clickType: ScenarioStep.StepType = button == "right" ? .rightClick : .click
+            let step = ScenarioStep(
+                type: clickType,
+                description: clickType == .rightClick ? "Right-click" : "Click",
+                durationMs: 0,
+                target: makeAXTarget(from: downEvent, captureArea: captureArea)
+            )
+            return ConsumeResult(
+                steps: [ActionStep(step: step, startMs: downEvent.timeMs, endMs: downEvent.timeMs)],
+                nextIndex: startIndex + 1
+            )
         }
 
         let upEvent = events[upIndex]

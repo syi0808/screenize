@@ -765,6 +765,11 @@ final class EditorViewModel: ObservableObject {
 
     /// Resolve a CaptureTarget from the project's CaptureMeta using ScreenCaptureKit.
     /// Falls back to the main display if the original display is unavailable.
+    ///
+    /// Note: For replay, display capture is used even when the original was window capture.
+    /// This is acceptable because replay injects CGEvents into the target app on-screen,
+    /// and the full display recording captures the result. Window-level capture would require
+    /// re-locating the SCWindow at replay time, which is fragile and unnecessary.
     private func resolveCaptureTarget(from captureMeta: CaptureMeta) async throws -> CaptureTarget {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
 
@@ -798,6 +803,10 @@ final class EditorViewModel: ObservableObject {
         appState.lastMicAudioURL = coordinator.lastMicAudioURL
         appState.lastSystemAudioURL = coordinator.lastSystemAudioURL
         appState.lastScenarioRawEvents = coordinator.lastScenarioRawEvents
+        // Carry the original scenario to the new project. During replay
+        // isRehearsalMode=false so ScenarioEventRecorder never runs and
+        // lastScenarioRawEvents is nil. The original scenario is still valid.
+        appState.lastReplayScenario = self.scenario
         appState.showEditor = true
     }
 

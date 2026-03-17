@@ -92,6 +92,17 @@ final class ScenarioPlayer: ObservableObject {
         }
 
         replayStartTime = Date()
+
+        // Activate the target app so CGEvent injections land on the correct window.
+        // Without this, events go to whatever app is frontmost after Screenize minimizes.
+        if let appContext = scenario.appContext {
+            NSWorkspace.shared.runningApplications
+                .first(where: { $0.bundleIdentifier == appContext })?
+                .activate(options: .activateIgnoringOtherApps)
+            // Small delay for the app to come to front before injecting events
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+        }
+
         state = .playing
         await executeStepLoop()
     }
@@ -179,6 +190,11 @@ final class ScenarioPlayer: ObservableObject {
         }
 
         if !isCancelled {
+            // Allow the last step's visual effects (animations, transitions) to settle
+            // before stopping the recording. Without this delay, the final ~2-3 seconds
+            // of on-screen activity are cut off because recording stops immediately
+            // after the last CGEvent is injected.
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2s
             _ = await recordingCoordinator?.stopRecording()
             state = .completed
         }

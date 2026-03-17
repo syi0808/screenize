@@ -23,6 +23,7 @@ final class RecordingState: ObservableObject {
     var lastMicAudioURL: URL?
     var lastSystemAudioURL: URL?
     var lastScenarioRawEvents: ScenarioRawEvents?
+    var lastReplayScenario: Scenario?
     var lastCaptureConfiguration: ReplayConfiguration?
 
     // MARK: - Managers
