@@ -34,16 +34,23 @@ final class AXTargetResolver {
 
     // MARK: - Public Interface
 
-    /// Resolves the target using the 4-level fallback chain. Executes on a background queue.
-    /// Has a hard 1-second timeout — if AX calls hang, falls back to coordinate.
+    /// Resolves the target using coordinate-based injection (fast, non-blocking).
+    /// AX-based resolution is available via `resolveWithAX()` but is not used during replay
+    /// because AXUIElementCopyElementAtPosition is synchronous Mach IPC that can deadlock
+    /// when Screenize is the active process.
     func resolve(target: AXTarget, captureArea: CGRect) async -> ResolvedTarget? {
-        // AXUIElement calls are synchronous Mach IPC that can hang indefinitely if the target
-        // app is unresponsive. Use a separate timeout queue to guarantee we always return.
+        // During replay, use coordinates directly — fast and reliable.
+        // The absoluteCoord was recorded during rehearsal and matches the screen layout.
+        return .coordinate(target.absoluteCoord)
+    }
+
+    /// Full AX-based resolution with fallback chain. Use only when the target app is active
+    /// and Screenize is not the focused process (e.g., future use in validation/preview).
+    func resolveWithAX(target: AXTarget, captureArea: CGRect) async -> ResolvedTarget? {
         await withCheckedContinuation { continuation in
             var didResume = false
             let lock = NSLock()
 
-            // Run AX resolution on the resolver queue (may block)
             resolverQueue.async {
                 let result = self.resolveSync(target: target, captureArea: captureArea)
                 lock.lock()
@@ -53,13 +60,11 @@ final class AXTargetResolver {
                 continuation.resume(returning: result)
             }
 
-            // Timeout on a DIFFERENT queue (global) so it fires even if resolverQueue is blocked
             DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
                 lock.lock()
                 guard !didResume else { lock.unlock(); return }
                 didResume = true
                 lock.unlock()
-                // AX call is stuck — fall back to raw coordinate
                 continuation.resume(returning: .coordinate(target.absoluteCoord))
             }
         }
