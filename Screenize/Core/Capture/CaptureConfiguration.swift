@@ -99,14 +99,25 @@ struct CaptureConfiguration {
         )
     }
 
-    /// Compute the sourceRect for a region (CGRect in CG coordinates) relative to its containing display.
+    /// Compute the sourceRect for a region relative to its containing display.
+    /// `rect` is in AppKit coordinates (bottom-left origin) from CaptureMeta.boundsPt.
+    /// sourceRect must be in CG coordinates (top-left origin) relative to the display.
     private static func computeSourceRectForRegion(_ rect: CGRect) -> CGRect {
-        let center = CGPoint(x: rect.midX, y: rect.midY)
         let maxDisplays: UInt32 = 16
         var displayIDs = [CGDirectDisplayID](repeating: 0, count: Int(maxDisplays))
         var displayCount: UInt32 = 0
         CGGetOnlineDisplayList(maxDisplays, &displayIDs, &displayCount)
 
+        // Convert AppKit rect (bottom-left origin) to CG rect (top-left origin)
+        let screenHeight = NSScreen.main?.frame.height ?? 0
+        let cgRect = CGRect(
+            x: rect.origin.x,
+            y: screenHeight - rect.origin.y - rect.height,
+            width: rect.width,
+            height: rect.height
+        )
+
+        let center = CGPoint(x: cgRect.midX, y: cgRect.midY)
         var displayOrigin = CGPoint.zero
         for i in 0..<Int(displayCount) {
             let bounds = CGDisplayBounds(displayIDs[i])
@@ -117,10 +128,10 @@ struct CaptureConfiguration {
         }
 
         return CGRect(
-            x: rect.origin.x - displayOrigin.x,
-            y: rect.origin.y - displayOrigin.y,
-            width: rect.width,
-            height: rect.height
+            x: cgRect.origin.x - displayOrigin.x,
+            y: cgRect.origin.y - displayOrigin.y,
+            width: cgRect.width,
+            height: cgRect.height
         )
     }
 

@@ -419,13 +419,20 @@ struct ScenarioGenerator {
     // MARK: - App Context
 
     private static func detectAppContext(_ events: [RawEvent]) -> String? {
+        // First try: most frequent app_activated event
         var counts: [String: Int] = [:]
         for event in events where event.type == .appActivated {
             if let bundleId = event.bundleId {
                 counts[bundleId, default: 0] += 1
             }
         }
-        return counts.max(by: { $0.value < $1.value })?.key
+        if let topApp = counts.max(by: { $0.value < $1.value })?.key {
+            return topApp
+        }
+
+        // No app_activated events — appContext will be nil.
+        // ScenarioPlayer handles nil appContext by activating the frontmost non-Screenize app.
+        return nil
     }
 
     // MARK: - Helpers

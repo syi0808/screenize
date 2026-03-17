@@ -94,14 +94,25 @@ final class ScenarioPlayer: ObservableObject {
         replayStartTime = Date()
 
         // Activate the target app so CGEvent injections land on the correct window.
-        // Without this, events go to whatever app is frontmost after Screenize minimizes.
-        if let appContext = scenario.appContext {
+        // Try appContext first, then first activate_app step's bundleId, then frontmost non-Screenize app.
+        let targetBundleId = scenario.appContext
+            ?? scenario.steps.first(where: { $0.type == .activateApp })?.app
+        if let bundleId = targetBundleId {
             NSWorkspace.shared.runningApplications
-                .first(where: { $0.bundleIdentifier == appContext })?
+                .first(where: { $0.bundleIdentifier == bundleId })?
                 .activate(options: .activateIgnoringOtherApps)
-            // Small delay for the app to come to front before injecting events
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+        } else {
+            // No app context — activate the frontmost non-Screenize app
+            let screenizeBundleId = Bundle.main.bundleIdentifier
+            NSWorkspace.shared.runningApplications
+                .first(where: {
+                    $0.isActive == false && !$0.isHidden && $0.activationPolicy == .regular
+                    && $0.bundleIdentifier != screenizeBundleId
+                })?
+                .activate(options: .activateIgnoringOtherApps)
         }
+        // Wait for app activation to take effect
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         state = .playing
         await executeStepLoop()
