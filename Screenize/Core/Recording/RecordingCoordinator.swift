@@ -33,6 +33,7 @@ final class RecordingCoordinator: ObservableObject {
     // v4 event stream timebase
     private(set) var recordingStartDate: Date?
     private(set) var processTimeStartMs: Int64 = 0
+    private(set) var lastVideoURL: URL?
     private(set) var lastMouseRecording: MouseRecording?
     private(set) var lastMicAudioURL: URL?
     private(set) var lastSystemAudioURL: URL?
@@ -204,6 +205,7 @@ final class RecordingCoordinator: ObservableObject {
         }
 
         if let url = outputURL {
+            lastVideoURL = url
             session.transition(to: .completed(url))
             Log.recording.info("Recording finished - source: \(url.path)")
         } else {

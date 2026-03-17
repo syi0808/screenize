@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import Combine
 import AppKit
+import ScreenCaptureKit
 
 /// Main editor view model
 /// Coordinates project, preview, and timeline state
@@ -610,8 +611,12 @@ final class EditorViewModel: ObservableObject {
         guard let scenario else { return }
         let appState = AppState.shared
 
-        guard let target = appState.capture.selectedTarget else {
-            errorMessage = "No capture target selected. Configure a capture target before replaying."
+        // Restore capture target from project's captureMeta instead of transient selectedTarget
+        let target: CaptureTarget
+        do {
+            target = try await resolveCaptureTarget(from: project.captureMeta)
+        } catch {
+            errorMessage = error.localizedDescription
             return
         }
 
@@ -640,7 +645,8 @@ final class EditorViewModel: ObservableObject {
         dismissReplayHUD()
         isReplaying = false
 
-        // Recording completed — the coordinator holds the video URL
+        // Create a new project from the replay recording
+        await handlePostReplayRecording(coordinator: coordinator, appState: appState)
     }
 
     /// Start re-rehearsal from a specific step index.
@@ -649,8 +655,12 @@ final class EditorViewModel: ObservableObject {
         guard let scenario else { return }
         let appState = AppState.shared
 
-        guard let target = appState.capture.selectedTarget else {
-            errorMessage = "No capture target selected. Configure a capture target before replaying."
+        // Restore capture target from project's captureMeta instead of transient selectedTarget
+        let target: CaptureTarget
+        do {
+            target = try await resolveCaptureTarget(from: project.captureMeta)
+        } catch {
+            errorMessage = error.localizedDescription
             return
         }
 
@@ -710,4 +720,57 @@ final class EditorViewModel: ObservableObject {
         replayHUDPanel = nil
     }
 
+    // MARK: - Capture Target Resolution
+
+    /// Resolve a CaptureTarget from the project's CaptureMeta using ScreenCaptureKit.
+    /// Falls back to the main display if the original display is unavailable.
+    private func resolveCaptureTarget(from captureMeta: CaptureMeta) async throws -> CaptureTarget {
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+
+        if let displayID = captureMeta.displayID,
+           let display = content.displays.first(where: { $0.displayID == displayID }) {
+            return .display(display)
+        }
+
+        // Fallback: use main display
+        if let mainDisplay = content.displays.first {
+            return .display(mainDisplay)
+        }
+
+        throw ReplayCaptureError.noDisplayAvailable
+    }
+
+    // MARK: - Post-Replay Project Creation
+
+    /// After replay finishes, transfer recording data to AppState and trigger project creation.
+    @available(macOS 15.0, *)
+    private func handlePostReplayRecording(coordinator: RecordingCoordinator, appState: AppState) async {
+        // The ScenarioPlayer already called coordinator.stopRecording() internally.
+        // Transfer the coordinator's results to AppState so ContentView.createProjectFromRecording() picks them up.
+        guard let videoURL = coordinator.lastVideoURL else {
+            Log.project.info("Replay completed but no recording URL available.")
+            return
+        }
+
+        appState.lastRecordingURL = videoURL
+        appState.lastMouseRecording = coordinator.lastMouseRecording
+        appState.lastMicAudioURL = coordinator.lastMicAudioURL
+        appState.lastSystemAudioURL = coordinator.lastSystemAudioURL
+        appState.lastScenarioRawEvents = coordinator.lastScenarioRawEvents
+        appState.showEditor = true
+    }
+
+}
+
+// MARK: - Replay Errors
+
+enum ReplayCaptureError: LocalizedError {
+    case noDisplayAvailable
+
+    var errorDescription: String? {
+        switch self {
+        case .noDisplayAvailable:
+            return "No display available. Cannot start replay without a connected display."
+        }
+    }
 }

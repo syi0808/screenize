@@ -211,6 +211,14 @@ struct EditorMainView: View {
         } message: {
             Text("This will replay the scenario automatically and record a new video. Press ESC to stop at any time.")
         }
+        .alert("Error", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
         .alert("Re-rehearse", isPresented: $showReRehearsalConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Start") {
