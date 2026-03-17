@@ -765,22 +765,35 @@ final class EditorViewModel: ObservableObject {
 
     /// Resolve a CaptureTarget from the project's CaptureMeta using ScreenCaptureKit.
     /// Falls back to the main display if the original display is unavailable.
-    ///
-    /// Note: For replay, display capture is used even when the original was window capture.
-    /// This is acceptable because replay injects CGEvents into the target app on-screen,
-    /// and the full display recording captures the result. Window-level capture would require
-    /// re-locating the SCWindow at replay time, which is fragile and unnecessary.
+    /// Reconstruct a CaptureTarget from CaptureMeta for replay recording.
+    /// - Display capture (displayID != nil): returns `.display()`
+    /// - Window capture (displayID == nil): returns `.region(boundsPt, display)` so
+    ///   CaptureConfiguration sets sourceRect to crop to the original window area.
     private func resolveCaptureTarget(from captureMeta: CaptureMeta) async throws -> CaptureTarget {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
 
         if let displayID = captureMeta.displayID,
            let display = content.displays.first(where: { $0.displayID == displayID }) {
+            // Display capture — full display
             return .display(display)
         }
 
-        // Fallback: use main display
+        // Window capture (displayID is nil) — use region with boundsPt.
+        // Find the display that contains the window's center point.
+        let windowCenter = CGPoint(
+            x: captureMeta.boundsPt.midX,
+            y: captureMeta.boundsPt.midY
+        )
+        if let display = content.displays.first(where: { display in
+            let bounds = CGDisplayBounds(display.displayID)
+            return bounds.contains(windowCenter)
+        }) {
+            return .region(captureMeta.boundsPt, display)
+        }
+
+        // Fallback: use main display with region
         if let mainDisplay = content.displays.first {
-            return .display(mainDisplay)
+            return .region(captureMeta.boundsPt, mainDisplay)
         }
 
         throw ReplayCaptureError.noDisplayAvailable

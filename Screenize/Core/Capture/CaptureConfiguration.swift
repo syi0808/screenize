@@ -83,6 +83,10 @@ struct CaptureConfiguration {
         var sourceRect: CGRect?
         if case .window(let scWindow) = target {
             sourceRect = Self.computeSourceRect(for: scWindow)
+        } else if case .region(let rect, _) = target {
+            // Region capture (e.g., replay of window recording): use region bounds as sourceRect.
+            // rect is already in CG display coordinate space.
+            sourceRect = Self.computeSourceRectForRegion(rect)
         }
 
         return Self(
@@ -92,6 +96,31 @@ struct CaptureConfiguration {
             scaleFactor: scaleFactor,
             capturesShadow: !target.isWindow,
             sourceRect: sourceRect
+        )
+    }
+
+    /// Compute the sourceRect for a region (CGRect in CG coordinates) relative to its containing display.
+    private static func computeSourceRectForRegion(_ rect: CGRect) -> CGRect {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let maxDisplays: UInt32 = 16
+        var displayIDs = [CGDirectDisplayID](repeating: 0, count: Int(maxDisplays))
+        var displayCount: UInt32 = 0
+        CGGetOnlineDisplayList(maxDisplays, &displayIDs, &displayCount)
+
+        var displayOrigin = CGPoint.zero
+        for i in 0..<Int(displayCount) {
+            let bounds = CGDisplayBounds(displayIDs[i])
+            if bounds.contains(center) {
+                displayOrigin = bounds.origin
+                break
+            }
+        }
+
+        return CGRect(
+            x: rect.origin.x - displayOrigin.x,
+            y: rect.origin.y - displayOrigin.y,
+            width: rect.width,
+            height: rect.height
         )
     }
 
