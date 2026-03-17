@@ -204,19 +204,136 @@ final class SegmentPlannerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(segments.count, 3, "Three non-mergeable spans should produce at least 3 segments")
     }
 
+    // MARK: - Low-Confidence Absorption
+
+    func test_absorbLowConfidenceScenes_lowConfAbsorbedIntoPreceding() {
+        let scenes = [
+            CameraScene(
+                startTime: 0, endTime: 2,
+                primaryIntent: .clicking,
+                focusRegions: [
+                    FocusRegion(
+                        time: 1.0,
+                        region: CGRect(x: 0.3, y: 0.3, width: 0.1, height: 0.1),
+                        confidence: 0.9,
+                        source: .cursorPosition
+                    )
+                ]
+            ),
+            CameraScene(
+                startTime: 2, endTime: 4,
+                primaryIntent: .typing(context: .codeEditor),
+                focusRegions: [
+                    FocusRegion(
+                        time: 3.0,
+                        region: CGRect(x: 0.5, y: 0.5, width: 0.1, height: 0.1),
+                        confidence: 0.4,
+                        source: .cursorPosition
+                    )
+                ]
+            ),
+            CameraScene(
+                startTime: 4, endTime: 6,
+                primaryIntent: .clicking,
+                focusRegions: [
+                    FocusRegion(
+                        time: 5.0,
+                        region: CGRect(x: 0.7, y: 0.7, width: 0.1, height: 0.1),
+                        confidence: 0.9,
+                        source: .cursorPosition
+                    )
+                ]
+            )
+        ]
+
+        let result = SegmentPlanner.absorbLowConfidenceScenes(scenes)
+
+        XCTAssertEqual(result.count, 2,
+                       "Low-confidence scene should be absorbed")
+        XCTAssertEqual(result[0].endTime, 4.0,
+                       "First scene should extend to cover absorbed scene")
+        if case .clicking = result[0].primaryIntent {} else {
+            XCTFail("First scene should keep its original intent")
+        }
+        XCTAssertEqual(result[1].startTime, 4.0)
+    }
+
+    func test_absorbLowConfidenceScenes_firstSceneLowConf_becomesIdle() {
+        let scenes = [
+            CameraScene(
+                startTime: 0, endTime: 2,
+                primaryIntent: .typing(context: .codeEditor),
+                focusRegions: [
+                    FocusRegion(
+                        time: 1.0,
+                        region: CGRect(x: 0.5, y: 0.5, width: 0.1, height: 0.1),
+                        confidence: 0.3,
+                        source: .cursorPosition
+                    )
+                ]
+            ),
+            CameraScene(
+                startTime: 2, endTime: 4,
+                primaryIntent: .clicking,
+                focusRegions: [
+                    FocusRegion(
+                        time: 3.0,
+                        region: CGRect(x: 0.7, y: 0.7, width: 0.1, height: 0.1),
+                        confidence: 0.9,
+                        source: .cursorPosition
+                    )
+                ]
+            )
+        ]
+
+        let result = SegmentPlanner.absorbLowConfidenceScenes(scenes)
+
+        XCTAssertEqual(result.count, 2)
+        if case .idle = result[0].primaryIntent {} else {
+            XCTFail("First low-confidence scene should become idle")
+        }
+        XCTAssertEqual(result[0].startTime, 0)
+        XCTAssertEqual(result[0].endTime, 2.0)
+    }
+
+    func test_absorbLowConfidenceScenes_highConfUnchanged() {
+        let scenes = [
+            CameraScene(
+                startTime: 0, endTime: 2,
+                primaryIntent: .clicking,
+                focusRegions: [
+                    FocusRegion(
+                        time: 1.0,
+                        region: CGRect(x: 0.5, y: 0.5, width: 0.1, height: 0.1),
+                        confidence: 0.9,
+                        source: .cursorPosition
+                    )
+                ]
+            )
+        ]
+
+        let result = SegmentPlanner.absorbLowConfidenceScenes(scenes)
+
+        XCTAssertEqual(result.count, 1)
+        if case .clicking = result[0].primaryIntent {} else {
+            XCTFail("High-confidence scene should keep its intent")
+        }
+    }
+
     // MARK: - Helpers
 
     private func makeIntentSpan(
         start: TimeInterval,
         end: TimeInterval,
         intent: UserIntent,
-        focus: NormalizedPoint
+        focus: NormalizedPoint,
+        confidence: Float = 1.0
     ) -> IntentSpan {
         IntentSpan(
             startTime: start,
             endTime: end,
             intent: intent,
-            confidence: 1.0,
+            confidence: confidence,
             focusPosition: focus,
             focusElement: nil
         )

@@ -108,7 +108,21 @@ struct IntentClassifier {
         allSpans = resolveOverlaps(allSpans)
 
         // Fill gaps with idle spans
-        return fillGaps(spans: allSpans, duration: timeline.duration, settings: settings)
+        let filledSpans = fillGaps(
+            spans: allSpans, duration: timeline.duration, settings: settings
+        )
+
+        // Refine clicking spans using post-interaction context
+        let refined = refineWithPostContext(
+            spans: filledSpans, uiStateSamples: uiStateSamples
+        )
+
+        // Insert focused spans between click-on-text-element and typing
+        return insertFocusedSpans(
+            spans: refined,
+            uiStateSamples: uiStateSamples,
+            settings: settings
+        )
     }
 
     // MARK: - Typing Detection
@@ -680,6 +694,11 @@ struct IntentClassifier {
         switch (previous, next) {
         case (.typing(let lhsCtx), .typing(let rhsCtx)):
             return lhsCtx == rhsCtx
+        case (.focused(let lhsCtx), .focused(let rhsCtx)):
+            return lhsCtx == rhsCtx
+        case (.focused(let ctx), .typing(let tCtx)),
+             (.typing(let tCtx), .focused(let ctx)):
+            return ctx == tCtx
         case (.clicking, .clicking),
              (.clicking, .navigating),
              (.navigating, .clicking),
@@ -692,6 +711,347 @@ struct IntentClassifier {
         default:
             return false
         }
+    }
+
+    // MARK: - Post-Interaction Refinement
+
+    /// Refine clicking spans using post-interaction context.
+    ///
+    /// Three rules apply (clicking intents only):
+    /// 1. Click followed by UI element change: update focus to new element center.
+    /// 2. Click followed by dragging: set focus to centroid of click + drag positions.
+    /// 3. Click followed by typing: replace focus with typing target.
+    static func refineWithPostContext(
+        spans: [IntentSpan],
+        uiStateSamples: [UIStateSample]
+    ) -> [IntentSpan] {
+        guard spans.count > 1 else { return spans }
+
+        var result = spans
+        for i in 0..<result.count {
+            guard result[i].intent == .clicking else { continue }
+            let click = result[i]
+
+            // Find the next non-idle span
+            guard let nextIndex = nextActionSpanIndex(after: i, in: result) else {
+                // No successor action span; try UI state refinement only
+                result[i] = refineClickWithUIState(
+                    click, uiStateSamples: uiStateSamples
+                )
+                continue
+            }
+            let next = result[nextIndex]
+            let gap = next.startTime - click.endTime
+
+            // Rule 3: Click → Typing (gap < 1.0s)
+            if case .typing = next.intent, gap < 1.0,
+               next.focusElement != nil {
+                result[i] = click.withUpdatedFocus(
+                    position: next.focusPosition,
+                    element: next.focusElement
+                )
+                continue
+            }
+
+            // Rule 2: Click → Drag (gap < 0.5s)
+            if case .dragging = next.intent, gap < 0.5 {
+                let centroid = NormalizedPoint(
+                    x: (click.focusPosition.x + next.focusPosition.x) / 2,
+                    y: (click.focusPosition.y + next.focusPosition.y) / 2
+                )
+                result[i] = click.withUpdatedFocus(
+                    position: centroid, element: nil
+                )
+                continue
+            }
+
+            // Rule 1: Click → UI element change (within 1s)
+            result[i] = refineClickWithUIState(
+                click, uiStateSamples: uiStateSamples
+            )
+        }
+
+        return result
+    }
+
+    /// Find the index of the next non-idle span after the given index.
+    private static func nextActionSpanIndex(
+        after index: Int, in spans: [IntentSpan]
+    ) -> Int? {
+        for j in (index + 1)..<spans.count {
+            if spans[j].intent != .idle { return j }
+        }
+        return nil
+    }
+
+    /// Refine a click span by checking if a UIStateSample within 1s shows
+    /// a different focused element, and if so update focus to that element's center.
+    private static func refineClickWithUIState(
+        _ click: IntentSpan,
+        uiStateSamples: [UIStateSample]
+    ) -> IntentSpan {
+        // Look for a UI state sample after the click that shows a different element
+        let postSamples = uiStateSamples.filter {
+            $0.timestamp > click.startTime
+                && $0.timestamp <= click.endTime + 1.0
+        }
+
+        for sample in postSamples {
+            guard let newElement = sample.elementInfo else { continue }
+            // Check if the element is different from the click's element
+            let isDifferent: Bool
+            if let clickElement = click.focusElement {
+                isDifferent = clickElement.role != newElement.role
+                    || clickElement.title != newElement.title
+                    || clickElement.frame != newElement.frame
+            } else {
+                isDifferent = true
+            }
+
+            guard isDifferent else { continue }
+
+            // Convert element frame center to normalized position
+            // (frames in test/production context are already normalized 0-1)
+            let frame = newElement.frame
+            let center = NormalizedPoint(
+                x: frame.midX, y: frame.midY
+            )
+            // Only use if the center is in normalized range
+            guard (0...1).contains(center.x),
+                  (0...1).contains(center.y) else {
+                continue
+            }
+            return click.withUpdatedFocus(
+                position: center, element: newElement
+            )
+        }
+
+        return click
+    }
+
+    // MARK: - Focused Intent Insertion
+
+    /// Post-processing pass: insert `.focused` spans between clicking on
+    /// a text element and the subsequent typing span.
+    ///
+    /// Rules:
+    /// 1. Find clicking spans where a nearby UIStateSample shows a text element.
+    /// 2. If a typing span follows within `focusedTimeout`, replace the gap
+    ///    with a `.focused` span using the same TypingContext.
+    /// 3. If no typing follows within timeout, emit a short `.focused` span.
+    /// 4. Keystrokes without a preceding click produce `.typing` directly
+    ///    (no `.focused` phase) — this is the default; no transformation needed.
+    static func insertFocusedSpans(
+        spans: [IntentSpan],
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings
+    ) -> [IntentSpan] {
+        guard spans.count >= 1 else { return spans }
+        var result: [IntentSpan] = []
+        var skipIndices: Set<Int> = []
+
+        for i in 0..<spans.count {
+            if skipIndices.contains(i) { continue }
+            let span = spans[i]
+
+            guard span.intent == .clicking else {
+                result.append(span)
+                continue
+            }
+
+            // Check if a nearby UIStateSample shows a text element
+            let clickMidTime = (span.startTime + span.endTime) / 2
+            guard isTextElementFocused(
+                at: clickMidTime, uiStateSamples: uiStateSamples
+            ) else {
+                result.append(span)
+                continue
+            }
+
+            // Look ahead for a typing span within focusedTimeout
+            let timeout = TimeInterval(settings.focusedTimeout)
+            var foundTypingIndex: Int?
+            for j in (i + 1)..<spans.count {
+                if spans[j].startTime > span.endTime + timeout { break }
+                if case .typing = spans[j].intent {
+                    foundTypingIndex = j
+                    break
+                }
+                // Skip idle/reading gaps between click and typing
+                if spans[j].intent != .idle && spans[j].intent != .reading {
+                    break
+                }
+            }
+
+            if let typingIdx = foundTypingIndex {
+                let typingSpan = spans[typingIdx]
+                guard case .typing(let ctx) = typingSpan.intent else {
+                    result.append(span)
+                    continue
+                }
+
+                // Emit the original click span
+                result.append(span)
+
+                // Insert focused span from click end to typing start
+                let focusedStart = span.endTime
+                let focusedEnd = typingSpan.startTime
+                if focusedEnd - focusedStart > 0.01 {
+                    // Determine focus position: prefer element bounds center
+                    let focusPos = elementCenterFromSample(
+                        at: clickMidTime,
+                        uiStateSamples: uiStateSamples
+                    ) ?? span.focusPosition
+                    let focusElem = nearestTextElementInfo(
+                        at: clickMidTime,
+                        uiStateSamples: uiStateSamples
+                    )
+
+                    result.append(IntentSpan(
+                        startTime: focusedStart,
+                        endTime: focusedEnd,
+                        intent: .focused(context: ctx),
+                        confidence: 0.8,
+                        focusPosition: focusPos,
+                        focusElement: focusElem
+                    ))
+
+                    // Skip any idle spans between click and typing
+                    for k in (i + 1)..<typingIdx {
+                        skipIndices.insert(k)
+                    }
+                }
+            } else {
+                // No typing follows: emit click + short focused span
+                result.append(span)
+
+                // Infer context from the UIStateSample
+                let ctx = inferContextFromSample(
+                    at: clickMidTime,
+                    uiStateSamples: uiStateSamples
+                )
+                let focusedStart = span.endTime
+                // Find the next non-idle span start (focused replaces idle)
+                let nextActionStart = nextNonIdleSpanStart(
+                    after: i, in: spans
+                )
+                let focusedEnd = min(
+                    span.endTime + timeout,
+                    nextActionStart
+                )
+                if focusedEnd - focusedStart > 0.01 {
+                    let focusPos = elementCenterFromSample(
+                        at: clickMidTime,
+                        uiStateSamples: uiStateSamples
+                    ) ?? span.focusPosition
+                    let focusElem = nearestTextElementInfo(
+                        at: clickMidTime,
+                        uiStateSamples: uiStateSamples
+                    )
+
+                    result.append(IntentSpan(
+                        startTime: focusedStart,
+                        endTime: focusedEnd,
+                        intent: .focused(context: ctx),
+                        confidence: 0.7,
+                        focusPosition: focusPos,
+                        focusElement: focusElem
+                    ))
+
+                    // Skip idle spans that the focused span covers
+                    for k in (i + 1)..<spans.count {
+                        if spans[k].startTime >= focusedEnd { break }
+                        if spans[k].intent == .idle {
+                            skipIndices.insert(k)
+                        }
+                    }
+                }
+            }
+        }
+
+        return result
+    }
+
+    /// Check if a UIStateSample near the given time shows a text element.
+    private static func isTextElementFocused(
+        at time: TimeInterval,
+        uiStateSamples: [UIStateSample]
+    ) -> Bool {
+        nearestTextElementInfo(at: time, uiStateSamples: uiStateSamples) != nil
+    }
+
+    /// Find nearest text element info from UIStateSamples within +/-0.5s.
+    private static func nearestTextElementInfo(
+        at time: TimeInterval,
+        uiStateSamples: [UIStateSample]
+    ) -> UIElementInfo? {
+        let window: TimeInterval = 0.5
+        let candidates = uiStateSamples.filter {
+            abs($0.timestamp - time) <= window
+        }
+        let textRoles: Set<String> = [
+            "axtextarea", "axtextfield", "axsearchfield",
+            "axsecuretextfield", "axcombobox"
+        ]
+        return candidates
+            .sorted(by: { abs($0.timestamp - time) < abs($1.timestamp - time) })
+            .first { sample in
+                guard let role = sample.elementInfo?.role.lowercased() else {
+                    return false
+                }
+                return textRoles.contains(role)
+            }?.elementInfo
+    }
+
+    /// Get the center of the element bounds from the nearest text sample.
+    private static func elementCenterFromSample(
+        at time: TimeInterval,
+        uiStateSamples: [UIStateSample]
+    ) -> NormalizedPoint? {
+        guard let info = nearestTextElementInfo(
+            at: time, uiStateSamples: uiStateSamples
+        ) else { return nil }
+        let frame = info.frame
+        let center = NormalizedPoint(x: frame.midX, y: frame.midY)
+        guard (0...1).contains(center.x),
+              (0...1).contains(center.y) else { return nil }
+        return center
+    }
+
+    /// Infer typing context from a UIStateSample at a given time.
+    private static func inferContextFromSample(
+        at time: TimeInterval,
+        uiStateSamples: [UIStateSample]
+    ) -> TypingContext {
+        guard let info = nearestTextElementInfo(
+            at: time, uiStateSamples: uiStateSamples
+        ) else { return .textField }
+        let role = info.role.lowercased()
+        if role == "axtextfield" || role == "axsearchfield"
+            || role == "axsecuretextfield" || role == "axcombobox" {
+            return .textField
+        }
+        if role == "axtextarea" {
+            return .codeEditor
+        }
+        return .textField
+    }
+
+    /// Get the start time of the next non-idle span, or a large value.
+    private static func nextNonIdleSpanStart(
+        after index: Int,
+        in spans: [IntentSpan]
+    ) -> TimeInterval {
+        for j in (index + 1)..<spans.count {
+            if spans[j].intent != .idle {
+                return spans[j].startTime
+            }
+        }
+        // No non-idle span found; use the end of the last span
+        if let last = spans.last {
+            return last.endTime
+        }
+        return .greatestFiniteMagnitude
     }
 
     // MARK: - Helpers

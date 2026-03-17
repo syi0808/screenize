@@ -1016,6 +1016,160 @@ final class IntentClassifierTests: XCTestCase {
 
     // MARK: - Switch Anticipation
 
+    // MARK: - Post-Interaction Refinement
+
+    func test_refine_clickFollowedByTyping_replacesROI() {
+        // Click at 1.0s, typing starts at 1.8s with a focus element
+        let clicks = [makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.3))]
+        let keys = [
+            makeKeyDown(at: 1.8, character: "a"),
+            makeKeyDown(at: 2.0, character: "b"),
+            makeKeyDown(at: 2.2, character: "c"),
+            makeKeyDown(at: 2.4, character: "d"),
+        ]
+        let positions = [
+            MousePositionData(
+                time: 0.9,
+                position: NormalizedPoint(x: 0.2, y: 0.3)
+            ),
+            MousePositionData(
+                time: 1.7,
+                position: NormalizedPoint(x: 0.6, y: 0.7)
+            ),
+        ]
+        let typingSample = UIStateSample(
+            timestamp: 1.7,
+            cursorPosition: CGPoint(x: 0.6, y: 0.7),
+            elementInfo: UIElementInfo(
+                role: "AXTextArea",
+                subrole: nil,
+                frame: CGRect(x: 0.5, y: 0.6, width: 0.3, height: 0.2),
+                title: nil,
+                isClickable: true,
+                applicationName: "Xcode"
+            ),
+            caretBounds: CGRect(x: 0.61, y: 0.71, width: 0.01, height: 0.02)
+        )
+        let mouseData = MockMouseDataSource(
+            duration: 5.0,
+            positions: positions,
+            clicks: clicks,
+            keyboardEvents: keys
+        )
+        let timeline = EventTimeline.build(
+            from: mouseData, uiStateSamples: [typingSample]
+        )
+        let spans = IntentClassifier.classify(
+            events: timeline, uiStateSamples: [typingSample]
+        )
+
+        guard let clickSpan = spans.first(where: { $0.intent == .clicking }) else {
+            XCTFail("Expected a clicking span")
+            return
+        }
+
+        // The click's focus should have been replaced by the typing target's focus
+        // Typing focus uses caret bounds center (0.615, 0.72)
+        guard let typingSpan = spans.first(where: {
+            if case .typing = $0.intent { return true }
+            return false
+        }) else {
+            XCTFail("Expected a typing span")
+            return
+        }
+
+        XCTAssertEqual(
+            clickSpan.focusPosition.x, typingSpan.focusPosition.x, accuracy: 0.05,
+            "Click focus X should match typing target"
+        )
+        XCTAssertEqual(
+            clickSpan.focusPosition.y, typingSpan.focusPosition.y, accuracy: 0.05,
+            "Click focus Y should match typing target"
+        )
+    }
+
+    func test_refine_clickFollowedByDrag_expandsROI() {
+        // Click at 1.0s, drag starts at 1.3s
+        let clicks = [makeClick(at: 1.0, position: NormalizedPoint(x: 0.2, y: 0.3))]
+        let drags = [
+            DragEventData(
+                startTime: 1.3, endTime: 2.5,
+                startPosition: NormalizedPoint(x: 0.6, y: 0.7),
+                endPosition: NormalizedPoint(x: 0.8, y: 0.9),
+                dragType: .selection
+            ),
+        ]
+        let mouseData = MockMouseDataSource(
+            duration: 5.0, clicks: clicks, dragEvents: drags
+        )
+        let timeline = EventTimeline.build(from: mouseData)
+        let spans = IntentClassifier.classify(
+            events: timeline, uiStateSamples: []
+        )
+
+        guard let clickSpan = spans.first(where: { $0.intent == .clicking }) else {
+            XCTFail("Expected a clicking span")
+            return
+        }
+
+        // Focus should be centroid of click (0.2, 0.3) and drag start (0.6, 0.7)
+        let expectedX = (0.2 + 0.6) / 2.0
+        let expectedY = (0.3 + 0.7) / 2.0
+        XCTAssertEqual(clickSpan.focusPosition.x, expectedX, accuracy: 0.05)
+        XCTAssertEqual(clickSpan.focusPosition.y, expectedY, accuracy: 0.05)
+    }
+
+    func test_refine_clickAlone_unchanged() {
+        // A click with no subsequent action within the refinement window
+        let clicks = [makeClick(at: 1.0, position: NormalizedPoint(x: 0.3, y: 0.4))]
+        let mouseData = MockMouseDataSource(duration: 10.0, clicks: clicks)
+        let spans = classify(mouseData)
+
+        guard let clickSpan = spans.first(where: { $0.intent == .clicking }) else {
+            XCTFail("Expected a clicking span")
+            return
+        }
+
+        // Focus should remain at original click position
+        XCTAssertEqual(clickSpan.focusPosition.x, 0.3, accuracy: 0.01)
+        XCTAssertEqual(clickSpan.focusPosition.y, 0.4, accuracy: 0.01)
+    }
+
+    func test_refine_nonClickingIntent_unchanged() {
+        // Typing span should not be affected by refinement
+        let keys = [
+            makeKeyDown(at: 1.0, character: "a"),
+            makeKeyDown(at: 1.2, character: "b"),
+            makeKeyDown(at: 1.4, character: "c"),
+            makeKeyDown(at: 1.6, character: "d"),
+        ]
+        let mouseData = MockMouseDataSource(
+            duration: 5.0,
+            positions: [
+                MousePositionData(
+                    time: 0.9,
+                    position: NormalizedPoint(x: 0.3, y: 0.4)
+                ),
+            ],
+            keyboardEvents: keys
+        )
+        let spans = classify(mouseData)
+
+        guard let typingSpan = spans.first(where: {
+            if case .typing = $0.intent { return true }
+            return false
+        }) else {
+            XCTFail("Expected a typing span")
+            return
+        }
+
+        // Focus should be at the mouse position, not modified by refinement
+        XCTAssertEqual(typingSpan.focusPosition.x, 0.3, accuracy: 0.01)
+        XCTAssertEqual(typingSpan.focusPosition.y, 0.4, accuracy: 0.01)
+    }
+
+    // MARK: - Switch Anticipation
+
     func test_classify_switchSpan_shiftedByAnticipation() {
         let clicks = [
             makeClick(
@@ -1048,5 +1202,129 @@ final class IntentClassifierTests: XCTestCase {
             accuracy: 0.01,
             "Switch span end should also shift by anticipation"
         )
+    }
+
+    // MARK: - Focused Intent Detection
+
+    private func classifyWithSamples(
+        _ mouseData: MockMouseDataSource,
+        uiStateSamples: [UIStateSample],
+        settings: IntentClassificationSettings = IntentClassificationSettings()
+    ) -> [IntentSpan] {
+        let timeline = EventTimeline.build(
+            from: mouseData, uiStateSamples: uiStateSamples
+        )
+        return IntentClassifier.classify(
+            events: timeline,
+            uiStateSamples: uiStateSamples,
+            settings: settings
+        )
+    }
+
+    private func makeTextAreaSample(
+        at time: TimeInterval,
+        role: String = "AXTextArea"
+    ) -> UIStateSample {
+        UIStateSample(
+            timestamp: time,
+            cursorPosition: CGPoint(x: 0.5, y: 0.5),
+            elementInfo: UIElementInfo(
+                role: role,
+                subrole: nil,
+                frame: CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.6),
+                title: nil,
+                isClickable: false,
+                applicationName: "Xcode"
+            )
+        )
+    }
+
+    func test_classify_clickOnTextFieldThenPause_emitsFocused() {
+        // Click at t=2, UIStateSample shows AXTextField at t=2.1,
+        // no typing follows. Should emit click + focused span.
+        let mouseData = MockMouseDataSource(
+            clicks: [
+                makeClick(at: 2.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+            ]
+        )
+        let sample = makeTextAreaSample(
+            at: 2.1, role: "AXTextField"
+        )
+        let spans = classifyWithSamples(
+            mouseData, uiStateSamples: [sample]
+        )
+
+        let focusedSpans = spans.filter {
+            if case .focused = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(focusedSpans.count, 1,
+                       "Should emit a focused span when clicking on text field")
+        if let focused = focusedSpans.first,
+           case .focused(let ctx) = focused.intent {
+            XCTAssertEqual(ctx, TypingContext.textField,
+                           "Focused context should match element role")
+        }
+    }
+
+    func test_classify_clickOnTextFieldThenType_emitsFocusedThenTyping() {
+        // Click at t=2, UIStateSample shows AXTextArea at t=2.1,
+        // typing starts at t=3.5. Should see click → focused → typing.
+        let keys = [
+            makeKeyDown(at: 3.5, character: "a"),
+            makeKeyDown(at: 3.7, character: "b"),
+            makeKeyDown(at: 3.9, character: "c"),
+        ]
+        let mouseData = MockMouseDataSource(
+            clicks: [
+                makeClick(at: 2.0, position: NormalizedPoint(x: 0.5, y: 0.5))
+            ],
+            keyboardEvents: keys
+        )
+        let sample = makeTextAreaSample(at: 2.1)
+        let spans = classifyWithSamples(
+            mouseData, uiStateSamples: [sample]
+        )
+
+        let focusedSpans = spans.filter {
+            if case .focused = $0.intent { return true }
+            return false
+        }
+        let typingSpans = spans.filter {
+            if case .typing = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(focusedSpans.count, 1,
+                       "Should have a focused span between click and typing")
+        XCTAssertEqual(typingSpans.count, 1,
+                       "Typing span should still exist")
+        if let focused = focusedSpans.first, let typing = typingSpans.first {
+            XCTAssertLessThanOrEqual(
+                focused.endTime, typing.startTime + 0.01,
+                "Focused should end before or at typing start"
+            )
+        }
+    }
+
+    func test_classify_typingWithoutClick_noFocused() {
+        // Typing at t=1 with no preceding click.
+        // Should produce typing directly, no focused phase.
+        let keys = [
+            makeKeyDown(at: 1.0, character: "a"),
+            makeKeyDown(at: 1.2, character: "b"),
+            makeKeyDown(at: 1.4, character: "c"),
+        ]
+        let mouseData = MockMouseDataSource(keyboardEvents: keys)
+        let sample = makeTextAreaSample(at: 1.1)
+        let spans = classifyWithSamples(
+            mouseData, uiStateSamples: [sample]
+        )
+
+        let focusedSpans = spans.filter {
+            if case .focused = $0.intent { return true }
+            return false
+        }
+        XCTAssertEqual(focusedSpans.count, 0,
+                       "Typing without preceding click should not emit focused")
     }
 }

@@ -144,6 +144,13 @@ struct ShotPlanner {
             case .terminal:      return settings.typingTerminalZoomRange
             case .richTextEditor: return settings.typingRichTextZoomRange
             }
+        case .focused(let context):
+            switch context {
+            case .codeEditor:    return settings.focusedCodeZoomRange
+            case .textField:     return settings.focusedTextFieldZoomRange
+            case .terminal:      return settings.focusedTerminalZoomRange
+            case .richTextEditor: return settings.focusedRichTextZoomRange
+            }
         case .clicking:
             return settings.clickingZoomRange
         case .navigating:
@@ -177,28 +184,54 @@ struct ShotPlanner {
         }), let normalizedFrame = normalizeFrame(
             elementRegion.region, screenBounds: screenBounds
         ) {
-            let areaSize = max(
+            var effectiveSize = max(
                 normalizedFrame.width + settings.workAreaPadding * 2,
                 normalizedFrame.height + settings.workAreaPadding * 2
             )
-            if areaSize > 0.01 {
-                let computed = settings.targetAreaCoverage / areaSize
+
+            // Use parent container bounds when available and larger than element
+            if case .activeElement(let info) = elementRegion.source,
+               let parentBounds = info.parentContainerBounds,
+               let normalizedParent = normalizeFrame(parentBounds, screenBounds: screenBounds) {
+                let parentSize = max(
+                    normalizedParent.width + settings.workAreaPadding * 2,
+                    normalizedParent.height + settings.workAreaPadding * 2
+                )
+                effectiveSize = max(effectiveSize, parentSize)
+            }
+
+            if effectiveSize > 0.01 {
+                let computed = settings.targetAreaCoverage / effectiveSize
                 return (clamp(computed, to: zoomRange, settings: settings), .element)
             }
         }
 
         // 1.5. UIStateSample fallback: use nearest UI state element when no FocusRegion
         let sceneEvents = eventTimeline.events(from: scene.startTime, to: scene.endTime)
-        if scene.focusRegions.first(where: { if case .activeElement = $0.source { return true }; return false }) == nil {
-            if let elemFrame = nearestUIStateElementFrame(
+        let hasActiveElement = scene.focusRegions.contains {
+            if case .activeElement = $0.source { return true }; return false
+        }
+        if !hasActiveElement {
+            if let (elemFrame, elemInfo) = nearestUIStateElement(
                 events: sceneEvents, screenBounds: screenBounds
             ) {
-                let areaSize = max(
+                var effectiveSize = max(
                     elemFrame.width + settings.workAreaPadding * 2,
                     elemFrame.height + settings.workAreaPadding * 2
                 )
-                if areaSize > 0.01 {
-                    let computed = settings.targetAreaCoverage / areaSize
+                // Use parent container bounds when available and larger
+                if let parentBounds = elemInfo.parentContainerBounds,
+                   let normalizedParent = normalizeFrame(
+                    parentBounds, screenBounds: screenBounds
+                   ) {
+                    let parentSize = max(
+                        normalizedParent.width + settings.workAreaPadding * 2,
+                        normalizedParent.height + settings.workAreaPadding * 2
+                    )
+                    effectiveSize = max(effectiveSize, parentSize)
+                }
+                if effectiveSize > 0.01 {
+                    let computed = settings.targetAreaCoverage / effectiveSize
                     return (clamp(computed, to: zoomRange, settings: settings), .element)
                 }
             }
@@ -305,6 +338,12 @@ struct ShotPlanner {
                 eventTimeline: eventTimeline, settings: settings
             )
 
+        case .focused:
+            return computeFocusedCenter(
+                scene: scene, zoom: zoom, screenBounds: screenBounds,
+                settings: settings
+            )
+
         default:
             return computeActivityCenter(
                 scene: scene, zoom: zoom,
@@ -363,6 +402,39 @@ struct ShotPlanner {
         }
 
         return clampCenter(center, zoom: zoom)
+    }
+
+    /// Focused: prefer the full AX element bounds center (the whole text area).
+    /// Falls back to focus position if element bounds are not available.
+    private static func computeFocusedCenter(
+        scene: CameraScene,
+        zoom: CGFloat,
+        screenBounds: CGSize,
+        settings: ShotSettings
+    ) -> NormalizedPoint {
+        // Prefer element bounds center for focused intent (show the whole editor)
+        if let elementRegion = scene.focusRegions.first(where: { region in
+            if case .activeElement = region.source { return true }
+            return false
+        }), let normalizedBounds = normalizeFrame(
+            elementRegion.region, screenBounds: screenBounds
+        ) {
+            let center = NormalizedPoint(
+                x: normalizedBounds.midX,
+                y: normalizedBounds.midY
+            )
+            return clampCenter(center, zoom: zoom)
+        }
+
+        // Fallback: use the focus position from the intent span
+        let cursorRegions = scene.focusRegions.filter {
+            if case .cursorPosition = $0.source { return true }
+            return false
+        }
+        let fallback = cursorRegions.last.map {
+            NormalizedPoint(x: $0.region.midX, y: $0.region.midY)
+        } ?? NormalizedPoint(x: 0.5, y: 0.5)
+        return clampCenter(fallback, zoom: zoom)
     }
 
     /// Clicking/dragging/etc: geometric centroid of event positions, optionally blended with saliency.
@@ -459,14 +531,11 @@ struct ShotPlanner {
     }
 
     /// Clamp center so the viewport [center - 0.5/zoom, center + 0.5/zoom] stays in [0, 1].
+    /// Uses soft clamping with smoothstep easing near boundaries.
     static func clampCenter(
         _ center: NormalizedPoint, zoom: CGFloat
     ) -> NormalizedPoint {
-        guard zoom > 1.0 else { return NormalizedPoint(x: 0.5, y: 0.5) }
-        let halfCrop = 0.5 / zoom
-        let x = max(halfCrop, min(1.0 - halfCrop, center.x))
-        let y = max(halfCrop, min(1.0 - halfCrop, center.y))
-        return NormalizedPoint(x: x, y: y)
+        SoftClamp.clampCenter(center, zoom: zoom)
     }
 
     // MARK: - Saliency Lookup
@@ -497,22 +566,24 @@ struct ShotPlanner {
 
     // MARK: - UIStateSample Element Lookup
 
-    /// Find the nearest UI state element frame (normalized) from events in a scene.
-    private static func nearestUIStateElementFrame(
+    /// Find the nearest UI state element (normalized frame + info) from events in a scene.
+    private static func nearestUIStateElement(
         events: [UnifiedEvent],
         screenBounds: CGSize
-    ) -> CGRect? {
+    ) -> (CGRect, UIElementInfo)? {
         for event in events {
             if case .uiStateChange(let sample) = event.kind,
-               let info = sample.elementInfo {
-                return normalizeFrame(info.frame, screenBounds: screenBounds)
+               let info = sample.elementInfo,
+               let frame = normalizeFrame(info.frame, screenBounds: screenBounds) {
+                return (frame, info)
             }
         }
         // Fallback: check click events that carry element info
         for event in events {
             if case .click = event.kind,
-               let info = event.metadata.elementInfo {
-                return normalizeFrame(info.frame, screenBounds: screenBounds)
+               let info = event.metadata.elementInfo,
+               let frame = normalizeFrame(info.frame, screenBounds: screenBounds) {
+                return (frame, info)
             }
         }
         return nil
@@ -539,6 +610,10 @@ struct ShotSettings {
     var typingTextFieldZoomRange: ClosedRange<CGFloat> = 2.2...2.8
     var typingTerminalZoomRange: ClosedRange<CGFloat> = 1.6...2.0
     var typingRichTextZoomRange: ClosedRange<CGFloat> = 1.8...2.2
+    var focusedCodeZoomRange: ClosedRange<CGFloat> = 1.3...1.8
+    var focusedTextFieldZoomRange: ClosedRange<CGFloat> = 1.5...2.0
+    var focusedTerminalZoomRange: ClosedRange<CGFloat> = 1.2...1.5
+    var focusedRichTextZoomRange: ClosedRange<CGFloat> = 1.3...1.6
     var clickingZoomRange: ClosedRange<CGFloat> = 1.5...2.5
     var navigatingZoomRange: ClosedRange<CGFloat> = 1.5...1.8
     var draggingZoomRange: ClosedRange<CGFloat> = 1.3...1.6

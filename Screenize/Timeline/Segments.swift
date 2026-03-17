@@ -101,18 +101,26 @@ struct CameraSegment: Identifiable, Equatable, Codable {
     var startTime: TimeInterval
     var endTime: TimeInterval
     var kind: CameraSegmentKind
+    var transitionStyle: TransitionStyle = .fullTransition
 
     var isContinuous: Bool {
         if case .continuous = kind { return true }
         return false
     }
 
-    init(id: UUID = UUID(), startTime: TimeInterval, endTime: TimeInterval, kind: CameraSegmentKind) {
-        self.id = id; self.startTime = startTime; self.endTime = endTime; self.kind = kind
+    init(
+        id: UUID = UUID(),
+        startTime: TimeInterval,
+        endTime: TimeInterval,
+        kind: CameraSegmentKind,
+        transitionStyle: TransitionStyle = .fullTransition
+    ) {
+        self.id = id; self.startTime = startTime; self.endTime = endTime
+        self.kind = kind; self.transitionStyle = transitionStyle
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, startTime, endTime, kind, transitionToNext
+        case id, startTime, endTime, kind, transitionStyle, transitionToNext
     }
 
     init(from decoder: Decoder) throws {
@@ -121,6 +129,9 @@ struct CameraSegment: Identifiable, Equatable, Codable {
         startTime = try container.decode(TimeInterval.self, forKey: .startTime)
         endTime = try container.decode(TimeInterval.self, forKey: .endTime)
         kind = try container.decode(CameraSegmentKind.self, forKey: .kind)
+        transitionStyle = try container.decodeIfPresent(
+            TransitionStyle.self, forKey: .transitionStyle
+        ) ?? .fullTransition
         _ = try container.decodeIfPresent(LegacySegmentTransition.self, forKey: .transitionToNext)
     }
 
@@ -130,6 +141,7 @@ struct CameraSegment: Identifiable, Equatable, Codable {
         try container.encode(startTime, forKey: .startTime)
         try container.encode(endTime, forKey: .endTime)
         try container.encode(kind, forKey: .kind)
+        try container.encode(transitionStyle, forKey: .transitionStyle)
     }
 }
 
