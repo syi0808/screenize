@@ -406,7 +406,11 @@ struct EditorMainView: View {
                 Label("Re-rehearse", systemImage: "arrow.counterclockwise")
             }
             .disabled(viewModel.selectedStepId == nil || viewModel.isReplaying)
-            .help("Re-rehearse from the selected step")
+            .help(
+                viewModel.selectedStepId == nil
+                    ? "Select a step in the scenario track first"
+                    : "Re-rehearse from the selected step"
+            )
 
             Divider()
                 .frame(height: Spacing.xl)

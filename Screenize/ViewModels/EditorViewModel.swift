@@ -635,6 +635,8 @@ final class EditorViewModel: ObservableObject {
 
         showReplayHUD(player: player)
 
+        minimizeAppWindows()
+
         await player.start(
             scenario: scenario,
             mode: .replayAll,
@@ -642,8 +644,16 @@ final class EditorViewModel: ObservableObject {
             recordingCoordinator: coordinator
         )
 
+        // Surface any error from the player to the editor UI
+        if case .error(_, let message) = player.state {
+            errorMessage = message
+            // Keep HUD visible briefly so user can read the error before it dismisses
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+        }
+
         dismissReplayHUD()
         isReplaying = false
+        restoreAppWindows()
 
         // Create a new project from the replay recording
         await handlePostReplayRecording(coordinator: coordinator, appState: appState)
@@ -679,6 +689,8 @@ final class EditorViewModel: ObservableObject {
 
         showReplayHUD(player: player)
 
+        minimizeAppWindows()
+
         await player.start(
             scenario: scenario,
             mode: .replayUntilStep(fromStepIndex),
@@ -686,8 +698,16 @@ final class EditorViewModel: ObservableObject {
             recordingCoordinator: coordinator
         )
 
+        // Surface any error from the player to the editor UI
+        if case .error(_, let message) = player.state {
+            errorMessage = message
+            // Keep HUD visible briefly so user can read the error before it dismisses
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+        }
+
         dismissReplayHUD()
         isReplaying = false
+        restoreAppWindows()
 
         // If re-rehearsal completed, merge scenarios
         if let newRawEvents = player.getRehearsalRawEvents() {
@@ -718,6 +738,27 @@ final class EditorViewModel: ObservableObject {
     private func dismissReplayHUD() {
         (replayHUDPanel as? ReplayHUDPanel)?.dismiss()
         replayHUDPanel = nil
+    }
+
+    // MARK: - Window Management for Replay
+
+    /// Minimize all Screenize windows so they don't appear in the recording.
+    /// The replay HUD panel is excluded since it is a floating NSPanel.
+    private func minimizeAppWindows() {
+        NSApp.windows.forEach { window in
+            if !(window is NSPanel), !window.isMiniaturized {
+                window.miniaturize(nil)
+            }
+        }
+    }
+
+    /// Restore previously minimized Screenize windows after replay ends.
+    private func restoreAppWindows() {
+        NSApp.windows.forEach { window in
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+        }
     }
 
     // MARK: - Capture Target Resolution
