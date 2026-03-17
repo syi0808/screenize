@@ -196,6 +196,7 @@ tiffutil -catnosizecheck "$BG_TEMP_DIR/1x.png" "$BG_TEMP_DIR/2x.png" -out "$BG_T
 # Copy background image and hide the folder
 mkdir -p "$VOLUME_PATH/.background"
 cp "$BG_TEMP_DIR/background.tiff" "$VOLUME_PATH/.background/background.tiff"
+SetFile -a V "$VOLUME_PATH/.background"
 rm -rf "$BG_TEMP_DIR"
 
 # Configure Finder window layout via AppleScript
@@ -211,7 +212,7 @@ tell application "Finder"
         set theViewOptions to the icon view options of container window
         set arrangement of theViewOptions to not arranged
         set icon size of theViewOptions to 120
-        set text size of theViewOptions to 12
+        set text size of theViewOptions to 14
         set background picture of theViewOptions to file ".background:background.tiff"
         -- Move all items off-screen first (hides .background folder)
         set position of every item to {760, 100}
