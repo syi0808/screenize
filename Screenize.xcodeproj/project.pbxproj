@@ -240,7 +240,20 @@
 		A1F10001296A0001 /* L10nTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nTests.swift; sourceTree = "<group>"; };
 		A1F10002296A0001 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		A1F10004296A0001 /* L10n+Display.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "L10n+Display.swift"; sourceTree = "<group>"; };
-		A1F10003296A0001 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1F10003296A0001 /* Localizable.strings */ = {isa = PBXVariantGroup; children = (
+			A1F10003296A1001 /* en */,
+			A1F10003296A1002 /* fr */,
+			A1F10003296A1003 /* de */,
+			A1F10003296A1004 /* zh-Hans */,
+			A1F10003296A1005 /* ko */,
+			A1F10003296A1006 /* ja */,
+		); name = Localizable.strings; sourceTree = "<group>"; };
+		A1F10003296A1001 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1F10003296A1002 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1F10003296A1003 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1F10003296A1004 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh-Hans; path = zh-Hans.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1F10003296A1005 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1F10003296A1006 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A2000002296A0001 /* EditorViewModel+Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+Clipboard.swift"; sourceTree = "<group>"; };
 		A3100001296A0001 /* DeadZoneTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTargetTests.swift; sourceTree = "<group>"; };
 		A4100001296A0001 /* DeadZoneTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTarget.swift; sourceTree = "<group>"; };
@@ -1100,6 +1113,11 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				fr,
+				de,
+				zh-Hans,
+				ko,
+				ja,
 				Base,
 			);
 			mainGroup = F2000000296A0001;

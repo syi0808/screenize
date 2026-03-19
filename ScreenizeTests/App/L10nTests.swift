@@ -3,6 +3,29 @@ import XCTest
 
 final class L10nTests: XCTestCase {
 
+    func test_supportedLocaleResources_existForRequestedLanguages() {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+
+        let expectedResources = [
+            "Screenize/fr.lproj/Localizable.strings",
+            "Screenize/de.lproj/Localizable.strings",
+            "Screenize/zh-Hans.lproj/Localizable.strings",
+            "Screenize/ko.lproj/Localizable.strings",
+            "Screenize/ja.lproj/Localizable.strings",
+        ]
+
+        for relativePath in expectedResources {
+            let resourceURL = repositoryRoot.appendingPathComponent(relativePath)
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: resourceURL.path),
+                "Missing localized resource at \(relativePath)"
+            )
+        }
+    }
+
     func test_commonErrorTitle_usesEnglishFallback() {
         XCTAssertEqual(L10n.commonErrorTitle, "Error")
     }
