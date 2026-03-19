@@ -16,21 +16,23 @@ Screenize uses a two-pass processing model: first capture raw video alongside mo
 
 ## Features
 
-- **Screen & Window Capture** — Record entire displays or individual windows via ScreenCaptureKit with audio input
-- **Smart Generation** — Auto-generate zoom, click effect, and keystroke keyframes from mouse and keyboard data
-- **Timeline Editor** — Edit zoom, cursor, click effect, and keystroke keyframes on a multi-track timeline with easing curves
-- **Click Effects** — Configurable ripple animations triggered on mouse clicks
-- **Keystroke Overlays** — Automatically display keyboard shortcuts (e.g. ⌘C, ⇧⌘Z) on screen with customizable text, duration, and position
-- **Custom Cursors** — Replace the system cursor with styled alternatives in exports
-- **Background Styling** — Apply solid colors, gradients, or images as backgrounds around the recording
-- **Export** — Render final video to MP4 or MOV with all effects applied
+- **Screen & Window Capture** — Record entire displays or individual windows via ScreenCaptureKit with configurable resolution (720p–4K), frame rate (24–240 fps), and quality presets
+- **Audio Recording** — Capture system audio and microphone simultaneously with independent volume controls and device selection
+- **Smart Camera** — Two auto-zoom modes: **Continuous Camera** (spring physics with dead zones and intent-based responsiveness) and **Segment-based Camera** (shot planning with per-activity zoom levels for typing, clicking, navigating, dragging, scrolling, and idle states)
+- **Timeline Editor** — Edit camera, cursor, click effect, and keystroke segments on a multi-track timeline with spring easing, undo/redo, copy/paste, and multi-selection
+- **Click Effects** — Ripple animations with configurable scale, duration, and spring easing on mouse clicks
+- **Keystroke Overlays** — Display keyboard shortcuts (e.g. ⌘C, ⇧⌘Z) or all keystrokes with configurable duration, fade, and position
+- **Custom Cursors** — 7 cursor styles (Arrow, Pointer, I-Beam, Crosshair, Open Hand, Closed Hand, Context Menu) with adjustable scale
+- **Window Styling** — Backgrounds (solid color, gradient presets, custom image), rounded corners, shadow, and padding around the recording
+- **Motion Blur** — Configurable blur on fast zoom/pan transitions with intensity presets (Subtle, Strong)
+- **Export** — MP4 (H.264/H.265), MOV (ProRes 422/4444), and GIF with configurable resolution, frame rate, color space (sRGB, Display P3, BT.709, BT.2020), and quality settings
+- **Export Presets** — Save and manage reusable render settings
+- **VFR Recording** — Variable frame rate capture with frame deduplication for smaller file sizes
+- **Auto-Update** — Built-in update checking via Sparkle
 
 ### Planned Features
 
-- System audio and microphone audio recording
 - Import Screen Studio projects
-- More export options (resolution, video format, color)
-- Variable frame rate (VFR) support
 
 ## Getting Started
 
@@ -60,7 +62,8 @@ On first launch, Screenize will request the following permissions:
 
 1. **Screen Recording** — Required to capture your screen
 2. **Microphone** — Required for audio recording
-3. **Accessibility** — Required for UI element detection and smart zoom
+3. **Input Monitoring** — Required for click and keystroke tracking
+4. **Accessibility** — Required for UI element detection and smart zoom
 
 Grant each permission when prompted, or enable them manually under **System Settings > Privacy & Security**.
 
@@ -77,9 +80,13 @@ Grant each permission when prompted, or enable them manually under **System Sett
 | Shortcut | Action |
 | --- | --- |
 | `Cmd+Shift+2` | Toggle recording (global hotkey) |
+| `Cmd+N` | New recording |
 | `Cmd+R` | Start/stop recording |
 | `Cmd+P` | Pause/resume |
 | `Cmd+E` | Export |
+| `Cmd+O` | Open video |
+| `Cmd+Shift+O` | Open project |
+| `Cmd+Z` / `Cmd+Shift+Z` | Undo / Redo |
 
 ## Contributing
 
