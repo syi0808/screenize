@@ -60,7 +60,11 @@ struct EditorEntryPoint {
         )
 
         window.title = L10n.editorWindowTitle(filename: project.media.videoURL.lastPathComponent)
-        window.contentView = NSHostingView(rootView: EditorMainView(project: project))
+        window.contentView = NSHostingView(
+            rootView: LocalizedRootView {
+                EditorMainView(project: project)
+            }
+        )
         window.center()
         window.makeKeyAndOrderFront(nil)
     }
@@ -77,7 +81,9 @@ struct EditorEntryPoint {
 
         window.title = L10n.string("editor.window.title", defaultValue: "Screenize Editor")
         window.contentView = NSHostingView(
-            rootView: EditorLoaderView(videoURL: videoURL, mouseDataURL: mouseDataURL)
+            rootView: LocalizedRootView {
+                EditorLoaderView(videoURL: videoURL, mouseDataURL: mouseDataURL)
+            }
         )
         window.center()
         window.makeKeyAndOrderFront(nil)

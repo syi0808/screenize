@@ -33,6 +33,7 @@ struct ScreenizeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var projectManager = ProjectManager.shared
     @StateObject private var appState = AppState.shared
+    @StateObject private var languageManager = AppLanguageManager.shared
     @StateObject private var sparkleController = SparkleController()
 
     // MARK: - Initialization
@@ -58,9 +59,16 @@ struct ScreenizeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(projectManager)
-                .environmentObject(appState)
+            LocalizedRootView(languageManager: languageManager) {
+                ContentView()
+                    .environmentObject(projectManager)
+                    .environmentObject(appState)
+            }
+        }
+        Settings {
+            LocalizedRootView(languageManager: languageManager) {
+                GeneralSettingsView()
+            }
         }
         .commands {
             // Add Check for Updates to the app menu
@@ -113,18 +121,6 @@ struct ScreenizeApp: App {
                     NotificationCenter.default.post(name: .editorDuplicate, object: nil)
                 }
                 .keyboardShortcut("t", modifiers: .command)
-            }
-
-            CommandGroup(after: .appSettings) {
-                Button(
-                    L10n.string(
-                        "app.menu.advanced_generation_settings",
-                        defaultValue: "Advanced Generation Settings..."
-                    )
-                ) {
-                    GenerationSettingsWindowController.shared.showWindow()
-                }
-                .keyboardShortcut(",", modifiers: [.command, .option])
             }
 
             CommandGroup(replacing: .help) {

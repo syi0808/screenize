@@ -2,6 +2,46 @@ import XCTest
 @testable import Screenize
 
 final class L10nTests: XCTestCase {
+    private var originalLanguage: AppLanguage!
+
+    override func setUp() {
+        super.setUp()
+        originalLanguage = AppLanguageManager.shared.selectedLanguage
+        AppLanguageManager.shared.selectLanguage(.english)
+    }
+
+    override func tearDown() {
+        AppLanguageManager.shared.selectLanguage(originalLanguage)
+        originalLanguage = nil
+        super.tearDown()
+    }
+
+    func test_supportedAppLanguages_includeSystemDefaultAndLocalizedResources() {
+        XCTAssertEqual(
+            AppLanguageManager.supportedAppLanguages(in: .main),
+            [.systemDefault, .english, .korean, .japanese, .simplifiedChinese, .french, .german]
+        )
+    }
+
+    func test_resolvedAppLanguage_usesFirstSupportedSystemLocalization() {
+        XCTAssertEqual(
+            AppLanguageManager.resolvedLanguage(
+                selection: .systemDefault,
+                preferredLocalizations: ["ja-KR", "ko-KR"],
+                supportedLanguages: [.english, .korean, .japanese, .simplifiedChinese]
+            ),
+            .japanese
+        )
+    }
+
+    func test_string_usesProvidedLocalizedBundle() throws {
+        let koreanBundle = try XCTUnwrap(AppLanguageManager.bundle(for: .korean, in: .main))
+
+        XCTAssertEqual(
+            L10n.string("common.error.title", defaultValue: "Error", bundle: koreanBundle),
+            "오류"
+        )
+    }
 
     func test_supportedLocaleResources_existForRequestedLanguages() {
         let repositoryRoot = URL(fileURLWithPath: #filePath)

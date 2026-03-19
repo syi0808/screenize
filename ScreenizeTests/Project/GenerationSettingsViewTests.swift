@@ -2,7 +2,6 @@ import XCTest
 @testable import Screenize
 
 final class GenerationSettingsViewTests: XCTestCase {
-
     func test_resetAllState_appDefaults_resetsOnlyAppSettings() {
         var appSettings = makeCustomizedSettings()
         let originalProjectSettings = makeCustomizedSettings()

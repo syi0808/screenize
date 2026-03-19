@@ -1,8 +1,14 @@
 "common.error.title" = "오류";
 "common.ok" = "확인";
+"common.system_default" = "시스템 기본값";
 "common.min" = "최소";
 "common.max" = "최대";
 "common.unit.pixels" = "%@px";
+
+"general_settings.title" = "설정";
+"general_settings.section.general" = "일반";
+"general_settings.language" = "언어";
+"general_settings.language.description" = "앱 전체에서 사용할 언어를 선택하세요.";
 
 "app.menu.check_for_updates" = "업데이트 확인...";
 "app.menu.undo" = "실행 취소";
@@ -119,6 +125,8 @@
 "welcome.action.open_video.description" = "기존 비디오 편집";
 "welcome.action.open_project.title" = "프로젝트 열기";
 "welcome.action.open_project.description" = "편집 계속하기";
+"welcome.action.settings.title" = "설정";
+"welcome.action.settings.description" = "앱 설정 열기";
 "welcome.drop.title" = "비디오 또는 프로젝트를 여기에 놓으세요";
 "welcome.drop.extensions" = ".mp4, .mov, .m4v, .screenize";
 "welcome.drop.accessibility.label" = "드롭 영역";
@@ -221,7 +229,9 @@
 "generation_settings.menu.presets" = "프리셋";
 "generation_settings.action.reset_all" = "모두 초기화";
 "generation_settings.action.regenerate" = "다시 생성";
+"generation_settings.section.language" = "언어";
 "generation_settings.section.mode" = "생성 모드";
+"generation_settings.language" = "언어";
 "generation_settings.section.camera_motion" = "카메라 모션";
 "generation_settings.section.zoom_levels" = "확대 수준";
 "generation_settings.section.intent_classification" = "의도 분류";

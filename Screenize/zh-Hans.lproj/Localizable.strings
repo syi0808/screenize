@@ -1,8 +1,14 @@
 "common.error.title" = "错误";
 "common.ok" = "确定";
+"common.system_default" = "系统默认";
 "common.min" = "最小";
 "common.max" = "最大";
 "common.unit.pixels" = "%@px";
+
+"general_settings.title" = "设置";
+"general_settings.section.general" = "通用";
+"general_settings.language" = "语言";
+"general_settings.language.description" = "选择整个应用使用的语言。";
 
 "app.menu.check_for_updates" = "检查更新...";
 "app.menu.undo" = "撤销";
@@ -119,6 +125,8 @@
 "welcome.action.open_video.description" = "编辑现有视频";
 "welcome.action.open_project.title" = "打开项目";
 "welcome.action.open_project.description" = "继续编辑";
+"welcome.action.settings.title" = "设置";
+"welcome.action.settings.description" = "打开应用设置";
 "welcome.drop.title" = "将视频或项目拖到这里";
 "welcome.drop.extensions" = ".mp4, .mov, .m4v, .screenize";
 "welcome.drop.accessibility.label" = "拖放区域";
@@ -221,7 +229,9 @@
 "generation_settings.menu.presets" = "预设";
 "generation_settings.action.reset_all" = "全部重置";
 "generation_settings.action.regenerate" = "重新生成";
+"generation_settings.section.language" = "语言";
 "generation_settings.section.mode" = "生成模式";
+"generation_settings.language" = "语言";
 "generation_settings.section.camera_motion" = "摄像机运动";
 "generation_settings.section.zoom_levels" = "缩放级别";
 "generation_settings.section.intent_classification" = "意图分类";

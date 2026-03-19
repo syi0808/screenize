@@ -166,7 +166,6 @@ struct GenerationSettingsView: View {
 // MARK: - Section Views
 
 extension GenerationSettingsView {
-
     static func resetAllState(
         scope: SettingsScope,
         appSettings: inout GenerationSettings,

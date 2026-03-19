@@ -2,16 +2,17 @@ import Foundation
 
 enum L10n {
 
-    static let commonErrorTitle = string("common.error.title", defaultValue: "Error")
-    static let commonOK = string("common.ok", defaultValue: "OK")
+    static var commonErrorTitle: String { string("common.error.title", defaultValue: "Error") }
+    static var commonOK: String { string("common.ok", defaultValue: "OK") }
 
-    static func string(_ key: String, defaultValue: String) -> String {
-        NSLocalizedString(key, tableName: nil, bundle: .main, value: defaultValue, comment: "")
+    static func string(_ key: String, defaultValue: String, bundle: Bundle? = nil) -> String {
+        let resolvedBundle = bundle ?? AppLanguageManager.shared.localizationBundle
+        return NSLocalizedString(key, tableName: nil, bundle: resolvedBundle, value: defaultValue, comment: "")
     }
 
     static func format(_ key: String, defaultValue: String, _ arguments: CVarArg...) -> String {
         let format = string(key, defaultValue: defaultValue)
-        return String(format: format, locale: Locale.current, arguments: arguments)
+        return String(format: format, locale: AppLanguageManager.shared.formattingLocale, arguments: arguments)
     }
 
     static func failedToOpenVideo(detail: String) -> String {
@@ -82,20 +83,23 @@ enum L10n {
         format("smart_generation.error.failed", defaultValue: "Failed to generate segments: %@", detail)
     }
 
-    static let screenCapturePermissionRequired = string(
-        "recording.error.screen_capture_permission",
-        defaultValue: "Screen capture permission required. Please enable it in System Settings > Privacy & Security > Screen Recording."
-    )
+    static var screenCapturePermissionRequired: String {
+        string(
+            "recording.error.screen_capture_permission",
+            defaultValue: "Screen capture permission required. Please enable it in System Settings > Privacy & Security > Screen Recording."
+        )
+    }
 
-    static let recordingRequiresMacOS15 = string(
-        "recording.error.requires_macos_15",
-        defaultValue: "Recording requires macOS 15.0 or later"
-    )
+    static var recordingRequiresMacOS15: String {
+        string(
+            "recording.error.requires_macos_15",
+            defaultValue: "Recording requires macOS 15.0 or later"
+        )
+    }
 
-    static let failedToStopRecording = string(
-        "recording.error.stop_failed",
-        defaultValue: "Failed to stop recording"
-    )
+    static var failedToStopRecording: String {
+        string("recording.error.stop_failed", defaultValue: "Failed to stop recording")
+    }
 
     static func failedToStartRecording(detail: String) -> String {
         format("recording.error.start_failed", defaultValue: "Failed to start recording: %@", detail)
@@ -145,59 +149,49 @@ enum L10n {
         )
     }
 
-    static let invalidProjectFile = string(
-        "project.error.invalid_project_file",
-        defaultValue: "Invalid project file format"
-    )
+    static var invalidProjectFile: String {
+        string("project.error.invalid_project_file", defaultValue: "Invalid project file format")
+    }
 
-    static let mouseDataFileNotFound = string(
-        "project.error.mouse_data_file_not_found",
-        defaultValue: "Mouse data file not found"
-    )
+    static var mouseDataFileNotFound: String {
+        string("project.error.mouse_data_file_not_found", defaultValue: "Mouse data file not found")
+    }
 
     static func mouseDataFileNotFound(filename: String) -> String {
         format("project.error.mouse_data_file_not_found_with_name", defaultValue: "Mouse data file not found: %@", filename)
     }
 
-    static let saveProjectFailed = string(
-        "project.error.save_project_failed",
-        defaultValue: "Failed to save project"
-    )
+    static var saveProjectFailed: String {
+        string("project.error.save_project_failed", defaultValue: "Failed to save project")
+    }
 
-    static let noVideoTrackFound = string(
-        "project.error.no_video_track",
-        defaultValue: "No video track found in the file"
-    )
+    static var noVideoTrackFound: String {
+        string("project.error.no_video_track", defaultValue: "No video track found in the file")
+    }
 
-    static let invalidVideoFile = string(
-        "project.error.invalid_video_file",
-        defaultValue: "Invalid or corrupted video file"
-    )
+    static var invalidVideoFile: String {
+        string("project.error.invalid_video_file", defaultValue: "Invalid or corrupted video file")
+    }
 
-    static let alreadyRecording = string(
-        "recording.error.already_recording",
-        defaultValue: "Already recording"
-    )
+    static var alreadyRecording: String {
+        string("recording.error.already_recording", defaultValue: "Already recording")
+    }
 
-    static let notCurrentlyRecording = string(
-        "recording.error.not_currently_recording",
-        defaultValue: "Not currently recording"
-    )
+    static var notCurrentlyRecording: String {
+        string("recording.error.not_currently_recording", defaultValue: "Not currently recording")
+    }
 
-    static let recordingAlreadyInProgress = string(
-        "recording.error.recording_already_in_progress",
-        defaultValue: "Recording is already in progress"
-    )
+    static var recordingAlreadyInProgress: String {
+        string("recording.error.recording_already_in_progress", defaultValue: "Recording is already in progress")
+    }
 
-    static let noRecordingInProgress = string(
-        "recording.error.no_recording_in_progress",
-        defaultValue: "No recording in progress"
-    )
+    static var noRecordingInProgress: String {
+        string("recording.error.no_recording_in_progress", defaultValue: "No recording in progress")
+    }
 
-    static let noCaptureTargetSelected = string(
-        "recording.error.no_capture_target_selected",
-        defaultValue: "No capture target selected"
-    )
+    static var noCaptureTargetSelected: String {
+        string("recording.error.no_capture_target_selected", defaultValue: "No capture target selected")
+    }
 
     static func captureFailed(detail: String) -> String {
         format("recording.error.capture_failed", defaultValue: "Capture failed: %@", detail)
@@ -207,59 +201,49 @@ enum L10n {
         format("recording.error.write_failed", defaultValue: "Write failed: %@", detail)
     }
 
-    static let captureAlreadyInProgress = string(
-        "capture.error.already_in_progress",
-        defaultValue: "Capture is already in progress"
-    )
+    static var captureAlreadyInProgress: String {
+        string("capture.error.already_in_progress", defaultValue: "Capture is already in progress")
+    }
 
-    static let noCaptureInProgress = string(
-        "capture.error.not_in_progress",
-        defaultValue: "No capture in progress"
-    )
+    static var noCaptureInProgress: String {
+        string("capture.error.not_in_progress", defaultValue: "No capture in progress")
+    }
 
-    static let captureTargetNotFound = string(
-        "capture.error.target_not_found",
-        defaultValue: "Capture target not found"
-    )
+    static var captureTargetNotFound: String {
+        string("capture.error.target_not_found", defaultValue: "Capture target not found")
+    }
 
-    static let screenCapturePermissionDenied = string(
-        "capture.error.permission_denied",
-        defaultValue: "Screen capture permission denied"
-    )
+    static var screenCapturePermissionDenied: String {
+        string("capture.error.permission_denied", defaultValue: "Screen capture permission denied")
+    }
 
-    static let failedToConfigureCapture = string(
-        "capture.error.configuration_failed",
-        defaultValue: "Failed to configure capture"
-    )
+    static var failedToConfigureCapture: String {
+        string("capture.error.configuration_failed", defaultValue: "Failed to configure capture")
+    }
 
-    static let failedToConfigureVideoWriter = string(
-        "recording.error.video_writer_configuration_failed",
-        defaultValue: "Failed to configure the video writer"
-    )
+    static var failedToConfigureVideoWriter: String {
+        string("recording.error.video_writer_configuration_failed", defaultValue: "Failed to configure the video writer")
+    }
 
-    static let noMicrophoneDeviceAvailable = string(
-        "recording.error.no_microphone_device",
-        defaultValue: "No microphone device available"
-    )
+    static var noMicrophoneDeviceAvailable: String {
+        string("recording.error.no_microphone_device", defaultValue: "No microphone device available")
+    }
 
-    static let failedToConfigureMicrophoneInput = string(
-        "recording.error.microphone_input_configuration_failed",
-        defaultValue: "Failed to configure microphone input"
-    )
+    static var failedToConfigureMicrophoneInput: String {
+        string("recording.error.microphone_input_configuration_failed", defaultValue: "Failed to configure microphone input")
+    }
 
-    static let failedToConfigureAudioOutput = string(
-        "recording.error.audio_output_configuration_failed",
-        defaultValue: "Failed to configure audio output"
-    )
+    static var failedToConfigureAudioOutput: String {
+        string("recording.error.audio_output_configuration_failed", defaultValue: "Failed to configure audio output")
+    }
 
     static func failedToStartAudioWriter(detail: String) -> String {
         format("recording.error.audio_writer_start_failed", defaultValue: "Failed to start audio writer: %@", detail)
     }
 
-    static let failedToStartAudioWriter = string(
-        "recording.error.audio_writer_start_failed_without_detail",
-        defaultValue: "Failed to start audio writer"
-    )
+    static var failedToStartAudioWriter: String {
+        string("recording.error.audio_writer_start_failed_without_detail", defaultValue: "Failed to start audio writer")
+    }
 
     static func failedToStartSystemAudioWriter(detail: String) -> String {
         format(
@@ -269,15 +253,13 @@ enum L10n {
         )
     }
 
-    static let failedToStartSystemAudioWriter = string(
-        "recording.error.system_audio_writer_start_failed_without_detail",
-        defaultValue: "Failed to start system audio writer"
-    )
+    static var failedToStartSystemAudioWriter: String {
+        string("recording.error.system_audio_writer_start_failed_without_detail", defaultValue: "Failed to start system audio writer")
+    }
 
-    static let videoWriterNotInitialized = string(
-        "recording.error.video_writer_not_initialized",
-        defaultValue: "Video writer not initialized"
-    )
+    static var videoWriterNotInitialized: String {
+        string("recording.error.video_writer_not_initialized", defaultValue: "Video writer not initialized")
+    }
 
     static func failedToStartWriting(detail: String) -> String {
         format("recording.error.start_writing_failed", defaultValue: "Failed to start writing: %@", detail)
@@ -287,96 +269,79 @@ enum L10n {
         format("recording.error.finish_writing_failed", defaultValue: "Failed to finish writing: %@", detail)
     }
 
-    static let notCurrentlyWriting = string(
-        "recording.error.not_currently_writing",
-        defaultValue: "Not currently writing"
-    )
+    static var notCurrentlyWriting: String {
+        string("recording.error.not_currently_writing", defaultValue: "Not currently writing")
+    }
 
-    static let failedToConfigurePreviewEngine = string(
-        "preview.error.setup_failed",
-        defaultValue: "Failed to configure preview engine"
-    )
+    static var failedToConfigurePreviewEngine: String {
+        string("preview.error.setup_failed", defaultValue: "Failed to configure preview engine")
+    }
 
-    static let frameRenderingFailed = string(
-        "preview.error.render_failed",
-        defaultValue: "Frame rendering failed"
-    )
+    static var frameRenderingFailed: String {
+        string("preview.error.render_failed", defaultValue: "Frame rendering failed")
+    }
 
-    static let imageGeneratorNotReady = string(
-        "render.error.image_generator_not_ready",
-        defaultValue: "Image generator is not ready"
-    )
+    static var imageGeneratorNotReady: String {
+        string("render.error.image_generator_not_ready", defaultValue: "Image generator is not ready")
+    }
 
-    static let failedToExtractFrame = string(
-        "render.error.frame_extraction_failed",
-        defaultValue: "Failed to extract frame"
-    )
+    static var failedToExtractFrame: String {
+        string("render.error.frame_extraction_failed", defaultValue: "Failed to extract frame")
+    }
 
-    static let failedToCreateGIFDestination = string(
-        "render.error.gif_destination_failed",
-        defaultValue: "Failed to create GIF file destination"
-    )
+    static var failedToCreateGIFDestination: String {
+        string("render.error.gif_destination_failed", defaultValue: "Failed to create GIF file destination")
+    }
 
-    static let failedToFinalizeGIF = string(
-        "render.error.gif_finalize_failed",
-        defaultValue: "Failed to finalize GIF file"
-    )
+    static var failedToFinalizeGIF: String {
+        string("render.error.gif_finalize_failed", defaultValue: "Failed to finalize GIF file")
+    }
 
-    static let gifEncoderNotStarted = string(
-        "render.error.gif_not_started",
-        defaultValue: "GIF encoder has not been started"
-    )
+    static var gifEncoderNotStarted: String {
+        string("render.error.gif_not_started", defaultValue: "GIF encoder has not been started")
+    }
 
-    static let exportAlreadyInProgress = string(
-        "export.error.already_in_progress",
-        defaultValue: "An export is already in progress"
-    )
+    static var exportAlreadyInProgress: String {
+        string("export.error.already_in_progress", defaultValue: "An export is already in progress")
+    }
 
-    static let failedToStartReadingVideo = string(
-        "export.error.read_video_start_failed",
-        defaultValue: "Failed to start reading video"
-    )
+    static var failedToStartReadingVideo: String {
+        string("export.error.read_video_start_failed", defaultValue: "Failed to start reading video")
+    }
 
     static func failedToStartWritingVideo(detail: String) -> String {
         format("export.error.write_video_start_failed", defaultValue: "Failed to start writing video: %@", detail)
     }
 
-    static let failedToStartWritingVideo = string(
-        "export.error.write_video_start_failed_without_detail",
-        defaultValue: "Failed to start writing video"
-    )
+    static var failedToStartWritingVideo: String {
+        string("export.error.write_video_start_failed_without_detail", defaultValue: "Failed to start writing video")
+    }
 
-    static let failedToWriteVideo = string(
-        "export.error.write_video_failed",
-        defaultValue: "Failed to write video"
-    )
+    static var failedToWriteVideo: String {
+        string("export.error.write_video_failed", defaultValue: "Failed to write video")
+    }
 
-    static let exportWasCancelled = string(
-        "export.error.cancelled",
-        defaultValue: "Export was cancelled"
-    )
+    static var exportWasCancelled: String {
+        string("export.error.cancelled", defaultValue: "Export was cancelled")
+    }
 
     static func failedToStartAudioReader(detail: String) -> String {
         format("export.error.audio_reader_start_failed", defaultValue: "Failed to start audio reader: %@", detail)
     }
 
-    static let failedToStartAudioReader = string(
-        "export.error.audio_reader_start_failed_without_detail",
-        defaultValue: "Failed to start audio reader"
-    )
+    static var failedToStartAudioReader: String {
+        string("export.error.audio_reader_start_failed_without_detail", defaultValue: "Failed to start audio reader")
+    }
 
-    static let noAudioTrackFound = string(
-        "export.error.no_audio_track",
-        defaultValue: "No audio track found in source"
-    )
+    static var noAudioTrackFound: String {
+        string("export.error.no_audio_track", defaultValue: "No audio track found in source")
+    }
 
-    static let cannotAddReaderOutput = string(
-        "render.error.cannot_add_reader_output",
-        defaultValue: "Cannot add reader output"
-    )
+    static var cannotAddReaderOutput: String {
+        string("render.error.cannot_add_reader_output", defaultValue: "Cannot add reader output")
+    }
 
     static func failedToStartReading(detail: String) -> String {
         format("render.error.read_start_failed", defaultValue: "Failed to start reading: %@", detail)
     }
-
 }

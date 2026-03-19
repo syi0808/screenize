@@ -11,6 +11,28 @@ struct MainWelcomeView: View {
 
     @State private var isDragging = false
 
+    @ViewBuilder
+    private var settingsButton: some View {
+        if #available(macOS 14.0, *) {
+            SettingsLink {
+                settingsButtonLabel
+            }
+        } else {
+            Button {
+                SettingsWindowOpener.open()
+            } label: {
+                settingsButtonLabel
+            }
+        }
+    }
+
+    private var settingsButtonLabel: some View {
+        Label(
+            L10n.string("welcome.action.settings.title", defaultValue: "Settings"),
+            systemImage: "gearshape"
+        )
+    }
+
     var body: some View {
         VStack(spacing: Spacing.xxxl) {
             Spacer()
@@ -85,7 +107,18 @@ struct MainWelcomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DesignColors.windowBackground)
         .overlay(alignment: .topTrailing) {
-            ShortcutHelpButton(context: .welcome)
+            HStack(spacing: Spacing.sm) {
+                settingsButton
+                .buttonStyle(.bordered)
+                .accessibilityHint(
+                    L10n.string(
+                        "welcome.action.settings.description",
+                        defaultValue: "Open app settings"
+                    )
+                )
+
+                ShortcutHelpButton(context: .welcome)
+            }
                 .padding(Spacing.lg)
         }
     }

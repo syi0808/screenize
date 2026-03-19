@@ -26,6 +26,9 @@
 		A1F00001296A0001 /* L10nTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F10001296A0001 /* L10nTests.swift */; };
 		A1F00002296A0001 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F10002296A0001 /* L10n.swift */; };
 		A1F00004296A0001 /* L10n+Display.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F10004296A0001 /* L10n+Display.swift */; };
+		F00000A6296A0001 /* AppLanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A6296A0001 /* AppLanguageManager.swift */; };
+		F00000A8296A0001 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000A8296A0001 /* GeneralSettingsView.swift */; };
+		FA000001296A0001 /* GeneralSettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA100001296A0001 /* GeneralSettingsViewTests.swift */; };
 		A1F00003296A0001 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1F10003296A0001 /* Localizable.strings */; };
 		A2000001296A0001 /* EditorViewModel+Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002296A0001 /* EditorViewModel+Clipboard.swift */; };
 		A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3100001296A0001 /* DeadZoneTargetTests.swift */; };
@@ -240,6 +243,9 @@
 		A1F10001296A0001 /* L10nTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nTests.swift; sourceTree = "<group>"; };
 		A1F10002296A0001 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		A1F10004296A0001 /* L10n+Display.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "L10n+Display.swift"; sourceTree = "<group>"; };
+		F10000A6296A0001 /* AppLanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguageManager.swift; sourceTree = "<group>"; };
+		F10000A8296A0001 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		FA100001296A0001 /* GeneralSettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsViewTests.swift; sourceTree = "<group>"; };
 		A1F10003296A0001 /* Localizable.strings */ = {isa = PBXVariantGroup; children = (
 			A1F10003296A1001 /* en */,
 			A1F10003296A1002 /* fr */,
@@ -636,6 +642,7 @@
 		D2300001296A0001 /* Project */ = {
 			isa = PBXGroup;
 			children = (
+				FA100001296A0001 /* GeneralSettingsViewTests.swift */,
 				D2200002296A0001 /* GIFSettingsTests.swift */,
 				D2200005296A0001 /* GenerationSettingsViewTests.swift */,
 				D2200003296A0001 /* RenderSettingsGIFTests.swift */,
@@ -868,6 +875,7 @@
 		DD200001296A0001 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				F10000A8296A0001 /* GeneralSettingsView.swift */,
 				DE100001296A0001 /* GenerationSettingsView.swift */,
 				DF100001296A0001 /* GenerationSettingsWindowController.swift */,
 				DD100001296A0001 /* SettingControls.swift */,
@@ -941,6 +949,7 @@
 			isa = PBXGroup;
 			children = (
 				F10000A0296A0001 /* AppState.swift */,
+				F10000A6296A0001 /* AppLanguageManager.swift */,
 				F10000A3296A0001 /* CaptureSettings.swift */,
 				F10000A4296A0001 /* NavigationState.swift */,
 				F10000A5296A0001 /* RecordingState.swift */,
@@ -1162,6 +1171,7 @@
 				B3000003296A0001 /* KeystrokeTrackEmitterTests.swift in Sources */,
 				B5000001296A0001 /* EasingCurveTests.swift in Sources */,
 				D2100002296A0001 /* GIFSettingsTests.swift in Sources */,
+				FA000001296A0001 /* GeneralSettingsViewTests.swift in Sources */,
 				D2100005296A0001 /* GenerationSettingsViewTests.swift in Sources */,
 				D2100003296A0001 /* RenderSettingsGIFTests.swift in Sources */,
 				D2100004296A0001 /* GIFEncoderTests.swift in Sources */,
@@ -1279,6 +1289,7 @@
 				F0000046296A0001 /* PresetPickerView.swift in Sources */,
 				DD000001296A0001 /* SettingControls.swift in Sources */,
 				DE000001296A0001 /* GenerationSettingsView.swift in Sources */,
+				F00000A8296A0001 /* GeneralSettingsView.swift in Sources */,
 				DF000001296A0001 /* GenerationSettingsWindowController.swift in Sources */,
 				F0000050296A0001 /* PreviewView.swift in Sources */,
 				F0000051296A0001 /* ExportView.swift in Sources */,
@@ -1299,6 +1310,7 @@
 				D9000001296A0001 /* GeneratedTimeline.swift in Sources */,
 				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
+				F00000A6296A0001 /* AppLanguageManager.swift in Sources */,
 				A1F00002296A0001 /* L10n.swift in Sources */,
 				A1F00004296A0001 /* L10n+Display.swift in Sources */,
 				F00000A2296A0001 /* Log.swift in Sources */,

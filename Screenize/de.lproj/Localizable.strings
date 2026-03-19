@@ -1,8 +1,14 @@
 "common.error.title" = "Fehler";
 "common.ok" = "OK";
+"common.system_default" = "Systemstandard";
 "common.min" = "Min.";
 "common.max" = "Max.";
 "common.unit.pixels" = "%@px";
+
+"general_settings.title" = "Einstellungen";
+"general_settings.section.general" = "Allgemein";
+"general_settings.language" = "Sprache";
+"general_settings.language.description" = "Wählen Sie die Sprache aus, die in der gesamten App verwendet wird.";
 
 "app.menu.check_for_updates" = "Nach Updates suchen...";
 "app.menu.undo" = "Rückgängig";
@@ -119,6 +125,8 @@
 "welcome.action.open_video.description" = "Vorhandenes Video bearbeiten";
 "welcome.action.open_project.title" = "Projekt öffnen";
 "welcome.action.open_project.description" = "Bearbeitung fortsetzen";
+"welcome.action.settings.title" = "Einstellungen";
+"welcome.action.settings.description" = "App-Einstellungen öffnen";
 "welcome.drop.title" = "Video oder Projekt hier ablegen";
 "welcome.drop.extensions" = ".mp4, .mov, .m4v, .screenize";
 "welcome.drop.accessibility.label" = "Ablagebereich";
@@ -221,7 +229,9 @@
 "generation_settings.menu.presets" = "Vorgaben";
 "generation_settings.action.reset_all" = "Alles zurücksetzen";
 "generation_settings.action.regenerate" = "Neu generieren";
+"generation_settings.section.language" = "Sprache";
 "generation_settings.section.mode" = "Generierungsmodus";
+"generation_settings.language" = "Sprache";
 "generation_settings.section.camera_motion" = "Kamerabewegung";
 "generation_settings.section.zoom_levels" = "Zoomstufen";
 "generation_settings.section.intent_classification" = "Intentionserkennung";

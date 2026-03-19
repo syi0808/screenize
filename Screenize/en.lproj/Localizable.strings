@@ -1,8 +1,14 @@
 "common.error.title" = "Error";
 "common.ok" = "OK";
+"common.system_default" = "System Default";
 "common.min" = "Min";
 "common.max" = "Max";
 "common.unit.pixels" = "%@px";
+
+"general_settings.title" = "Settings";
+"general_settings.section.general" = "General";
+"general_settings.language" = "Language";
+"general_settings.language.description" = "Choose the language used throughout the app.";
 
 "app.menu.check_for_updates" = "Check for Updates...";
 "app.menu.undo" = "Undo";
@@ -119,6 +125,8 @@
 "welcome.action.open_video.description" = "Edit existing video";
 "welcome.action.open_project.title" = "Open Project";
 "welcome.action.open_project.description" = "Continue editing";
+"welcome.action.settings.title" = "Settings";
+"welcome.action.settings.description" = "Open app settings";
 "welcome.drop.title" = "Drop video or project here";
 "welcome.drop.extensions" = ".mp4, .mov, .m4v, .screenize";
 "welcome.drop.accessibility.label" = "Drop zone";
@@ -221,7 +229,9 @@
 "generation_settings.menu.presets" = "Presets";
 "generation_settings.action.reset_all" = "Reset All";
 "generation_settings.action.regenerate" = "Regenerate";
+"generation_settings.section.language" = "Language";
 "generation_settings.section.mode" = "Generation Mode";
+"generation_settings.language" = "Language";
 "generation_settings.section.camera_motion" = "Camera Motion";
 "generation_settings.section.zoom_levels" = "Zoom Levels";
 "generation_settings.section.intent_classification" = "Intent Classification";

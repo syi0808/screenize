@@ -1,8 +1,14 @@
 "common.error.title" = "エラー";
 "common.ok" = "OK";
+"common.system_default" = "システムデフォルト";
 "common.min" = "最小";
 "common.max" = "最大";
 "common.unit.pixels" = "%@px";
+
+"general_settings.title" = "設定";
+"general_settings.section.general" = "一般";
+"general_settings.language" = "言語";
+"general_settings.language.description" = "アプリ全体で使用する言語を選択します。";
 
 "app.menu.check_for_updates" = "アップデートを確認...";
 "app.menu.undo" = "取り消す";
@@ -119,6 +125,8 @@
 "welcome.action.open_video.description" = "既存のビデオを編集";
 "welcome.action.open_project.title" = "プロジェクトを開く";
 "welcome.action.open_project.description" = "編集を続ける";
+"welcome.action.settings.title" = "設定";
+"welcome.action.settings.description" = "アプリ設定を開く";
 "welcome.drop.title" = "ここにビデオまたはプロジェクトをドロップ";
 "welcome.drop.extensions" = ".mp4, .mov, .m4v, .screenize";
 "welcome.drop.accessibility.label" = "ドロップゾーン";
@@ -221,7 +229,9 @@
 "generation_settings.menu.presets" = "プリセット";
 "generation_settings.action.reset_all" = "すべてリセット";
 "generation_settings.action.regenerate" = "再生成";
+"generation_settings.section.language" = "言語";
 "generation_settings.section.mode" = "生成モード";
+"generation_settings.language" = "言語";
 "generation_settings.section.camera_motion" = "カメラの動き";
 "generation_settings.section.zoom_levels" = "ズームレベル";
 "generation_settings.section.intent_classification" = "意図の分類";
