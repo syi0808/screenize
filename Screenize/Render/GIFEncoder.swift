@@ -16,11 +16,11 @@ final class GIFEncoder {
         var errorDescription: String? {
             switch self {
             case .cannotCreateDestination:
-                return "Failed to create GIF file destination"
+                return L10n.failedToCreateGIFDestination
             case .cannotFinalizeGIF:
-                return "Failed to finalize GIF file"
+                return L10n.failedToFinalizeGIF
             case .notStarted:
-                return "GIF encoder has not been started"
+                return L10n.gifEncoderNotStarted
             }
         }
     }

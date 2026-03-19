@@ -38,10 +38,13 @@ struct PermissionSetupWizardView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.accentColor)
 
-            Text("Welcome to Screenize")
+            Text(L10n.string("onboarding.title", defaultValue: "Welcome to Screenize"))
                 .font(Typography.displayLarge)
 
-            Text("A few permissions are needed to get started")
+            Text(L10n.string(
+                "onboarding.subtitle",
+                defaultValue: "A few permissions are needed to get started"
+            ))
                 .font(.title3)
                 .foregroundColor(.secondary)
         }
@@ -82,7 +85,10 @@ struct PermissionSetupWizardView: View {
                     .font(Typography.caption)
                     .foregroundColor(.secondary)
                 if step.requiresRestart && status != .granted {
-                    Text("May require restart after enabling")
+                    Text(L10n.string(
+                        "onboarding.permission.restart_required",
+                        defaultValue: "May require restart after enabling"
+                    ))
                         .font(Typography.footnote)
                         .foregroundColor(.orange)
                 }
@@ -93,7 +99,7 @@ struct PermissionSetupWizardView: View {
             if status == .granted {
                 PermissionStatusBadge(status: status)
             } else {
-                Button("Grant") {
+                Button(L10n.string("onboarding.permission.grant", defaultValue: "Grant")) {
                     Task {
                         await viewModel.requestPermission(for: step)
                     }
@@ -106,13 +112,13 @@ struct PermissionSetupWizardView: View {
         .padding(.vertical, Spacing.md)
         .motionSafeAnimation(AnimationTokens.standard, value: status == .granted)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(step.title), \(status == .granted ? "granted" : "not granted")")
+        .accessibilityLabel(L10n.permissionAccessibilityLabel(title: step.title, isGranted: status == .granted))
     }
 
     // MARK: - Get Started Button
 
     private var getStartedButton: some View {
-        Button("Get Started") {
+        Button(L10n.string("onboarding.get_started", defaultValue: "Get Started")) {
             onComplete()
         }
         .controlSize(.large)

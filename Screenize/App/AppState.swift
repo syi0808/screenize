@@ -201,7 +201,7 @@ final class AppState: ObservableObject {
             }
 
             if !CGPreflightScreenCaptureAccess() {
-                errorMessage = "Screen capture permission required. Please enable it in System Settings > Privacy & Security > Screen Recording."
+                errorMessage = L10n.screenCapturePermissionRequired
                 return
             }
         }
@@ -212,14 +212,14 @@ final class AppState: ObservableObject {
 
     func startRecording() async {
         guard #available(macOS 15.0, *) else {
-            errorMessage = "Recording requires macOS 15.0 or later"
+            errorMessage = L10n.recordingRequiresMacOS15
             return
         }
 
         do {
             try await recording.startRecording(appState: self)
         } catch {
-            errorMessage = "Failed to start recording: \(error.localizedDescription)"
+            errorMessage = L10n.failedToStartRecording(detail: error.localizedDescription)
         }
     }
 
@@ -230,7 +230,7 @@ final class AppState: ObservableObject {
             showEditor = true
             _ = videoURL // URL stored in recording.lastRecordingURL
         } else {
-            errorMessage = "Failed to stop recording"
+            errorMessage = L10n.failedToStopRecording
         }
 
         showMainWindow()
@@ -356,19 +356,19 @@ final class AppState: ObservableObject {
             tracks: [
                 AnySegmentTrack.camera(CameraTrack(
                     id: UUID(),
-                    name: "Camera",
+                    name: L10n.string("track.name.camera", defaultValue: "Camera"),
                     isEnabled: true,
                     segments: []
                 )),
                 AnySegmentTrack.cursor(CursorTrackV2(
                     id: UUID(),
-                    name: "Cursor",
+                    name: L10n.string("track.name.cursor", defaultValue: "Cursor"),
                     isEnabled: true,
                     segments: []
                 )),
                 AnySegmentTrack.keystroke(KeystrokeTrackV2(
                     id: UUID(),
-                    name: "Keystroke",
+                    name: L10n.string("track.name.keystroke", defaultValue: "Keystroke"),
                     isEnabled: true,
                     segments: []
                 ))

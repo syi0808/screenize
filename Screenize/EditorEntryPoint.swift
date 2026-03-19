@@ -59,7 +59,7 @@ struct EditorEntryPoint {
             defer: false
         )
 
-        window.title = "Screenize Editor - \(project.media.videoURL.lastPathComponent)"
+        window.title = L10n.editorWindowTitle(filename: project.media.videoURL.lastPathComponent)
         window.contentView = NSHostingView(rootView: EditorMainView(project: project))
         window.center()
         window.makeKeyAndOrderFront(nil)
@@ -75,7 +75,7 @@ struct EditorEntryPoint {
             defer: false
         )
 
-        window.title = "Screenize Editor"
+        window.title = L10n.string("editor.window.title", defaultValue: "Screenize Editor")
         window.contentView = NSHostingView(
             rootView: EditorLoaderView(videoURL: videoURL, mouseDataURL: mouseDataURL)
         )
@@ -133,7 +133,7 @@ struct EditorLoaderView: View {
             ProgressView()
                 .scaleEffect(1.5)
 
-            Text("Loading project...")
+            Text(L10n.string("editor.loader.loading", defaultValue: "Loading project..."))
                 .font(.headline)
 
             Text(videoURL.lastPathComponent)
@@ -151,7 +151,7 @@ struct EditorLoaderView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.red)
 
-            Text("Failed to Load Project")
+            Text(L10n.string("editor.loader.failed", defaultValue: "Failed to Load Project"))
                 .font(.headline)
 
             if let error = errorMessage {
@@ -162,7 +162,7 @@ struct EditorLoaderView: View {
                     .padding(.horizontal)
             }
 
-            Button("Retry") {
+            Button(L10n.string("editor.loader.retry", defaultValue: "Retry")) {
                 Task {
                     await loadProject()
                 }
@@ -258,7 +258,7 @@ struct OpenEditorButton: View {
         Button {
             isPresented = true
         } label: {
-            Label("Edit in Timeline", systemImage: "timeline.selection")
+            Label(L10n.string("welcome.edit_in_timeline", defaultValue: "Edit in Timeline"), systemImage: "timeline.selection")
         }
         .sheet(isPresented: $isPresented) {
             EditorLoaderView(
@@ -289,13 +289,13 @@ struct RecentProjectsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Recent Projects")
+                Text(L10n.string("welcome.recent.title", defaultValue: "Recent Projects"))
                     .font(.headline)
 
                 Spacer()
 
                 if !projectManager.recentProjects.isEmpty {
-                    Button("Clear") {
+                    Button(L10n.string("welcome.recent.clear", defaultValue: "Clear")) {
                         projectManager.clearRecentProjects()
                     }
                     .buttonStyle(.plain)
@@ -318,7 +318,7 @@ struct RecentProjectsView: View {
                 .font(.title)
                 .foregroundColor(.secondary.opacity(0.5))
 
-            Text("No recent projects")
+            Text(L10n.string("welcome.recent.empty", defaultValue: "No recent projects"))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -372,11 +372,11 @@ struct RecentProjectsView: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button("Remove from Recent") {
+            Button(L10n.string("welcome.recent.remove", defaultValue: "Remove from Recent")) {
                 projectManager.removeFromRecent(info.id)
             }
 
-            Button("Show in Finder") {
+            Button(L10n.string("welcome.recent.show_in_finder", defaultValue: "Show in Finder")) {
                 NSWorkspace.shared.activateFileViewerSelecting([info.packageURL])
             }
         }

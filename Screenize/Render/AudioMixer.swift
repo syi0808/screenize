@@ -361,11 +361,11 @@ enum AudioMixerError: LocalizedError {
         switch self {
         case .readerStartFailed(let error):
             if let error {
-                return "Failed to start audio reader: \(error.localizedDescription)"
+                return L10n.failedToStartAudioReader(detail: error.localizedDescription)
             }
-            return "Failed to start audio reader"
+            return L10n.failedToStartAudioReader
         case .noAudioTrack:
-            return "No audio track found in source"
+            return L10n.noAudioTrackFound
         }
     }
 }

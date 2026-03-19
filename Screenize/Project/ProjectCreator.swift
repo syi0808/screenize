@@ -186,7 +186,7 @@ struct ProjectCreator {
         var tracks: [AnySegmentTrack] = [
             .camera(CameraTrack(
                 id: UUID(),
-                name: "Camera",
+                name: L10n.string("track.name.camera", defaultValue: "Camera"),
                 isEnabled: true,
                 segments: [
                     CameraSegment(
@@ -201,7 +201,7 @@ struct ProjectCreator {
             )),
             .cursor(CursorTrackV2(
                 id: UUID(),
-                name: "Cursor",
+                name: L10n.string("track.name.cursor", defaultValue: "Cursor"),
                 isEnabled: true,
                 scale: 2.5,
                 segments: [
@@ -210,7 +210,7 @@ struct ProjectCreator {
             )),
             .keystroke(KeystrokeTrackV2(
                 id: UUID(),
-                name: "Keystroke",
+                name: L10n.string("track.name.keystroke", defaultValue: "Keystroke"),
                 isEnabled: true,
                 segments: []
             )),
@@ -220,7 +220,7 @@ struct ProjectCreator {
             let clampedEnd = min(duration, sysAudioDuration)
             tracks.append(.audio(AudioTrack(
                 id: UUID(),
-                name: "System Audio",
+                name: L10n.string("track.name.system_audio", defaultValue: "System Audio"),
                 isEnabled: true,
                 audioSource: .system,
                 segments: [
@@ -233,7 +233,7 @@ struct ProjectCreator {
             let clampedEnd = min(duration, audioDuration)
             tracks.append(.audio(AudioTrack(
                 id: UUID(),
-                name: "Mic Audio",
+                name: L10n.string("track.name.mic_audio", defaultValue: "Mic Audio"),
                 isEnabled: true,
                 audioSource: .microphone,
                 segments: [
@@ -256,11 +256,11 @@ enum ProjectCreatorError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noVideoTrack:
-            return "No video track found in the file"
+            return L10n.noVideoTrackFound
         case .invalidVideoFile:
-            return "Invalid or corrupted video file"
+            return L10n.invalidVideoFile
         case .mouseDataNotFound:
-            return "Mouse data file not found"
+            return L10n.mouseDataFileNotFound
         }
     }
 }

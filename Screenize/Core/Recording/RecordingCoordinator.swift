@@ -352,17 +352,17 @@ enum RecordingError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyRecording:
-            return "Recording is already in progress"
+            return L10n.recordingAlreadyInProgress
         case .notRecording:
-            return "No recording in progress"
+            return L10n.noRecordingInProgress
         case .noTarget:
-            return "No capture target selected"
+            return L10n.noCaptureTargetSelected
         case .captureFailed(let error):
-            return "Capture failed: \(error.localizedDescription)"
+            return L10n.captureFailed(detail: error.localizedDescription)
         case .writeFailed(let error):
-            return "Write failed: \(error.localizedDescription)"
+            return L10n.writeFailed(detail: error.localizedDescription)
         case .recordingNotSupported:
-            return "Recording requires macOS 15.0 or later"
+            return L10n.recordingRequiresMacOS15
         }
     }
 }

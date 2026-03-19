@@ -25,10 +25,10 @@ struct PermissionStatusBadge: View {
 
     private var label: String {
         switch status {
-        case .granted: return "Granted"
-        case .denied: return "Denied"
-        case .unknown: return "Not Set"
-        case .restricted: return "Restricted"
+        case .granted: return L10n.string("onboarding.permission.badge.granted", defaultValue: "Granted")
+        case .denied: return L10n.string("onboarding.permission.badge.denied", defaultValue: "Denied")
+        case .unknown: return L10n.string("onboarding.permission.badge.not_set", defaultValue: "Not Set")
+        case .restricted: return L10n.string("onboarding.permission.badge.restricted", defaultValue: "Restricted")
         }
     }
 

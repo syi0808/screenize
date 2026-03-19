@@ -10,10 +10,14 @@ enum PermissionStep: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .screenRecording: return "Screen Recording"
-        case .microphone: return "Microphone"
-        case .inputMonitoring: return "Input Monitoring"
-        case .accessibility: return "Accessibility"
+        case .screenRecording:
+            return L10n.string("onboarding.permission.screen_recording.title", defaultValue: "Screen Recording")
+        case .microphone:
+            return L10n.string("onboarding.permission.microphone.title", defaultValue: "Microphone")
+        case .inputMonitoring:
+            return L10n.string("onboarding.permission.input_monitoring.title", defaultValue: "Input Monitoring")
+        case .accessibility:
+            return L10n.string("onboarding.permission.accessibility.title", defaultValue: "Accessibility")
         }
     }
 
@@ -29,13 +33,25 @@ enum PermissionStep: Int, CaseIterable {
     var description: String {
         switch self {
         case .screenRecording:
-            return "Capture your display or application windows."
+            return L10n.string(
+                "onboarding.permission.screen_recording.description",
+                defaultValue: "Capture your display or application windows."
+            )
         case .microphone:
-            return "Capture audio during screen recordings."
+            return L10n.string(
+                "onboarding.permission.microphone.description",
+                defaultValue: "Capture audio during screen recordings."
+            )
         case .inputMonitoring:
-            return "Track keyboard, mouse, and scroll events."
+            return L10n.string(
+                "onboarding.permission.input_monitoring.description",
+                defaultValue: "Track keyboard, mouse, and scroll events."
+            )
         case .accessibility:
-            return "Detect UI elements for Smart Zoom targeting."
+            return L10n.string(
+                "onboarding.permission.accessibility.description",
+                defaultValue: "Detect UI elements for Smart Zoom targeting."
+            )
         }
     }
 

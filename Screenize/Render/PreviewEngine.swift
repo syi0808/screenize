@@ -186,9 +186,9 @@ enum PreviewEngineError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .setupFailed:
-            return "Failed to configure preview engine"
+            return L10n.failedToConfigurePreviewEngine
         case .renderFailed:
-            return "Frame rendering failed"
+            return L10n.frameRenderingFailed
         }
     }
 }

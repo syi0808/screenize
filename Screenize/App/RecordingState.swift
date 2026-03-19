@@ -47,7 +47,10 @@ final class RecordingState: ObservableObject {
     func startRecording(appState: AppState) async throws {
         guard let captureSettings = captureSettings else { return }
         guard let target = captureSettings.selectedTarget else {
-            navigationState?.errorMessage = "Please select a capture source first"
+            navigationState?.errorMessage = L10n.string(
+                "recording.state.select_source",
+                defaultValue: "Please select a capture source first"
+            )
             return
         }
 

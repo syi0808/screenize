@@ -304,17 +304,17 @@ enum CaptureError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyCapturing:
-            return "Capture is already in progress"
+            return L10n.captureAlreadyInProgress
         case .notCapturing:
-            return "No capture in progress"
+            return L10n.noCaptureInProgress
         case .targetNotFound:
-            return "Capture target not found"
+            return L10n.captureTargetNotFound
         case .permissionDenied:
-            return "Screen capture permission denied"
+            return L10n.screenCapturePermissionDenied
         case .configurationFailed:
-            return "Failed to configure capture"
+            return L10n.failedToConfigureCapture
         case .recordingNotSupported:
-            return "Recording requires macOS 15.0 or later"
+            return L10n.recordingRequiresMacOS15
         }
     }
 }

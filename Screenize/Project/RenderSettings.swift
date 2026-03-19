@@ -172,12 +172,12 @@ enum OutputResolution: Codable, Equatable, Hashable {
 
     var displayName: String {
         switch self {
-        case .original: return "Original"
-        case .uhd4k: return "4K UHD (3840x2160)"
-        case .qhd1440: return "QHD (2560x1440)"
-        case .fhd1080: return "Full HD (1920x1080)"
-        case .hd720: return "HD (1280x720)"
-        case .custom(let w, let h): return "Custom (\(w)x\(h))"
+        case .original: return L10n.renderSettingsOriginal
+        case .uhd4k: return L10n.renderSettings4KUHD
+        case .qhd1440: return L10n.renderSettingsQHD
+        case .fhd1080: return L10n.renderSettingsFullHD
+        case .hd720: return L10n.renderSettingsHD
+        case .custom(let w, let h): return L10n.renderSettingsCustomResolution(width: w, height: h)
         }
     }
 
@@ -213,8 +213,8 @@ enum OutputFrameRate: Codable, Equatable, Hashable {
 
     var displayName: String {
         switch self {
-        case .original: return "Original"
-        case .fixed(let fps): return "\(fps) fps"
+        case .original: return L10n.renderSettingsOriginal
+        case .fixed(let fps): return L10n.renderSettingsFPS(fps)
         }
     }
 
@@ -254,10 +254,10 @@ enum VideoCodec: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .h264: return "H.264"
-        case .hevc: return "H.265 (HEVC)"
-        case .proRes422: return "ProRes 422"
-        case .proRes4444: return "ProRes 4444"
+        case .h264: return L10n.codecH264
+        case .hevc: return L10n.codecHEVC
+        case .proRes422: return L10n.codecProRes422
+        case .proRes4444: return L10n.codecProRes4444
         }
     }
 
@@ -303,10 +303,10 @@ enum ExportQuality: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        case .original: return "Original"
+        case .low: return L10n.exportQualityLow
+        case .medium: return L10n.exportQualityMedium
+        case .high: return L10n.exportQualityHigh
+        case .original: return L10n.renderSettingsOriginal
         }
     }
 
@@ -327,8 +327,8 @@ enum ExportFormat: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .video: return "Video"
-        case .gif: return "GIF"
+        case .video: return L10n.exportFormatVideo
+        case .gif: return L10n.exportFormatGIF
         }
     }
 }
@@ -390,11 +390,11 @@ enum OutputColorSpace: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .auto: return "Auto (sRGB)"
-        case .sRGB: return "sRGB"
-        case .displayP3: return "Display P3"
-        case .bt709: return "BT.709"
-        case .bt2020: return "BT.2020"
+        case .auto: return L10n.colorSpaceAutoSRGB
+        case .sRGB: return L10n.colorSpaceSRGB
+        case .displayP3: return L10n.colorSpaceDisplayP3
+        case .bt709: return L10n.colorSpaceBT709
+        case .bt2020: return L10n.colorSpaceBT2020
         }
     }
 

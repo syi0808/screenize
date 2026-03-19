@@ -110,7 +110,7 @@ extension EditorViewModel {
 
         } catch {
             Log.generator.error("Smart generation failed: \(error.localizedDescription)")
-            errorMessage = "Failed to generate segments: \(error.localizedDescription)"
+            errorMessage = L10n.smartGenerationFailed(detail: error.localizedDescription)
         }
 
         isLoading = false

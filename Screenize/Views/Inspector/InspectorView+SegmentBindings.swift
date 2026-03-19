@@ -115,13 +115,13 @@ extension InspectorView {
     func trackName(_ trackType: TrackType) -> String {
         switch trackType {
         case .transform:
-            return "Camera"
+            return L10n.string("inspector.track.camera", defaultValue: "Camera")
         case .cursor:
-            return "Cursor"
+            return L10n.string("inspector.track.cursor", defaultValue: "Cursor")
         case .keystroke:
-            return "Keystroke"
+            return L10n.string("inspector.track.keystroke", defaultValue: "Keystroke")
         case .audio:
-            return "Audio"
+            return L10n.string("inspector.track.audio", defaultValue: "Audio")
         }
     }
 }

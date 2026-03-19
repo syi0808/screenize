@@ -28,7 +28,7 @@ struct TransformTrack: Track, Equatable {
 
     init(
         id: UUID = UUID(),
-        name: String = "Transform",
+        name: String = L10n.transformTrackName,
         isEnabled: Bool = true,
         keyframes: [TransformKeyframe] = []
     ) {
@@ -91,7 +91,7 @@ struct CursorTrack: Track, Equatable {
 
     init(
         id: UUID = UUID(),
-        name: String = "Cursor",
+        name: String = L10n.string("track.name.cursor", defaultValue: "Cursor"),
         isEnabled: Bool = true,
         defaultStyle: CursorStyle = .arrow,
         defaultScale: CGFloat = 2.5,
@@ -122,7 +122,7 @@ struct KeystrokeTrack: Track, Equatable {
 
     init(
         id: UUID = UUID(),
-        name: String = "Keystroke",
+        name: String = L10n.string("track.name.keystroke", defaultValue: "Keystroke"),
         isEnabled: Bool = true,
         keyframes: [KeystrokeKeyframe] = []
     ) {
@@ -251,7 +251,7 @@ enum AnyTrack: Codable, Identifiable, Equatable {
             throw DecodingError.dataCorruptedError(
                 forKey: .type,
                 in: container,
-                debugDescription: "Audio track not yet supported"
+                debugDescription: L10n.audioTrackNotYetSupported
             )
         }
     }

@@ -121,13 +121,13 @@ enum CursorStyle: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .arrow: return "Arrow"
-        case .pointer: return "Pointer"
-        case .iBeam: return "I-Beam"
-        case .crosshair: return "Crosshair"
-        case .openHand: return "Open Hand"
-        case .closedHand: return "Closed Hand"
-        case .contextMenu: return "Context Menu"
+        case .arrow: return L10n.string("cursor_style.arrow", defaultValue: "Arrow")
+        case .pointer: return L10n.string("cursor_style.pointer", defaultValue: "Pointer")
+        case .iBeam: return L10n.string("cursor_style.ibeam", defaultValue: "I-Beam")
+        case .crosshair: return L10n.string("cursor_style.crosshair", defaultValue: "Crosshair")
+        case .openHand: return L10n.string("cursor_style.open_hand", defaultValue: "Open Hand")
+        case .closedHand: return L10n.string("cursor_style.closed_hand", defaultValue: "Closed Hand")
+        case .contextMenu: return L10n.string("cursor_style.context_menu", defaultValue: "Context Menu")
         }
     }
 

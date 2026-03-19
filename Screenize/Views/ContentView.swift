@@ -35,7 +35,7 @@ struct ContentView: View {
                 // Display loader while creating project after recording
                 VStack {
                     ProgressView()
-                    Text("Creating project...")
+                    Text(L10n.string("content.creating_project", defaultValue: "Creating project..."))
                         .font(Typography.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, Spacing.sm)
@@ -100,8 +100,8 @@ struct ContentView: View {
         .sheet(isPresented: $showKeyboardShortcuts) {
             KeyboardShortcutHelpView(context: currentShortcutContext)
         }
-        .alert("Error", isPresented: $showErrorAlert) {
-            Button("OK", role: .cancel) {}
+        .alert(L10n.commonErrorTitle, isPresented: $showErrorAlert) {
+            Button(L10n.commonOK, role: .cancel) {}
         } message: {
             Text(errorAlertMessage)
         }
@@ -128,7 +128,7 @@ struct ContentView: View {
             appState.currentProject = project
         } catch {
             Log.project.error("Failed to create project: \(error)")
-            errorAlertMessage = "Failed to open video: \(error.localizedDescription)"
+            errorAlertMessage = L10n.failedToOpenVideo(detail: error.localizedDescription)
             showErrorAlert = true
         }
     }
@@ -140,7 +140,7 @@ struct ContentView: View {
             appState.currentProject = result.project
         } catch {
             Log.project.error("Failed to load project: \(error)")
-            errorAlertMessage = "Failed to open project: \(error.localizedDescription)"
+            errorAlertMessage = L10n.failedToOpenProject(detail: error.localizedDescription)
             showErrorAlert = true
         }
     }
@@ -188,7 +188,7 @@ struct ContentView: View {
             appState.currentProject = project
         } catch {
             Log.project.error("Failed to create project from recording: \(error)")
-            errorAlertMessage = "Failed to create project: \(error.localizedDescription)"
+            errorAlertMessage = L10n.failedToCreateProject(detail: error.localizedDescription)
             showErrorAlert = true
         }
     }

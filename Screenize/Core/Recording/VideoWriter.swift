@@ -458,13 +458,19 @@ enum VideoWriterError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .writerNotInitialized:
-            return "Video writer not initialized"
+            return L10n.videoWriterNotInitialized
         case .failedToStart(let error):
-            return "Failed to start writing: \(error?.localizedDescription ?? "Unknown error")"
+            if let error {
+                return L10n.failedToStartWriting(detail: error.localizedDescription)
+            }
+            return L10n.failedToStartWriting(detail: "Unknown error")
         case .failedToFinish(let error):
-            return "Failed to finish writing: \(error?.localizedDescription ?? "Unknown error")"
+            if let error {
+                return L10n.failedToFinishWriting(detail: error.localizedDescription)
+            }
+            return L10n.failedToFinishWriting(detail: "Unknown error")
         case .notWriting:
-            return "Not currently writing"
+            return L10n.notCurrentlyWriting
         }
     }
 }

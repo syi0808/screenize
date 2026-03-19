@@ -30,7 +30,12 @@ struct CameraTrack: SegmentTrack, Equatable {
     var trackType: TrackType { .transform }
     var segmentCount: Int { segments.count }
 
-    init(id: UUID = UUID(), name: String = "Camera", isEnabled: Bool = true, segments: [CameraSegment] = []) {
+    init(
+        id: UUID = UUID(),
+        name: String = L10n.string("track.name.camera", defaultValue: "Camera"),
+        isEnabled: Bool = true,
+        segments: [CameraSegment] = []
+    ) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
@@ -104,7 +109,7 @@ struct CursorTrackV2: SegmentTrack, Equatable {
 
     init(
         id: UUID = UUID(),
-        name: String = "Cursor",
+        name: String = L10n.string("track.name.cursor", defaultValue: "Cursor"),
         isEnabled: Bool = true,
         useSmoothCursor: Bool = true,
         springConfig: SpringCursorConfig = .default,
@@ -179,7 +184,12 @@ struct KeystrokeTrackV2: SegmentTrack, Equatable {
     var trackType: TrackType { .keystroke }
     var segmentCount: Int { segments.count }
 
-    init(id: UUID = UUID(), name: String = "Keystroke", isEnabled: Bool = true, segments: [KeystrokeSegment] = []) {
+    init(
+        id: UUID = UUID(),
+        name: String = L10n.string("track.name.keystroke", defaultValue: "Keystroke"),
+        isEnabled: Bool = true,
+        segments: [KeystrokeSegment] = []
+    ) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
@@ -222,7 +232,7 @@ struct AudioTrack: SegmentTrack, Equatable {
 
     init(
         id: UUID = UUID(),
-        name: String = "Mic Audio",
+        name: String = L10n.string("track.name.mic_audio", defaultValue: "Mic Audio"),
         isEnabled: Bool = true,
         audioSource: AudioSource = .microphone,
         segments: [AudioSegment] = []

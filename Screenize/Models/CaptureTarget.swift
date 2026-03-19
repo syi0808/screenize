@@ -21,11 +21,17 @@ enum CaptureTarget: Identifiable, Hashable {
     var displayName: String {
         switch self {
         case .display(let display):
-            return "Display \(display.displayID)"
+            return L10n.format("capture_target.display", defaultValue: "Display %u", display.displayID)
         case .window(let window):
-            return window.title ?? window.owningApplication?.applicationName ?? "Unknown Window"
+            return window.title
+                ?? window.owningApplication?.applicationName
+                ?? L10n.string("capture_target.unknown_window", defaultValue: "Unknown Window")
         case .region(_, let display):
-            return "Region on Display \(display.displayID)"
+            return L10n.format(
+                "capture_target.region_on_display",
+                defaultValue: "Region on Display %u",
+                display.displayID
+            )
         }
     }
 

@@ -319,18 +319,18 @@ enum EasingCurve: Codable, Equatable, Hashable {
 
     var displayName: String {
         switch self {
-        case .linear: return "Linear"
-        case .easeIn: return "Ease In"
-        case .easeOut: return "Ease Out"
-        case .easeInOut: return "Ease In Out"
-        case .cubicBezier: return "Custom Bezier"
+        case .linear: return L10n.string("easing.linear", defaultValue: "Linear")
+        case .easeIn: return L10n.string("easing.ease_in", defaultValue: "Ease In")
+        case .easeOut: return L10n.string("easing.ease_out", defaultValue: "Ease Out")
+        case .easeInOut: return L10n.string("easing.ease_in_out", defaultValue: "Ease In Out")
+        case .cubicBezier: return L10n.string("easing.custom_bezier", defaultValue: "Custom Bezier")
         case .spring(let damping, _):
             if damping >= 1.0 {
-                return "Spring (Smooth)"
+                return L10n.string("easing.spring.smooth", defaultValue: "Spring (Smooth)")
             } else if damping >= 0.7 {
-                return "Spring"
+                return L10n.string("easing.spring.default", defaultValue: "Spring")
             } else {
-                return "Spring (Bouncy)"
+                return L10n.string("easing.spring.bouncy", defaultValue: "Spring (Bouncy)")
             }
         }
     }

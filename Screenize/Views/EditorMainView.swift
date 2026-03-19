@@ -128,32 +128,41 @@ struct EditorMainView: View {
                 }
             )
         }
-        .alert("Unsaved Changes", isPresented: $showSaveConfirmation) {
-            Button("Don't Save", role: .destructive) {
+        .alert(L10n.string("editor.alert.unsaved_changes.title", defaultValue: "Unsaved Changes"), isPresented: $showSaveConfirmation) {
+            Button(L10n.string("editor.alert.unsaved_changes.discard", defaultValue: "Don't Save"), role: .destructive) {
                 returnToHome()
             }
-            Button("Save") {
+            Button(L10n.string("editor.alert.unsaved_changes.save", defaultValue: "Save")) {
                 saveProject()
                 returnToHome()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.string("editor.alert.unsaved_changes.cancel", defaultValue: "Cancel"), role: .cancel) {}
         } message: {
-            Text("Do you want to save the changes made to this project?")
+            Text(L10n.string(
+                "editor.alert.unsaved_changes.message",
+                defaultValue: "Do you want to save the changes made to this project?"
+            ))
         }
-        .alert("Unsaved Changes", isPresented: $showNewRecordingConfirmation) {
-            Button("Don't Save", role: .destructive) {
+        .alert(
+            L10n.string("editor.alert.unsaved_changes.title", defaultValue: "Unsaved Changes"),
+            isPresented: $showNewRecordingConfirmation
+        ) {
+            Button(L10n.string("editor.alert.unsaved_changes.discard", defaultValue: "Don't Save"), role: .destructive) {
                 startNewRecording()
             }
-            Button("Save & Record") {
+            Button(L10n.string("editor.alert.new_recording.save_and_record", defaultValue: "Save & Record")) {
                 saveProject()
                 startNewRecording()
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.string("editor.alert.unsaved_changes.cancel", defaultValue: "Cancel"), role: .cancel) {}
         } message: {
-            Text("Do you want to save before starting a new recording?")
+            Text(L10n.string(
+                "editor.alert.new_recording.message",
+                defaultValue: "Do you want to save before starting a new recording?"
+            ))
         }
-        .alert("Save Error", isPresented: $showSaveErrorAlert) {
-            Button("OK", role: .cancel) {}
+        .alert(L10n.string("editor.alert.save_error.title", defaultValue: "Save Error"), isPresented: $showSaveErrorAlert) {
+            Button(L10n.commonOK, role: .cancel) {}
         } message: {
             Text(saveErrorMessage)
         }
@@ -214,8 +223,8 @@ struct EditorMainView: View {
                 Image(systemName: "house")
             }
             .buttonStyle(ToolbarIconButtonStyle())
-            .help("Return to Home")
-            .accessibilityLabel("Home")
+            .help(L10n.string("editor.toolbar.home.help", defaultValue: "Return to Home"))
+            .accessibilityLabel(L10n.string("editor.toolbar.home.label", defaultValue: "Home"))
 
             // New Recording button
             Button {
@@ -228,8 +237,8 @@ struct EditorMainView: View {
                 Image(systemName: "record.circle")
             }
             .buttonStyle(ToolbarIconButtonStyle())
-            .help("New Recording")
-            .accessibilityLabel("New Recording")
+            .help(L10n.string("editor.toolbar.new_recording", defaultValue: "New Recording"))
+            .accessibilityLabel(L10n.string("editor.toolbar.new_recording", defaultValue: "New Recording"))
 
             Divider()
                 .frame(height: Spacing.xl)
@@ -242,9 +251,9 @@ struct EditorMainView: View {
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .disabled(!viewModel.undoStack.canUndo)
-            .help("Undo")
-            .accessibilityLabel("Undo")
-            .accessibilityHint("Undo last editing action")
+            .help(L10n.string("app.menu.undo", defaultValue: "Undo"))
+            .accessibilityLabel(L10n.string("app.menu.undo", defaultValue: "Undo"))
+            .accessibilityHint(L10n.string("editor.toolbar.undo.hint", defaultValue: "Undo last editing action"))
 
             // Redo
             Button {
@@ -254,9 +263,9 @@ struct EditorMainView: View {
             }
             .buttonStyle(ToolbarIconButtonStyle())
             .disabled(!viewModel.undoStack.canRedo)
-            .help("Redo")
-            .accessibilityLabel("Redo")
-            .accessibilityHint("Redo last undone action")
+            .help(L10n.string("app.menu.redo", defaultValue: "Redo"))
+            .accessibilityLabel(L10n.string("app.menu.redo", defaultValue: "Redo"))
+            .accessibilityHint(L10n.string("editor.toolbar.redo.hint", defaultValue: "Redo last undone action"))
 
             Divider()
                 .frame(height: Spacing.xl)
@@ -268,7 +277,7 @@ struct EditorMainView: View {
             Button(role: .destructive) {
                 viewModel.deleteAllSegments()
             } label: {
-                Label("Delete All", systemImage: "trash")
+                Label(L10n.string("editor.toolbar.delete_all", defaultValue: "Delete All"), systemImage: "trash")
             }
             .disabled(viewModel.project.timeline.totalSegmentCount == 0)
 
@@ -278,7 +287,7 @@ struct EditorMainView: View {
             Button {
                 showGeneratorPanel.toggle()
             } label: {
-                Label("Smart", systemImage: "wand.and.stars")
+                Label(L10n.string("editor.toolbar.smart", defaultValue: "Smart"), systemImage: "wand.and.stars")
             }
             .popover(isPresented: $showGeneratorPanel) {
                 GeneratorPanelView(viewModel: viewModel)
@@ -290,7 +299,10 @@ struct EditorMainView: View {
             } label: {
                 Image(systemName: "gearshape.2")
             }
-            .help("Advanced Generation Settings")
+            .help(L10n.string(
+                "editor.toolbar.advanced_generation_settings",
+                defaultValue: "Advanced Generation Settings"
+            ))
 
             Divider()
                 .frame(height: Spacing.xl)
@@ -299,7 +311,7 @@ struct EditorMainView: View {
             Button {
                 saveProject()
             } label: {
-                Label("Save", systemImage: "square.and.arrow.down")
+                Label(L10n.string("editor.toolbar.save", defaultValue: "Save"), systemImage: "square.and.arrow.down")
             }
             .keyboardShortcut("s", modifiers: .command)
             .disabled(!viewModel.hasUnsavedChanges)
@@ -308,7 +320,7 @@ struct EditorMainView: View {
             Button {
                 showExportSheet = true
             } label: {
-                Label("Export", systemImage: "square.and.arrow.up")
+                Label(L10n.string("editor.toolbar.export", defaultValue: "Export"), systemImage: "square.and.arrow.up")
             }
             .buttonStyle(.borderedProminent)
 
@@ -327,22 +339,25 @@ struct EditorMainView: View {
             Button {
                 viewModel.addSegment(to: .transform)
             } label: {
-                Label("Camera Segment", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label(
+                    L10n.string("editor.segment.camera", defaultValue: "Camera Segment"),
+                    systemImage: "arrow.up.left.and.arrow.down.right"
+                )
             }
 
             Button {
                 viewModel.addSegment(to: .cursor)
             } label: {
-                Label("Cursor Segment", systemImage: "cursorarrow")
+                Label(L10n.string("editor.segment.cursor", defaultValue: "Cursor Segment"), systemImage: "cursorarrow")
             }
 
             Button {
                 viewModel.addSegment(to: .keystroke)
             } label: {
-                Label("Keystroke Segment", systemImage: "keyboard")
+                Label(L10n.string("editor.segment.keystroke", defaultValue: "Keystroke Segment"), systemImage: "keyboard")
             }
         } label: {
-            Label("Add Segment", systemImage: "plus.diamond")
+            Label(L10n.string("editor.segment.add", defaultValue: "Add Segment"), systemImage: "plus.diamond")
         }
     }
 
@@ -356,7 +371,7 @@ struct EditorMainView: View {
                 viewModel.hasUnsavedChanges = false
             } catch {
                 Log.project.error("Failed to save project: \(error)")
-                saveErrorMessage = "Failed to save project: \(error.localizedDescription)"
+                saveErrorMessage = L10n.failedToSaveProject(detail: error.localizedDescription)
                 showSaveErrorAlert = true
             }
         }

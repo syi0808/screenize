@@ -23,6 +23,10 @@
 		A10000A0296A0001 /* PermissionWizardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A0296A0001 /* PermissionWizardViewModel.swift */; };
 		A10000A1296A0001 /* PermissionSetupWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A1296A0001 /* PermissionSetupWizardView.swift */; };
 		A10000A3296A0001 /* PermissionStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11000A3296A0001 /* PermissionStatusBadge.swift */; };
+		A1F00001296A0001 /* L10nTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F10001296A0001 /* L10nTests.swift */; };
+		A1F00002296A0001 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F10002296A0001 /* L10n.swift */; };
+		A1F00004296A0001 /* L10n+Display.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F10004296A0001 /* L10n+Display.swift */; };
+		A1F00003296A0001 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1F10003296A0001 /* Localizable.strings */; };
 		A2000001296A0001 /* EditorViewModel+Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002296A0001 /* EditorViewModel+Clipboard.swift */; };
 		A3000001296A0001 /* DeadZoneTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3100001296A0001 /* DeadZoneTargetTests.swift */; };
 		A4000001296A0001 /* DeadZoneTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4100001296A0001 /* DeadZoneTarget.swift */; };
@@ -233,6 +237,10 @@
 		A11000A0296A0001 /* PermissionWizardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionWizardViewModel.swift; sourceTree = "<group>"; };
 		A11000A1296A0001 /* PermissionSetupWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionSetupWizardView.swift; sourceTree = "<group>"; };
 		A11000A3296A0001 /* PermissionStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusBadge.swift; sourceTree = "<group>"; };
+		A1F10001296A0001 /* L10nTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nTests.swift; sourceTree = "<group>"; };
+		A1F10002296A0001 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		A1F10004296A0001 /* L10n+Display.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "L10n+Display.swift"; sourceTree = "<group>"; };
+		A1F10003296A0001 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A2000002296A0001 /* EditorViewModel+Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+Clipboard.swift"; sourceTree = "<group>"; };
 		A3100001296A0001 /* DeadZoneTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTargetTests.swift; sourceTree = "<group>"; };
 		A4100001296A0001 /* DeadZoneTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTarget.swift; sourceTree = "<group>"; };
@@ -505,6 +513,7 @@
 		AD200020296A0001 /* ScreenizeTests */ = {
 			isa = PBXGroup;
 			children = (
+				A1F20001296A0001 /* App */,
 				AD200021296A0001 /* Helpers */,
 				AD200022296A0001 /* Generators */,
 				C8200001296A0001 /* Models */,
@@ -513,6 +522,14 @@
 				D2300002296A0001 /* Render */,
 			);
 			path = ScreenizeTests;
+			sourceTree = "<group>";
+		};
+		A1F20001296A0001 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A1F10001296A0001 /* L10nTests.swift */,
+			);
+			path = App;
 			sourceTree = "<group>";
 		};
 		AD200021296A0001 /* Helpers */ = {
@@ -715,6 +732,7 @@
 				F2000050296A0001 /* ViewModels */,
 				F2000060296A0001 /* Generators */,
 				F1000090296A0001 /* Assets.xcassets */,
+				A1F10003296A0001 /* Localizable.strings */,
 				F1000091296A0001 /* Screenize.entitlements */,
 				1A210DB0FB901E8551815099 /* Analysis */,
 				E5100000296A0001 /* DesignSystem */,
@@ -914,6 +932,8 @@
 				F10000A4296A0001 /* NavigationState.swift */,
 				F10000A5296A0001 /* RecordingState.swift */,
 				F10000A2296A0001 /* Log.swift */,
+				A1F10002296A0001 /* L10n.swift */,
+				A1F10004296A0001 /* L10n+Display.swift */,
 				F10000A1296A0001 /* GlobalHotkeyManager.swift */,
 				2A626F2E2F2A280000510712 /* SparkleController.swift */,
 				D1100004296A0001 /* CaptureToolbarCoordinator.swift */,
@@ -1102,6 +1122,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1F00003296A0001 /* Localizable.strings in Resources */,
 				F0000090296A0001 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1113,6 +1134,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1F00001296A0001 /* L10nTests.swift in Sources */,
 				AD000021296A0001 /* MockMouseDataSource.swift in Sources */,
 				AD000022296A0001 /* EventTimelineTests.swift in Sources */,
 				AD000023296A0001 /* IntentClassifierTests.swift in Sources */,
@@ -1259,6 +1281,8 @@
 				D9000001296A0001 /* GeneratedTimeline.swift in Sources */,
 				D3000001296A0001 /* SmoothedMouseDataSource.swift in Sources */,
 				F00000A0296A0001 /* AppState.swift in Sources */,
+				A1F00002296A0001 /* L10n.swift in Sources */,
+				A1F00004296A0001 /* L10n+Display.swift in Sources */,
 				F00000A2296A0001 /* Log.swift in Sources */,
 				F00000A3296A0001 /* CaptureSettings.swift in Sources */,
 				F00000A4296A0001 /* NavigationState.swift in Sources */,

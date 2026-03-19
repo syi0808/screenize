@@ -217,14 +217,14 @@ enum SequentialFrameReaderError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noVideoTrack:
-            return "Could not find a video track"
+            return L10n.noVideoTrackFound
         case .cannotAddOutput:
-            return "Cannot add reader output"
+            return L10n.cannotAddReaderOutput
         case .readerStartFailed(let error):
             if let error = error {
-                return "Failed to start reading: \(error.localizedDescription)"
+                return L10n.failedToStartReading(detail: error.localizedDescription)
             }
-            return "Failed to start reading"
+            return L10n.failedToStartReading(detail: "Unknown error")
         }
     }
 }

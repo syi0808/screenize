@@ -1,8 +1,17 @@
 import SwiftUI
 
 enum InspectorTab: String, CaseIterable {
-    case settings = "Settings"
-    case segment = "Segment"
+    case settings
+    case segment
+
+    var title: String {
+        switch self {
+        case .settings:
+            return L10n.string("inspector.tab.settings", defaultValue: "Settings")
+        case .segment:
+            return L10n.string("inspector.tab.segment", defaultValue: "Segment")
+        }
+    }
 }
 
 /// Segment inspector view.
@@ -20,9 +29,9 @@ struct InspectorView: View {
     var body: some View {
         VStack(spacing: 0) {
             if isWindowMode {
-                Picker("Inspector Tab", selection: $selectedTab) {
+                Picker(L10n.string("inspector.tab.label", defaultValue: "Inspector Tab"), selection: $selectedTab) {
                     ForEach(InspectorTab.allCases, id: \.self) { tab in
-                        Text(tab.rawValue).tag(tab)
+                        Text(tab.title).tag(tab)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -47,11 +56,11 @@ struct InspectorView: View {
     private var segmentInspector: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Segment")
+                Text(L10n.string("inspector.section.segment", defaultValue: "Segment"))
                     .font(Typography.heading)
 
                 if let selected = selection.single {
-                    LabeledContent("Track") { Text(trackName(selected.trackType)) }
+                    LabeledContent(L10n.string("inspector.track", defaultValue: "Track")) { Text(trackName(selected.trackType)) }
 
                     switch selected.trackType {
                     case .transform:
@@ -71,7 +80,7 @@ struct InspectorView: View {
                     } label: {
                         HStack {
                             Image(systemName: "trash")
-                            Text("Delete Segment")
+                            Text(L10n.string("inspector.action.delete_segment", defaultValue: "Delete Segment"))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -79,7 +88,7 @@ struct InspectorView: View {
                 } else if selection.count > 1 {
                     DesignEmptyState(
                         icon: "rectangle.stack",
-                        title: "\(selection.count) Segments Selected"
+                        title: L10n.inspectorSelectedSegments(count: selection.count)
                     )
                     .padding(.top, Spacing.xxxl - Spacing.sm)
 
@@ -93,7 +102,7 @@ struct InspectorView: View {
                     } label: {
                         HStack {
                             Image(systemName: "trash")
-                            Text("Delete \(selection.count) Segments")
+                            Text(L10n.inspectorDeleteSegments(count: selection.count))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -101,8 +110,11 @@ struct InspectorView: View {
                 } else {
                     DesignEmptyState(
                         icon: "sidebar.right",
-                        title: "No Selection",
-                        subtitle: "Select a segment on the timeline to inspect it."
+                        title: L10n.string("inspector.selection.empty_title", defaultValue: "No Selection"),
+                        subtitle: L10n.string(
+                            "inspector.selection.empty_subtitle",
+                            defaultValue: "Select a segment on the timeline to inspect it."
+                        )
                     )
                     .padding(.top, Spacing.xxxl - Spacing.sm)
                 }
@@ -117,7 +129,7 @@ struct InspectorView: View {
     private func cursorSection(segmentID: UUID) -> some View {
         if let binding = cursorSegmentBinding(for: segmentID) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Cursor")
+                Text(L10n.string("inspector.section.cursor", defaultValue: "Cursor"))
                     .font(.subheadline.weight(.medium))
 
                 timeRangeFields(
@@ -131,7 +143,7 @@ struct InspectorView: View {
                     )
                 )
 
-                Picker("Style", selection: Binding(
+                Picker(L10n.string("inspector.cursor.style", defaultValue: "Style"), selection: Binding(
                     get: { binding.wrappedValue.style },
                     set: { binding.wrappedValue.style = $0 }
                 )) {
@@ -140,12 +152,12 @@ struct InspectorView: View {
                     }
                 }
 
-                Toggle("Visible", isOn: Binding(
+                Toggle(L10n.string("inspector.cursor.visible", defaultValue: "Visible"), isOn: Binding(
                     get: { binding.wrappedValue.visible },
                     set: { binding.wrappedValue.visible = $0 }
                 ))
 
-                LabeledContent("Scale") {
+                LabeledContent(L10n.string("inspector.cursor.scale", defaultValue: "Scale")) {
                     Slider(value: Binding(
                         get: { Double(binding.wrappedValue.scale) },
                         set: { binding.wrappedValue.scale = CGFloat($0) }
@@ -153,7 +165,7 @@ struct InspectorView: View {
                 }
             }
         } else {
-            Text("Cursor segment not found")
+            Text(L10n.string("inspector.cursor.missing", defaultValue: "Cursor segment not found"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -165,7 +177,7 @@ struct InspectorView: View {
     private func keystrokeSection(segmentID: UUID) -> some View {
         if let binding = keystrokeSegmentBinding(for: segmentID) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Keystroke")
+                Text(L10n.string("inspector.section.keystroke", defaultValue: "Keystroke"))
                     .font(.subheadline.weight(.medium))
 
                 timeRangeFields(
@@ -179,20 +191,20 @@ struct InspectorView: View {
                     )
                 )
 
-                TextField("Display Text", text: Binding(
+                TextField(L10n.string("inspector.keystroke.display_text", defaultValue: "Display Text"), text: Binding(
                     get: { binding.wrappedValue.displayText },
                     set: { binding.wrappedValue.displayText = $0 }
                 ))
                 .textFieldStyle(.roundedBorder)
 
-                LabeledContent("Fade In") {
+                LabeledContent(L10n.string("inspector.keystroke.fade_in", defaultValue: "Fade In")) {
                     Slider(value: Binding(
                         get: { binding.wrappedValue.fadeInDuration },
                         set: { binding.wrappedValue.fadeInDuration = $0 }
                     ), in: 0...1)
                 }
 
-                LabeledContent("Fade Out") {
+                LabeledContent(L10n.string("inspector.keystroke.fade_out", defaultValue: "Fade Out")) {
                     Slider(value: Binding(
                         get: { binding.wrappedValue.fadeOutDuration },
                         set: { binding.wrappedValue.fadeOutDuration = $0 }
@@ -200,7 +212,7 @@ struct InspectorView: View {
                 }
             }
         } else {
-            Text("Keystroke segment not found")
+            Text(L10n.string("inspector.keystroke.missing", defaultValue: "Keystroke segment not found"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -212,7 +224,7 @@ struct InspectorView: View {
     private func audioSection(segmentID: UUID) -> some View {
         if let binding = audioSegmentBinding(for: segmentID) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Audio")
+                Text(L10n.string("inspector.section.audio", defaultValue: "Audio"))
                     .font(.subheadline.weight(.medium))
 
                 timeRangeFields(
@@ -226,7 +238,7 @@ struct InspectorView: View {
                     )
                 )
 
-                LabeledContent("Volume") {
+                LabeledContent(L10n.string("inspector.audio.volume", defaultValue: "Volume")) {
                     HStack(spacing: 8) {
                         Slider(value: Binding(
                             get: { Double(binding.wrappedValue.volume) },
@@ -239,13 +251,13 @@ struct InspectorView: View {
                     }
                 }
 
-                Toggle("Muted", isOn: Binding(
+                Toggle(L10n.string("inspector.audio.muted", defaultValue: "Muted"), isOn: Binding(
                     get: { binding.wrappedValue.isMuted },
                     set: { binding.wrappedValue.isMuted = $0 }
                 ))
             }
         } else {
-            Text("Audio segment not found")
+            Text(L10n.string("inspector.audio.missing", defaultValue: "Audio segment not found"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -256,7 +268,7 @@ struct InspectorView: View {
     func timeRangeFields(start: Binding<TimeInterval>, end: Binding<TimeInterval>) -> some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Start")
+                Text(L10n.string("inspector.time.start", defaultValue: "Start"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextField("0.0", value: start, format: .number.precision(.fractionLength(2)))
@@ -264,7 +276,7 @@ struct InspectorView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("End")
+                Text(L10n.string("inspector.time.end", defaultValue: "End"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextField("0.0", value: end, format: .number.precision(.fractionLength(2)))

@@ -8,7 +8,7 @@ extension InspectorView {
     func cameraSection(segmentID: UUID) -> some View {
         if let binding = cameraSegmentBinding(for: segmentID) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Camera")
+                Text(L10n.string("inspector.section.camera", defaultValue: "Camera"))
                     .font(.subheadline.weight(.medium))
 
                 timeRangeFields(
@@ -24,7 +24,10 @@ extension InspectorView {
 
                 if binding.wrappedValue.isContinuous {
                     Label(
-                        "Continuous segment has no configurable options.",
+                        L10n.string(
+                            "inspector.camera.continuous_info",
+                            defaultValue: "Continuous segment has no configurable options."
+                        ),
                         systemImage: "info.circle"
                     )
                     .font(.caption)
@@ -35,7 +38,7 @@ extension InspectorView {
                 }
             }
         } else {
-            Text("Camera segment not found")
+            Text(L10n.string("inspector.camera.missing", defaultValue: "Camera segment not found"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -53,14 +56,30 @@ extension InspectorView {
     @ViewBuilder
     private func manualCameraControls(segment: Binding<CameraSegment>) -> some View {
         if case .manual = segment.wrappedValue.kind {
-            zoomControl(label: "Start Zoom", segment: segment, isStart: true)
-            zoomControl(label: "End Zoom", segment: segment, isStart: false)
+            zoomControl(
+                label: L10n.string("inspector.camera.zoom.start", defaultValue: "Start Zoom"),
+                segment: segment,
+                isStart: true
+            )
+            zoomControl(
+                label: L10n.string("inspector.camera.zoom.end", defaultValue: "End Zoom"),
+                segment: segment,
+                isStart: false
+            )
             Divider()
-            positionControl(label: "Start Position", segment: segment, isStart: true)
+            positionControl(
+                label: L10n.string("inspector.camera.position.start", defaultValue: "Start Position"),
+                segment: segment,
+                isStart: true
+            )
 
             copyFromPreviousButton(segment: segment)
 
-            positionControl(label: "End Position", segment: segment, isStart: false)
+            positionControl(
+                label: L10n.string("inspector.camera.position.end", defaultValue: "End Position"),
+                segment: segment,
+                isStart: false
+            )
 
             copyFromNextButton(segment: segment)
         }
@@ -84,7 +103,7 @@ extension InspectorView {
                 }
             }
         } label: {
-            Label("Copy from Previous", systemImage: "arrow.left")
+            Label(L10n.string("inspector.camera.copy_previous", defaultValue: "Copy from Previous"), systemImage: "arrow.left")
                 .font(.caption)
         }
         .buttonStyle(.borderless)
@@ -109,7 +128,7 @@ extension InspectorView {
                 }
             }
         } label: {
-            Label("Copy from Next", systemImage: "arrow.right")
+            Label(L10n.string("inspector.camera.copy_next", defaultValue: "Copy from Next"), systemImage: "arrow.right")
                 .font(.caption)
         }
         .buttonStyle(.borderless)
@@ -188,7 +207,7 @@ extension InspectorView {
             .frame(height: 100)
 
             HStack(spacing: 8) {
-                Text("X")
+                Text(L10n.string("inspector.camera.axis.x", defaultValue: "X"))
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
                     .frame(width: 12)
@@ -205,7 +224,7 @@ extension InspectorView {
                     }
                 ), format: .number.precision(.fractionLength(2)))
                     .textFieldStyle(.roundedBorder)
-                Text("Y")
+                Text(L10n.string("inspector.camera.axis.y", defaultValue: "Y"))
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
                     .frame(width: 12)

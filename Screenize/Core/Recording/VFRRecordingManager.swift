@@ -403,9 +403,9 @@ enum VFRRecordingError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyRecording:
-            return "Already recording"
+            return L10n.alreadyRecording
         case .notRecording:
-            return "Not currently recording"
+            return L10n.notCurrentlyRecording
         }
     }
 }

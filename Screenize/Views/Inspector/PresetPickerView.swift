@@ -29,7 +29,7 @@ struct PresetPickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Preset")
+                Text(L10n.string("inspector.preset.label", defaultValue: "Preset"))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
 
@@ -44,7 +44,7 @@ struct PresetPickerView: View {
                         .font(.system(size: 12))
                 }
                 .buttonStyle(.plain)
-                .help("Save Current Settings as Preset")
+                .help(L10n.string("inspector.preset.save_current", defaultValue: "Save Current Settings as Preset"))
                 .popover(isPresented: $showSavePopover) {
                     savePresetPopover
                 }
@@ -67,7 +67,7 @@ struct PresetPickerView: View {
                                 .padding(4)
                         }
                         .buttonStyle(.plain)
-                        .help("Manage Presets")
+                        .help(L10n.string("inspector.preset.manage", defaultValue: "Manage Presets"))
                         .popover(isPresented: $showManagePopover) {
                             managePresetsPopover
                         }
@@ -104,7 +104,7 @@ struct PresetPickerView: View {
                         .foregroundColor(.accentColor)
                 }
                 .buttonStyle(.plain)
-                .help("Update preset with current settings")
+                .help(L10n.string("inspector.preset.update_current", defaultValue: "Update preset with current settings"))
             }
 
             Button {
@@ -115,7 +115,7 @@ struct PresetPickerView: View {
                     .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
-            .help("Delete preset")
+            .help(L10n.string("inspector.preset.delete", defaultValue: "Delete preset"))
         }
         .padding(.leading, 8)
         .padding(.trailing, 5)
@@ -141,7 +141,7 @@ struct PresetPickerView: View {
 
     private var managePresetsPopover: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Manage Presets")
+            Text(L10n.string("inspector.preset.manage_title", defaultValue: "Manage Presets"))
                 .font(.headline)
 
             ScrollView {
@@ -196,24 +196,24 @@ struct PresetPickerView: View {
 
     private var savePresetPopover: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Save Preset")
+            Text(L10n.string("inspector.preset.save_title", defaultValue: "Save Preset"))
                 .font(.headline)
 
-            TextField("Preset Name", text: $newPresetName)
+            TextField(L10n.string("inspector.preset.name", defaultValue: "Preset Name"), text: $newPresetName)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit {
                     savePreset()
                 }
 
             HStack {
-                Button("Cancel") {
+                Button(L10n.string("inspector.preset.cancel", defaultValue: "Cancel")) {
                     showSavePopover = false
                 }
                 .buttonStyle(.bordered)
 
                 Spacer()
 
-                Button("Save") {
+                Button(L10n.string("inspector.preset.save", defaultValue: "Save")) {
                     savePreset()
                 }
                 .buttonStyle(.borderedProminent)
@@ -283,7 +283,7 @@ private struct PresetManagementRow: View {
 
             // Name (inline editable)
             if isEditing {
-                TextField("Name", text: $editingName)
+                TextField(L10n.string("inspector.preset.field_name", defaultValue: "Name"), text: $editingName)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
                     .focused($isTextFieldFocused)
@@ -318,7 +318,7 @@ private struct PresetManagementRow: View {
                         .foregroundColor(.accentColor)
                 }
                 .buttonStyle(.plain)
-                .help("Overwrite with Current Settings")
+                .help(L10n.string("inspector.preset.overwrite", defaultValue: "Overwrite with Current Settings"))
             }
 
             // Delete button
@@ -330,7 +330,7 @@ private struct PresetManagementRow: View {
                     .foregroundColor(.red)
             }
             .buttonStyle(.plain)
-            .help("Delete Preset")
+            .help(L10n.string("inspector.preset.delete_title", defaultValue: "Delete Preset"))
         }
         .padding(.vertical, 4)
     }

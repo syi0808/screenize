@@ -41,7 +41,7 @@ struct KeyboardShortcutHelpView: View {
                     .font(.title2)
                     .foregroundColor(.accentColor)
 
-                Text("Keyboard Shortcuts")
+                Text(L10n.string("shortcuts.title", defaultValue: "Keyboard Shortcuts"))
                     .font(.headline)
 
                 Spacer()
@@ -143,25 +143,101 @@ struct ShortcutEntry: Identifiable {
 
 extension KeyboardShortcutHelpView {
     static let categories: [ShortcutCategory] = [
-        ShortcutCategory(name: "General", icon: "globe", shortcuts: [
-            ShortcutEntry(keys: "\u{2318}N", description: "New Recording", contexts: [.welcome]),
-            ShortcutEntry(keys: "\u{2318}O", description: "Open Video", contexts: [.welcome]),
-            ShortcutEntry(keys: "\u{21E7}\u{2318}O", description: "Open Project", contexts: [.welcome]),
-            ShortcutEntry(keys: "\u{2318}S", description: "Save Project", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{21E7}\u{2318}2", description: "Start/Stop Recording", contexts: [.welcome, .recording]),
-        ]),
-        ShortcutCategory(name: "Editor", icon: "slider.horizontal.3", shortcuts: [
-            ShortcutEntry(keys: "Space", description: "Play/Pause", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{232B}", description: "Delete Selected Segment(s)", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{2318}C", description: "Copy Selected Segment(s)", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{2318}V", description: "Paste Segment(s) at Playhead", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{2318}T", description: "Duplicate Selected Segment(s)", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{2318}Z", description: "Undo", contexts: [.editor]),
-            ShortcutEntry(keys: "\u{21E7}\u{2318}Z", description: "Redo", contexts: [.editor]),
-        ]),
-        ShortcutCategory(name: "Help", icon: "questionmark.circle", shortcuts: [
-            ShortcutEntry(keys: "\u{2318}?", description: "Keyboard Shortcuts", contexts: [.welcome, .recording, .editor]),
-        ]),
+        ShortcutCategory(
+            name: L10n.string("shortcuts.category.general", defaultValue: "General"),
+            icon: "globe",
+            shortcuts: [
+                ShortcutEntry(
+                    keys: "\u{2318}N",
+                    description: L10n.string("shortcuts.entry.new_recording", defaultValue: "New Recording"),
+                    contexts: [.welcome]
+                ),
+                ShortcutEntry(
+                    keys: "\u{2318}O",
+                    description: L10n.string("shortcuts.entry.open_video", defaultValue: "Open Video"),
+                    contexts: [.welcome]
+                ),
+                ShortcutEntry(
+                    keys: "\u{21E7}\u{2318}O",
+                    description: L10n.string("shortcuts.entry.open_project", defaultValue: "Open Project"),
+                    contexts: [.welcome]
+                ),
+                ShortcutEntry(
+                    keys: "\u{2318}S",
+                    description: L10n.string("shortcuts.entry.save_project", defaultValue: "Save Project"),
+                    contexts: [.editor]
+                ),
+                ShortcutEntry(
+                    keys: "\u{21E7}\u{2318}2",
+                    description: L10n.string("shortcuts.entry.start_stop_recording", defaultValue: "Start/Stop Recording"),
+                    contexts: [.welcome, .recording]
+                ),
+            ]
+        ),
+        ShortcutCategory(
+            name: L10n.string("shortcuts.category.editor", defaultValue: "Editor"),
+            icon: "slider.horizontal.3",
+            shortcuts: [
+                ShortcutEntry(
+                    keys: "Space",
+                    description: L10n.string("shortcuts.entry.play_pause", defaultValue: "Play/Pause"),
+                    contexts: [.editor]
+                ),
+                ShortcutEntry(
+                    keys: "\u{232B}",
+                    description: L10n.string(
+                        "shortcuts.entry.delete_selected_segments",
+                        defaultValue: "Delete Selected Segment(s)"
+                    ),
+                    contexts: [.editor]
+                ),
+                ShortcutEntry(
+                    keys: "\u{2318}C",
+                    description: L10n.string(
+                        "shortcuts.entry.copy_selected_segments",
+                        defaultValue: "Copy Selected Segment(s)"
+                    ),
+                    contexts: [.editor]
+                ),
+                ShortcutEntry(
+                    keys: "\u{2318}V",
+                    description: L10n.string(
+                        "shortcuts.entry.paste_segments_at_playhead",
+                        defaultValue: "Paste Segment(s) at Playhead"
+                    ),
+                    contexts: [.editor]
+                ),
+                ShortcutEntry(
+                    keys: "\u{2318}T",
+                    description: L10n.string(
+                        "shortcuts.entry.duplicate_selected_segments",
+                        defaultValue: "Duplicate Selected Segment(s)"
+                    ),
+                    contexts: [.editor]
+                ),
+                ShortcutEntry(
+                    keys: "\u{2318}Z",
+                    description: L10n.string("shortcuts.entry.undo", defaultValue: "Undo"),
+                    contexts: [.editor]
+                ),
+                ShortcutEntry(
+                    keys: "\u{21E7}\u{2318}Z",
+                    description: L10n.string("shortcuts.entry.redo", defaultValue: "Redo"),
+                    contexts: [.editor]
+                ),
+            ]
+        ),
+        ShortcutCategory(
+            name: L10n.string("shortcuts.category.help", defaultValue: "Help"),
+            icon: "questionmark.circle",
+            shortcuts: [
+                ShortcutEntry(
+                    keys: "\u{2318}?",
+                    description: L10n.string("shortcuts.entry.keyboard_shortcuts", defaultValue: "Keyboard Shortcuts"),
+                    contexts: [.welcome, .recording, .editor]
+                ),
+            ]
+        ),
     ]
 }
 
@@ -181,7 +257,7 @@ struct ShortcutHelpButton: View {
                 .foregroundColor(.secondary)
         }
         .buttonStyle(.plain)
-        .help("Keyboard Shortcuts")
+        .help(L10n.string("shortcuts.title", defaultValue: "Keyboard Shortcuts"))
         .sheet(isPresented: $showSheet) {
             KeyboardShortcutHelpView(context: context)
         }

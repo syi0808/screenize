@@ -418,15 +418,15 @@ actor VideoFrameAnalyzer {
         var errorDescription: String? {
             switch self {
             case .invalidVideo(let message):
-                return "Invalid video: \(message)"
+                return L10n.analysisInvalidVideo(message: message)
             case .featurePrintFailed:
-                return "Feature print calculation failed"
+                return L10n.analysisFeaturePrintFailed
             case .filterNotAvailable(let name):
-                return "Core Image filter not available: \(name)"
+                return L10n.analysisFilterNotAvailable(name: name)
             case .filterFailed:
-                return "Core Image filter execution failed"
+                return L10n.analysisFilterFailed
             case .opticalFlowFailed:
-                return "Optical flow calculation failed"
+                return L10n.analysisOpticalFlowFailed
             }
         }
     }

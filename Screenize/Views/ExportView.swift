@@ -101,8 +101,8 @@ struct ExportSheetView: View {
             footer
         }
         .frame(width: 400)
-        .alert("Export Error", isPresented: $showExportErrorAlert) {
-            Button("OK", role: .cancel) {}
+        .alert(L10n.string("export.alert.error.title", defaultValue: "Export Error"), isPresented: $showExportErrorAlert) {
+            Button(L10n.commonOK, role: .cancel) {}
         } message: {
             Text(exportErrorMessage)
         }
@@ -116,7 +116,11 @@ struct ExportSheetView: View {
                 .font(.title2)
                 .foregroundColor(.accentColor)
 
-            Text(renderSettings.exportFormat == .gif ? "Export GIF" : "Export Video")
+            Text(
+                renderSettings.exportFormat == .gif
+                    ? L10n.string("export.title.gif", defaultValue: "Export GIF")
+                    : L10n.string("export.title.video", defaultValue: "Export Video")
+            )
                 .font(Typography.heading)
 
             Spacer()
@@ -159,15 +163,15 @@ struct ExportSheetView: View {
             // Status text
             Text(exportEngine.progress.statusText)
                 .font(Typography.heading)
-                .accessibilityLabel("Export status: \(exportEngine.progress.statusText)")
+                .accessibilityLabel(L10n.exportStatusAccessibilityLabel(status: exportEngine.progress.statusText))
 
             // Statistics
             if let stats = exportEngine.statistics {
                 VStack(spacing: Spacing.xs) {
-                    Text("Processing: \(String(format: "%.1f", stats.processingFPS)) fps")
+                    Text(L10n.exportProcessingFPS(stats.processingFPS))
 
                     if let remaining = stats.estimatedRemainingTime {
-                        Text("Remaining: \(formatDuration(remaining))")
+                        Text(L10n.exportRemaining(formatDuration(remaining)))
                     }
                 }
                 .font(Typography.caption)
@@ -184,12 +188,12 @@ struct ExportSheetView: View {
     private var footer: some View {
         HStack {
             if isExporting {
-                Button("Cancel") {
+                Button(L10n.string("export.footer.cancel", defaultValue: "Cancel")) {
                     cancelExport()
                 }
                 .buttonStyle(.bordered)
             } else {
-                Button("Cancel") {
+                Button(L10n.string("export.footer.cancel", defaultValue: "Cancel")) {
                     onDismiss?()
                 }
                 .buttonStyle(.bordered)
@@ -198,13 +202,13 @@ struct ExportSheetView: View {
             Spacer()
 
             if !isExporting {
-                Button("Export") {
+                Button(L10n.string("export.footer.export", defaultValue: "Export")) {
                     showSavePanel()
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(hasValidationError)
             } else if exportEngine.progress.isCompleted {
-                Button("Done") {
+                Button(L10n.string("export.footer.done", defaultValue: "Done")) {
                     if let url = exportEngine.progress.outputURL {
                         onComplete?(url)
                     }
@@ -251,7 +255,7 @@ struct ExportSheetView: View {
             } catch {
                 await MainActor.run {
                     isExporting = false
-                    exportErrorMessage = "Export failed: \(error.localizedDescription)"
+                    exportErrorMessage = L10n.exportFailed(detail: error.localizedDescription)
                     showExportErrorAlert = true
                     Log.export.error("Export error: \(error)")
                 }

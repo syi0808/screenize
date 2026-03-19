@@ -22,20 +22,20 @@ struct GeneratorPanelView: View {
     private let generatorOptions: [GeneratorOption] = [
         GeneratorOption(
             type: .transform,
-            name: "Smart Zoom",
-            description: "Auto-focus and zoom on activity",
+            name: L10n.string("generator.option.smart_zoom.title", defaultValue: "Smart Zoom"),
+            description: L10n.string("generator.option.smart_zoom.description", defaultValue: "Auto-focus and zoom on activity"),
             icon: "sparkle.magnifyingglass"
         ),
         GeneratorOption(
             type: .cursor,
-            name: "Cursor Style",
-            description: "Cursor movement based on clicks",
+            name: L10n.string("generator.option.cursor_style.title", defaultValue: "Cursor Style"),
+            description: L10n.string("generator.option.cursor_style.description", defaultValue: "Cursor movement based on clicks"),
             icon: "cursorarrow.motionlines"
         ),
         GeneratorOption(
             type: .keystroke,
-            name: "Keystroke",
-            description: "Keyboard shortcut overlays",
+            name: L10n.string("generator.option.keystroke.title", defaultValue: "Keystroke"),
+            description: L10n.string("generator.option.keystroke.description", defaultValue: "Keyboard shortcut overlays"),
             icon: "keyboard"
         )
     ]
@@ -45,23 +45,26 @@ struct GeneratorPanelView: View {
     }
 
     private var buttonLabel: String {
-        if isGenerating { return "Generating..." }
-        if allSelected { return "Generate All Segments" }
-        return "Generate Selected (\(selectedTypes.count))"
+        if isGenerating { return L10n.string("generator.button.generating", defaultValue: "Generating...") }
+        if allSelected { return L10n.string("generator.button.generate_all", defaultValue: "Generate All Segments") }
+        return L10n.generatorGenerateSelected(count: selectedTypes.count)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
             // Header
-            SectionHeader(title: "Smart Generation", icon: "wand.and.stars")
+            SectionHeader(
+                title: L10n.string("generator.header", defaultValue: "Smart Generation"),
+                icon: "wand.and.stars"
+            )
 
             // Mode picker
-            Picker("Mode", selection: Binding(
+            Picker(L10n.string("generator.mode", defaultValue: "Mode"), selection: Binding(
                 get: { GenerationSettingsManager.shared.settings.mode },
                 set: { GenerationSettingsManager.shared.settings.mode = $0 }
             )) {
-                Text("Continuous").tag(GenerationMode.continuous)
-                Text("Segment").tag(GenerationMode.segmentBased)
+                Text(L10n.string("generator.mode.continuous", defaultValue: "Continuous")).tag(GenerationMode.continuous)
+                Text(L10n.string("generator.mode.segment_based", defaultValue: "Segment Based")).tag(GenerationMode.segmentBased)
             }
             .pickerStyle(.segmented)
 
@@ -89,7 +92,9 @@ struct GeneratorPanelView: View {
                 Text(result)
                     .font(Typography.caption)
                     .foregroundColor(
-                        result.hasPrefix("Failed") ? DesignColors.destructive : DesignColors.success
+                        result.hasPrefix(L10n.string("generator.result.failed_prefix", defaultValue: "Failed:"))
+                            ? DesignColors.destructive
+                            : DesignColors.success
                     )
                     .padding(.vertical, Spacing.xs)
             }
@@ -112,7 +117,12 @@ struct GeneratorPanelView: View {
             .disabled(isGenerating || selectedTypes.isEmpty)
 
             // Helper text
-            Text("Selected types replace existing keyframes. Unselected types are preserved.")
+            Text(
+                L10n.string(
+                    "generator.helper.preserve_types",
+                    defaultValue: "Selected types replace existing keyframes. Unselected types are preserved."
+                )
+            )
                 .font(Typography.footnote)
                 .foregroundStyle(.tertiary)
         }
@@ -143,7 +153,7 @@ struct GeneratorPanelView: View {
         await viewModel.runSmartGeneration(for: selectedTypes)
 
         if let error = viewModel.errorMessage {
-            generationResult = "Failed: \(error)"
+            generationResult = "\(L10n.string("generator.result.failed_prefix", defaultValue: "Failed:")) \(error)"
         } else {
             let parts = generatorOptions.compactMap { option -> String? in
                 guard selectedTypes.contains(option.type) else { return nil }
@@ -158,7 +168,7 @@ struct GeneratorPanelView: View {
                 case .audio:
                     return nil
                 }
-                return "\(count) \(option.name.lowercased())"
+                return L10n.format("generator.result.item", defaultValue: "%d %@", count, option.name.lowercased())
             }
             generationResult = parts.joined(separator: ", ")
         }

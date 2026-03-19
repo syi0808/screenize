@@ -12,11 +12,11 @@ struct KeystrokeTrackEmitter {
         settings: KeystrokeEmissionSettings
     ) -> KeystrokeTrackV2 {
         guard settings.enabled else {
-            return KeystrokeTrackV2(name: "Keystroke (Smart V2)", segments: [])
+            return KeystrokeTrackV2(name: L10n.smartKeystrokeTrackName, segments: [])
         }
 
         guard duration > 0 else {
-            return KeystrokeTrackV2(name: "Keystroke (Smart V2)", segments: [])
+            return KeystrokeTrackV2(name: L10n.smartKeystrokeTrackName, segments: [])
         }
 
         // Extract keyDown events from timeline
@@ -77,7 +77,7 @@ struct KeystrokeTrackEmitter {
         }
 
         return KeystrokeTrackV2(
-            name: "Keystroke (Smart V2)",
+            name: L10n.smartKeystrokeTrackName,
             isEnabled: true,
             segments: segments
         )
@@ -92,13 +92,13 @@ struct KeystrokeTrackEmitter {
     ) -> String? {
         switch keyCode {
         // Special keys
-        case 36: return "Return"
-        case 48: return "Tab"
-        case 49: return "Space"
-        case 51: return "Delete"
-        case 53: return "Escape"
-        case 71: return "Clear"
-        case 76: return "Enter"
+        case 36: return L10n.keyReturn
+        case 48: return L10n.keyTab
+        case 49: return L10n.keySpace
+        case 51: return L10n.keyDelete
+        case 53: return L10n.keyEscape
+        case 71: return L10n.keyClear
+        case 76: return L10n.keyEnter
         case 117: return "⌦"  // Forward Delete
         // Arrow keys
         case 123: return "←"
@@ -119,10 +119,10 @@ struct KeystrokeTrackEmitter {
         case 103: return "F11"
         case 111: return "F12"
         // Home/End/Page
-        case 115: return "Home"
-        case 119: return "End"
-        case 116: return "Page Up"
-        case 121: return "Page Down"
+        case 115: return L10n.keyHome
+        case 119: return L10n.keyEnd
+        case 116: return L10n.keyPageUp
+        case 121: return L10n.keyPageDown
         // Ignore standalone modifier key presses
         case 54, 55: return nil  // Command (left/right)
         case 56, 60: return nil  // Shift (left/right)

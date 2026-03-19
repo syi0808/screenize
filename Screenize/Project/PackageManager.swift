@@ -275,13 +275,13 @@ enum PackageManagerError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .projectFileNotFound(let url):
-            return "Project file not found: \(url.lastPathComponent)"
+            return L10n.projectFileNotFound(filename: url.lastPathComponent)
         case .videoFileNotFound(let url):
-            return "Video file not found: \(url.lastPathComponent)"
+            return L10n.videoFileNotFound(filename: url.lastPathComponent)
         case .packageCreationFailed(let reason):
-            return "Failed to create package: \(reason)"
+            return L10n.packageCreationFailed(reason: reason)
         case .unsupportedProjectVersion(let version):
-            return "Unsupported project version: \(version). Please create a new project."
+            return L10n.unsupportedProjectVersion(version)
         }
     }
 }

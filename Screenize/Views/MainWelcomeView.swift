@@ -21,10 +21,10 @@ struct MainWelcomeView: View {
                     .font(.system(size: 64))
                     .foregroundColor(.accentColor)
 
-                Text("Screenize")
+                Text(L10n.string("welcome.app_name", defaultValue: "Screenize"))
                     .font(Typography.displayLarge)
 
-                Text("Screen Recording & Timeline Editing")
+                Text(L10n.string("welcome.subtitle", defaultValue: "Screen Recording & Timeline Editing"))
                     .font(.title3)
                     .foregroundColor(.secondary)
             }
@@ -34,8 +34,11 @@ struct MainWelcomeView: View {
                 // Record button
                 ActionCard(
                     icon: "record.circle",
-                    title: "Record",
-                    description: "Record screen or window",
+                    title: L10n.string("welcome.action.record.title", defaultValue: "Record"),
+                    description: L10n.string(
+                        "welcome.action.record.description",
+                        defaultValue: "Record screen or window"
+                    ),
                     color: .red
                 ) {
                     onStartRecording?()
@@ -44,8 +47,11 @@ struct MainWelcomeView: View {
                 // Open video button
                 ActionCard(
                     icon: "film",
-                    title: "Open Video",
-                    description: "Edit existing video",
+                    title: L10n.string("welcome.action.open_video.title", defaultValue: "Open Video"),
+                    description: L10n.string(
+                        "welcome.action.open_video.description",
+                        defaultValue: "Edit existing video"
+                    ),
                     color: .blue
                 ) {
                     openVideoPanel()
@@ -54,8 +60,11 @@ struct MainWelcomeView: View {
                 // Open project button
                 ActionCard(
                     icon: "folder",
-                    title: "Open Project",
-                    description: "Continue editing",
+                    title: L10n.string("welcome.action.open_project.title", defaultValue: "Open Project"),
+                    description: L10n.string(
+                        "welcome.action.open_project.description",
+                        defaultValue: "Continue editing"
+                    ),
                     color: .orange
                 ) {
                     openProjectPanel()
@@ -87,11 +96,11 @@ struct MainWelcomeView: View {
                 .font(.system(size: 32))
                 .foregroundColor(isDragging ? .accentColor : .secondary)
 
-            Text("Drop video or project here")
+            Text(L10n.string("welcome.drop.title", defaultValue: "Drop video or project here"))
                 .font(Typography.heading)
                 .foregroundColor(isDragging ? .accentColor : .secondary)
 
-            Text(".mp4, .mov, .m4v, .screenize")
+            Text(L10n.string("welcome.drop.extensions", defaultValue: ".mp4, .mov, .m4v, .screenize"))
                 .font(Typography.caption)
                 .foregroundStyle(.tertiary)
         }
@@ -110,8 +119,13 @@ struct MainWelcomeView: View {
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             handleDrop(providers: providers)
         }
-        .accessibilityLabel("Drop zone")
-        .accessibilityHint("Drop a video or project file here to open it")
+        .accessibilityLabel(L10n.string("welcome.drop.accessibility.label", defaultValue: "Drop zone"))
+        .accessibilityHint(
+            L10n.string(
+                "welcome.drop.accessibility.hint",
+                defaultValue: "Drop a video or project file here to open it"
+            )
+        )
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {

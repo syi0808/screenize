@@ -145,7 +145,7 @@ struct CaptureToolbarView: View {
         HStack(spacing: Spacing.sm) {
             ToolbarModeButton(
                 icon: "display",
-                label: "Entire Screen",
+                label: L10n.string("recording.mode.entire_screen", defaultValue: "Entire Screen"),
                 isSelected: coordinator.captureMode == .entireScreen
             ) {
                 coordinator.captureMode = .entireScreen
@@ -153,7 +153,7 @@ struct CaptureToolbarView: View {
 
             ToolbarModeButton(
                 icon: "macwindow",
-                label: "Window",
+                label: L10n.string("recording.mode.window", defaultValue: "Window"),
                 isSelected: coordinator.captureMode == .window
             ) {
                 coordinator.captureMode = .window
@@ -171,8 +171,8 @@ struct CaptureToolbarView: View {
 
             ToolbarIconButton(
                 icon: "xmark",
-                label: "Close",
-                tooltip: "Close",
+                label: L10n.string("recording.action.close", defaultValue: "Close"),
+                tooltip: L10n.string("recording.action.close", defaultValue: "Close"),
                 action: coordinator.cancel
             )
         }
@@ -192,7 +192,7 @@ struct CaptureToolbarView: View {
                 .foregroundColor(.white)
 
             if coordinator.isPaused {
-                Text("PAUSED")
+                Text(L10n.string("recording.paused", defaultValue: "PAUSED"))
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.yellow)
                     .padding(.horizontal, 6)
@@ -208,32 +208,36 @@ struct CaptureToolbarView: View {
             // Restart
             ToolbarIconButton(
                 icon: "arrow.counterclockwise",
-                label: "Restart",
-                tooltip: "Restart Recording",
+                label: L10n.string("recording.action.restart", defaultValue: "Restart"),
+                tooltip: L10n.string("recording.action.restart.tooltip", defaultValue: "Restart Recording"),
                 action: coordinator.restartRecording
             )
 
             // Pause/Resume
             ToolbarIconButton(
                 icon: coordinator.isPaused ? "play.fill" : "pause.fill",
-                label: coordinator.isPaused ? "Resume" : "Pause",
-                tooltip: coordinator.isPaused ? "Resume" : "Pause",
+                label: coordinator.isPaused
+                    ? L10n.string("recording.action.resume", defaultValue: "Resume")
+                    : L10n.string("recording.action.pause", defaultValue: "Pause"),
+                tooltip: coordinator.isPaused
+                    ? L10n.string("recording.action.resume", defaultValue: "Resume")
+                    : L10n.string("recording.action.pause", defaultValue: "Pause"),
                 action: coordinator.togglePause
             )
 
             // Delete
             ToolbarIconButton(
                 icon: "trash",
-                label: "Delete",
-                tooltip: "Delete Recording",
+                label: L10n.string("recording.action.delete", defaultValue: "Delete"),
+                tooltip: L10n.string("recording.action.delete.tooltip", defaultValue: "Delete Recording"),
                 action: coordinator.deleteRecording
             )
 
             // Stop
             ToolbarIconButton(
                 icon: "stop.fill",
-                label: "Stop",
-                tooltip: "Stop Recording",
+                label: L10n.string("recording.action.stop", defaultValue: "Stop"),
+                tooltip: L10n.string("recording.action.stop.tooltip", defaultValue: "Stop Recording"),
                 action: coordinator.stopRecording
             )
         }
@@ -333,7 +337,7 @@ private struct ToolbarSystemAudioToggle: View {
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: isEnabled ? "speaker.wave.2.fill" : "speaker.slash")
                     .font(.system(size: 13, weight: .medium))
-                Text("System")
+                Text(L10n.string("recording.system_audio", defaultValue: "System"))
                     .font(.system(size: 9, weight: .medium))
             }
             .foregroundColor(.white.opacity(isEnabled
@@ -348,7 +352,11 @@ private struct ToolbarSystemAudioToggle: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-        .help(isEnabled ? "Disable System Audio" : "Enable System Audio")
+        .help(
+            isEnabled
+                ? L10n.string("recording.system_audio.disable", defaultValue: "Disable System Audio")
+                : L10n.string("recording.system_audio.enable", defaultValue: "Enable System Audio")
+        )
     }
 }
 
@@ -367,7 +375,7 @@ private struct ToolbarMicMenu: View {
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: isEnabled ? "mic.fill" : "mic.slash")
                     .font(.system(size: 13, weight: .medium))
-                Text("Mic")
+                Text(L10n.string("recording.microphone", defaultValue: "Mic"))
                     .font(.system(size: 9, weight: .medium))
             }
             .foregroundColor(.white.opacity(isEnabled
@@ -382,7 +390,11 @@ private struct ToolbarMicMenu: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-        .help(isEnabled ? "Microphone Source" : "Enable Microphone")
+        .help(
+            isEnabled
+                ? L10n.string("recording.microphone.source", defaultValue: "Microphone Source")
+                : L10n.string("recording.microphone.enable", defaultValue: "Enable Microphone")
+        )
         .onAppear { refreshDevices() }
         .onReceive(
             NotificationCenter.default.publisher(for: .AVCaptureDeviceWasConnected)
@@ -408,7 +420,11 @@ private struct ToolbarMicMenu: View {
 
         menu.addItem(.separator())
 
-        let offItem = NSMenuItem(title: "Off", action: #selector(ToolbarMenuActionTarget.micOff(_:)), keyEquivalent: "")
+        let offItem = NSMenuItem(
+            title: L10n.string("recording.microphone.off", defaultValue: "Off"),
+            action: #selector(ToolbarMenuActionTarget.micOff(_:)),
+            keyEquivalent: ""
+        )
         offItem.state = isEnabled ? .off : .on
         menu.addItem(offItem)
 
@@ -455,7 +471,7 @@ private struct ToolbarFrameRateMenu: View {
             VStack(spacing: Spacing.xxs) {
                 Image(systemName: "gauge.with.dots.needle.67percent")
                     .font(.system(size: 13, weight: .medium))
-                Text("\(frameRate)fps")
+                Text(L10n.renderSettingsFPS(frameRate))
                     .font(.system(size: 9, weight: .medium))
             }
             .foregroundColor(.white.opacity(isHovering ? DesignOpacity.opaque : DesignOpacity.strong))
@@ -468,23 +484,24 @@ private struct ToolbarFrameRateMenu: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-        .help("Capture Frame Rate")
+        .help(L10n.string("recording.frame_rate.tooltip", defaultValue: "Capture Frame Rate"))
     }
 
     private func showMenu() {
         let menu = NSMenu()
 
         for fps in options {
-            let item = NSMenuItem(title: "\(fps) fps", action: #selector(ToolbarMenuActionTarget.fpsSelected(_:)), keyEquivalent: "")
+            let item = NSMenuItem(
+                title: L10n.renderSettingsFPS(fps),
+                action: #selector(ToolbarMenuActionTarget.fpsSelected(_:)),
+                keyEquivalent: ""
+            )
             item.tag = fps
             item.state = (frameRate == fps) ? .on : .off
             menu.addItem(item)
         }
 
-        let currentFrameRate = frameRate
-        let target = ToolbarMenuActionTarget { deviceID in
-            // unused for fps
-        }
+        let target = ToolbarMenuActionTarget { _ in }
         target.fpsHandler = { fps in
             self.frameRate = fps
         }
@@ -492,8 +509,6 @@ private struct ToolbarFrameRateMenu: View {
         for item in menu.items {
             item.target = target
         }
-
-        _ = currentFrameRate
         let position = NSEvent.mouseLocation
         menu.popUp(positioning: nil, at: NSPoint(x: position.x, y: position.y), in: nil)
     }

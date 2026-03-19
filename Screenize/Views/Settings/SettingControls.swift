@@ -96,13 +96,13 @@ struct RangeSettingSlider: View {
                 .opacity(isHovering && (min != defaultMin || max != defaultMax) ? 1.0 : 0.0)
             }
             HStack(spacing: 8) {
-                Text("Min")
+                Text(L10n.string("common.min", defaultValue: "Min"))
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
                     .frame(width: 24)
                 Slider(value: $min, in: range.lowerBound...max)
                     .frame(minWidth: 80)
-                Text("Max")
+                Text(L10n.string("common.max", defaultValue: "Max"))
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
                     .frame(width: 28)

@@ -50,25 +50,25 @@ enum ExportProgress: Equatable {
     var statusText: String {
         switch self {
         case .idle:
-            return "Idle"
+            return L10n.exportStatusIdle
         case .preparing:
-            return "Preparing..."
+            return L10n.exportStatusPreparing
         case .loadingVideo:
-            return "Loading video..."
+            return L10n.exportStatusLoadingVideo
         case .loadingMouseData:
-            return "Loading mouse data..."
+            return L10n.exportStatusLoadingMouseData
         case .processing(let frame, let total):
-            return "Processing frames... (\(frame)/\(total))"
+            return L10n.exportStatusProcessing(frame: frame, total: total)
         case .encoding:
-            return "Encoding..."
+            return L10n.exportStatusEncoding
         case .finalizing:
-            return "Finalizing..."
+            return L10n.exportStatusFinalizing
         case .completed:
-            return "Completed"
+            return L10n.exportStatusCompleted
         case .failed(let message):
-            return "Failed: \(message)"
+            return L10n.exportStatusFailed(message: message)
         case .cancelled:
-            return "Cancelled"
+            return L10n.exportStatusCancelled
         }
     }
 

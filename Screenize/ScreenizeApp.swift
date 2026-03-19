@@ -69,13 +69,13 @@ struct ScreenizeApp: App {
             }
 
             CommandGroup(replacing: .undoRedo) {
-                Button("Undo") {
+                Button(L10n.string("app.menu.undo", defaultValue: "Undo")) {
                     NotificationCenter.default.post(name: .editorUndo, object: nil)
                 }
                 .keyboardShortcut("z", modifiers: .command)
                 .disabled(!appState.canUndo)
 
-                Button("Redo") {
+                Button(L10n.string("app.menu.redo", defaultValue: "Redo")) {
                     NotificationCenter.default.post(name: .editorRedo, object: nil)
                 }
                 .keyboardShortcut("z", modifiers: [.command, .shift])
@@ -83,73 +83,82 @@ struct ScreenizeApp: App {
             }
 
             CommandGroup(replacing: .pasteboard) {
-                Button("Copy") {
+                Button(L10n.string("app.menu.copy", defaultValue: "Copy")) {
                     if !NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: nil) {
                         NotificationCenter.default.post(name: .editorCopy, object: nil)
                     }
                 }
                 .keyboardShortcut("c", modifiers: .command)
 
-                Button("Paste") {
+                Button(L10n.string("app.menu.paste", defaultValue: "Paste")) {
                     if !NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil) {
                         NotificationCenter.default.post(name: .editorPaste, object: nil)
                     }
                 }
                 .keyboardShortcut("v", modifiers: .command)
 
-                Button("Cut") {
+                Button(L10n.string("app.menu.cut", defaultValue: "Cut")) {
                     NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("x", modifiers: .command)
 
-                Button("Select All") {
+                Button(L10n.string("app.menu.select_all", defaultValue: "Select All")) {
                     NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("a", modifiers: .command)
 
                 Divider()
 
-                Button("Duplicate") {
+                Button(L10n.string("app.menu.duplicate", defaultValue: "Duplicate")) {
                     NotificationCenter.default.post(name: .editorDuplicate, object: nil)
                 }
                 .keyboardShortcut("t", modifiers: .command)
             }
 
             CommandGroup(after: .appSettings) {
-                Button("Advanced Generation Settings...") {
+                Button(
+                    L10n.string(
+                        "app.menu.advanced_generation_settings",
+                        defaultValue: "Advanced Generation Settings..."
+                    )
+                ) {
                     GenerationSettingsWindowController.shared.showWindow()
                 }
                 .keyboardShortcut(",", modifiers: [.command, .option])
             }
 
             CommandGroup(replacing: .help) {
-                Button("Keyboard Shortcuts") {
+                Button(L10n.string("app.menu.keyboard_shortcuts", defaultValue: "Keyboard Shortcuts")) {
                     NotificationCenter.default.post(name: .showKeyboardShortcuts, object: nil)
                 }
                 .keyboardShortcut("/", modifiers: [.command, .shift])
             }
 
             CommandGroup(replacing: .newItem) {
-                Button("New Recording...") {
+                Button(L10n.string("app.menu.new_recording", defaultValue: "New Recording...")) {
                     Task { await appState.showCaptureToolbarFlow() }
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
                 Divider()
 
-                Button("Open Video...") {
+                Button(L10n.string("app.menu.open_video", defaultValue: "Open Video...")) {
                     openVideoFile()
                 }
                 .keyboardShortcut("o", modifiers: .command)
 
-                Button("Open Project...") {
+                Button(L10n.string("app.menu.open_project", defaultValue: "Open Project...")) {
                     openProjectFile()
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
 
                 Divider()
 
-                Button(appState.isRecording ? "Stop Recording" : "Start Recording") {
+                Button(
+                    appState.isRecording
+                        ? L10n.string("app.menu.stop_recording", defaultValue: "Stop Recording")
+                        : L10n.string("app.menu.start_recording", defaultValue: "Start Recording")
+                ) {
                     Task {
                         await appState.toggleRecording()
                     }

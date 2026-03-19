@@ -168,16 +168,16 @@ enum MicrophoneRecorderError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noDeviceAvailable:
-            return "No microphone device available"
+            return L10n.noMicrophoneDeviceAvailable
         case .inputConfigFailed:
-            return "Failed to configure microphone input"
+            return L10n.failedToConfigureMicrophoneInput
         case .outputConfigFailed:
-            return "Failed to configure audio output"
+            return L10n.failedToConfigureAudioOutput
         case .writerStartFailed(let error):
             if let error {
-                return "Failed to start audio writer: \(error.localizedDescription)"
+                return L10n.failedToStartAudioWriter(detail: error.localizedDescription)
             }
-            return "Failed to start audio writer"
+            return L10n.failedToStartAudioWriter
         }
     }
 }

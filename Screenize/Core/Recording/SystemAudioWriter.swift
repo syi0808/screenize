@@ -114,9 +114,9 @@ enum SystemAudioWriterError: LocalizedError {
         switch self {
         case .writerStartFailed(let error):
             if let error {
-                return "Failed to start system audio writer: \(error.localizedDescription)"
+                return L10n.failedToStartSystemAudioWriter(detail: error.localizedDescription)
             }
-            return "Failed to start system audio writer"
+            return L10n.failedToStartSystemAudioWriter
         }
     }
 }

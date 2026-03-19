@@ -30,7 +30,11 @@ struct SettingsInspector: View {
             Divider()
 
             // Background
-            SectionHeader(title: "Background", icon: "rectangle.on.rectangle", iconColor: DesignColors.sectionBackground)
+            SectionHeader(
+                title: L10n.string("inspector.settings.section.background", defaultValue: "Background"),
+                icon: "rectangle.on.rectangle",
+                iconColor: DesignColors.sectionBackground
+            )
 
             Divider()
 
@@ -45,7 +49,7 @@ struct SettingsInspector: View {
 
             // Padding
             SliderWithField(
-                label: "Padding",
+                label: L10n.string("inspector.settings.padding", defaultValue: "Padding"),
                 value: $settings.padding.asDouble,
                 range: 0...100,
                 step: 4,
@@ -58,13 +62,16 @@ struct SettingsInspector: View {
 
             // Window inset
             SliderWithField(
-                label: "Window Inset",
+                label: L10n.string("inspector.settings.window_inset", defaultValue: "Window Inset"),
                 value: $settings.windowInset.asDouble,
                 range: 0...30,
                 step: 1,
                 unit: "px",
                 presets: [("0", 0), ("8", 8), ("12", 12), ("16", 16)],
-                description: "Remove window border by cropping edges",
+                description: L10n.string(
+                    "inspector.settings.window_inset_description",
+                    defaultValue: "Remove window border by cropping edges"
+                ),
                 onChange: onChange
             )
 
@@ -72,7 +79,7 @@ struct SettingsInspector: View {
 
             // Corner radius
             SliderWithField(
-                label: "Corner Radius",
+                label: L10n.string("inspector.settings.corner_radius", defaultValue: "Corner Radius"),
                 value: $settings.cornerRadius.asDouble,
                 range: 0...60,
                 step: 2,
@@ -95,11 +102,15 @@ struct SettingsInspector: View {
 
     private var cursorSettingsSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            SectionHeader(title: "Cursor", icon: "cursorarrow", iconColor: DesignColors.sectionCursor)
+            SectionHeader(
+                title: L10n.string("inspector.settings.section.cursor", defaultValue: "Cursor"),
+                icon: "cursorarrow",
+                iconColor: DesignColors.sectionCursor
+            )
 
             // Cursor scale
             SliderWithField(
-                label: "Cursor Scale",
+                label: L10n.string("inspector.settings.cursor.scale", defaultValue: "Cursor Scale"),
                 value: cursorScaleBinding,
                 range: 0.5...5.0,
                 step: 0.1,
@@ -112,9 +123,14 @@ struct SettingsInspector: View {
             // Smooth cursor interpolation
             Toggle(isOn: smoothCursorBinding) {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text("Smooth Cursor")
+                    Text(L10n.string("inspector.settings.cursor.smooth_title", defaultValue: "Smooth Cursor"))
                         .font(Typography.bodyMedium)
-                    Text("Spring-based cursor smoothing for polished motion")
+                    Text(
+                        L10n.string(
+                            "inspector.settings.cursor.smooth_description",
+                            defaultValue: "Spring-based cursor smoothing for polished motion"
+                        )
+                    )
                         .font(Typography.monoSmall)
                         .foregroundColor(.secondary)
                 }
@@ -132,12 +148,12 @@ struct SettingsInspector: View {
     private var cursorSmoothingControls: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             SubSectionLabel(
-                label: "Smoothing",
+                label: L10n.string("inspector.settings.cursor.smoothing", defaultValue: "Smoothing"),
                 value: smoothingIntensityLabel
             )
 
             HStack(spacing: Spacing.md) {
-                Text("Snappy")
+                Text(L10n.string("inspector.settings.cursor.snappy", defaultValue: "Snappy"))
                     .font(Typography.monoSmall)
                     .foregroundColor(.secondary)
 
@@ -147,7 +163,7 @@ struct SettingsInspector: View {
                     step: 0.01
                 )
 
-                Text("Smooth")
+                Text(L10n.string("inspector.settings.cursor.smooth_label", defaultValue: "Smooth"))
                     .font(Typography.monoSmall)
                     .foregroundColor(.secondary)
             }
@@ -167,9 +183,14 @@ struct SettingsInspector: View {
 
             Toggle(isOn: adaptiveResponseBinding) {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
-                    Text("Adaptive Speed")
+                    Text(L10n.string("inspector.settings.cursor.adaptive_speed", defaultValue: "Adaptive Speed"))
                         .font(Typography.bodyMedium)
-                    Text("Reduce lag for fast cursor movements")
+                    Text(
+                        L10n.string(
+                            "inspector.settings.cursor.adaptive_speed_description",
+                            defaultValue: "Reduce lag for fast cursor movements"
+                        )
+                    )
                         .font(Typography.monoSmall)
                         .foregroundColor(.secondary)
                 }
@@ -178,7 +199,10 @@ struct SettingsInspector: View {
     }
 
     private var smoothingPresets: [(label: String, value: CGFloat)] {
-        [("Subtle", 0.04), ("Default", 0.08), ("Smooth", 0.12), ("Heavy", 0.18)]
+        [(L10n.string("inspector.settings.cursor.preset.subtle", defaultValue: "Subtle"), 0.04),
+         (L10n.string("inspector.settings.cursor.preset.default", defaultValue: "Default"), 0.08),
+         (L10n.string("inspector.settings.cursor.preset.smooth", defaultValue: "Smooth"), 0.12),
+         (L10n.string("inspector.settings.cursor.preset.heavy", defaultValue: "Heavy"), 0.18)]
     }
 
     private var smoothingIntensityLabel: String {
@@ -250,9 +274,9 @@ struct SettingsInspector: View {
     private var backgroundToggle: some View {
         Toggle(isOn: $settings.backgroundEnabled) {
             VStack(alignment: .leading, spacing: Spacing.xxs) {
-                Text("Background")
+                Text(L10n.string("inspector.settings.background.title", defaultValue: "Background"))
                     .font(Typography.bodyMedium)
-                Text("Add background behind window")
+                Text(L10n.string("inspector.settings.background.description", defaultValue: "Add background behind window"))
                     .font(Typography.monoSmall)
                     .foregroundColor(.secondary)
             }
@@ -264,11 +288,11 @@ struct SettingsInspector: View {
 
     private var backgroundStyleSection: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            SubSectionLabel(label: "Background Style")
+            SubSectionLabel(label: L10n.string("inspector.settings.background.style", defaultValue: "Background Style"))
 
             // Gradient presets
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Gradient Presets")
+                Text(L10n.string("inspector.settings.background.gradient_presets", defaultValue: "Gradient Presets"))
                     .font(Typography.monoSmall)
                     .foregroundStyle(.tertiary)
 
@@ -293,7 +317,7 @@ struct SettingsInspector: View {
 
             // Solid color selection
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Solid Color")
+                Text(L10n.string("inspector.settings.background.solid_color", defaultValue: "Solid Color"))
                     .font(Typography.monoSmall)
                     .foregroundStyle(.tertiary)
 
@@ -323,7 +347,7 @@ struct SettingsInspector: View {
 
             // Custom image
             VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("Custom Image")
+                Text(L10n.string("inspector.settings.background.custom_image", defaultValue: "Custom Image"))
                     .font(Typography.monoSmall)
                     .foregroundStyle(.tertiary)
 
@@ -333,7 +357,17 @@ struct SettingsInspector: View {
                     } label: {
                         HStack(spacing: Spacing.xs) {
                             Image(systemName: "photo")
-                            Text(isBackgroundImageSelected ? "Change Image" : "Select Image")
+                            Text(
+                                isBackgroundImageSelected
+                                    ? L10n.string(
+                                        "inspector.settings.background.change_image",
+                                        defaultValue: "Change Image"
+                                    )
+                                    : L10n.string(
+                                        "inspector.settings.background.select_image",
+                                        defaultValue: "Select Image"
+                                    )
+                            )
                         }
                     }
                     .buttonStyle(.bordered)
@@ -348,7 +382,7 @@ struct SettingsInspector: View {
                                 .foregroundColor(.secondary)
                         }
                         .buttonStyle(.plain)
-                        .help("Remove background image")
+                        .help(L10n.string("inspector.settings.background.remove_image", defaultValue: "Remove background image"))
                     }
                 }
             }
@@ -364,11 +398,11 @@ struct SettingsInspector: View {
 
     private var shadowSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            SubSectionLabel(label: "Shadow")
+            SubSectionLabel(label: L10n.string("inspector.settings.section.shadow", defaultValue: "Shadow"))
 
             // Shadow radius
             SliderWithField(
-                label: "Radius",
+                label: L10n.string("inspector.settings.shadow.radius", defaultValue: "Radius"),
                 value: $settings.shadowRadius.asDouble,
                 range: 0...50,
                 step: 2,
@@ -378,7 +412,7 @@ struct SettingsInspector: View {
 
             // Shadow opacity
             SliderWithField(
-                label: "Opacity",
+                label: L10n.string("inspector.settings.shadow.opacity", defaultValue: "Opacity"),
                 value: shadowOpacityPercentBinding,
                 range: 0...100,
                 step: 5,
@@ -433,7 +467,7 @@ struct SettingsInspector: View {
         panel.allowedContentTypes = [.image, .png, .jpeg, .heic]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.message = "Select a background image"
+        panel.message = L10n.string("inspector.settings.background.select_image_message", defaultValue: "Select a background image")
 
         if panel.runModal() == .OK, let url = panel.url {
             settings.backgroundStyle = .image(url)

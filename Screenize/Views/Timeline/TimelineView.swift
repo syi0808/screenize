@@ -198,7 +198,7 @@ struct TimelineView: View {
                     Image(systemName: "arrow.left.and.right.square")
                 }
                 .buttonStyle(ToolbarIconButtonStyle())
-                .help("Fit timeline to view")
+                .help(L10n.string("timeline.fit_to_view", defaultValue: "Fit timeline to view"))
             }
         }
         .padding(.horizontal, Spacing.md)

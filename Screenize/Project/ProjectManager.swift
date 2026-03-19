@@ -231,13 +231,13 @@ enum ProjectManagerError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .videoFileNotFound(let url):
-            return "Video file not found: \(url.lastPathComponent)"
+            return L10n.videoFileNotFound(filename: url.lastPathComponent)
         case .mouseDataNotFound(let url):
-            return "Mouse data file not found: \(url.lastPathComponent)"
+            return L10n.mouseDataFileNotFound(filename: url.lastPathComponent)
         case .invalidProjectFile:
-            return "Invalid project file format"
+            return L10n.invalidProjectFile
         case .saveFailed:
-            return "Failed to save project"
+            return L10n.saveProjectFailed
         }
     }
 }

@@ -184,11 +184,11 @@ enum VideoFrameExtractorError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noVideoTrack:
-            return "Could not find a video track"
+            return L10n.noVideoTrackFound
         case .generatorNotReady:
-            return "Image generator is not ready"
+            return L10n.imageGeneratorNotReady
         case .frameExtractionFailed:
-            return "Failed to extract frame"
+            return L10n.failedToExtractFrame
         }
     }
 }

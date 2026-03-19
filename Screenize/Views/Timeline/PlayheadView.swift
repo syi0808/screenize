@@ -146,7 +146,7 @@ struct PlayheadLine: View {
 
         var body: some View {
             VStack {
-                Text("Current Time: \(String(format: "%.2f", currentTime))s")
+                Text(L10n.format("playhead.preview.current_time", defaultValue: "Current Time: %.2fs", currentTime))
                     .font(.headline)
 
                 ZStack {

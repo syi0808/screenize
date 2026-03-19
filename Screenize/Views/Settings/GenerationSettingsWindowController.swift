@@ -23,7 +23,10 @@ final class GenerationSettingsWindowController {
 
         let hostingController = NSHostingController(rootView: settingsView)
         let newWindow = NSWindow(contentViewController: hostingController)
-        newWindow.title = "Advanced Generation Settings"
+        newWindow.title = L10n.string(
+            "generation_settings.window.title",
+            defaultValue: "Advanced Generation Settings"
+        )
         newWindow.styleMask = [.titled, .closable, .resizable]
         newWindow.setContentSize(NSSize(width: 520, height: 700))
         newWindow.minSize = NSSize(width: 420, height: 400)

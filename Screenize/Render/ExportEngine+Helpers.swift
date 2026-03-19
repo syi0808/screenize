@@ -14,20 +14,20 @@ enum ExportEngineError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyExporting:
-            return "An export is already in progress"
+            return L10n.exportAlreadyInProgress
         case .noVideoTrack:
-            return "Could not find a video track"
+            return L10n.noVideoTrackFound
         case .readerStartFailed:
-            return "Failed to start reading video"
+            return L10n.failedToStartReadingVideo
         case .writerStartFailed(let underlyingError):
             if let error = underlyingError {
-                return "Failed to start writing video: \(error.localizedDescription)"
+                return L10n.failedToStartWritingVideo(detail: error.localizedDescription)
             }
-            return "Failed to start writing video"
+            return L10n.failedToStartWritingVideo
         case .writerFailed:
-            return "Failed to write video"
+            return L10n.failedToWriteVideo
         case .cancelled:
-            return "Export was cancelled"
+            return L10n.exportWasCancelled
         }
     }
 }

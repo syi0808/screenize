@@ -87,7 +87,7 @@ struct PreviewView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Video Preview")
+            .accessibilityLabel(L10n.string("preview.video.accessibility.label", defaultValue: "Video Preview"))
             .onTapGesture {
                 withMotionSafeAnimation(AnimationTokens.standard) {
                     showControls.toggle()
@@ -110,7 +110,7 @@ struct PreviewView: View {
             ProgressView()
                 .scaleEffect(1.5)
 
-            Text("Loading preview...")
+            Text(L10n.string("preview.loading", defaultValue: "Loading preview..."))
                 .font(Typography.caption)
                 .foregroundColor(.secondary)
         }
@@ -124,7 +124,7 @@ struct PreviewView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.red.opacity(0.7))
 
-            Text("Preview failed")
+            Text(L10n.string("preview.failed", defaultValue: "Preview failed"))
                 .font(Typography.captionMedium)
                 .foregroundColor(.secondary)
 
@@ -145,7 +145,7 @@ struct PreviewView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.secondary.opacity(0.5))
 
-            Text("No preview available")
+            Text(L10n.string("preview.empty", defaultValue: "No preview available"))
                 .font(Typography.caption)
                 .foregroundColor(.secondary)
         }
@@ -173,7 +173,11 @@ struct PreviewView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.white)
-                    .accessibilityLabel(isPlaying ? "Pause" : "Play")
+                    .accessibilityLabel(
+                        isPlaying
+                            ? L10n.string("preview.control.pause", defaultValue: "Pause")
+                            : L10n.string("preview.control.play", defaultValue: "Play")
+                    )
 
                     // Current time display
                     Text(formatTime(currentTime))
@@ -190,7 +194,7 @@ struct PreviewView: View {
                     Spacer()
 
                     // Frame display
-                    Text("Frame \(previewEngine.currentFrameNumber)")
+                    Text(L10n.format("preview.frame", defaultValue: "Frame %d", previewEngine.currentFrameNumber))
                         .font(Typography.monoSmall)
                         .foregroundColor(.white.opacity(0.5))
                 }
@@ -245,8 +249,14 @@ struct PreviewView: View {
         }
         .frame(height: 20)
         .padding(.horizontal, 12)
-        .accessibilityLabel("Playback progress")
-        .accessibilityValue("\(Int(previewEngine.progress * 100)) percent")
+        .accessibilityLabel(L10n.string("preview.progress.accessibility.label", defaultValue: "Playback progress"))
+        .accessibilityValue(
+            L10n.format(
+                "preview.progress.accessibility.value",
+                defaultValue: "%d percent",
+                Int(previewEngine.progress * 100)
+            )
+        )
     }
 
     // MARK: - Helpers
@@ -281,7 +291,7 @@ struct PreviewView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(.yellow)
 
-                Text("Render error at frame \(error.frameIndex)")
+                Text(L10n.previewRenderError(frameIndex: error.frameIndex))
                     .font(Typography.captionMedium)
                     .foregroundColor(.white)
 
@@ -294,7 +304,7 @@ struct PreviewView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Dismiss error")
+                .accessibilityLabel(L10n.string("preview.render_error.dismiss", defaultValue: "Dismiss error"))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -320,7 +330,7 @@ struct MiniPreviewView: View {
     var body: some View {
         VStack(spacing: 4) {
             if let frame = frame {
-                Image(frame, scale: 1, label: Text("Mini Preview"))
+                Image(frame, scale: 1, label: Text(L10n.string("preview.mini_preview", defaultValue: "Mini Preview")))
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 160, height: 90)
