@@ -19,16 +19,25 @@ final class AudioMixer {
     /// Shared export queue for audio writing operations
     private let exportQueue = DispatchQueue(label: "com.screenize.audio-export", qos: .userInitiated)
 
-    /// PCM decompression settings for reading source audio
-    private static let decompressionSettings: [String: Any] = [
-        AVFormatIDKey: kAudioFormatLinearPCM,
-        AVLinearPCMBitDepthKey: 32,
-        AVLinearPCMIsFloatKey: true,
-        AVLinearPCMIsBigEndianKey: false,
-        AVLinearPCMIsNonInterleaved: false,
-        AVSampleRateKey: 48000,
-        AVNumberOfChannelsKey: 2
-    ]
+    /// Build PCM decompression settings matching the source track's channel count.
+    private static func decompressionSettings(for track: AVAssetTrack) async -> [String: Any] {
+        var channels = 2
+        if let formatDescriptions = try? await track.load(.formatDescriptions),
+           let desc = formatDescriptions.first {
+            if let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(desc) {
+                channels = Int(asbd.pointee.mChannelsPerFrame)
+            }
+        }
+        return [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVLinearPCMBitDepthKey: 32,
+            AVLinearPCMIsFloatKey: true,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsNonInterleaved: false,
+            AVSampleRateKey: 48000,
+            AVNumberOfChannelsKey: channels
+        ]
+    }
 
     // MARK: - Single Source Passthrough
 
@@ -49,8 +58,11 @@ final class AudioMixer {
             end: CMTime(seconds: trimEnd, preferredTimescale: 600)
         )
 
+        let settings = await Self.decompressionSettings(for: audioTrack)
+        let isMono = (settings[AVNumberOfChannelsKey] as? Int) == 1
+
         let reader = try AVAssetReader(asset: asset)
-        let output = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: Self.decompressionSettings)
+        let output = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: settings)
         output.alwaysCopiesSampleData = false
         reader.timeRange = timeRange
         reader.add(output)
@@ -58,8 +70,6 @@ final class AudioMixer {
         guard reader.startReading() else {
             throw AudioMixerError.readerStartFailed(reader.error)
         }
-
-
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var didResume = false
@@ -75,11 +85,19 @@ final class AudioMixer {
                         return
                     }
 
-                    if volume != 1.0 {
-                        Self.applyVolume(to: sampleBuffer, volume: volume)
+                    // Convert mono to stereo if needed (writer expects stereo AAC)
+                    let stereoBuffer: CMSampleBuffer
+                    if isMono, let converted = Self.monoToStereo(sampleBuffer) {
+                        stereoBuffer = converted
+                    } else {
+                        stereoBuffer = sampleBuffer
                     }
 
-                    writerInput.append(sampleBuffer)
+                    if volume != 1.0 {
+                        Self.applyVolume(to: stereoBuffer, volume: volume)
+                    }
+
+                    writerInput.append(stereoBuffer)
                 }
             }
         }
@@ -119,8 +137,9 @@ final class AudioMixer {
             return
         }
 
+        let systemSettings = await Self.decompressionSettings(for: systemTrack)
         let systemReader = try AVAssetReader(asset: systemAsset)
-        let systemOutput = AVAssetReaderTrackOutput(track: systemTrack, outputSettings: Self.decompressionSettings)
+        let systemOutput = AVAssetReaderTrackOutput(track: systemTrack, outputSettings: systemSettings)
         systemOutput.alwaysCopiesSampleData = false
         systemReader.timeRange = timeRange
         systemReader.add(systemOutput)
@@ -141,8 +160,11 @@ final class AudioMixer {
             return
         }
 
+        let micSettings = await Self.decompressionSettings(for: micTrack)
+        let micIsMono = (micSettings[AVNumberOfChannelsKey] as? Int) == 1
+
         let micReader = try AVAssetReader(asset: micAsset)
-        let micOutput = AVAssetReaderTrackOutput(track: micTrack, outputSettings: Self.decompressionSettings)
+        let micOutput = AVAssetReaderTrackOutput(track: micTrack, outputSettings: micSettings)
         micOutput.alwaysCopiesSampleData = false
         micReader.timeRange = timeRange
         micReader.add(micOutput)
@@ -155,15 +177,21 @@ final class AudioMixer {
             throw AudioMixerError.readerStartFailed(micReader.error)
         }
 
-
-
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var didResume = false
 
             writerInput.requestMediaDataWhenReady(on: exportQueue) {
                 while writerInput.isReadyForMoreMediaData {
                     let systemSample = systemOutput.copyNextSampleBuffer()
-                    let micSample = micOutput.copyNextSampleBuffer()
+                    let rawMicSample = micOutput.copyNextSampleBuffer()
+
+                    // Convert mono mic to stereo if needed
+                    let micSample: CMSampleBuffer?
+                    if micIsMono, let raw = rawMicSample {
+                        micSample = Self.monoToStereo(raw)
+                    } else {
+                        micSample = rawMicSample
+                    }
 
                     // Both sources exhausted
                     if systemSample == nil && micSample == nil {
@@ -315,6 +343,105 @@ final class AudioMixer {
             refcon: nil,
             formatDescription: format,
             sampleCount: numSamples,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timing,
+            sampleSizeEntryCount: 0,
+            sampleSizeArray: nil,
+            sampleBufferOut: &outputSampleBuffer
+        )
+
+        return outputSampleBuffer
+    }
+
+    /// Convert a mono PCM sample buffer to stereo by duplicating the channel.
+    private static func monoToStereo(_ monoBuffer: CMSampleBuffer) -> CMSampleBuffer? {
+        guard let dataBuffer = CMSampleBufferGetDataBuffer(monoBuffer) else { return nil }
+
+        let monoLength = CMBlockBufferGetDataLength(dataBuffer)
+        let monoSampleCount = monoLength / MemoryLayout<Float>.size
+        guard monoSampleCount > 0 else { return nil }
+
+        var dataPointer: UnsafeMutablePointer<Int8>?
+        var lengthAtOffset = 0
+        CMBlockBufferGetDataPointer(dataBuffer, atOffset: 0, lengthAtOffsetOut: &lengthAtOffset,
+                                    totalLengthOut: nil, dataPointerOut: &dataPointer)
+        guard let ptr = dataPointer else { return nil }
+
+        let monoPtr = UnsafeMutableRawPointer(ptr).bindMemory(to: Float.self, capacity: monoSampleCount)
+
+        // Interleave: [L0, L1, ...] -> [L0, L0, L1, L1, ...]
+        let stereoSampleCount = monoSampleCount * 2
+        let stereoBuffer = UnsafeMutablePointer<Float>.allocate(capacity: stereoSampleCount)
+        defer { stereoBuffer.deallocate() }
+
+        for i in 0..<monoSampleCount {
+            stereoBuffer[i * 2] = monoPtr[i]
+            stereoBuffer[i * 2 + 1] = monoPtr[i]
+        }
+
+        let stereoByteLength = stereoSampleCount * MemoryLayout<Float>.size
+        var outputBlockBuffer: CMBlockBuffer?
+        CMBlockBufferCreateWithMemoryBlock(
+            allocator: kCFAllocatorDefault,
+            memoryBlock: nil,
+            blockLength: stereoByteLength,
+            blockAllocator: kCFAllocatorDefault,
+            customBlockSource: nil,
+            offsetToData: 0,
+            dataLength: stereoByteLength,
+            flags: 0,
+            blockBufferOut: &outputBlockBuffer
+        )
+        guard let outBlock = outputBlockBuffer else { return nil }
+
+        CMBlockBufferReplaceDataBytes(
+            with: stereoBuffer,
+            blockBuffer: outBlock,
+            offsetIntoDestination: 0,
+            dataLength: stereoByteLength
+        )
+
+        // Build stereo format description
+        var stereoASBD = AudioStreamBasicDescription(
+            mSampleRate: 48000,
+            mFormatID: kAudioFormatLinearPCM,
+            mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked,
+            mBytesPerPacket: 8,
+            mFramesPerPacket: 1,
+            mBytesPerFrame: 8,
+            mChannelsPerFrame: 2,
+            mBitsPerChannel: 32,
+            mReserved: 0
+        )
+        var formatDescription: CMFormatDescription?
+        CMAudioFormatDescriptionCreate(
+            allocator: kCFAllocatorDefault,
+            asbd: &stereoASBD,
+            layoutSize: 0,
+            layout: nil,
+            magicCookieSize: 0,
+            magicCookie: nil,
+            extensions: nil,
+            formatDescriptionOut: &formatDescription
+        )
+        guard let format = formatDescription else { return nil }
+
+        var timing = CMSampleTimingInfo(
+            duration: CMSampleBufferGetDuration(monoBuffer),
+            presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(monoBuffer),
+            decodeTimeStamp: .invalid
+        )
+
+        let frameCount = monoSampleCount // 1 mono sample = 1 frame
+        var outputSampleBuffer: CMSampleBuffer?
+        CMSampleBufferCreate(
+            allocator: kCFAllocatorDefault,
+            dataBuffer: outBlock,
+            dataReady: true,
+            makeDataReadyCallback: nil,
+            refcon: nil,
+            formatDescription: format,
+            sampleCount: frameCount,
             sampleTimingEntryCount: 1,
             sampleTimingArray: &timing,
             sampleSizeEntryCount: 0,
