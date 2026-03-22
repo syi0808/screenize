@@ -234,7 +234,7 @@
 		BF000001296A0001 /* ScenarioFileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF100001296A0001 /* ScenarioFileManager.swift */; };
 		B6000001296A0001 /* ScenarioStepBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6100001296A0001 /* ScenarioStepBlockView.swift */; };
 		B7000001296A0001 /* ScenarioTrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7100001296A0001 /* ScenarioTrackView.swift */; };
-		FA000001296A0001 /* ScenarioInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA100001296A0001 /* ScenarioInspectorView.swift */; };
+		B9000001296A0001 /* ScenarioInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9100001296A0001 /* ScenarioInspectorView.swift */; };
 		FB000001296A0001 /* PathGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB100001296A0001 /* PathGenerator.swift */; };
 		FB000002296A0001 /* PathGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB100002296A0001 /* PathGeneratorTests.swift */; };
 		60000001296A0001 /* AXTargetResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60100001296A0001 /* AXTargetResolver.swift */; };
@@ -502,7 +502,7 @@
 		BF100001296A0001 /* ScenarioFileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioFileManager.swift; sourceTree = "<group>"; };
 		B6100001296A0001 /* ScenarioStepBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioStepBlockView.swift; sourceTree = "<group>"; };
 		B7100001296A0001 /* ScenarioTrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioTrackView.swift; sourceTree = "<group>"; };
-		FA100001296A0001 /* ScenarioInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioInspectorView.swift; sourceTree = "<group>"; };
+		B9100001296A0001 /* ScenarioInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioInspectorView.swift; sourceTree = "<group>"; };
 		FB100001296A0001 /* PathGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathGenerator.swift; sourceTree = "<group>"; };
 		FB100002296A0001 /* PathGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathGeneratorTests.swift; sourceTree = "<group>"; };
 		60100001296A0001 /* AXTargetResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXTargetResolver.swift; sourceTree = "<group>"; };
@@ -982,7 +982,7 @@
 			children = (
 				B6100001296A0001 /* ScenarioStepBlockView.swift */,
 				B7100001296A0001 /* ScenarioTrackView.swift */,
-				FA100001296A0001 /* ScenarioInspectorView.swift */,
+				B9100001296A0001 /* ScenarioInspectorView.swift */,
 			);
 			path = Scenario;
 			sourceTree = "<group>";
@@ -1534,7 +1534,7 @@
 				BF000001296A0001 /* ScenarioFileManager.swift in Sources */,
 				B6000001296A0001 /* ScenarioStepBlockView.swift in Sources */,
 				B7000001296A0001 /* ScenarioTrackView.swift in Sources */,
-				FA000001296A0001 /* ScenarioInspectorView.swift in Sources */,
+				B9000001296A0001 /* ScenarioInspectorView.swift in Sources */,
 				FB000001296A0001 /* PathGenerator.swift in Sources */,
 				60000001296A0001 /* AXTargetResolver.swift in Sources */,
 				FF000001296A0001 /* EventInjector.swift in Sources */,
