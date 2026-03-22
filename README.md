@@ -29,6 +29,7 @@ Screenize uses a two-pass processing model: first capture raw video alongside mo
 - **Export Presets** — Save and manage reusable render settings
 - **VFR Recording** — Variable frame rate capture with frame deduplication for smaller file sizes
 - **Auto-Update** — Built-in update checking via Sparkle
+- **Localization** — Available in English, Korean, Chinese, Japanese, French, and German
 
 ### Planned Features
 
