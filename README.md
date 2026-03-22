@@ -46,6 +46,12 @@ Download the latest version from [GitHub Releases](https://github.com/syi0808/sc
 
 Open the `.dmg` file and drag Screenize into the Applications folder.
 
+**Homebrew**
+
+```bash
+brew install --cask thedavidweng/tap/screenize
+```
+
 > **macOS Gatekeeper warning:** Screenize is not notarized with Apple, so macOS may display a warning when you first open the app. To open it:
 >
 > 1. Right-click (or Control-click) the Screenize app in the Applications folder
