@@ -274,7 +274,10 @@ extension EditorViewModel {
     }
 
     private func duplicateAudioSegment(_ id: UUID) -> UUID? {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .audio }),
+        guard let trackIndex = project.timeline.tracks.firstIndex(where: {
+            if case .audio(let t) = $0, t.segments.contains(where: { $0.id == id }) { return true }
+            return false
+        }),
               case .audio(var track) = project.timeline.tracks[trackIndex],
               let original = track.segments.first(where: { $0.id == id }) else { return nil }
 
@@ -297,7 +300,13 @@ extension EditorViewModel {
     private func insertAudioSegment(
         _ original: AudioSegment, startTime: TimeInterval, endTime: TimeInterval
     ) -> UUID? {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .audio }),
+        // Find the audio track that contained the original segment (by matching source)
+        // Fall back to first audio track if no specific match
+        let trackIndex: Int? = project.timeline.tracks.firstIndex(where: {
+            if case .audio(let t) = $0, t.segments.contains(where: { $0.id == original.id }) { return true }
+            return false
+        }) ?? project.timeline.tracks.firstIndex(where: { $0.trackType == .audio })
+        guard let trackIndex,
               case .audio(var track) = project.timeline.tracks[trackIndex] else { return nil }
 
         let pasted = AudioSegment(

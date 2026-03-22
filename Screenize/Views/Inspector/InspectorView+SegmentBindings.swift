@@ -87,7 +87,10 @@ extension InspectorView {
     }
 
     func audioSegmentBinding(for id: UUID) -> Binding<AudioSegment>? {
-        guard let trackIndex = timeline.tracks.firstIndex(where: { $0.trackType == .audio }),
+        guard let trackIndex = timeline.tracks.firstIndex(where: {
+            if case .audio(let t) = $0, t.segments.contains(where: { $0.id == id }) { return true }
+            return false
+        }),
               case .audio(let track) = timeline.tracks[trackIndex],
               track.segments.contains(where: { $0.id == id }) else {
             return nil

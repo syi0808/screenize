@@ -192,16 +192,15 @@ extension EditorViewModel {
     }
 
     private func deleteAudioSegment(_ id: UUID) {
-        guard let trackIndex = project.timeline.tracks.firstIndex(where: { $0.trackType == .audio }) else {
+        for (trackIndex, anyTrack) in project.timeline.tracks.enumerated() {
+            guard case .audio(var track) = anyTrack,
+                  track.segments.contains(where: { $0.id == id }) else {
+                continue
+            }
+            track.removeSegment(id: id)
+            project.timeline.tracks[trackIndex] = .audio(track)
             return
         }
-
-        guard case .audio(var track) = project.timeline.tracks[trackIndex] else {
-            return
-        }
-
-        track.removeSegment(id: id)
-        project.timeline.tracks[trackIndex] = .audio(track)
     }
 
     /// Update segment start/end time as a single edit operation.
