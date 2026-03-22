@@ -418,6 +418,86 @@ struct CoordinateConverter {
     }
 }
 
+// MARK: - CG Normalized ↔ NormalizedPoint
+
+extension CoordinateConverter {
+    /// Convert CG normalized (top-left origin, 0-1) to NormalizedPoint (bottom-left origin, 0-1)
+    static func cgNormalizedToNormalized(_ cgPoint: CGPoint) -> NormalizedPoint {
+        NormalizedPoint(x: cgPoint.x, y: 1.0 - cgPoint.y)
+    }
+
+    /// Convert NormalizedPoint (bottom-left origin, 0-1) to CG normalized (top-left origin, 0-1)
+    static func normalizedToCGNormalized(_ point: NormalizedPoint) -> CGPoint {
+        CGPoint(x: point.x, y: 1.0 - point.y)
+    }
+}
+
+// MARK: - Soft Clamping
+
+/// Soft clamping utilities that ease values near viewport boundaries
+/// instead of hard-clipping, producing smoother camera motion.
+enum SoftClamp {
+
+    /// Soft-clamp a scalar value within [minBound, maxBound].
+    /// In the cushion zones near each boundary the value is eased via smoothstep
+    /// so that motion decelerates gradually instead of hitting a hard wall.
+    /// - Parameters:
+    ///   - value: The raw value to clamp.
+    ///   - minBound: Lower bound.
+    ///   - maxBound: Upper bound.
+    ///   - cushion: Width of the easing zone at each boundary. If <= 0, hard clamp.
+    static func clamp(
+        value: CGFloat, min minBound: CGFloat, max maxBound: CGFloat, cushion: CGFloat
+    ) -> CGFloat {
+        // Hard clamp first
+        let clamped = Swift.max(minBound, Swift.min(maxBound, value))
+
+        guard cushion > 0 else { return clamped }
+
+        // Lower cushion zone: [minBound, minBound + cushion]
+        if clamped < minBound + cushion {
+            let t = (clamped - minBound) / cushion
+            return minBound + cushion * smoothstep(t)
+        }
+
+        // Upper cushion zone: [maxBound - cushion, maxBound]
+        if clamped > maxBound - cushion {
+            let t = (maxBound - clamped) / cushion
+            return maxBound - cushion * smoothstep(t)
+        }
+
+        return clamped
+    }
+
+    /// Soft-clamp a normalized center point so the viewport stays within [0, 1].
+    /// - Parameters:
+    ///   - center: Desired center in normalized coordinates.
+    ///   - zoom: Current zoom level (1.0 = full screen).
+    ///   - cushionFraction: Fraction of the viewport half-size used as cushion (default 0.15).
+    static func clampCenter(
+        _ center: NormalizedPoint, zoom: CGFloat, cushionFraction: CGFloat = 0.15
+    ) -> NormalizedPoint {
+        guard zoom > 1.0 else { return NormalizedPoint(x: 0.5, y: 0.5) }
+
+        let viewportHalf = 0.5 / zoom
+        let cushion = viewportHalf * cushionFraction
+
+        let x = Self.clamp(
+            value: center.x, min: viewportHalf, max: 1.0 - viewportHalf, cushion: cushion
+        )
+        let y = Self.clamp(
+            value: center.y, min: viewportHalf, max: 1.0 - viewportHalf, cushion: cushion
+        )
+        return NormalizedPoint(x: x, y: y)
+    }
+
+    /// Classic smoothstep: t^2 * (3 - 2t), clamped to [0, 1].
+    private static func smoothstep(_ t: CGFloat) -> CGFloat {
+        let c = Swift.max(0, Swift.min(1, t))
+        return c * c * (3 - 2 * c)
+    }
+}
+
 // MARK: - Helper
 
 private func clamp(_ value: CGFloat, min minValue: CGFloat, max maxValue: CGFloat) -> CGFloat {

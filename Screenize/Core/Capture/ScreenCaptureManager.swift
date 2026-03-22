@@ -244,6 +244,18 @@ final class ScreenCaptureManager: NSObject, @unchecked Sendable {
         }
     }
 
+    // MARK: - Dynamic Window Exclusion
+
+    /// Dynamically exclude a window from capture.
+    /// Note: In display capture mode, Screenize app windows are already excluded via excludingApplications.
+    /// This method is for edge cases in window capture mode.
+    @available(macOS 15.0, *)
+    func addExcludedWindow(_ window: NSWindow) async {
+        // Store the window reference for potential future use.
+        // Current implementation: no-op since app-level exclusion handles it.
+        // TODO: Implement SCStream.updateContentFilter when needed for window capture mode
+    }
+
     static func getAvailableContent() async throws -> SCShareableContent {
         try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
     }

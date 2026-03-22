@@ -161,6 +161,9 @@ struct ContentView: View {
                 return
             }
 
+            let scenarioRawEvents = appState.lastScenarioRawEvents
+            let replayScenario = appState.lastReplayScenario
+
             let packageInfo = try PackageManager.shared.createPackageV4(
                 name: videoName,
                 videoURL: videoURL,
@@ -171,15 +174,25 @@ struct ContentView: View {
                 in: parentDirectory,
                 recordingStartDate: appState.lastRecordingStartDate ?? Date(),
                 processTimeStartMs: appState.lastProcessTimeStartMs,
-                appVersion: appVersion
+                appVersion: appVersion,
+                scenarioRawEvents: scenarioRawEvents
             )
 
             appState.lastMouseRecording = nil
             appState.lastMicAudioURL = nil
             appState.lastSystemAudioURL = nil
+            appState.lastScenarioRawEvents = nil
+            appState.lastReplayScenario = nil
 
-            guard let project = await appState.createProject(packageInfo: packageInfo) else {
-                return
+            var project = try await ProjectCreator.createFromRecording(
+                packageInfo: packageInfo,
+                captureMeta: captureMeta,
+                scenarioRawEvents: scenarioRawEvents
+            )
+
+            // If no raw events were captured (replay mode), carry the original scenario
+            if scenarioRawEvents == nil, let replayScenario {
+                project.scenario = replayScenario
             }
 
             let packageURL = try await projectManager.save(project, to: packageInfo.packageURL)

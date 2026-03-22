@@ -3,6 +3,7 @@ import Foundation
 /// User intent classification.
 enum UserIntent: Equatable {
     case typing(context: TypingContext)
+    case focused(context: TypingContext) // Text element focused, not yet typing
     case clicking
     case navigating
     case dragging(DragContext)
@@ -36,4 +37,20 @@ struct IntentSpan {
     let focusPosition: NormalizedPoint
     let focusElement: UIElementInfo?
     var contextChange: UIStateSample.ContextChange?
+
+    /// Create a copy with updated focus position and optional element.
+    func withUpdatedFocus(
+        position: NormalizedPoint,
+        element: UIElementInfo?
+    ) -> IntentSpan {
+        var span = IntentSpan(
+            startTime: startTime, endTime: endTime,
+            intent: intent, confidence: confidence,
+            focusPosition: position,
+            focusElement: element ?? focusElement,
+            contextChange: contextChange
+        )
+        span.contextChange = contextChange
+        return span
+    }
 }

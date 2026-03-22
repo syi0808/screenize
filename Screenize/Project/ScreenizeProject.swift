@@ -30,6 +30,29 @@ struct ScreenizeProject: Codable, Identifiable {
     // Generation settings override (nil = use app defaults)
     var generationSettings: GenerationSettings?
 
+    // Scenario data — runtime-only, not persisted in project.json (stored as separate files)
+    var scenario: Scenario?
+    var scenarioRawEvents: ScenarioRawEvents?
+
+    // MARK: - CodingKeys
+
+    /// Explicit CodingKeys that exclude runtime-only scenario properties from JSON serialization.
+    enum CodingKeys: String, CodingKey {
+        case id
+        case version
+        case name
+        case createdAt
+        case modifiedAt
+        case media
+        case captureMeta
+        case timeline
+        case renderSettings
+        case frameAnalysisCache
+        case frameAnalysisVersion
+        case interop
+        case generationSettings
+    }
+
     init(
         id: UUID = UUID(),
         name: String,

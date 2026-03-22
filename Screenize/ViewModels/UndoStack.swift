@@ -61,6 +61,7 @@ struct EditorSnapshot {
     let timeline: Timeline
     let renderSettings: RenderSettings
     let selection: SegmentSelection
+    var scenario: Scenario?
 }
 
 /// Stack-based undo/redo manager for value-type state

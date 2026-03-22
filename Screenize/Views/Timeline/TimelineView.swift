@@ -62,6 +62,17 @@ struct TimelineView: View {
     @Binding var trimEnd: TimeInterval?
     var onTrimChange: ((TimeInterval, TimeInterval?) -> Void)?
 
+    // MARK: - Scenario
+
+    var scenario: Scenario?
+    @Binding var selectedStepId: UUID?
+    var onStepSelect: ((UUID) -> Void)?
+    var onStepDelete: ((UUID) -> Void)?
+    var onStepDuplicate: ((UUID) -> Void)?
+    var onStepMove: ((UUID, Int, Int) -> Void)?
+    var onStepResize: ((UUID, Int) -> Void)?
+    var onStepAdd: ((ScenarioStep.StepType, Int) -> Void)?
+
     @State var pixelsPerSecond: CGFloat = 50
     @State private var timelineAreaWidth: CGFloat = 0
     @State private var isDraggingTrimStart = false
@@ -78,9 +89,16 @@ struct TimelineView: View {
     let trackHeight: CGFloat = 40
     private let headerWidth: CGFloat = 140
 
-    /// Total height of ruler + all track rows (including dividers)
+    /// Height occupied by the scenario track row (including divider), or 0 if no scenario.
+    private var scenarioTrackRowHeight: CGFloat {
+        scenario != nil ? scenarioTrackHeight + 1 : 0
+    }
+
+    private let scenarioTrackHeight: CGFloat = 36
+
+    /// Total height of ruler + scenario track row (if present) + all segment track rows (including dividers)
     private var totalContentHeight: CGFloat {
-        rulerHeight + 1 + CGFloat(timeline.tracks.count) * (trackHeight + 1)
+        rulerHeight + 1 + scenarioTrackRowHeight + CGFloat(timeline.tracks.count) * (trackHeight + 1)
     }
 
     private var logZoom: Binding<Double> {
@@ -210,6 +228,20 @@ struct TimelineView: View {
             Color.clear.frame(height: rulerHeight)
             Divider()
 
+            if scenario != nil {
+                HStack(spacing: Spacing.xs) {
+                    Image(systemName: "doc.on.clipboard")
+                        .foregroundColor(.teal)
+                        .frame(width: Spacing.lg)
+                    Text("Scenario")
+                        .font(Typography.timelineLabel)
+                    Spacer()
+                }
+                .padding(.horizontal, Spacing.sm)
+                .frame(height: scenarioTrackHeight)
+                Divider()
+            }
+
             ForEach(Array(timeline.tracks.enumerated()), id: \.element.id) { index, track in
                 HStack(spacing: Spacing.sm) {
                     Image(systemName: timelineTrackIcon(for: track.trackType))
@@ -247,6 +279,22 @@ struct TimelineView: View {
 
     private var trackContent: some View {
         VStack(spacing: 0) {
+            if let scenario {
+                ScenarioTrackView(
+                    scenario: scenario,
+                    pixelsPerSecond: pixelsPerSecond,
+                    trimStart: trimStart,
+                    selectedStepId: $selectedStepId,
+                    onStepSelect: onStepSelect,
+                    onStepDelete: onStepDelete,
+                    onStepDuplicate: onStepDuplicate,
+                    onStepMove: onStepMove,
+                    onStepResize: onStepResize,
+                    onStepAdd: onStepAdd
+                )
+                Divider()
+            }
+
             ForEach(Array(timeline.tracks.enumerated()), id: \.element.id) { _, track in
                 trackArea(for: track)
                 Divider()

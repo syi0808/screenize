@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 import Combine
+import AppKit
+import ScreenCaptureKit
 
 /// Main editor view model
 /// Coordinates project, preview, and timeline state
@@ -35,6 +37,15 @@ final class EditorViewModel: ObservableObject {
 
     /// URL of the project file
     var projectURL: URL?
+
+    /// Scenario model (runtime-only, loaded from separate file)
+    @Published var scenario: Scenario?
+
+    /// ID of the currently selected scenario step
+    @Published var selectedStepId: UUID?
+
+    /// Raw events for the scenario (runtime-only, loaded from separate file)
+    @Published var scenarioRawEvents: ScenarioRawEvents?
 
     // MARK: - Engines
 
@@ -160,6 +171,8 @@ final class EditorViewModel: ObservableObject {
     init(project: ScreenizeProject, projectURL: URL? = nil) {
         self.project = project
         self.projectURL = projectURL
+        self.scenario = project.scenario
+        self.scenarioRawEvents = project.scenarioRawEvents
         self.previewEngine = PreviewEngine(previewScale: 0.5)
         self.exportEngine = ExportEngine()
         self.previewEngine.springCache = springCache
@@ -226,7 +239,8 @@ final class EditorViewModel: ObservableObject {
         EditorSnapshot(
             timeline: project.timeline,
             renderSettings: project.renderSettings,
-            selection: selection
+            selection: selection,
+            scenario: scenario
         )
     }
 
@@ -267,6 +281,8 @@ final class EditorViewModel: ObservableObject {
         project.timeline = snapshot.timeline
         project.renderSettings = snapshot.renderSettings
         selection = snapshot.selection
+        scenario = snapshot.scenario
+        project.scenario = snapshot.scenario
         hasUnsavedChanges = true
         invalidatePreviewCache()
         updateRenderSettings()
@@ -456,4 +472,379 @@ final class EditorViewModel: ObservableObject {
         invalidatePreviewCache()
     }
 
+    // MARK: - Scenario Binding
+
+    /// Two-way binding for the scenario, keeping project in sync
+    var scenarioBinding: Binding<Scenario?> {
+        Binding(
+            get: { self.scenario },
+            set: { newValue in
+                self.scenario = newValue
+                self.project.scenario = newValue
+                self.hasUnsavedChanges = true
+            }
+        )
+    }
+
+    // MARK: - Scenario Step Operations
+
+    /// Select a step and seek the preview to its start time
+    func selectStep(_ id: UUID) {
+        selectedStepId = id
+        if let scenario, let index = scenario.steps.firstIndex(where: { $0.id == id }) {
+            let time = scenario.startTime(forStepAt: index)
+            Task { await seek(to: time) }
+        }
+    }
+
+    /// Clear the current step selection
+    func clearStepSelection() {
+        selectedStepId = nil
+    }
+
+    /// Delete a step by ID
+    func deleteStep(_ id: UUID) {
+        guard var scenario else { return }
+        saveUndoSnapshot()
+        scenario.steps.removeAll { $0.id == id }
+        self.scenario = scenario
+        self.project.scenario = scenario
+        self.hasUnsavedChanges = true
+        if selectedStepId == id { selectedStepId = nil }
+    }
+
+    /// Duplicate a step, inserting the copy immediately after the original
+    func duplicateStep(_ id: UUID) {
+        guard var scenario else { return }
+        guard let index = scenario.steps.firstIndex(where: { $0.id == id }) else { return }
+        saveUndoSnapshot()
+        let original = scenario.steps[index]
+        let copy = ScenarioStep(
+            id: UUID(),
+            type: original.type,
+            description: original.description,
+            durationMs: original.durationMs,
+            target: original.target,
+            path: original.path,
+            rawTimeRange: original.rawTimeRange,
+            app: original.app,
+            keyCombo: original.keyCombo,
+            content: original.content,
+            typingSpeedMs: original.typingSpeedMs,
+            direction: original.direction,
+            amount: original.amount
+        )
+        scenario.steps.insert(copy, at: index + 1)
+        self.scenario = scenario
+        self.project.scenario = scenario
+        self.hasUnsavedChanges = true
+    }
+
+    /// Move a step from one index to another
+    func moveStep(fromIndex: Int, toIndex: Int) {
+        guard var scenario else { return }
+        guard fromIndex != toIndex,
+              fromIndex >= 0, fromIndex < scenario.steps.count,
+              toIndex >= 0, toIndex < scenario.steps.count else { return }
+        saveUndoSnapshot()
+        let step = scenario.steps.remove(at: fromIndex)
+        scenario.steps.insert(step, at: toIndex)
+        self.scenario = scenario
+        self.project.scenario = scenario
+        self.hasUnsavedChanges = true
+    }
+
+    /// Insert a step at the given index (clamped to valid range)
+    func addStep(_ step: ScenarioStep, at index: Int) {
+        guard var scenario else { return }
+        saveUndoSnapshot()
+        let clampedIndex = min(max(index, 0), scenario.steps.count)
+        scenario.steps.insert(step, at: clampedIndex)
+        self.scenario = scenario
+        self.project.scenario = scenario
+        self.hasUnsavedChanges = true
+    }
+
+    /// Replace a step (matched by ID) with an updated version.
+    /// Uses debounced undo snapshots to coalesce rapid edits (e.g. text field keystrokes).
+    func updateStep(_ step: ScenarioStep) {
+        guard var scenario else { return }
+        guard let index = scenario.steps.firstIndex(where: { $0.id == step.id }) else { return }
+        saveBindingUndoSnapshot()
+        scenario.steps[index] = step
+        self.scenario = scenario
+        self.project.scenario = scenario
+        self.hasUnsavedChanges = true
+    }
+
+    // MARK: - Scenario Waypoint Generation
+
+    /// Extract waypoints from raw events for the given step and assign them to its path
+    func generateWaypoints(forStepId id: UUID, hz: Int) {
+        guard let rawEvents = scenarioRawEvents,
+              var scenario,
+              let stepIndex = scenario.steps.firstIndex(where: { $0.id == id }),
+              let timeRange = scenario.steps[stepIndex].rawTimeRange else { return }
+
+        saveUndoSnapshot()
+        let points = WaypointExtractor.extract(
+            from: rawEvents,
+            timeRange: timeRange,
+            hz: hz,
+            captureArea: rawEvents.captureArea
+        )
+        scenario.steps[stepIndex].path = .waypoints(points: points)
+        self.scenario = scenario
+        self.project.scenario = scenario
+        self.hasUnsavedChanges = true
+    }
+
+    // MARK: - Replay
+
+    @Published var isReplaying: Bool = false
+
+    private var replayHUDPanel: (any NSObjectProtocol)?
+
+    /// Start full scenario replay with recording.
+    @available(macOS 15.0, *)
+    func startReplay() async {
+        guard let scenario else { return }
+        let appState = AppState.shared
+
+        // Restore capture target from project's captureMeta instead of transient selectedTarget
+        let target: CaptureTarget
+        do {
+            target = try await resolveCaptureTarget(from: project.captureMeta)
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+
+        let config = ReplayConfiguration(
+            captureTarget: target,
+            backgroundStyle: appState.capture.backgroundStyle,
+            frameRate: appState.capture.captureFrameRate,
+            isSystemAudioEnabled: appState.capture.isSystemAudioEnabled,
+            isMicrophoneEnabled: appState.capture.isMicrophoneEnabled,
+            microphoneDevice: appState.capture.selectedMicrophoneDevice
+        )
+
+        let coordinator = RecordingCoordinator()
+        let player = ScenarioPlayer()
+        isReplaying = true
+
+        showReplayHUD(player: player)
+
+        minimizeAppWindows()
+
+        await player.start(
+            scenario: scenario,
+            mode: .replayAll,
+            config: config,
+            recordingCoordinator: coordinator
+        )
+
+        // Surface any error from the player to the editor UI
+        if case .error(_, let message) = player.state {
+            errorMessage = message
+            // Keep HUD visible briefly so user can read the error before it dismisses
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+        }
+
+        dismissReplayHUD()
+        isReplaying = false
+        restoreAppWindows()
+
+        // Create a new project from the replay recording
+        await handlePostReplayRecording(coordinator: coordinator, appState: appState)
+    }
+
+    /// Start re-rehearsal from a specific step index.
+    @available(macOS 15.0, *)
+    func startReRehearsal(fromStepIndex: Int) async {
+        guard let scenario else { return }
+        let appState = AppState.shared
+
+        // Restore capture target from project's captureMeta instead of transient selectedTarget
+        let target: CaptureTarget
+        do {
+            target = try await resolveCaptureTarget(from: project.captureMeta)
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+
+        let config = ReplayConfiguration(
+            captureTarget: target,
+            backgroundStyle: appState.capture.backgroundStyle,
+            frameRate: appState.capture.captureFrameRate,
+            isSystemAudioEnabled: appState.capture.isSystemAudioEnabled,
+            isMicrophoneEnabled: appState.capture.isMicrophoneEnabled,
+            microphoneDevice: appState.capture.selectedMicrophoneDevice
+        )
+
+        let coordinator = RecordingCoordinator()
+        let player = ScenarioPlayer()
+        isReplaying = true
+
+        showReplayHUD(player: player)
+
+        minimizeAppWindows()
+
+        await player.start(
+            scenario: scenario,
+            mode: .replayUntilStep(fromStepIndex),
+            config: config,
+            recordingCoordinator: coordinator
+        )
+
+        // Surface any error from the player to the editor UI
+        if case .error(_, let message) = player.state {
+            errorMessage = message
+            // Keep HUD visible briefly so user can read the error before it dismisses
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+        }
+
+        dismissReplayHUD()
+        isReplaying = false
+        restoreAppWindows()
+
+        // If re-rehearsal completed, merge scenarios
+        if let newRawEvents = player.getRehearsalRawEvents() {
+            let merged = player.mergeScenarios(
+                original: scenario,
+                newRawEvents: newRawEvents,
+                splitAtIndex: fromStepIndex,
+                replayDurationMs: player.getReplayDurationMs()
+            )
+            saveUndoSnapshot()
+            self.scenario = merged
+            self.project.scenario = merged
+            self.scenarioRawEvents = newRawEvents
+            self.hasUnsavedChanges = true
+        }
+    }
+
+    // MARK: - Replay HUD Lifecycle
+
+    @available(macOS 15.0, *)
+    private func showReplayHUD(player: ScenarioPlayer) {
+        let panel = ReplayHUDPanel(player: player)
+        panel.show()
+        replayHUDPanel = panel
+    }
+
+    @available(macOS 15.0, *)
+    private func dismissReplayHUD() {
+        (replayHUDPanel as? ReplayHUDPanel)?.dismiss()
+        replayHUDPanel = nil
+    }
+
+    // MARK: - Window Management for Replay
+
+    /// Minimize all Screenize windows so they don't appear in the recording.
+    /// The replay HUD panel is excluded since it is a floating NSPanel.
+    private func minimizeAppWindows() {
+        NSApp.windows.forEach { window in
+            if !(window is NSPanel), !window.isMiniaturized {
+                window.miniaturize(nil)
+            }
+        }
+    }
+
+    /// Restore previously minimized Screenize windows after replay ends.
+    private func restoreAppWindows() {
+        NSApp.windows.forEach { window in
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+        }
+    }
+
+    // MARK: - Capture Target Resolution
+
+    /// Resolve a CaptureTarget from the project's CaptureMeta using ScreenCaptureKit.
+    /// For display captures, returns `.display()`. For window captures, finds the target
+    /// app's current window position via SCShareableContent instead of using stale bounds.
+    private func resolveCaptureTarget(from captureMeta: CaptureMeta) async throws -> CaptureTarget {
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+
+        if let displayID = captureMeta.displayID,
+           let display = content.displays.first(where: { $0.displayID == displayID }) {
+            return .display(display)
+        }
+
+        // Window capture — find the target app's current window position
+        if let bundleId = scenario?.appContext {
+            if let window = content.windows.first(where: {
+                $0.owningApplication?.bundleIdentifier == bundleId
+                    && $0.isOnScreen
+                    && $0.frame.width > 0 && $0.frame.height > 0
+            }) {
+                let currentFrame = window.frame
+                if let display = content.displays.first(where: { display in
+                    let bounds = CGDisplayBounds(display.displayID)
+                    return bounds.contains(CGPoint(x: currentFrame.midX, y: currentFrame.midY))
+                }) {
+                    return .region(currentFrame, display)
+                }
+            }
+        }
+
+        // Fallback: use stale boundsPt from captureMeta
+        let windowCenter = CGPoint(
+            x: captureMeta.boundsPt.midX,
+            y: captureMeta.boundsPt.midY
+        )
+        if let display = content.displays.first(where: { display in
+            let bounds = CGDisplayBounds(display.displayID)
+            return bounds.contains(windowCenter)
+        }) {
+            return .region(captureMeta.boundsPt, display)
+        }
+
+        if let mainDisplay = content.displays.first {
+            return .region(captureMeta.boundsPt, mainDisplay)
+        }
+
+        throw ReplayCaptureError.noDisplayAvailable
+    }
+
+    // MARK: - Post-Replay Project Creation
+
+    /// After replay finishes, transfer recording data to AppState and trigger project creation.
+    @available(macOS 15.0, *)
+    private func handlePostReplayRecording(coordinator: RecordingCoordinator, appState: AppState) async {
+        // The ScenarioPlayer already called coordinator.stopRecording() internally.
+        // Transfer the coordinator's results to AppState so ContentView.createProjectFromRecording() picks them up.
+        guard let videoURL = coordinator.lastVideoURL else {
+            Log.project.info("Replay completed but no recording URL available.")
+            return
+        }
+
+        appState.lastRecordingURL = videoURL
+        appState.lastMouseRecording = coordinator.lastMouseRecording
+        appState.lastMicAudioURL = coordinator.lastMicAudioURL
+        appState.lastSystemAudioURL = coordinator.lastSystemAudioURL
+        appState.lastScenarioRawEvents = coordinator.lastScenarioRawEvents
+        // Carry the original scenario to the new project. During replay
+        // isRehearsalMode=false so ScenarioEventRecorder never runs and
+        // lastScenarioRawEvents is nil. The original scenario is still valid.
+        appState.lastReplayScenario = self.scenario
+        appState.showEditor = true
+    }
+
+}
+
+// MARK: - Replay Errors
+
+enum ReplayCaptureError: LocalizedError {
+    case noDisplayAvailable
+
+    var errorDescription: String? {
+        switch self {
+        case .noDisplayAvailable:
+            return "No display available. Cannot start replay without a connected display."
+        }
+    }
 }

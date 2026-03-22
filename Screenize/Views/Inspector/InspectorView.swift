@@ -24,6 +24,21 @@ struct InspectorView: View {
     var onSegmentChange: (() -> Void)?
     var onDeleteSegment: ((UUID, TrackType) -> Void)?
 
+    // MARK: Scenario Support
+
+    /// The current scenario (if a scenario project is open).
+    var scenario: Scenario?
+    /// The currently selected scenario step ID (if any).
+    @Binding var selectedStepId: UUID?
+    /// Whether raw recording events are available (enables waypoint generation).
+    var scenarioHasRawEvents: Bool = false
+    /// Called when a scenario step is updated.
+    var onStepUpdate: ((ScenarioStep) -> Void)?
+    /// Called when a scenario step should be deleted.
+    var onStepDelete: ((UUID) -> Void)?
+    /// Called when waypoints should be generated for a step.
+    var onGenerateWaypoints: ((UUID, Int) -> Void)?
+
     @State private var selectedTab: InspectorTab = .segment
 
     var body: some View {
@@ -45,6 +60,9 @@ struct InspectorView: View {
                 ScrollView {
                     SettingsInspector(settings: $renderSettings, timeline: $timeline, onChange: onSegmentChange)
                 }
+            } else if let stepId = selectedStepId,
+                      let stepIndex = scenario?.steps.firstIndex(where: { $0.id == stepId }) {
+                scenarioStepInspector(stepIndex: stepIndex)
             } else {
                 segmentInspector
             }
@@ -120,6 +138,55 @@ struct InspectorView: View {
                 }
             }
             .padding(Spacing.md)
+        }
+    }
+
+    // MARK: - Scenario Step Inspector
+
+    @ViewBuilder
+    private func scenarioStepInspector(stepIndex: Int) -> some View {
+        if let scenario, stepIndex < scenario.steps.count {
+            let stepBinding = Binding<ScenarioStep>(
+                get: { self.scenario?.steps[stepIndex] ?? scenario.steps[stepIndex] },
+                set: { updated in
+                    self.onStepUpdate?(updated)
+                }
+            )
+
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        Text("Scenario Step")
+                            .font(Typography.heading)
+
+                        ScenarioInspectorView(
+                            step: stepBinding,
+                            hasRawEvents: scenarioHasRawEvents,
+                            onGenerateWaypoints: onGenerateWaypoints
+                        )
+                        .padding(0)
+                    }
+                    .padding(Spacing.md)
+                }
+
+                Divider()
+
+                VStack(spacing: Spacing.sm) {
+                    Button(role: .destructive) {
+                        if let stepId = selectedStepId {
+                            onStepDelete?(stepId)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Delete Step")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(Spacing.md)
+            }
         }
     }
 

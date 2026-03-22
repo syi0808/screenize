@@ -141,6 +141,8 @@ struct CaptureToolbarView: View {
 
     // MARK: - Selecting Phase
 
+    @AppStorage("recordingMode") private var recordingMode: RecordingMode = .direct
+
     private var selectingContent: some View {
         HStack(spacing: Spacing.sm) {
             ToolbarModeButton(
@@ -169,6 +171,10 @@ struct CaptureToolbarView: View {
 
             toolbarDivider
 
+            ToolbarRecordingModeButton()
+
+            toolbarDivider
+
             ToolbarIconButton(
                 icon: "xmark",
                 label: L10n.string("recording.action.close", defaultValue: "Close"),
@@ -185,11 +191,15 @@ struct CaptureToolbarView: View {
 
     private var recordingContent: some View {
         HStack(spacing: Spacing.sm) {
-            RecordingDot()
+            RecordingDot(color: recordingMode == .rehearsal ? .teal : .red)
 
             Text(formattedDuration)
                 .font(.system(size: 13, weight: .medium).monospacedDigit())
                 .foregroundColor(.white)
+
+            Text(recordingMode == .rehearsal ? "REHEARSING" : "REC")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(recordingMode == .rehearsal ? .teal : .red.opacity(0.9))
 
             if coordinator.isPaused {
                 Text(L10n.string("recording.paused", defaultValue: "PAUSED"))
@@ -277,11 +287,12 @@ struct CaptureToolbarView: View {
 // MARK: - Recording Dot (blinking)
 
 private struct RecordingDot: View {
+    var color: Color = .red
     @State private var isBlinking = false
 
     var body: some View {
         Circle()
-            .fill(Color.red)
+            .fill(color)
             .frame(width: 8, height: 8)
             .opacity(isBlinking ? 0.3 : 1.0)
             .motionSafeAnimation(
@@ -511,6 +522,42 @@ private struct ToolbarFrameRateMenu: View {
         }
         let position = NSEvent.mouseLocation
         menu.popUp(positioning: nil, at: NSPoint(x: position.x, y: position.y), in: nil)
+    }
+}
+
+// MARK: - Toolbar Recording Mode Button
+
+private struct ToolbarRecordingModeButton: View {
+    @AppStorage("recordingMode") private var recordingMode: RecordingMode = .direct
+    @State private var isHovering = false
+
+    private var isRehearsal: Bool { recordingMode == .rehearsal }
+
+    var body: some View {
+        Button {
+            recordingMode = isRehearsal ? .direct : .rehearsal
+        } label: {
+            VStack(spacing: Spacing.xxs) {
+                Image(systemName: isRehearsal ? "doc.on.clipboard" : "record.circle")
+                    .font(.system(size: 13, weight: .medium))
+                Text(isRehearsal ? "Rehearsal" : "Direct")
+                    .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundColor(.white.opacity(isRehearsal
+                ? (isHovering ? DesignOpacity.opaque : DesignOpacity.strong)
+                : (isHovering ? DesignOpacity.strong : DesignOpacity.prominent)))
+            .frame(width: 52, height: 36)
+            .background(
+                RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous)
+                    .fill(Color.white.opacity(isRehearsal
+                        ? DesignOpacity.faint
+                        : (isHovering ? DesignOpacity.whisper : 0)))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help(isRehearsal ? "Switch to Direct Recording" : "Switch to Rehearsal Mode")
     }
 }
 

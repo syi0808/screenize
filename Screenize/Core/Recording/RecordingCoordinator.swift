@@ -33,9 +33,15 @@ final class RecordingCoordinator: ObservableObject {
     // v4 event stream timebase
     private(set) var recordingStartDate: Date?
     private(set) var processTimeStartMs: Int64 = 0
+    private(set) var lastVideoURL: URL?
     private(set) var lastMouseRecording: MouseRecording?
     private(set) var lastMicAudioURL: URL?
     private(set) var lastSystemAudioURL: URL?
+
+    // Rehearsal mode
+    var isRehearsalMode: Bool = false
+    private var scenarioEventRecorder: ScenarioEventRecorder?
+    private(set) var lastScenarioRawEvents: ScenarioRawEvents?
 
     private let ciContext = CIContext(options: [
         .useSoftwareRenderer: false,
@@ -110,36 +116,57 @@ final class RecordingCoordinator: ObservableObject {
             _captureIsPaused = false
         }
 
-        // Setup and start capture with SCRecordingOutput
-        captureManager = ScreenCaptureManager()
-        captureManager?.delegate = self
+        do {
+            // Setup and start capture with SCRecordingOutput
+            captureManager = ScreenCaptureManager()
+            captureManager?.delegate = self
 
-        try await captureManager?.startRecording(
-            target: target,
-            configuration: captureConfig,
-            outputURL: session.outputURL
-        )
+            try await captureManager?.startRecording(
+                target: target,
+                configuration: captureConfig,
+                outputURL: session.outputURL
+            )
 
-        // Start mouse recording after video capture begins (synchronize timestamps)
-        recordingStartDate = Date()
-        processTimeStartMs = Int64(ProcessInfo.processInfo.systemUptime * 1000)
-        mouseDataRecorder = MouseDataRecorder()
-        mouseDataRecorder?.startRecording(
-            screenBounds: captureBounds,
-            scaleFactor: captureConfig.scaleFactor,
-            captureFrameRate: captureConfig.frameRate
-        )
+            // Start mouse recording after video capture begins (synchronize timestamps)
+            recordingStartDate = Date()
+            processTimeStartMs = Int64(ProcessInfo.processInfo.systemUptime * 1000)
+            mouseDataRecorder = MouseDataRecorder()
+            mouseDataRecorder?.startRecording(
+                screenBounds: captureBounds,
+                scaleFactor: captureConfig.scaleFactor,
+                captureFrameRate: captureConfig.frameRate
+            )
 
-        // Start microphone recording if enabled
-        if isMicrophoneEnabled {
-            let micRecorder = MicrophoneRecorder()
-            let micURL = Self.generateMicOutputURL(for: session.outputURL)
-            do {
-                try micRecorder.startRecording(to: micURL, device: microphoneDevice)
-                self.microphoneRecorder = micRecorder
-            } catch {
-                Log.recording.warning("Mic recording failed (non-fatal): \(error)")
+            // Start scenario event recorder in rehearsal mode
+            if isRehearsalMode {
+                scenarioEventRecorder = ScenarioEventRecorder()
+                scenarioEventRecorder?.startRecording(captureArea: captureBounds)
             }
+
+            // Start microphone recording if enabled
+            if isMicrophoneEnabled {
+                let micRecorder = MicrophoneRecorder()
+                let micURL = Self.generateMicOutputURL(for: session.outputURL)
+                do {
+                    try micRecorder.startRecording(to: micURL, device: microphoneDevice)
+                    self.microphoneRecorder = micRecorder
+                } catch {
+                    Log.recording.warning("Mic recording failed (non-fatal): \(error)")
+                }
+            }
+        } catch {
+            // Clean up on failure so subsequent attempts don't fail with "already recording"
+            Log.recording.error("Recording setup failed: \(error.localizedDescription)")
+            session.transition(to: .failed(error.localizedDescription))
+            currentSession = nil
+            captureManager = nil
+            mouseDataRecorder = nil
+            scenarioEventRecorder = nil
+            captureStateLock.withLock {
+                _captureSession = nil
+                _captureIsPaused = false
+            }
+            throw error
         }
 
         session.transition(to: .recording)
@@ -173,6 +200,12 @@ final class RecordingCoordinator: ObservableObject {
         }
         mouseDataRecorder = nil
 
+        // Collect scenario raw events from rehearsal mode
+        if isRehearsalMode, let recorder = scenarioEventRecorder {
+            lastScenarioRawEvents = recorder.stopRecording()
+        }
+        scenarioEventRecorder = nil
+
         // Stop microphone recording
         if let micURL = await microphoneRecorder?.stopRecording() {
             lastMicAudioURL = micURL
@@ -187,6 +220,7 @@ final class RecordingCoordinator: ObservableObject {
         }
 
         if let url = outputURL {
+            lastVideoURL = url
             session.transition(to: .completed(url))
             Log.recording.info("Recording finished - source: \(url.path)")
         } else {
@@ -204,6 +238,16 @@ final class RecordingCoordinator: ObservableObject {
         stopDurationTimer()
         mouseDataRecorder?.pauseRecording()
         microphoneRecorder?.pause()
+        scenarioEventRecorder?.pauseRecording()
+    }
+
+    /// Activate ScenarioEventRecorder mid-session (for Re-rehearse transition).
+    /// Called while recording is already in progress.
+    func activateScenarioRecorder() {
+        guard scenarioEventRecorder == nil else { return }
+        scenarioEventRecorder = ScenarioEventRecorder()
+        scenarioEventRecorder?.startRecording(captureArea: captureBounds)
+        isRehearsalMode = true
     }
 
     func resumeRecording() {
@@ -213,6 +257,7 @@ final class RecordingCoordinator: ObservableObject {
         startDurationTimer()
         mouseDataRecorder?.resumeRecording()
         microphoneRecorder?.resume()
+        scenarioEventRecorder?.resumeRecording()
     }
 
     /// Generate the microphone audio sidecar URL from the video output URL.

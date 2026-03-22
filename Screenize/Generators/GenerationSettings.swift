@@ -113,6 +113,7 @@ struct IntentClassificationSettings: Codable, Equatable {
     var dragAnticipation: CGFloat = 0.25
     var scrollAnticipation: CGFloat = 0.25
     var switchAnticipation: CGFloat = 0.25
+    var focusedTimeout: CGFloat = 2.0
 }
 
 // MARK: - Timing Settings

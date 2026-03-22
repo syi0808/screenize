@@ -3,9 +3,20 @@ import SwiftUI
 import ScreenCaptureKit
 import AVFoundation
 
+// MARK: - RecordingMode
+
+enum RecordingMode: String {
+    case direct
+    case rehearsal
+}
+
 /// Capture source selection, audio settings, and frame rate preferences.
 @MainActor
 final class CaptureSettings: ObservableObject {
+
+    // MARK: - Recording Mode
+
+    @AppStorage("recordingMode") var recordingMode: RecordingMode = .direct
 
     // MARK: - Audio Settings
 

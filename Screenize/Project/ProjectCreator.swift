@@ -11,10 +11,12 @@ struct ProjectCreator {
     /// - Parameters:
     ///   - packageInfo: Package info from PackageManager.createPackage
     ///   - captureMeta: Capture metadata
+    ///   - scenarioRawEvents: Optional raw scenario events captured during recording
     /// - Returns: New project
     static func createFromRecording(
         packageInfo: PackageInfo,
-        captureMeta: CaptureMeta
+        captureMeta: CaptureMeta,
+        scenarioRawEvents: ScenarioRawEvents? = nil
     ) async throws -> ScreenizeProject {
         // Load video information
         let videoInfo = try await loadVideoInfo(from: packageInfo.videoURL)
@@ -64,7 +66,7 @@ struct ProjectCreator {
         )
 
         // Create the project
-        return ScreenizeProject(
+        var project = ScreenizeProject(
             name: packageInfo.packageURL.deletingPathExtension().lastPathComponent,
             media: media,
             captureMeta: captureMeta,
@@ -72,6 +74,14 @@ struct ProjectCreator {
             renderSettings: RenderSettings(),
             interop: packageInfo.interop
         )
+
+        // Attach scenario data if raw events were provided
+        if let rawEvents = scenarioRawEvents {
+            project.scenario = ScenarioGenerator.generate(from: rawEvents)
+            project.scenarioRawEvents = rawEvents
+        }
+
+        return project
     }
 
     // MARK: - Create from Video

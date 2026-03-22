@@ -139,6 +139,8 @@ struct SpringDamperSimulator {
             }
 
             let isTyping = isTypingIntent(intentSpans, at: intentIndex)
+            let spanConfidence = intentIndex < intentSpans.count
+                ? intentSpans[intentIndex].confidence : 1.0
 
             // Dead zone targeting with hysteresis
             let dzResult = DeadZoneTarget.computeWithState(
@@ -149,6 +151,7 @@ struct SpringDamperSimulator {
                 zoom: state.zoom,
                 isTyping: isTyping,
                 wasActive: state.deadZoneActive,
+                confidence: spanConfidence,
                 settings: settings.deadZone
             )
             let posTarget = dzResult.target

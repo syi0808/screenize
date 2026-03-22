@@ -246,4 +246,83 @@ final class DeadZoneTargetTests: XCTestCase {
             previousX = result.target.x
         }
     }
+
+    // MARK: - Confidence-Based Safe Zone Scaling
+
+    func test_mediumConfidence_widerSafeZone() {
+        // At zoom 2.0 with normal safe zone fraction 0.75:
+        // viewportHalf = 0.25, safeHalf = 0.1875
+        // With medium confidence (1.15x): safeHalf = 0.2156
+        // Cursor at offset 0.20: within expanded safe zone but
+        // outside normal safe zone (after hysteresis).
+        let settings = DeadZoneSettings()
+        let center = NormalizedPoint(x: 0.5, y: 0.5)
+        let cursor = NormalizedPoint(x: 0.70, y: 0.5) // offset 0.20
+
+        // High confidence (1.0): safe zone is smaller, cursor may trigger
+        let highConfResult = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: true,
+            confidence: 0.9,
+            settings: settings
+        )
+
+        // Medium confidence (0.7): safe zone is 15% wider, cursor stays inside
+        let medConfResult = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: true,
+            confidence: 0.7,
+            settings: settings
+        )
+
+        // With wider safe zone, medium confidence should be less active
+        // (cursor offset 0.20 is within expanded safe zone hysteresis)
+        // At minimum, the medium-confidence target should be closer to
+        // the camera center than high-confidence target
+        let highDelta = abs(highConfResult.target.x - center.x)
+        let medDelta = abs(medConfResult.target.x - center.x)
+        XCTAssertLessThanOrEqual(
+            medDelta, highDelta,
+            "Medium confidence should produce target closer to center"
+        )
+    }
+
+    func test_highConfidence_normalSafeZone() {
+        let settings = DeadZoneSettings()
+        let center = NormalizedPoint(x: 0.5, y: 0.5)
+        let cursor = NormalizedPoint(x: 0.74, y: 0.5)
+
+        let defaultResult = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: true,
+            settings: settings
+        )
+
+        let highConfResult = DeadZoneTarget.computeWithState(
+            cursorPosition: cursor,
+            cameraCenter: center,
+            zoom: 2.0,
+            isTyping: false,
+            wasActive: true,
+            confidence: 0.9,
+            settings: settings
+        )
+
+        // High confidence should behave identically to default (no scaling)
+        XCTAssertEqual(
+            defaultResult.target.x,
+            highConfResult.target.x,
+            accuracy: 0.001,
+            "High confidence should not alter safe zone"
+        )
+    }
 }

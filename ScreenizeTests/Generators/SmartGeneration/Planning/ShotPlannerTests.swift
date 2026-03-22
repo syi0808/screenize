@@ -830,6 +830,56 @@ final class ShotPlannerTests: XCTestCase {
         XCTAssertEqual(center.y, 0.5, accuracy: 0.03, "Fallback center should be midpoint")
     }
 
+    // MARK: - Focused Zoom
+
+    func test_plan_focusedZoom_widerThanTypingForSameContext() {
+        let contexts: [TypingContext] = [
+            .codeEditor, .textField, .terminal, .richTextEditor
+        ]
+        for context in contexts {
+            let focusedScene = makeScene(
+                intent: .focused(context: context)
+            )
+            let typingScene = makeScene(
+                intent: .typing(context: context)
+            )
+            let focusedPlans = ShotPlanner.plan(
+                scenes: [focusedScene],
+                screenBounds: screenBounds,
+                eventTimeline: emptyTimeline,
+                settings: defaultSettings
+            )
+            let typingPlans = ShotPlanner.plan(
+                scenes: [typingScene],
+                screenBounds: screenBounds,
+                eventTimeline: emptyTimeline,
+                settings: defaultSettings
+            )
+            XCTAssertLessThan(
+                focusedPlans[0].idealZoom,
+                typingPlans[0].idealZoom,
+                "Focused zoom should be lower (wider) than typing for \(context)"
+            )
+        }
+    }
+
+    func test_plan_focusedCodeScene_zoomInRange() {
+        let scene = makeScene(intent: .focused(context: .codeEditor))
+        let plans = ShotPlanner.plan(
+            scenes: [scene],
+            screenBounds: screenBounds,
+            eventTimeline: emptyTimeline,
+            settings: defaultSettings
+        )
+        let zoom = plans[0].idealZoom
+        XCTAssertGreaterThanOrEqual(
+            zoom, defaultSettings.focusedCodeZoomRange.lowerBound
+        )
+        XCTAssertLessThanOrEqual(
+            zoom, defaultSettings.focusedCodeZoomRange.upperBound
+        )
+    }
+
     // MARK: - Helpers
 
     private func makeMouseMoveEvent(

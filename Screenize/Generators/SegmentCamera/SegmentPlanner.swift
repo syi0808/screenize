@@ -33,8 +33,11 @@ struct SegmentPlanner {
             )
         }
 
+        // Step 1b: Absorb low-confidence scenes into neighbors
+        let absorbed = absorbLowConfidenceScenes(scenes)
+
         // Step 2: Merge short/similar scenes
-        let merged = mergeScenes(scenes)
+        let merged = mergeScenes(absorbed)
 
         // Step 3: Plan shots
         let shotPlans = ShotPlanner.plan(
@@ -46,7 +49,10 @@ struct SegmentPlanner {
         )
 
         // Step 4: Build chained camera segments
-        return buildSegments(from: shotPlans, zoomIntensity: zoomIntensity, mouseData: mouseData)
+        let segments = buildSegments(from: shotPlans, zoomIntensity: zoomIntensity, mouseData: mouseData)
+
+        // Step 5: Resolve transition styles between adjacent segments
+        return TransitionResolver.resolve(segments, intentSpans: intentSpans)
     }
 
     // MARK: - Focus Regions
@@ -67,7 +73,7 @@ struct SegmentPlanner {
                 FocusRegion(
                     time: midTime,
                     region: element.frame,
-                    confidence: 0.9,
+                    confidence: span.confidence,
                     source: .activeElement(element)
                 )
             ]
@@ -77,10 +83,64 @@ struct SegmentPlanner {
             FocusRegion(
                 time: midTime,
                 region: region,
-                confidence: 0.7,
+                confidence: span.confidence,
                 source: .cursorPosition
             )
         ]
+    }
+
+    // MARK: - Low-Confidence Absorption
+
+    /// Absorb low-confidence scenes into their neighbors.
+    ///
+    /// Scenes where max focus region confidence falls in the `.none` band
+    /// are removed: their time range is given to the preceding scene
+    /// (extended endTime). If the first scene is low-confidence, it is
+    /// replaced with an idle scene covering the same time range.
+    static func absorbLowConfidenceScenes(
+        _ scenes: [CameraScene]
+    ) -> [CameraScene] {
+        guard !scenes.isEmpty else { return scenes }
+
+        var result: [CameraScene] = []
+
+        for scene in scenes {
+            let maxConfidence = scene.focusRegions.map(\.confidence).max() ?? 0
+            let band = ConfidenceBands.band(for: maxConfidence)
+
+            if band == .none {
+                if result.isEmpty {
+                    // First scene is low-confidence: replace with idle
+                    let idle = CameraScene(
+                        id: scene.id,
+                        startTime: scene.startTime,
+                        endTime: scene.endTime,
+                        primaryIntent: .idle,
+                        focusRegions: scene.focusRegions,
+                        appContext: scene.appContext,
+                        contextChange: scene.contextChange
+                    )
+                    result.append(idle)
+                } else {
+                    // Extend preceding scene to cover this time range
+                    let previous = result[result.count - 1]
+                    let extended = CameraScene(
+                        id: previous.id,
+                        startTime: previous.startTime,
+                        endTime: scene.endTime,
+                        primaryIntent: previous.primaryIntent,
+                        focusRegions: previous.focusRegions,
+                        appContext: previous.appContext,
+                        contextChange: previous.contextChange
+                    )
+                    result[result.count - 1] = extended
+                }
+            } else {
+                result.append(scene)
+            }
+        }
+
+        return result
     }
 
     // MARK: - Scene Merging

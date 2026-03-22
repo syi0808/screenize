@@ -439,6 +439,7 @@ final class WaypointGeneratorTests: XCTestCase {
             (.scrolling, .normal),
             (.dragging(.selection), .normal),
             (.typing(context: .codeEditor), .high),
+            (.focused(context: .codeEditor), .normal),
             (.switching, .immediate),
             (.idle, .lazy),
             (.reading, .lazy)
@@ -447,6 +448,46 @@ final class WaypointGeneratorTests: XCTestCase {
             let urgency = WaypointGenerator.urgency(for: intent)
             XCTAssertEqual(urgency, expectedUrgency,
                            "Intent \(intent) should map to \(expectedUrgency)")
+        }
+    }
+
+    func test_urgency_focused_isNormal() {
+        let contexts: [TypingContext] = [
+            .codeEditor, .textField, .terminal, .richTextEditor
+        ]
+        for context in contexts {
+            let urgency = WaypointGenerator.urgency(
+                for: .focused(context: context)
+            )
+            XCTAssertEqual(
+                urgency, .normal,
+                "Focused(\(context)) should have normal urgency"
+            )
+        }
+    }
+
+    func test_generate_focusedIntent_producesNormalUrgencyWaypoint() {
+        let spans = [
+            makeIntentSpan(
+                start: 1, end: 3,
+                intent: .focused(context: .codeEditor),
+                focus: NormalizedPoint(x: 0.5, y: 0.5)
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+        let focusedWP = waypoints.first {
+            if case .focused = $0.source { return true }
+            return false
+        }
+        XCTAssertNotNil(focusedWP, "Should produce a waypoint for focused")
+        if let wp = focusedWP {
+            XCTAssertEqual(wp.urgency, .normal)
         }
     }
 
@@ -611,19 +652,210 @@ final class WaypointGeneratorTests: XCTestCase {
         XCTAssertEqual(intermediateIdleWaypoints.count, 0, "All intermediate idle waypoints should be removed for nearby consecutive clicks")
     }
 
+    // MARK: - Confidence-Based Suppression
+
+    func test_generate_lowConfidenceSpan_noWaypoint() {
+        let spans = [
+            makeIntentSpan(
+                start: 1, end: 3,
+                intent: .typing(context: .codeEditor),
+                focus: NormalizedPoint(x: 0.5, y: 0.5),
+                confidence: 0.5
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+        let typingWP = waypoints.first {
+            if case .typing = $0.source { return true }
+            return false
+        }
+        XCTAssertNil(
+            typingWP,
+            "Low-confidence span (0.5) should produce no waypoint"
+        )
+    }
+
+    func test_generate_mediumConfidenceSpan_lazyUrgency() {
+        let spans = [
+            makeIntentSpan(
+                start: 1, end: 3,
+                intent: .typing(context: .codeEditor),
+                focus: NormalizedPoint(x: 0.5, y: 0.5),
+                confidence: 0.7
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+        let typingWP = waypoints.first {
+            if case .typing = $0.source { return true }
+            return false
+        }
+        XCTAssertNotNil(typingWP, "Medium-confidence span should produce a waypoint")
+        if let wp = typingWP {
+            XCTAssertEqual(
+                wp.urgency, .lazy,
+                "Medium-confidence span should force lazy urgency"
+            )
+        }
+    }
+
+    func test_generate_highConfidenceSpan_normalUrgency() {
+        let spans = [
+            makeIntentSpan(
+                start: 1, end: 3,
+                intent: .typing(context: .codeEditor),
+                focus: NormalizedPoint(x: 0.5, y: 0.5),
+                confidence: 0.9
+            )
+        ]
+        let waypoints = WaypointGenerator.generate(
+            from: spans,
+            screenBounds: CGSize(width: 1920, height: 1080),
+            eventTimeline: nil,
+            frameAnalysis: [],
+            settings: defaultSettings
+        )
+        let typingWP = waypoints.first {
+            if case .typing = $0.source { return true }
+            return false
+        }
+        XCTAssertNotNil(typingWP, "High-confidence span should produce a waypoint")
+        if let wp = typingWP {
+            XCTAssertEqual(
+                wp.urgency, .high,
+                "High-confidence typing should use normal urgency mapping (high)"
+            )
+        }
+    }
+
+    // MARK: - Transition Style Resolution
+
+    func test_resolveTransitionStyles_similarTyping_removesIdleWaypoint() {
+        // Two similar typing waypoints with an idle waypoint between them.
+        // The idle should be removed because position and zoom are nearly identical.
+        var waypoints = [
+            CameraWaypoint(
+                time: 0,
+                targetZoom: 2.5,
+                targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                urgency: .high,
+                source: .typing(context: .codeEditor)
+            ),
+            CameraWaypoint(
+                time: 2,
+                targetZoom: 1.0,
+                targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                urgency: .lazy,
+                source: .idle
+            ),
+            CameraWaypoint(
+                time: 3,
+                targetZoom: 2.5,
+                targetCenter: NormalizedPoint(x: 0.52, y: 0.51),
+                urgency: .high,
+                source: .typing(context: .codeEditor)
+            ),
+        ]
+
+        WaypointGenerator.resolveTransitionStyles(&waypoints)
+
+        // The idle waypoint should be removed (hold transition)
+        XCTAssertEqual(waypoints.count, 2, "Idle waypoint should be removed for hold")
+        XCTAssertEqual(waypoints[0].targetZoom, 2.5)
+        XCTAssertEqual(waypoints[1].targetZoom, 2.5)
+    }
+
+    func test_resolveTransitionStyles_directPan_preservesZoom() {
+        // Two active waypoints with similar zoom but far position.
+        // The idle waypoint should keep its position but get the active zoom.
+        var waypoints = [
+            CameraWaypoint(
+                time: 0,
+                targetZoom: 2.0,
+                targetCenter: NormalizedPoint(x: 0.2, y: 0.5),
+                urgency: .high,
+                source: .typing(context: .codeEditor)
+            ),
+            CameraWaypoint(
+                time: 2,
+                targetZoom: 1.0,
+                targetCenter: NormalizedPoint(x: 0.4, y: 0.5),
+                urgency: .lazy,
+                source: .idle
+            ),
+            CameraWaypoint(
+                time: 3,
+                targetZoom: 2.1,
+                targetCenter: NormalizedPoint(x: 0.6, y: 0.5),
+                urgency: .high,
+                source: .typing(context: .codeEditor)
+            ),
+        ]
+
+        WaypointGenerator.resolveTransitionStyles(&waypoints)
+
+        // All three should remain, but the idle zoom should be overridden
+        XCTAssertEqual(waypoints.count, 3, "All waypoints kept for directPan")
+        let midZoom = waypoints[1].targetZoom
+        XCTAssertGreaterThan(midZoom, 1.5, "Idle zoom should be elevated to active level")
+    }
+
+    func test_resolveTransitionStyles_veryDifferent_unchanged() {
+        // Two very different active waypoints: idle should remain as-is.
+        var waypoints = [
+            CameraWaypoint(
+                time: 0,
+                targetZoom: 1.5,
+                targetCenter: NormalizedPoint(x: 0.2, y: 0.2),
+                urgency: .high,
+                source: .typing(context: .codeEditor)
+            ),
+            CameraWaypoint(
+                time: 2,
+                targetZoom: 1.0,
+                targetCenter: NormalizedPoint(x: 0.5, y: 0.5),
+                urgency: .lazy,
+                source: .idle
+            ),
+            CameraWaypoint(
+                time: 3,
+                targetZoom: 3.0,
+                targetCenter: NormalizedPoint(x: 0.8, y: 0.8),
+                urgency: .high,
+                source: .typing(context: .codeEditor)
+            ),
+        ]
+
+        WaypointGenerator.resolveTransitionStyles(&waypoints)
+
+        XCTAssertEqual(waypoints.count, 3, "No removal for fullTransition")
+        XCTAssertEqual(waypoints[1].targetZoom, 1.0, "Idle zoom should be unchanged")
+    }
+
     // MARK: - Helpers
 
     private func makeIntentSpan(
         start: TimeInterval,
         end: TimeInterval,
         intent: UserIntent,
-        focus: NormalizedPoint
+        focus: NormalizedPoint,
+        confidence: Float = 1.0
     ) -> IntentSpan {
         IntentSpan(
             startTime: start,
             endTime: end,
             intent: intent,
-            confidence: 1.0,
+            confidence: confidence,
             focusPosition: focus,
             focusElement: nil
         )

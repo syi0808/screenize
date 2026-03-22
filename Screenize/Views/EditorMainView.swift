@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 /// Main editor view
 struct EditorMainView: View {
@@ -26,6 +27,15 @@ struct EditorMainView: View {
     /// Show save error alert
     @State private var showSaveErrorAlert = false
     @State private var saveErrorMessage = ""
+
+    /// Replay confirmation alerts
+    @State private var showReplayConfirmation = false
+    @State private var showReRehearsalConfirmation = false
+
+    /// Re-rehearsal screenshot preview state
+    @State private var reRehearsalScreenshot: NSImage?
+    @State private var reRehearsalStepIndex: Int = 0
+    @State private var reRehearsalStepDescription: String = ""
 
     // MARK: - Initialization
 
@@ -89,6 +99,34 @@ struct EditorMainView: View {
                     trimEnd: viewModel.trimEndBinding,
                     onTrimChange: { start, end in
                         viewModel.setTrimRange(start: start, end: end)
+                    },
+                    scenario: viewModel.scenario,
+                    selectedStepId: $viewModel.selectedStepId,
+                    onStepSelect: { id in
+                        viewModel.selectStep(id)
+                    },
+                    onStepDelete: { id in
+                        viewModel.deleteStep(id)
+                    },
+                    onStepDuplicate: { id in
+                        viewModel.duplicateStep(id)
+                    },
+                    onStepMove: { id, fromIndex, toIndex in
+                        viewModel.moveStep(fromIndex: fromIndex, toIndex: toIndex)
+                    },
+                    onStepResize: { id, newDurationMs in
+                        if var step = viewModel.scenario?.steps.first(where: { $0.id == id }) {
+                            step.durationMs = newDurationMs
+                            viewModel.updateStep(step)
+                        }
+                    },
+                    onStepAdd: { stepType, index in
+                        let newStep = ScenarioStep(
+                            type: stepType,
+                            description: stepType.rawValue,
+                            durationMs: 1000
+                        )
+                        viewModel.addStep(newStep, at: index)
                     }
                 )
                 .frame(height: 224)
@@ -105,6 +143,18 @@ struct EditorMainView: View {
                 },
                 onDeleteSegment: { id, trackType in
                     viewModel.deleteSegment(id, from: trackType)
+                },
+                scenario: viewModel.scenario,
+                selectedStepId: $viewModel.selectedStepId,
+                scenarioHasRawEvents: viewModel.scenarioRawEvents != nil,
+                onStepUpdate: { step in
+                    viewModel.updateStep(step)
+                },
+                onStepDelete: { id in
+                    viewModel.deleteStep(id)
+                },
+                onGenerateWaypoints: { id, hz in
+                    viewModel.generateWaypoints(forStepId: id, hz: hz)
                 }
             )
         }
@@ -165,6 +215,40 @@ struct EditorMainView: View {
             Button(L10n.commonOK, role: .cancel) {}
         } message: {
             Text(saveErrorMessage)
+        }
+        .alert("Replay & Record", isPresented: $showReplayConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Start") {
+                if #available(macOS 15.0, *) {
+                    Task { await viewModel.startReplay() }
+                }
+            }
+        } message: {
+            Text("This will replay the scenario automatically and record a new video. Press ESC to stop at any time.")
+        }
+        .alert("Error", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+        .sheet(isPresented: $showReRehearsalConfirmation) {
+            ReRehearsalConfirmationView(
+                stepDescription: reRehearsalStepDescription,
+                screenshotImage: reRehearsalScreenshot,
+                onStart: {
+                    showReRehearsalConfirmation = false
+                    if #available(macOS 15.0, *) {
+                        let index = reRehearsalStepIndex
+                        Task { await viewModel.startReRehearsal(fromStepIndex: index) }
+                    }
+                },
+                onCancel: {
+                    showReRehearsalConfirmation = false
+                }
+            )
         }
         .onReceive(NotificationCenter.default.publisher(for: .editorUndo)) { _ in
             viewModel.undo()
@@ -307,6 +391,42 @@ struct EditorMainView: View {
             Divider()
                 .frame(height: Spacing.xl)
 
+            // Replay & Record
+            Button {
+                showReplayConfirmation = true
+            } label: {
+                Label("Replay & Record", systemImage: "play.fill")
+            }
+            .disabled(viewModel.scenario == nil || viewModel.isReplaying)
+            .help("Replay scenario and record a new video")
+
+            // Re-rehearse from selected step
+            Button {
+                if let stepId = viewModel.selectedStepId,
+                   let scenario = viewModel.scenario,
+                   let index = scenario.steps.firstIndex(where: { $0.id == stepId }) {
+                    reRehearsalStepIndex = index
+                    reRehearsalStepDescription = scenario.steps[index].description
+                    let time = scenario.startTime(forStepAt: index)
+                    let videoURL = viewModel.project.media.videoURL
+                    Task {
+                        reRehearsalScreenshot = await Self.extractFrame(from: videoURL, at: time)
+                        showReRehearsalConfirmation = true
+                    }
+                }
+            } label: {
+                Label("Re-rehearse", systemImage: "arrow.counterclockwise")
+            }
+            .disabled(viewModel.selectedStepId == nil || viewModel.isReplaying)
+            .help(
+                viewModel.selectedStepId == nil
+                    ? "Select a step in the scenario track first"
+                    : "Re-rehearse from the selected step"
+            )
+
+            Divider()
+                .frame(height: Spacing.xl)
+
             // Save
             Button {
                 saveProject()
@@ -398,6 +518,11 @@ struct EditorMainView: View {
 
             // Delete (backspace) = keyCode 51, Forward Delete = keyCode 117
             if event.keyCode == 51 || event.keyCode == 117 {
+                // If a scenario step is selected, delete it
+                if let stepId = viewModel.selectedStepId {
+                    viewModel.deleteStep(stepId)
+                    return nil
+                }
                 if !viewModel.selection.isEmpty {
                     let selected = viewModel.selection.segments
                     for ident in selected {
@@ -405,6 +530,17 @@ struct EditorMainView: View {
                     }
                     return nil
                 }
+                return event
+            }
+
+            // Cmd+D = duplicate
+            if event.keyCode == 2 && hasCommand {
+                // If a scenario step is selected, duplicate it
+                if let stepId = viewModel.selectedStepId {
+                    viewModel.duplicateStep(stepId)
+                    return nil
+                }
+                // Otherwise fall through to existing duplicate segments notification
                 return event
             }
 
@@ -431,4 +567,79 @@ struct EditorMainView: View {
         AppState.shared.startNewRecording()
     }
 
+    // MARK: - Frame Extraction
+
+    /// Extract a single video frame at the given time for preview purposes.
+    private static func extractFrame(from videoURL: URL, at time: TimeInterval) async -> NSImage? {
+        let asset = AVAsset(url: videoURL)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
+
+        let cmTime = CMTime(seconds: time, preferredTimescale: 600)
+
+        do {
+            let (cgImage, _) = try await generator.image(at: cmTime)
+            return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        } catch {
+            Log.recording.error("Failed to extract frame at \(time)s: \(error)")
+            return nil
+        }
+    }
+}
+
+// MARK: - ReRehearsalConfirmationView
+
+/// Confirmation dialog shown before re-rehearsal, displaying a screenshot of the target state.
+struct ReRehearsalConfirmationView: View {
+    let stepDescription: String
+    let screenshotImage: NSImage?
+    let onStart: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Re-rehearse from Step")
+                .font(.headline)
+
+            Text("Set up your screen to match this state, then click Start.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            if let image = screenshotImage {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: 480, maxHeight: 300)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.secondary.opacity(0.3))
+                    )
+            } else {
+                Text("Screenshot unavailable")
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: 480, maxHeight: 300)
+            }
+
+            Text(stepDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text("Press ESC to stop at any time.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+
+            HStack(spacing: 12) {
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                Button("Start", action: onStart)
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(24)
+        .frame(width: 520)
+    }
 }

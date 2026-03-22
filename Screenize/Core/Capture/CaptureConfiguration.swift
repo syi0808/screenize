@@ -83,6 +83,10 @@ struct CaptureConfiguration {
         var sourceRect: CGRect?
         if case .window(let scWindow) = target {
             sourceRect = Self.computeSourceRect(for: scWindow)
+        } else if case .region(let rect, _) = target {
+            // Region capture (e.g., replay of window recording): use region bounds as sourceRect.
+            // rect is already in CG display coordinate space.
+            sourceRect = Self.computeSourceRectForRegion(rect)
         }
 
         return Self(
@@ -92,6 +96,42 @@ struct CaptureConfiguration {
             scaleFactor: scaleFactor,
             capturesShadow: !target.isWindow,
             sourceRect: sourceRect
+        )
+    }
+
+    /// Compute the sourceRect for a region relative to its containing display.
+    /// `rect` is in AppKit coordinates (bottom-left origin) from CaptureMeta.boundsPt.
+    /// sourceRect must be in CG coordinates (top-left origin) relative to the display.
+    private static func computeSourceRectForRegion(_ rect: CGRect) -> CGRect {
+        let maxDisplays: UInt32 = 16
+        var displayIDs = [CGDirectDisplayID](repeating: 0, count: Int(maxDisplays))
+        var displayCount: UInt32 = 0
+        CGGetOnlineDisplayList(maxDisplays, &displayIDs, &displayCount)
+
+        // Convert AppKit rect (bottom-left origin) to CG rect (top-left origin)
+        let screenHeight = NSScreen.main?.frame.height ?? 0
+        let cgRect = CGRect(
+            x: rect.origin.x,
+            y: screenHeight - rect.origin.y - rect.height,
+            width: rect.width,
+            height: rect.height
+        )
+
+        let center = CGPoint(x: cgRect.midX, y: cgRect.midY)
+        var displayOrigin = CGPoint.zero
+        for i in 0..<Int(displayCount) {
+            let bounds = CGDisplayBounds(displayIDs[i])
+            if bounds.contains(center) {
+                displayOrigin = bounds.origin
+                break
+            }
+        }
+
+        return CGRect(
+            x: cgRect.origin.x - displayOrigin.x,
+            y: cgRect.origin.y - displayOrigin.y,
+            width: cgRect.width,
+            height: cgRect.height
         )
     }
 

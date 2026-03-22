@@ -53,6 +53,12 @@ struct WaypointGenerator {
 
         // Second pass: emit entry waypoints and in-span detail anchors.
         for (index, span) in intentSpans.enumerated() {
+            // Confidence-based suppression: skip low-confidence spans entirely
+            let confidenceBand = ConfidenceBands.band(for: span.confidence)
+            if confidenceBand == .none {
+                continue
+            }
+
             let transform: TransformValue
             if case .idle = span.intent {
                 let inherited = resolveIdleZoom(
@@ -76,7 +82,13 @@ struct WaypointGenerator {
                     )
             }
 
-            let baseUrgency = urgency(for: span.intent)
+            // Medium confidence forces lazy urgency; high confidence uses normal mapping
+            let baseUrgency: WaypointUrgency
+            if confidenceBand == .reduced {
+                baseUrgency = .lazy
+            } else {
+                baseUrgency = urgency(for: span.intent)
+            }
             let entryTime = max(
                 0,
                 span.startTime - entryLeadTime(for: baseUrgency, settings: settings)
@@ -93,6 +105,7 @@ struct WaypointGenerator {
 
         var result = sortAndCoalesce(waypoints)
         optimizeZoomTransitions(&result)
+        resolveTransitionStyles(&result)
         return result
     }
 
@@ -103,7 +116,7 @@ struct WaypointGenerator {
         switch intent {
         case .typing:
             return .high
-        case .clicking, .navigating, .scrolling, .dragging:
+        case .focused, .clicking, .navigating, .scrolling, .dragging:
             return .normal
         case .switching:
             return .immediate
@@ -152,6 +165,13 @@ struct WaypointGenerator {
             case .textField:     return settings.typingTextFieldZoomRange
             case .terminal:      return settings.typingTerminalZoomRange
             case .richTextEditor: return settings.typingRichTextZoomRange
+            }
+        case .focused(let context):
+            switch context {
+            case .codeEditor:    return settings.focusedCodeZoomRange
+            case .textField:     return settings.focusedTextFieldZoomRange
+            case .terminal:      return settings.focusedTerminalZoomRange
+            case .richTextEditor: return settings.focusedRichTextZoomRange
             }
         case .clicking:    return settings.clickingZoomRange
         case .navigating:  return settings.navigatingZoomRange
@@ -495,9 +515,62 @@ struct WaypointGenerator {
     private static func isActiveIntent(_ intent: UserIntent) -> Bool {
         switch intent {
         case .clicking, .navigating, .scrolling: return true
-        case .typing: return true
+        case .typing, .focused: return true
         case .dragging: return true
         case .idle, .reading, .switching: return false
+        }
+    }
+
+    /// Apply TransitionResolver-style logic to remove or flatten idle waypoints
+    /// between similar active waypoints.
+    ///
+    /// For Hold-classified transitions (nearby position + similar zoom), remove
+    /// the intermediate idle waypoint entirely. For DirectPan-classified transitions
+    /// (similar zoom but farther position), keep the idle waypoint but override its
+    /// zoom to match the surrounding active zoom.
+    static func resolveTransitionStyles(_ waypoints: inout [CameraWaypoint]) {
+        let settings = TransitionResolver.Settings()
+        guard waypoints.count >= 3 else { return }
+
+        var i = 0
+        while i + 2 < waypoints.count {
+            let first = waypoints[i]
+            let mid = waypoints[i + 1]
+            let third = waypoints[i + 2]
+
+            guard isActiveIntent(first.source),
+                  !isActiveIntent(mid.source),
+                  isActiveIntent(third.source) else {
+                i += 1
+                continue
+            }
+
+            let dx = first.targetCenter.x - third.targetCenter.x
+            let dy = first.targetCenter.y - third.targetCenter.y
+            let distance = sqrt(dx * dx + dy * dy)
+            let minZoom = min(first.targetZoom, third.targetZoom)
+            let maxZoom = max(first.targetZoom, third.targetZoom)
+            let zoomRatio: CGFloat = minZoom > 0 ? maxZoom / minZoom : 1.0
+
+            if distance < settings.holdDistanceThreshold
+                && zoomRatio < settings.holdZoomRatioThreshold {
+                // Hold: remove the idle waypoint entirely
+                waypoints.remove(at: i + 1)
+                // Don't advance i; re-check from the same position
+            } else if zoomRatio < settings.directPanZoomRatioThreshold {
+                // DirectPan: keep the idle waypoint but preserve active zoom
+                let avgZoom = (first.targetZoom + third.targetZoom) / 2
+                waypoints[i + 1] = CameraWaypoint(
+                    time: mid.time,
+                    targetZoom: avgZoom,
+                    targetCenter: mid.targetCenter,
+                    urgency: mid.urgency,
+                    source: mid.source
+                )
+                i += 1
+            } else {
+                i += 1
+            }
         }
     }
 

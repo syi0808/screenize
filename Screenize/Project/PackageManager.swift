@@ -128,7 +128,8 @@ final class PackageManager {
         in parentDirectory: URL,
         recordingStartDate: Date,
         processTimeStartMs: Int64,
-        appVersion: String
+        appVersion: String,
+        scenarioRawEvents: ScenarioRawEvents? = nil
     ) throws -> PackageInfo {
         let packageURL = parentDirectory
             .appendingPathComponent(name)
@@ -186,6 +187,13 @@ final class PackageManager {
 
         let interop = InteropBlock.forRecording(videoRelativePath: videoRelativePath)
 
+        // Write scenario files if raw events were provided
+        if let rawEvents = scenarioRawEvents {
+            let scenario = ScenarioGenerator.generate(from: rawEvents)
+            try ScenarioFileManager.save(scenario, to: packageURL)
+            try ScenarioFileManager.saveRaw(rawEvents, to: packageURL)
+        }
+
         return PackageInfo(
             packageURL: packageURL,
             projectJSONURL: packageURL.appendingPathComponent(Self.projectFilename),
@@ -209,6 +217,14 @@ final class PackageManager {
         let projectJSONURL = packageURL.appendingPathComponent(Self.projectFilename)
         let data = try project.encodeToJSON()
         try data.write(to: projectJSONURL, options: .atomic)
+
+        // Save scenario files if present (stored separately from project.json)
+        if let scenario = project.scenario {
+            try ScenarioFileManager.save(scenario, to: packageURL)
+        }
+        if let rawEvents = project.scenarioRawEvents {
+            try ScenarioFileManager.saveRaw(rawEvents, to: packageURL)
+        }
     }
 
     // MARK: - Load
@@ -247,6 +263,10 @@ final class PackageManager {
         guard project.media.videoExists else {
             throw PackageManagerError.videoFileNotFound(project.media.videoURL)
         }
+
+        // Load scenario files (optional — present only for scenario-based recordings)
+        project.scenario = ScenarioFileManager.loadScenario(from: packageURL)
+        project.scenarioRawEvents = ScenarioFileManager.loadRawEvents(from: packageURL)
 
         return project
     }

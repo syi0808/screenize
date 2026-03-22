@@ -36,6 +36,7 @@ enum DeadZoneTarget {
     ///
     /// - Parameters:
     ///   - wasActive: Whether the dead zone was active on the previous tick.
+    ///   - confidence: Intent span confidence (0-1). Medium-confidence widens the safe zone.
     /// - Returns: The target position and whether the dead zone is now active.
     static func computeWithState(
         cursorPosition: NormalizedPoint,
@@ -43,6 +44,7 @@ enum DeadZoneTarget {
         zoom: CGFloat,
         isTyping: Bool,
         wasActive: Bool,
+        confidence: Float = 1.0,
         settings: DeadZoneSettings
     ) -> Result {
         guard zoom > 1.001 else {
@@ -53,9 +55,12 @@ enum DeadZoneTarget {
         }
 
         let viewportHalf = 0.5 / zoom
-        let safeFraction = isTyping
+        // Widen safe zone for medium-confidence spans to suppress minor movements
+        let confidenceMultiplier: CGFloat =
+            ConfidenceBands.band(for: confidence) == .reduced ? 1.15 : 1.0
+        let safeFraction = (isTyping
             ? settings.safeZoneFractionTyping
-            : settings.safeZoneFraction
+            : settings.safeZoneFraction) * confidenceMultiplier
         let correction = isTyping
             ? settings.correctionFractionTyping
             : settings.correctionFraction
