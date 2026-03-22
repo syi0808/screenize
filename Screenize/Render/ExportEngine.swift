@@ -22,7 +22,7 @@ final class ExportEngine: ObservableObject {
     var project: ScreenizeProject?
 
     /// Export task
-    var exportTask: Task<URL, Error>?
+    var exportTask: Task<Void, Never>?
 
     /// Cancellation flag
     var isCancelled: Bool = false
@@ -78,6 +78,9 @@ final class ExportEngine: ObservableObject {
     func cancel() {
         isCancelled = true
         exportTask?.cancel()
+        Task { @MainActor in
+            progress = .cancelled
+        }
     }
 
     // MARK: - Reset

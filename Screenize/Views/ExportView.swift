@@ -246,7 +246,7 @@ struct ExportSheetView: View {
         var exportProject = project
         exportProject.renderSettings = renderSettings
 
-        Task {
+        exportEngine.exportTask = Task {
             do {
                 let resultURL = try await exportEngine.export(project: exportProject, to: outputURL)
                 await MainActor.run {

@@ -96,30 +96,49 @@ extension ExportEngine {
                 ? nil
                 : project.renderSettings.outputColorSpace.cgColorSpace
 
-            let framesWritten = try await processFrames(
-                writer: writerCtx.writer,
-                reader: sequentialReader,
-                writerInput: writerCtx.writerInput,
-                adaptor: writerCtx.adaptor,
-                evaluator: evaluator,
-                renderer: renderer,
-                trimStart: trimStart,
-                outputFrameRate: outputFrameRate,
-                totalOutputFrames: totalOutputFrames,
-                startTime: startTime,
-                colorSpace: exportColorSpace
-            )
+            // Start audio writing concurrently to prevent AVAssetWriter deadlock.
+            // AVAssetWriter blocks when one input starves while another fills,
+            // so both inputs must be fed in parallel.
+            let audioTask: Task<Void, any Error>?
+            if let audioInput = writerCtx.audioWriterInput {
+                audioTask = Task {
+                    try await self.writeAudio(
+                        project: project, audioInput: audioInput,
+                        hasSystemAudio: writerCtx.hasSystemAudio,
+                        hasMicAudio: writerCtx.hasMicAudio,
+                        trimStart: trimStart, trimEnd: trimEnd
+                    )
+                }
+            } else {
+                audioTask = nil
+            }
+
+            let framesWritten: Int
+            do {
+                framesWritten = try await processFrames(
+                    writer: writerCtx.writer,
+                    reader: sequentialReader,
+                    writerInput: writerCtx.writerInput,
+                    adaptor: writerCtx.adaptor,
+                    evaluator: evaluator,
+                    renderer: renderer,
+                    trimStart: trimStart,
+                    outputFrameRate: outputFrameRate,
+                    totalOutputFrames: totalOutputFrames,
+                    startTime: startTime,
+                    colorSpace: exportColorSpace
+                )
+            } catch {
+                audioTask?.cancel()
+                throw error
+            }
 
             Log.export.info("Export completed - \(framesWritten) frames")
 
-            // 8. Write audio
-            if let audioInput = writerCtx.audioWriterInput {
-                try await writeAudio(
-                    project: project, audioInput: audioInput,
-                    hasSystemAudio: writerCtx.hasSystemAudio,
-                    hasMicAudio: writerCtx.hasMicAudio,
-                    trimStart: trimStart, trimEnd: trimEnd
-                )
+            // 8. Wait for audio to complete
+            if let audioTask {
+                await MainActor.run { progress = .encoding }
+                try await audioTask.value
             }
 
             // 9. Finalize
@@ -246,29 +265,31 @@ extension ExportEngine {
         trimStart: TimeInterval,
         trimEnd: TimeInterval
     ) async throws {
-        await MainActor.run { progress = .encoding }
-
         let systemAudioURL = project.media.systemAudioURL
         let micAudioURL = project.media.micAudioURL
         let systemVolume = project.renderSettings.systemAudioVolume
         let micVolume = project.renderSettings.microphoneAudioVolume
+        let cancelCheck = { self.isCancelled }
 
         if hasSystemAudio && hasMicAudio, let sysURL = systemAudioURL, let micURL = micAudioURL {
             try await audioMixer.mixAndWrite(
                 systemAudioURL: sysURL, micAudioURL: micURL,
                 writerInput: audioInput,
                 trimStart: trimStart, trimEnd: trimEnd,
-                systemVolume: systemVolume, micVolume: micVolume
+                systemVolume: systemVolume, micVolume: micVolume,
+                isCancelled: cancelCheck
             )
         } else if hasSystemAudio, let sysURL = systemAudioURL {
             try await audioMixer.writePassthrough(
                 audioURL: sysURL, writerInput: audioInput,
-                trimStart: trimStart, trimEnd: trimEnd, volume: systemVolume
+                trimStart: trimStart, trimEnd: trimEnd, volume: systemVolume,
+                isCancelled: cancelCheck
             )
         } else if hasMicAudio, let micURL = micAudioURL {
             try await audioMixer.writePassthrough(
                 audioURL: micURL, writerInput: audioInput,
-                trimStart: trimStart, trimEnd: trimEnd, volume: micVolume
+                trimStart: trimStart, trimEnd: trimEnd, volume: micVolume,
+                isCancelled: cancelCheck
             )
         }
     }

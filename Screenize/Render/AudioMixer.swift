@@ -47,7 +47,8 @@ final class AudioMixer {
         writerInput: AVAssetWriterInput,
         trimStart: TimeInterval,
         trimEnd: TimeInterval,
-        volume: Float = 1.0
+        volume: Float = 1.0,
+        isCancelled: @escaping () -> Bool = { false }
     ) async throws {
         let asset = AVAsset(url: audioURL)
         let tracks = try await asset.loadTracks(withMediaType: .audio)
@@ -76,6 +77,16 @@ final class AudioMixer {
 
             writerInput.requestMediaDataWhenReady(on: exportQueue) {
                 while writerInput.isReadyForMoreMediaData {
+                    if isCancelled() {
+                        writerInput.markAsFinished()
+                        reader.cancelReading()
+                        if !didResume {
+                            didResume = true
+                            continuation.resume()
+                        }
+                        return
+                    }
+
                     guard let sampleBuffer = output.copyNextSampleBuffer() else {
                         writerInput.markAsFinished()
                         if !didResume {
@@ -115,7 +126,8 @@ final class AudioMixer {
         trimStart: TimeInterval,
         trimEnd: TimeInterval,
         systemVolume: Float = 1.0,
-        micVolume: Float = 1.0
+        micVolume: Float = 1.0,
+        isCancelled: @escaping () -> Bool = { false }
     ) async throws {
         let timeRange = CMTimeRange(
             start: CMTime(seconds: trimStart, preferredTimescale: 600),
@@ -182,6 +194,17 @@ final class AudioMixer {
 
             writerInput.requestMediaDataWhenReady(on: exportQueue) {
                 while writerInput.isReadyForMoreMediaData {
+                    if isCancelled() {
+                        writerInput.markAsFinished()
+                        systemReader.cancelReading()
+                        micReader.cancelReading()
+                        if !didResume {
+                            didResume = true
+                            continuation.resume()
+                        }
+                        return
+                    }
+
                     let systemSample = systemOutput.copyNextSampleBuffer()
                     let rawMicSample = micOutput.copyNextSampleBuffer()
 
