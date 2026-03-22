@@ -54,6 +54,7 @@ final class ScenarioPlayer: ObservableObject {
     private var continuationForManual: CheckedContinuation<Void, Never>?
     private var continuationForUserStart: CheckedContinuation<Void, Never>?
     private var replayStartTime: Date?
+    private var coordinateOffset: CGPoint = .zero
 
     // MARK: - Public API
 
@@ -93,26 +94,45 @@ final class ScenarioPlayer: ObservableObject {
 
         replayStartTime = Date()
 
+        // Compute coordinate offset: difference between current capture area and rehearsal area.
+        // This adjusts all absolute coordinates when the target window has moved since rehearsal.
+        let currentBounds = config.captureTarget.frame
+        if let rehearsalBounds = scenario.rehearsalBounds {
+            coordinateOffset = CGPoint(
+                x: currentBounds.origin.x - rehearsalBounds.origin.x,
+                y: currentBounds.origin.y - rehearsalBounds.origin.y
+            )
+        } else {
+            coordinateOffset = .zero
+        }
+
         // Activate the target app so CGEvent injections land on the correct window.
         // Try appContext first, then first activate_app step's bundleId, then frontmost non-Screenize app.
         let targetBundleId = scenario.appContext
             ?? scenario.steps.first(where: { $0.type == .activateApp })?.app
-        if let bundleId = targetBundleId {
-            NSWorkspace.shared.runningApplications
-                .first(where: { $0.bundleIdentifier == bundleId })?
-                .activate(options: .activateIgnoringOtherApps)
+        if let bundleId = targetBundleId,
+           let app = NSWorkspace.shared.runningApplications.first(where: {
+               $0.bundleIdentifier == bundleId
+           }) {
+            // Poll for up to 2 seconds to verify activation
+            for _ in 0..<20 {
+                app.activate()
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == bundleId {
+                    break
+                }
+            }
         } else {
             // No app context — activate the frontmost non-Screenize app
             let screenizeBundleId = Bundle.main.bundleIdentifier
-            NSWorkspace.shared.runningApplications
-                .first(where: {
-                    $0.isActive == false && !$0.isHidden && $0.activationPolicy == .regular
+            if let app = NSWorkspace.shared.runningApplications.first(where: {
+                !$0.isHidden && $0.activationPolicy == .regular
                     && $0.bundleIdentifier != screenizeBundleId
-                })?
-                .activate(options: .activateIgnoringOtherApps)
+            }) {
+                app.activate()
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
         }
-        // Wait for app activation to take effect
-        try? await Task.sleep(nanoseconds: 500_000_000)
 
         state = .playing
         await executeStepLoop()
@@ -180,6 +200,7 @@ final class ScenarioPlayer: ObservableObject {
                 steps: scenario.steps,
                 stepIndex: index,
                 captureArea: config?.captureTarget.frame ?? .zero,
+                coordinateOffset: coordinateOffset,
                 isCancelled: { self.isCancelled }
             )
 

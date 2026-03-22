@@ -1,6 +1,7 @@
 import Foundation
 import CoreGraphics
 import ApplicationServices
+import AppKit
 
 /// Orchestrates per-step execution using AXTargetResolver, EventInjector, StateValidator,
 /// PathGenerator, and TimingController.
@@ -22,6 +23,7 @@ final class StepExecutor {
         steps: [ScenarioStep],
         stepIndex: Int,
         captureArea: CGRect,
+        coordinateOffset: CGPoint = .zero,
         isCancelled: @escaping () -> Bool
     ) async -> StepResult {
         guard !isCancelled() else { return .cancelled }
@@ -34,22 +36,32 @@ final class StepExecutor {
                 steps: steps,
                 stepIndex: stepIndex,
                 captureArea: captureArea,
+                coordinateOffset: coordinateOffset,
                 isCancelled: isCancelled
             )
         case .click, .doubleClick, .rightClick:
-            return await executeClick(step: step, captureArea: captureArea, isCancelled: isCancelled)
+            return await executeClick(
+                step: step, captureArea: captureArea,
+                coordinateOffset: coordinateOffset, isCancelled: isCancelled
+            )
         case .keyboard:
             return await executeKeyboard(step: step)
         case .typeText:
             return await executeTypeText(step: step, isCancelled: isCancelled)
         case .scroll:
-            return await executeScroll(step: step, captureArea: captureArea)
+            return await executeScroll(
+                step: step, captureArea: captureArea, coordinateOffset: coordinateOffset
+            )
         case .activateApp:
             return await executeActivateApp(step: step)
         case .mouseDown:
-            return await executeMouseDown(step: step, captureArea: captureArea)
+            return await executeMouseDown(
+                step: step, captureArea: captureArea, coordinateOffset: coordinateOffset
+            )
         case .mouseUp:
-            return await executeMouseUp(step: step, captureArea: captureArea)
+            return await executeMouseUp(
+                step: step, captureArea: captureArea, coordinateOffset: coordinateOffset
+            )
         case .wait:
             await TimingController.delay(ms: step.durationMs)
             return .success
@@ -68,18 +80,23 @@ final class StepExecutor {
         steps: [ScenarioStep],
         stepIndex: Int,
         captureArea: CGRect,
+        coordinateOffset: CGPoint,
         isCancelled: @escaping () -> Bool
     ) async -> StepResult {
         // Determine destination: use next step's target positionHint if available,
         // otherwise fall back to this step's own target positionHint.
-        let destination: CGPoint
+        let rawDestination: CGPoint
         if let nextTarget = nextStepTarget(steps: steps, afterIndex: stepIndex) {
-            destination = absolutePosition(from: nextTarget.positionHint, captureArea: captureArea)
+            rawDestination = absolutePosition(from: nextTarget.positionHint, captureArea: captureArea)
         } else if let target = step.target {
-            destination = absolutePosition(from: target.positionHint, captureArea: captureArea)
+            rawDestination = absolutePosition(from: target.positionHint, captureArea: captureArea)
         } else {
             return .success
         }
+        let destination = CGPoint(
+            x: rawDestination.x + coordinateOffset.x,
+            y: rawDestination.y + coordinateOffset.y
+        )
 
         let points = PathGenerator.generatePath(
             from: startPosition,
@@ -99,13 +116,16 @@ final class StepExecutor {
     private func executeClick(
         step: ScenarioStep,
         captureArea: CGRect,
+        coordinateOffset: CGPoint,
         isCancelled: @escaping () -> Bool
     ) async -> StepResult {
         guard let target = step.target else {
             return .error("Click step missing target")
         }
 
-        let resolved = await targetResolver.resolve(target: target, captureArea: captureArea)
+        let resolved = await targetResolver.resolve(
+            target: target, captureArea: captureArea, coordinateOffset: coordinateOffset
+        )
         guard let resolved = resolved else {
             return .error("Failed to resolve target for click")
         }
@@ -171,10 +191,16 @@ final class StepExecutor {
 
     // MARK: - Scroll
 
-    private func executeScroll(step: ScenarioStep, captureArea: CGRect) async -> StepResult {
+    private func executeScroll(
+        step: ScenarioStep,
+        captureArea: CGRect,
+        coordinateOffset: CGPoint
+    ) async -> StepResult {
         // Move cursor to target position if available
         if let target = step.target {
-            if let resolved = await targetResolver.resolve(target: target, captureArea: captureArea) {
+            if let resolved = await targetResolver.resolve(
+                target: target, captureArea: captureArea, coordinateOffset: coordinateOffset
+            ) {
                 let (_, position) = extractElementAndPosition(from: resolved)
                 if let moveEvent = EventInjector.createMouseMoveEvent(to: position) {
                     eventInjector.injectEvent(moveEvent)
@@ -211,18 +237,31 @@ final class StepExecutor {
             return .error(validationErrorMessage(validation))
         }
 
-        await eventInjector.injectActivateApp(bundleId: bundleId)
+        // Activate with polling verification (up to 1 second)
+        for _ in 0..<10 {
+            await eventInjector.injectActivateApp(bundleId: bundleId)
+            await TimingController.delay(ms: 100)
+            if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == bundleId {
+                break
+            }
+        }
         return .success
     }
 
     // MARK: - Mouse Down / Up
 
-    private func executeMouseDown(step: ScenarioStep, captureArea: CGRect) async -> StepResult {
+    private func executeMouseDown(
+        step: ScenarioStep,
+        captureArea: CGRect,
+        coordinateOffset: CGPoint
+    ) async -> StepResult {
         guard let target = step.target else {
             return .error("Mouse down step missing target")
         }
 
-        let resolved = await targetResolver.resolve(target: target, captureArea: captureArea)
+        let resolved = await targetResolver.resolve(
+            target: target, captureArea: captureArea, coordinateOffset: coordinateOffset
+        )
         guard let resolved = resolved else {
             return .error("Failed to resolve target for mouse down")
         }
@@ -242,12 +281,18 @@ final class StepExecutor {
         return .success
     }
 
-    private func executeMouseUp(step: ScenarioStep, captureArea: CGRect) async -> StepResult {
+    private func executeMouseUp(
+        step: ScenarioStep,
+        captureArea: CGRect,
+        coordinateOffset: CGPoint
+    ) async -> StepResult {
         guard let target = step.target else {
             return .error("Mouse up step missing target")
         }
 
-        let resolved = await targetResolver.resolve(target: target, captureArea: captureArea)
+        let resolved = await targetResolver.resolve(
+            target: target, captureArea: captureArea, coordinateOffset: coordinateOffset
+        )
         guard let resolved = resolved else {
             return .error("Failed to resolve target for mouse up")
         }

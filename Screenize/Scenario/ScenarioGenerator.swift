@@ -13,10 +13,15 @@ struct ScenarioGenerator {
         }
 
         let actionSteps = convertToActionSteps(rawEvents.events, captureArea: rawEvents.captureArea)
-        let stepsWithMoves = insertMouseMoves(between: actionSteps)
+        let stepsWithMoves = insertMouseMoves(between: actionSteps, rawEvents: rawEvents.events)
         let appContext = detectAppContext(rawEvents.events)
 
-        return Scenario(version: 1, appContext: appContext, steps: stepsWithMoves)
+        return Scenario(
+            version: 1,
+            appContext: appContext,
+            rehearsalBounds: rawEvents.captureArea,
+            steps: stepsWithMoves
+        )
     }
 
     // MARK: - Core Conversion
@@ -388,7 +393,7 @@ struct ScenarioGenerator {
 
     // MARK: - mouse_move Insertion
 
-    private static func insertMouseMoves(between actionSteps: [ActionStep]) -> [ScenarioStep] {
+    private static func insertMouseMoves(between actionSteps: [ActionStep], rawEvents: [RawEvent]) -> [ScenarioStep] {
         guard !actionSteps.isEmpty else { return [] }
 
         var result: [ScenarioStep] = []
@@ -411,6 +416,19 @@ struct ScenarioGenerator {
                 }
             }
             result.append(action.step)
+        }
+
+        // Preserve trailing duration after the last action step
+        if let lastAction = actionSteps.last, let lastRawEvent = rawEvents.last {
+            let trailingGap = lastRawEvent.timeMs - lastAction.endMs
+            if trailingGap > 0 {
+                let waitStep = ScenarioStep(
+                    type: .wait,
+                    description: "Wait",
+                    durationMs: trailingGap
+                )
+                result.append(waitStep)
+            }
         }
 
         return result

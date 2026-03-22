@@ -8,11 +8,20 @@ struct Scenario: Codable, Equatable {
     var version: Int = 1
     /// Bundle identifier of the target application (optional context hint).
     var appContext: String?
+    /// Original capture area from rehearsal (CG coordinates). Used to compute
+    /// coordinate offsets when the target window has moved since rehearsal.
+    var rehearsalBounds: CGRect?
     var steps: [ScenarioStep]
 
-    init(version: Int = 1, appContext: String? = nil, steps: [ScenarioStep]) {
+    init(
+        version: Int = 1,
+        appContext: String? = nil,
+        rehearsalBounds: CGRect? = nil,
+        steps: [ScenarioStep]
+    ) {
         self.version = version
         self.appContext = appContext
+        self.rehearsalBounds = rehearsalBounds
         self.steps = steps
     }
 

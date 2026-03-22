@@ -764,22 +764,34 @@ final class EditorViewModel: ObservableObject {
     // MARK: - Capture Target Resolution
 
     /// Resolve a CaptureTarget from the project's CaptureMeta using ScreenCaptureKit.
-    /// Falls back to the main display if the original display is unavailable.
-    /// Reconstruct a CaptureTarget from CaptureMeta for replay recording.
-    /// - Display capture (displayID != nil): returns `.display()`
-    /// - Window capture (displayID == nil): returns `.region(boundsPt, display)` so
-    ///   CaptureConfiguration sets sourceRect to crop to the original window area.
+    /// For display captures, returns `.display()`. For window captures, finds the target
+    /// app's current window position via SCShareableContent instead of using stale bounds.
     private func resolveCaptureTarget(from captureMeta: CaptureMeta) async throws -> CaptureTarget {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
 
         if let displayID = captureMeta.displayID,
            let display = content.displays.first(where: { $0.displayID == displayID }) {
-            // Display capture — full display
             return .display(display)
         }
 
-        // Window capture (displayID is nil) — use region with boundsPt.
-        // Find the display that contains the window's center point.
+        // Window capture — find the target app's current window position
+        if let bundleId = scenario?.appContext {
+            if let window = content.windows.first(where: {
+                $0.owningApplication?.bundleIdentifier == bundleId
+                    && $0.isOnScreen
+                    && $0.frame.width > 0 && $0.frame.height > 0
+            }) {
+                let currentFrame = window.frame
+                if let display = content.displays.first(where: { display in
+                    let bounds = CGDisplayBounds(display.displayID)
+                    return bounds.contains(CGPoint(x: currentFrame.midX, y: currentFrame.midY))
+                }) {
+                    return .region(currentFrame, display)
+                }
+            }
+        }
+
+        // Fallback: use stale boundsPt from captureMeta
         let windowCenter = CGPoint(
             x: captureMeta.boundsPt.midX,
             y: captureMeta.boundsPt.midY
@@ -791,7 +803,6 @@ final class EditorViewModel: ObservableObject {
             return .region(captureMeta.boundsPt, display)
         }
 
-        // Fallback: use main display with region
         if let mainDisplay = content.displays.first {
             return .region(captureMeta.boundsPt, mainDisplay)
         }

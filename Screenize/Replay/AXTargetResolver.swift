@@ -38,10 +38,19 @@ final class AXTargetResolver {
     /// AX-based resolution is available via `resolveWithAX()` but is not used during replay
     /// because AXUIElementCopyElementAtPosition is synchronous Mach IPC that can deadlock
     /// when Screenize is the active process.
-    func resolve(target: AXTarget, captureArea: CGRect) async -> ResolvedTarget? {
-        // During replay, use coordinates directly — fast and reliable.
-        // The absoluteCoord was recorded during rehearsal and matches the screen layout.
-        return .coordinate(target.absoluteCoord)
+    ///
+    /// - Parameter coordinateOffset: Offset to apply to rehearsal-time absoluteCoord when
+    ///   the target window has moved since rehearsal (dx, dy in screen pixels).
+    func resolve(
+        target: AXTarget,
+        captureArea: CGRect,
+        coordinateOffset: CGPoint = .zero
+    ) async -> ResolvedTarget? {
+        let adjustedCoord = CGPoint(
+            x: target.absoluteCoord.x + coordinateOffset.x,
+            y: target.absoluteCoord.y + coordinateOffset.y
+        )
+        return .coordinate(adjustedCoord)
     }
 
     /// Full AX-based resolution with fallback chain. Use only when the target app is active

@@ -115,23 +115,29 @@ final class EventInjector {
 
     /// Move to and perform a left click at the target point.
     func injectClick(at point: CGPoint) async {
-        for event in EventInjector.createLeftClickEvents(at: point) {
-            injectEvent(event)
-        }
+        let events = EventInjector.createLeftClickEvents(at: point)
+        guard events.count == 2 else { return }
+        injectEvent(events[0])
+        try? await Task.sleep(nanoseconds: 30_000_000) // 30ms settle between down/up
+        injectEvent(events[1])
     }
 
     /// Perform a double-click at the target point.
     func injectDoubleClick(at point: CGPoint) async {
-        for event in EventInjector.createLeftClickEvents(at: point, clickCount: 2) {
-            injectEvent(event)
-        }
+        let events = EventInjector.createLeftClickEvents(at: point, clickCount: 2)
+        guard events.count == 2 else { return }
+        injectEvent(events[0])
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        injectEvent(events[1])
     }
 
     /// Perform a right-click at the target point.
     func injectRightClick(at point: CGPoint) async {
-        for event in EventInjector.createRightClickEvents(at: point) {
-            injectEvent(event)
-        }
+        let events = EventInjector.createRightClickEvents(at: point)
+        guard events.count == 2 else { return }
+        injectEvent(events[0])
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        injectEvent(events[1])
     }
 
     /// Inject a mouse down event at the target point (left button by default).
@@ -205,7 +211,7 @@ final class EventInjector {
     func injectActivateApp(bundleId: String) async {
         let apps = NSWorkspace.shared.runningApplications
         if let app = apps.first(where: { $0.bundleIdentifier == bundleId }) {
-            app.activate(options: .activateIgnoringOtherApps)
+            app.activate()
         }
     }
 
