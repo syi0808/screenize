@@ -3,24 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Screenize — Open Source Screen Recording for macOS</title>
-  <meta name="description" content="Free, open-source macOS screen recording with algorithm-driven smart zoom, click effects, timeline editing, and professional export. Built with pure Apple frameworks.">
-  <meta name="keywords" content="screen recording, macOS, open source, auto zoom, click effects, timeline editor, screencast, video capture">
+  <title>Screenize — Free Screen Studio Alternative for macOS</title>
+  <meta name="description" content="Record your screen, let auto-zoom do the rest. Free, open-source macOS app with smart zoom, click effects, keystroke overlays, and a timeline editor you actually control.">
+  <meta name="keywords" content="screen recording, macOS, open source, auto zoom, click effects, timeline editor, screencast, video capture, screen studio alternative, free screen recording">
   <meta name="author" content="Yein Sung">
+  <link rel="canonical" href="https://syi0808.github.io/screenize/">
 
   <meta name="google-site-verification" content="ebhqMwe5mHyj7bFj5VSCKkrAdg9HgL5aIZi8RFOnR_0" />
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Screenize — Open Source Screen Recording for macOS">
-  <meta property="og:description" content="Algorithm-driven smart zoom, click effects, and timeline editing. Free and open source.">
+  <meta property="og:title" content="Screenize — Free Screen Studio Alternative for macOS">
+  <meta property="og:description" content="Record your screen, let auto-zoom do the rest. Smart zoom, click effects, and a timeline editor you control. Free and open source.">
   <meta property="og:image" content="https://syi0808.github.io/screenize/images/og-image.png">
   <meta property="og:url" content="https://syi0808.github.io/screenize/">
   <meta property="og:site_name" content="Screenize">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Screenize — Open Source Screen Recording for macOS">
-  <meta name="twitter:description" content="Algorithm-driven smart zoom, click effects, and timeline editing. Free and open source.">
+  <meta name="twitter:title" content="Screenize — Free Screen Studio Alternative for macOS">
+  <meta name="twitter:description" content="Record your screen, let auto-zoom do the rest. Smart zoom, click effects, and a timeline editor you control. Free and open source.">
   <meta name="twitter:image" content="https://syi0808.github.io/screenize/images/og-image.png">
 
   <!-- Favicon -->
@@ -34,17 +35,113 @@
 
   <link rel="stylesheet" href="css/style.css">
 
-  <!-- Structured Data -->
+  <!-- Structured Data: SoftwareApplication -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Screenize",
+    "description": "Screenize is a free, open-source macOS screen recording app with smart auto-zoom, click effects, keystroke overlays, and a multi-track timeline editor. It is an open-source alternative to Screen Studio.",
     "applicationCategory": "MultimediaApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "operatingSystem": "macOS 13.0+",
     "license": "https://www.apache.org/licenses/LICENSE-2.0",
-    "url": "https://github.com/syi0808/screenize",
-    "author": { "@type": "Person", "name": "Yein Sung", "url": "https://github.com/syi0808" }
+    "url": "https://syi0808.github.io/screenize/",
+    "downloadUrl": "https://github.com/syi0808/screenize/releases/latest/download/Screenize.dmg",
+    "installUrl": "https://github.com/syi0808/screenize/releases",
+    "screenshot": "https://syi0808.github.io/screenize/assets/demo.gif",
+    "softwareHelp": { "@type": "CreativeWork", "url": "https://github.com/syi0808/screenize/blob/main/README.md" },
+    "isAccessibleForFree": true,
+    "author": { "@type": "Person", "name": "Yein Sung", "url": "https://github.com/syi0808" },
+    "dateModified": "2026-03-23"
+  }
+  </script>
+
+  <!-- Structured Data: FAQPage (GEO optimization) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is Screenize?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screenize is a free, open-source macOS screen recording app that automatically adds zoom effects, click highlights, and keystroke overlays to your recordings. It tracks your cursor and clicks during recording, then generates zoom keyframes automatically. You can fine-tune everything in a multi-track timeline editor before exporting."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Screenize really free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, Screenize is completely free and open source under the Apache 2.0 license. There are no subscriptions, no premium tiers, no tracking, and no vendor lock-in. You can use it, modify it, and distribute it freely."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is Screenize different from Screen Studio?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screenize is a free, open-source alternative to Screen Studio. While Screen Studio costs $89+, Screenize offers similar auto-zoom and click effects at no cost. Screenize also gives you a full multi-track timeline editor where every auto-generated keyframe is visible and editable, offering more control over the final result."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What macOS version does Screenize require?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screenize requires macOS 13.0 (Ventura) or later. It is built with native Apple frameworks including ScreenCaptureKit, AVFoundation, and CoreImage."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What export formats does Screenize support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screenize supports MP4 (H.264, H.265), MOV (ProRes 422, ProRes 4444), and GIF. You can export up to 4K resolution at up to 240fps, with configurable color spaces including sRGB, Display P3, BT.709, and BT.2020. Export presets let you save your preferred settings."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does the auto-zoom feature work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screenize offers two auto-zoom modes. Continuous Camera follows your cursor in real time using spring physics with dead zones. Segment-based Camera analyzes your recording and plans zoom levels per activity type — typing, clicking, scrolling, dragging, navigating, and idle. Both modes generate editable keyframes on the timeline."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Structured Data: HowTo (GEO optimization) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to create polished screen recordings with Screenize",
+    "description": "Record your screen with auto-zoom, click effects, and keystroke overlays using the free Screenize app for macOS.",
+    "step": [
+      {
+        "@type": "HowToStep",
+        "position": 1,
+        "name": "Record",
+        "text": "Pick a screen or window and hit record. Screenize tracks your cursor, clicks, and keystrokes in the background."
+      },
+      {
+        "@type": "HowToStep",
+        "position": 2,
+        "name": "Edit",
+        "text": "Auto-generated zoom and effects are already on the timeline. Tweak anything you want, or leave it as is."
+      },
+      {
+        "@type": "HowToStep",
+        "position": 3,
+        "name": "Export",
+        "text": "Pick your format and resolution or use a saved preset. One click for a polished result."
+      }
+    ]
   }
   </script>
 </head>
@@ -62,6 +159,7 @@
       <nav class="nav__links" id="navLinks">
         <a href="#features" class="nav__link">Features</a>
         <a href="#how-it-works" class="nav__link">How It Works</a>
+        <a href="#faq" class="nav__link">FAQ</a>
         <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener" class="nav__link nav__link--github">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         </a>
@@ -84,13 +182,13 @@
 
       <div class="hero__content">
         <h1 class="hero__title anim-fade-in anim-delay-1">
-          Beautiful screen<br>recordings.<br>
-          <span class="hero__title--accent">Zero effort.</span>
+          Record your screen.<br>
+          <span class="hero__title--accent">Let auto-zoom do the rest.</span>
         </h1>
         <p class="hero__sub anim-fade-in anim-delay-2">
-          A free, open-source macOS app that transforms raw screen captures
-          into polished videos with algorithm-driven smart zoom, click effects,
-          and timeline editing.
+          Stop paying $89+ for polished screen recordings. Screenize auto-zooms
+          to your cursor, adds click effects and keystroke overlays, and gives you
+          a timeline editor to fine-tune everything. Free and open source.
         </p>
         <div class="hero__ctas anim-fade-in anim-delay-3">
           <a href="https://github.com/syi0808/screenize/releases/latest/download/Screenize.dmg" class="btn btn--primary">
@@ -104,7 +202,7 @@
         <p class="hero__req anim-fade-in anim-delay-3">Requires macOS 13.0 or later</p>
       </div>
 
-      <img src="./assets/demo.gif" alt="Screenize Demo" class="hero__visual anim-fade-in anim-delay-4" style="border-radius: 16px; aspect-ratio: 820/533; width: 820px; max-width: 100%;" />
+      <img src="./assets/demo.gif" alt="Screenize screen recording app showing auto-zoom following cursor clicks with timeline editor and click effects on macOS" class="hero__visual anim-fade-in anim-delay-4" style="border-radius: 16px; aspect-ratio: 820/533; width: 820px; max-width: 100%;" loading="lazy" />
     </section>
 
     <!-- ============================================ -->
@@ -118,10 +216,11 @@
             <div class="value-card__icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
             </div>
-            <h3 class="value-card__title">Algorithm-Driven Smart Zoom</h3>
+            <h3 class="value-card__title">Auto-Zoom That Gets It Right</h3>
             <p class="value-card__desc">
-              Analyzes mouse movements, click patterns, and UI&nbsp;element boundaries
-              to auto-generate zoom keyframes. No manual work needed.
+              Screenize watches your cursor and clicks, then generates zoom
+              keyframes automatically. It zooms in when you click, pulls out
+              when you navigate. No manual work needed.
             </p>
           </div>
 
@@ -129,10 +228,10 @@
             <div class="value-card__icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M6 10h2m3 0h2m3 0h2"/></svg>
             </div>
-            <h3 class="value-card__title">Professional Timeline</h3>
+            <h3 class="value-card__title">A Timeline You Control</h3>
             <p class="value-card__desc">
-              Multi-track editor with Transform, Ripple, Cursor &amp; Keystroke tracks.
-              Full easing curve support for cinematic motion.
+              Not a black box. Every auto-generated keyframe is visible and editable
+              on a multi-track timeline. Adjust zoom, effects, and timing your way.
             </p>
           </div>
 
@@ -140,10 +239,10 @@
             <div class="value-card__icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
             </div>
-            <h3 class="value-card__title">Free &amp; Open Source</h3>
+            <h3 class="value-card__title">Free. No Strings Attached.</h3>
             <p class="value-card__desc">
-              Apache 2.0 licensed. No subscriptions, no telemetry, no&nbsp;vendor lock&#8209;in.
-              Built with pure Apple frameworks.
+              Apache 2.0 licensed. No subscriptions, no tracking, no&nbsp;vendor lock&#8209;in.
+              Use it, fork it, make it yours.
             </p>
           </div>
 
@@ -176,15 +275,15 @@
             </div>
           </div>
           <div class="feature__text">
-            <span class="feature__label">Intelligent Recording</span>
+            <span class="feature__label">The Feature That Saves You Hours</span>
             <h2 class="feature__title">Smart Auto-Zoom</h2>
             <p class="feature__desc">
-              Algorithms detect mouse movement patterns,
-              UI element boundaries, and scene transitions. Zoom keyframes
-              are generated automatically — focusing in when you click,
-              pulling out during navigation. Every keyframe is fully editable.
+              Two modes, both deeply customizable. <strong>Continuous Camera</strong> follows
+              your cursor in real time with spring physics. <strong>Segment-based Camera</strong>
+              plans zoom levels per activity — typing, clicking, scrolling, dragging.
+              Every generated keyframe is fully editable.
             </p>
-            <span class="feature__tech">Activity Clustering · Session Analysis · Context-Aware Zoom</span>
+            <span class="feature__tech">Continuous Camera · Segment-Based Camera · Per-Activity Zoom</span>
           </div>
         </div>
 
@@ -224,14 +323,14 @@
             </div>
           </div>
           <div class="feature__text">
-            <span class="feature__label">Precision Editing</span>
+            <span class="feature__label">Full Control When You Want It</span>
             <h2 class="feature__title">Multi-Track Timeline</h2>
             <p class="feature__desc">
-              Four dedicated tracks — Transform, Ripple, Cursor, Keystroke — each
-              with independent keyframes and easing curves. Add, move, or delete keyframes.
-              Preview changes in real time before export.
+              Don't like how a zoom turned out? Change it. Four tracks — Camera,
+              Click Effects, Cursor, Keystrokes — each with independent keyframes
+              and easing curves. Preview changes in real time before export.
             </p>
-            <span class="feature__tech">Transform · Ripple · Cursor · Keystroke Tracks</span>
+            <span class="feature__tech">Camera · Click Effects · Cursor · Keystroke Tracks</span>
           </div>
         </div>
 
@@ -253,12 +352,12 @@
             </div>
           </div>
           <div class="feature__text">
-            <span class="feature__label">Visual Feedback</span>
+            <span class="feature__label">Show Every Click</span>
             <h2 class="feature__title">Click Effects</h2>
             <p class="feature__desc">
-              Every mouse click triggers a configurable ripple animation.
-              Color-coded by type — left clicks, right clicks, double-clicks —
-              each distinguishable at a glance. Adjust color, intensity, and duration.
+              Your viewers see exactly what you're doing. Ripple animations
+              on every click, color-coded by type — left, right, double-click.
+              Adjust color, intensity, and duration to match your style.
             </p>
             <span class="feature__tech">Left · Right · Double Click · Custom Colors</span>
           </div>
@@ -281,14 +380,14 @@
             </div>
           </div>
           <div class="feature__text">
-            <span class="feature__label">Keyboard Display</span>
+            <span class="feature__label">No More "What Did You Just Press?"</span>
             <h2 class="feature__title">Keystroke Overlays</h2>
             <p class="feature__desc">
-              Keyboard shortcuts are detected and overlaid on screen automatically.
-              When you press ⌘C or ⇧⌘Z, it appears with customizable style,
-              duration, fade timing, and position.
+              Press ⌘C and it shows on screen. Keyboard shortcuts are detected
+              and overlaid automatically with customizable style, duration,
+              and position. Perfect for tutorials and demos.
             </p>
-            <span class="feature__tech">Auto-Detection · Shortcuts Only · Repeat Filtering</span>
+            <span class="feature__tech">Auto-Detection · Shortcuts Mode · All Keys Mode</span>
           </div>
         </div>
 
@@ -317,14 +416,14 @@
             </div>
           </div>
           <div class="feature__text">
-            <span class="feature__label">Aesthetics</span>
+            <span class="feature__label">Look Like You Spent Hours</span>
             <h2 class="feature__title">Cursors &amp; Backgrounds</h2>
             <p class="feature__desc">
-              Replace the system cursor with 7 built-in styles at adjustable scale.
-              Add gradient, solid color, or image backgrounds with configurable
-              padding, corner radius, and drop shadow.
+              Swap the system cursor for 7 clean styles at any size.
+              Add gradient backgrounds, rounded corners, shadows, and padding.
+              Ship recordings that look polished without the effort.
             </p>
-            <span class="feature__tech">7 Cursor Styles · Gradient Presets · Shadow Control</span>
+            <span class="feature__tech">7 Cursor Styles · Gradient Presets · Shadow &amp; Padding</span>
           </div>
         </div>
 
@@ -357,14 +456,14 @@
             </div>
           </div>
           <div class="feature__text">
-            <span class="feature__label">Output</span>
+            <span class="feature__label">Export Your Way</span>
             <h2 class="feature__title">Professional Export</h2>
             <p class="feature__desc">
-              Export to MP4 or MOV with H.264, H.265, ProRes 422, or ProRes 4444.
-              Up to 4K UHD at 24, 30, or 60 fps. Quality presets from Low to Original
-              with real-time file size estimation.
+              MP4 or MOV. H.264, H.265, or ProRes. Up to 4K at up to 240fps.
+              Save export presets for your workflow so you never configure
+              the same settings twice.
             </p>
-            <span class="feature__tech">MP4 · MOV · Up to 4K · 24–60fps</span>
+            <span class="feature__tech">MP4 · MOV · ProRes · Up to 4K · Presets</span>
           </div>
         </div>
 
@@ -384,8 +483,8 @@
             <div class="step__number">01</div>
             <h3 class="step__title">Record</h3>
             <p class="step__desc">
-              Select a screen or window. Screenize captures video alongside
-              mouse positions, clicks, and keyboard shortcuts automatically.
+              Pick a screen or window and hit record. Screenize tracks your
+              cursor, clicks, and keystrokes in the background.
             </p>
           </div>
 
@@ -397,8 +496,8 @@
             <div class="step__number">02</div>
             <h3 class="step__title">Edit</h3>
             <p class="step__desc">
-              Review auto-generated keyframes in the timeline editor.
-              Adjust zoom, effects, cursors, and backgrounds.
+              Auto-generated zoom and effects are already on the timeline.
+              Tweak anything you want, or leave it as is.
             </p>
           </div>
 
@@ -410,10 +509,86 @@
             <div class="step__number">03</div>
             <h3 class="step__title">Export</h3>
             <p class="step__desc">
-              Choose your codec, resolution, and quality.
-              Render the final video with all effects applied.
+              One click. Polished result. Pick your format and resolution,
+              or use a saved preset.
             </p>
           </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- COMPARISON (GEO: "vs Screen Studio" queries) -->
+    <!-- ============================================ -->
+    <section class="comparison" id="comparison">
+      <div class="container">
+        <h2 class="section-title reveal">Screenize vs Screen Studio</h2>
+        <p class="section-sub reveal">Both produce polished screen recordings with auto-zoom. Here's how they compare.</p>
+        <div class="comparison__table-wrap reveal">
+          <table class="comparison__table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Screenize</th>
+                <th>Screen Studio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Price</td><td><strong>Free</strong></td><td>$89+</td></tr>
+              <tr><td>Open source</td><td><strong>Yes (Apache 2.0)</strong></td><td>No</td></tr>
+              <tr><td>Auto-zoom</td><td>Continuous + Segment-based</td><td>Automatic</td></tr>
+              <tr><td>Timeline editor</td><td><strong>Multi-track, fully editable keyframes</strong></td><td>Limited</td></tr>
+              <tr><td>Click effects</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>Keystroke overlays</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>Custom cursors</td><td>7 styles</td><td>Yes</td></tr>
+              <tr><td>Export formats</td><td>MP4, MOV (ProRes), GIF</td><td>MP4, MOV, GIF</td></tr>
+              <tr><td>Max resolution</td><td>4K</td><td>4K</td></tr>
+              <tr><td>Camera overlay</td><td>Planned</td><td>Yes</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- FAQ (GEO: extractable Q&A for AI citation)   -->
+    <!-- ============================================ -->
+    <section class="faq" id="faq">
+      <div class="container">
+        <h2 class="section-title reveal">Frequently Asked Questions</h2>
+
+        <div class="faq__grid">
+
+          <details class="faq__item reveal">
+            <summary class="faq__question">What is Screenize?</summary>
+            <p class="faq__answer">Screenize is a free, open-source macOS screen recording app that automatically adds zoom effects, click highlights, and keystroke overlays to your recordings. It tracks your cursor and clicks during recording, then generates zoom keyframes automatically. You can fine-tune everything in a multi-track timeline editor before exporting.</p>
+          </details>
+
+          <details class="faq__item reveal">
+            <summary class="faq__question">Is Screenize really free?</summary>
+            <p class="faq__answer">Yes, Screenize is completely free and open source under the Apache 2.0 license. There are no subscriptions, no premium tiers, no tracking, and no vendor lock-in. You can use it, modify it, and distribute it freely.</p>
+          </details>
+
+          <details class="faq__item reveal">
+            <summary class="faq__question">How is Screenize different from Screen Studio?</summary>
+            <p class="faq__answer">Screenize is a free, open-source alternative to Screen Studio. While Screen Studio costs $89+, Screenize offers similar auto-zoom and click effects at no cost. Screenize also gives you a full multi-track timeline editor where every auto-generated keyframe is visible and editable, offering more control over the final result.</p>
+          </details>
+
+          <details class="faq__item reveal">
+            <summary class="faq__question">What macOS version does Screenize require?</summary>
+            <p class="faq__answer">Screenize requires macOS 13.0 (Ventura) or later. It is built with native Apple frameworks including ScreenCaptureKit, AVFoundation, and CoreImage.</p>
+          </details>
+
+          <details class="faq__item reveal">
+            <summary class="faq__question">What export formats does Screenize support?</summary>
+            <p class="faq__answer">Screenize supports MP4 (H.264, H.265), MOV (ProRes 422, ProRes 4444), and GIF. You can export up to 4K resolution at up to 240fps, with configurable color spaces including sRGB, Display P3, BT.709, and BT.2020. Export presets let you save your preferred settings.</p>
+          </details>
+
+          <details class="faq__item reveal">
+            <summary class="faq__question">How does the auto-zoom feature work?</summary>
+            <p class="faq__answer">Screenize offers two auto-zoom modes. Continuous Camera follows your cursor in real time using spring physics with dead zones. Segment-based Camera analyzes your recording and plans zoom levels per activity type — typing, clicking, scrolling, dragging, navigating, and idle. Both modes generate editable keyframes on the timeline.</p>
+          </details>
 
         </div>
       </div>
@@ -425,10 +600,10 @@
     <section class="oss">
       <div class="container">
         <div class="oss__card reveal">
-          <h2 class="oss__title">Built in the open.<br>Contributions welcome.</h2>
+          <h2 class="oss__title">Open source.<br>Built by indie devs, for indie devs.</h2>
           <p class="oss__desc">
-            Screenize is open source under Apache 2.0.
-            Report issues, submit pull requests, or fork it to build your own version.
+            Apache 2.0 licensed. No vendor lock-in, no hidden costs.
+            Report bugs, submit PRs, or fork it and make it yours.
           </p>
           <div class="oss__links">
             <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener" class="btn btn--primary">
@@ -458,6 +633,7 @@
         <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener">GitHub</a>
         <a href="https://github.com/syi0808/screenize/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/syi0808/screenize/issues" target="_blank" rel="noopener">Issues</a>
+        <span class="footer__updated">Last updated: <time datetime="2026-03-23">March 2026</time></span>
       </div>
     </div>
   </footer>

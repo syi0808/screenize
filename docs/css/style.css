@@ -1076,6 +1076,107 @@ body::before {
   transform: translateY(0);
 }
 
+/* ================================ */
+/* Comparison Table                 */
+/* ================================ */
+.comparison { padding: 6rem 0 2rem; }
+.section-sub {
+  text-align: center;
+  color: var(--text-1);
+  max-width: 520px;
+  margin: 0.5rem auto 2.5rem;
+  font-size: 1.05rem;
+}
+.comparison__table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.comparison__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.comparison__table th,
+.comparison__table td {
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.comparison__table thead th {
+  color: var(--text-0);
+  font-weight: 700;
+  font-size: 1rem;
+}
+.comparison__table thead th:first-child { width: 35%; }
+.comparison__table tbody td:first-child {
+  color: var(--text-1);
+  font-weight: 500;
+}
+.comparison__table tbody td {
+  color: var(--text-0);
+}
+.comparison__table strong {
+  color: var(--accent-start);
+}
+
+/* ================================ */
+/* FAQ                              */
+/* ================================ */
+.faq { padding: 4rem 0 2rem; }
+.faq__grid {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.faq__item {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.faq__item[open] {
+  border-color: var(--accent-border);
+}
+.faq__question {
+  cursor: pointer;
+  padding: 1.1rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-0);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.faq__question::-webkit-details-marker { display: none; }
+.faq__question::after {
+  content: '+';
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: var(--text-2);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.faq__item[open] .faq__question::after {
+  transform: rotate(45deg);
+}
+.faq__answer {
+  padding: 0 1.5rem 1.25rem;
+  color: var(--text-1);
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+/* Footer updated */
+.footer__updated {
+  color: var(--text-2);
+  font-size: 0.8rem;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

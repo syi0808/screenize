@@ -1,5 +1,3 @@
-> **🚧 Beta:** This project is under active development. Expect breaking changes between versions.
-
 <p align="center">
   <img src="Screenize/Assets.xcassets/AppIcon.appiconset/icon_128x128.png" alt="Screenize" width="128" height="128">
 </p>
@@ -7,80 +5,62 @@
 <h1 align="center">Screenize</h1>
 
 <p align="center">
+  <strong>Free, open-source Screen Studio alternative for macOS</strong><br>
+  Record your screen. Let auto-zoom do the rest.
+</p>
+
+<p align="center">
   <img src="docs/demo.gif" alt="Screenize demo" style="max-width: 100%; width: 520px;" />
 </p>
 
-Open-source macOS screen recording app with auto-zoom, cursor effects, and timeline editing — Screen Studio alternative.
+You record a demo, a tutorial, or a quick walkthrough. Screenize watches your cursor and clicks, then automatically zooms, pans, and adds effects — no manual keyframing needed.
 
-Screenize uses a two-pass processing model: first capture raw video alongside mouse and click data, then apply intelligent zoom, click effects, and background styling through a timeline-based editor. The result is polished screen recordings without manual keyframing.
+Unlike paid alternatives, Screenize is **completely free** and gives you **full control** over every zoom, transition, and effect through a timeline editor.
 
-## Features
+## Why Screenize?
 
-- **Screen & Window Capture** — Record entire displays or individual windows via ScreenCaptureKit with configurable resolution (720p–4K), frame rate (24–240 fps), and quality presets
-- **Audio Recording** — Capture system audio and microphone simultaneously with independent volume controls and device selection
-- **Smart Camera** — Two auto-zoom modes: **Continuous Camera** (spring physics with dead zones and intent-based responsiveness) and **Segment-based Camera** (shot planning with per-activity zoom levels for typing, clicking, navigating, dragging, scrolling, and idle states)
-- **Timeline Editor** — Edit camera, cursor, click effect, and keystroke segments on a multi-track timeline with spring easing, undo/redo, copy/paste, and multi-selection
-- **Click Effects** — Ripple animations with configurable scale, duration, and spring easing on mouse clicks
-- **Keystroke Overlays** — Display keyboard shortcuts (e.g. ⌘C, ⇧⌘Z) or all keystrokes with configurable duration, fade, and position
-- **Custom Cursors** — 7 cursor styles (Arrow, Pointer, I-Beam, Crosshair, Open Hand, Closed Hand, Context Menu) with adjustable scale
-- **Window Styling** — Backgrounds (solid color, gradient presets, custom image), rounded corners, shadow, and padding around the recording
-- **Motion Blur** — Configurable blur on fast zoom/pan transitions with intensity presets (Subtle, Strong)
-- **Export** — MP4 (H.264/H.265), MOV (ProRes 422/4444), and GIF with configurable resolution, frame rate, color space (sRGB, Display P3, BT.709, BT.2020), and quality settings
-- **Export Presets** — Save and manage reusable render settings
-- **VFR Recording** — Variable frame rate capture with frame deduplication for smaller file sizes
-- **Auto-Update** — Built-in update checking via Sparkle
-- **Localization** — Available in English, Korean, Chinese, Japanese, French, and German
+**You don't need to pay $89+ for polished screen recordings.**
 
-### Planned Features
+- **Auto-zoom that actually gets it right** — Two smart camera modes: one follows your cursor in real time with spring physics, the other plans zoom levels per activity (typing, clicking, scrolling, dragging). Both are deeply customizable.
+- **Timeline editor, not a black box** — Don't like how a zoom turned out? Edit it. Every auto-generated keyframe is visible and adjustable on a multi-track timeline.
+- **Click effects & keystroke overlays** — Ripple animations on clicks, keyboard shortcut badges (⌘C, ⇧⌘Z) on screen. Your viewers see exactly what you're doing.
+- **Make it look good** — Gradient backgrounds, rounded corners, shadows, custom cursors, motion blur on fast transitions. Ship recordings that look like you spent hours on them.
+- **Export your way** — MP4, MOV (ProRes), or GIF. Up to 4K, up to 240fps. sRGB, Display P3, BT.709, BT.2020. Save presets for your workflow.
+- **Capture everything** — System audio + mic, screen or single window, 720p to 4K, variable frame rate for smaller files.
+- **6 languages** — English, Korean, Chinese, Japanese, French, and German.
 
-- Import Screen Studio projects
+## Install
 
-## Getting Started
-
-### Requirements
-
-- macOS 13.0 or later
-
-### Download
-
-Download the latest version from [GitHub Releases](https://github.com/syi0808/screenize/releases).
-
-Open the `.dmg` file and drag Screenize into the Applications folder.
-
-**Homebrew**
+**Homebrew (recommended)**
 
 ```bash
 brew install --cask thedavidweng/tap/screenize
 ```
 
-> **macOS Gatekeeper warning:** Screenize is not notarized with Apple, so macOS may display a warning when you first open the app. To open it:
->
-> 1. Right-click (or Control-click) the Screenize app in the Applications folder
-> 2. Select **Open** from the context menu
-> 3. Click **Open** in the dialog that appears
->
-> Alternatively, go to **System Settings > Privacy & Security**, scroll down, and click **Open Anyway** next to the Screenize message.
->
-> You only need to do this once — macOS will remember your choice for future launches.
+**Manual download**
 
-### Setup
+Grab the latest `.dmg` from [GitHub Releases](https://github.com/syi0808/screenize/releases) and drag Screenize into Applications.
 
-On first launch, Screenize will request the following permissions:
+> **First launch on macOS:** Since Screenize isn't notarized with Apple yet, macOS will show a warning. Right-click the app, select **Open**, and confirm. You only need to do this once.
 
-1. **Screen Recording** — Required to capture your screen
-2. **Microphone** — Required for audio recording
-3. **Input Monitoring** — Required for click and keystroke tracking
-4. **Accessibility** — Required for UI element detection and smart zoom
+### Permissions
 
-Grant each permission when prompted, or enable them manually under **System Settings > Privacy & Security**.
+On first launch, Screenize asks for four permissions:
 
-## Usage
+| Permission | Why |
+| --- | --- |
+| Screen Recording | Capture your screen |
+| Microphone | Record audio |
+| Input Monitoring | Track clicks and keystrokes |
+| Accessibility | Detect UI elements for smart zoom |
 
-1. Launch Screenize and select a screen or window to record
-2. Start recording — mouse movements and clicks are tracked automatically
-3. Stop the recording — it opens in the timeline editor
-4. Review auto-generated zoom and keystroke keyframes, or add click effects and cursor styles manually
-5. Export the final video with all effects applied
+## How It Works
+
+1. **Pick a screen or window** and hit record
+2. **Do your thing** — Screenize tracks your cursor, clicks, and keystrokes in the background
+3. **Open the editor** — auto-generated zoom and effects are already on the timeline
+4. **Tweak if needed** — adjust any keyframe, add click effects, change cursor styles
+5. **Export** — one click, polished result
 
 ### Keyboard Shortcuts
 
@@ -97,13 +77,13 @@ Grant each permission when prompted, or enable them manually under **System Sett
 
 ## Contributing
 
-Contributions are welcome. Please read the [Contributing Guide](CONTRIBUTING.md) before submitting a pull request.
+Screenize is built in the open and contributions are welcome — bug reports, feature ideas, or code. Check the [Contributing Guide](CONTRIBUTING.md) to get started.
 
-AI-assisted contributions (Claude Code, GitHub Copilot, etc.) are welcome, but must be well-tested before submission. See [CLAUDE.md](CLAUDE.md) for AI agent guidance.
+AI-assisted contributions (Claude Code, Copilot, etc.) are welcome too, as long as they're well-tested. See [CLAUDE.md](CLAUDE.md) for AI agent guidance.
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+Apache License 2.0 — see [LICENSE](LICENSE).
 
 ## Author
 

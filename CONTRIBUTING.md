@@ -1,39 +1,38 @@
 # Contributing to Screenize
 
-Thank you for your interest in contributing to Screenize. This guide explains how to report issues, suggest improvements, and submit code changes.
+Thanks for considering a contribution! Whether it's a bug report, feature idea, or pull request — it all helps.
 
 ## Code of Conduct
 
-Please be respectful and constructive in all interactions. We are committed to providing a welcoming and inclusive experience for everyone.
+Be respectful and constructive. We want this to be a welcoming space for everyone.
 
-## How to Contribute
+## Ways to Contribute
 
-### Reporting Bugs
+### Found a Bug?
 
-1. Search [existing issues](../../issues) to check if the bug has already been reported
+1. Search [existing issues](../../issues) first — someone might have reported it already
 2. If not, open a new issue with:
-   - Steps to reproduce the bug
-   - Expected behavior vs. actual behavior
-   - Your environment (macOS version, Xcode version)
-   - Screenshots or screen recordings if applicable
+   - Steps to reproduce
+   - What you expected vs. what happened
+   - Your macOS and Xcode versions
+   - Screenshots or screen recordings if they help
 
-### Suggesting Enhancements
+### Have an Idea?
 
-1. Search [existing issues](../../issues) for similar suggestions
+1. Check [existing issues](../../issues) for similar suggestions
 2. Open a new issue describing:
-   - The problem or use case
-   - Your proposed solution
+   - The problem or use case you're solving
+   - Your proposed approach
    - Alternatives you considered
 
-### Pull Requests
+### Want to Submit Code?
 
-1. Fork the repository
-2. Create a feature branch from `main` (`git checkout -b feature/your-feature`)
+1. Fork the repo
+2. Create a branch from `main` (`git checkout -b feature/your-feature`)
 3. Make your changes
-4. Run the linter and ensure the project builds without errors
-5. Write clear commit messages (see Style Guide below)
-6. Push to your fork and open a pull request
-7. Fill in the PR description explaining what changed and why
+4. Run the linter and make sure it builds
+5. Push to your fork and open a pull request
+6. Describe what changed and why in the PR
 
 ## Development Setup
 
@@ -43,9 +42,9 @@ cd screenize
 open Screenize.xcodeproj
 ```
 
-Build with Cmd+B in Xcode. Run with Cmd+R.
+`Cmd+B` to build, `Cmd+R` to run.
 
-**Permissions:** Screenize requires Screen Recording, Microphone, and Accessibility permissions. If permissions break during development, reset them:
+**If permissions break during development:**
 
 ```bash
 tccutil reset ScreenCapture com.screenize.Screenize
@@ -54,34 +53,28 @@ tccutil reset Microphone com.screenize.Screenize
 
 ## Style Guide
 
-### Code Style
+### Code
 
-This project uses [SwiftLint](https://github.com/realm/SwiftLint) for linting. Run the linter before submitting:
-
-```bash
-./scripts/lint.sh
-```
-
-To auto-fix violations where possible:
+We use [SwiftLint](https://github.com/realm/SwiftLint). Run it before submitting:
 
 ```bash
-./scripts/lint.sh --fix
+./scripts/lint.sh          # Check
+./scripts/lint.sh --fix    # Auto-fix
 ```
 
-Configuration is defined in `.swiftlint.yml`. Key conventions in this codebase:
+Key conventions:
+- `@MainActor` on all major state classes
+- `Manager` / `Coordinator` suffixes for orchestration classes
+- `Sendable` types and dispatch queues for thread safety
+- Normalized coordinates (0–1) for mouse positions
+- Keyframes sorted by time within tracks
 
-- Use `@MainActor` on all major state classes
-- Use `Manager` / `Coordinator` suffixes for orchestration classes
-- Use `Sendable` types and dispatch queues for thread safety
-- Use normalized coordinates (0–1 range) for mouse positions
-- Keep keyframes sorted by time within tracks
+### Commits
 
-### Commit Messages
-
-- Use the imperative mood: "Add feature" not "Added feature"
-- Keep the first line under 72 characters
-- Reference issue numbers when applicable: `Fix #123`
+- Imperative mood: "Add feature" not "Added feature"
+- First line under 72 characters
+- Reference issues when applicable: `Fix #123`
 
 ## Testing
 
-This project does not yet have an automated test suite. When adding new functionality, consider including tests. Contributions that improve test coverage are welcome.
+There's no automated test suite yet. If you're adding new functionality, consider including tests — contributions that improve test coverage are especially welcome.
