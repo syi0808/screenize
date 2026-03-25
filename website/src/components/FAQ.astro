@@ -1,0 +1,172 @@
+---
+const faqs = [
+  {
+    question: "What is Screenize?",
+    answer:
+      "Screenize is a free, open-source macOS screen recording app that automatically adds zoom effects, click highlights, and keystroke overlays to your recordings. It tracks your cursor and clicks during recording, then generates zoom keyframes automatically. You can fine-tune everything in a multi-track timeline editor before exporting.",
+  },
+  {
+    question: "Is Screenize really free?",
+    answer:
+      "Yes, Screenize is completely free and open source under the Apache 2.0 license. There are no subscriptions, no premium tiers, no tracking, and no vendor lock-in. You can use it, modify it, and distribute it freely.",
+  },
+  {
+    question: "How is Screenize different from Screen Studio?",
+    answer:
+      "Screenize is a free, open-source alternative to Screen Studio. While Screen Studio costs $89+, Screenize offers similar auto-zoom and click effects at no cost. Screenize also gives you a full multi-track timeline editor where every auto-generated keyframe is visible and editable, offering more control over the final result.",
+  },
+  {
+    question: "What macOS version does Screenize require?",
+    answer:
+      "Screenize requires macOS 13.0 (Ventura) or later. It is built with native Apple frameworks including ScreenCaptureKit, AVFoundation, and CoreImage.",
+  },
+  {
+    question: "What export formats does Screenize support?",
+    answer:
+      "Screenize supports MP4 (H.264, H.265), MOV (ProRes 422, ProRes 4444), and GIF. You can export up to 4K resolution at up to 240fps, with configurable color spaces including sRGB, Display P3, BT.709, and BT.2020. Export presets let you save your preferred settings.",
+  },
+  {
+    question: "How does the auto-zoom feature work?",
+    answer:
+      "Screenize offers two auto-zoom modes. Continuous Camera follows your cursor in real time using spring physics with dead zones. Segment-based Camera analyzes your recording and plans zoom levels per activity type — typing, clicking, scrolling, dragging, navigating, and idle. Both modes generate editable keyframes on the timeline.",
+  },
+];
+---
+
+<section id="faq" class="section">
+  <div class="container">
+    <h2 class="section-title">Frequently Asked Questions</h2>
+    <div class="faq-grid">
+      {faqs.map((faq) => (
+        <details class="faq-item" data-animate="reveal">
+          <summary class="faq-summary">
+            {faq.question}
+          </summary>
+          <p class="faq-answer">{faq.answer}</p>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .section {
+    padding: 96px 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .section-title {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-0);
+    text-align: center;
+    margin: 0;
+  }
+
+  .faq-grid {
+    display: grid;
+    gap: 12px;
+    max-width: 800px;
+    margin: 48px auto 0;
+  }
+
+  .faq-item {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+  }
+
+  .faq-item[open] {
+    border-color: var(--border-accent);
+  }
+
+  .faq-summary {
+    padding: 20px 24px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-0);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+    user-select: none;
+    transition: color 0.2s ease;
+  }
+
+  .faq-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-summary::after {
+    content: "+";
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text-2);
+    flex-shrink: 0;
+    margin-left: 16px;
+    transition: transform 0.2s ease, color 0.2s ease;
+    display: inline-block;
+  }
+
+  .faq-item[open] .faq-summary::after {
+    content: "×";
+    transform: rotate(90deg);
+    color: var(--accent-start);
+  }
+
+  .faq-summary:hover {
+    color: var(--text-0);
+  }
+
+  .faq-summary:hover::after {
+    color: var(--text-1);
+  }
+
+  .faq-answer {
+    padding: 0 24px 20px;
+    color: var(--text-1);
+    line-height: 1.7;
+    margin: 0;
+    font-size: 15px;
+  }
+
+  @media (max-width: 768px) {
+    .section {
+      padding: 72px 0;
+    }
+
+    .faq-summary {
+      padding: 16px 20px;
+      font-size: 15px;
+    }
+
+    .faq-answer {
+      padding: 0 20px 16px;
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .section {
+      padding: 56px 0;
+    }
+
+    .faq-summary {
+      padding: 14px 16px;
+      font-size: 14px;
+    }
+
+    .faq-answer {
+      padding: 0 16px 14px;
+    }
+  }
+</style>

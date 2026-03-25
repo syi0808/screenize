@@ -1,0 +1,243 @@
+---
+import AutoZoomMockup from './mockups/AutoZoomMockup.astro';
+import TimelineMockup from './mockups/TimelineMockup.astro';
+import ClickEffectsMockup from './mockups/ClickEffectsMockup.astro';
+import KeystrokeMockup from './mockups/KeystrokeMockup.astro';
+import CursorMockup from './mockups/CursorMockup.astro';
+import ExportMockup from './mockups/ExportMockup.astro';
+---
+
+<section id="features" class="features">
+  <div class="container">
+
+    <!-- Group 1: Smart Auto-Zoom (standalone — key differentiator) -->
+    <div class="feature-group" data-feature-group>
+      <div class="feature-row" data-animate="reveal">
+        <div class="feature-content" data-feature-content>
+          <span class="feature-label">The Feature That Saves You Hours</span>
+          <h2 class="feature-title">Smart Auto-Zoom</h2>
+          <p class="feature-desc">
+            Two modes, both deeply customizable. <strong>Continuous Camera</strong> follows your cursor
+            in real time with spring physics. <strong>Segment-based Camera</strong> plans zoom levels
+            per activity — typing, clicking, scrolling, dragging. Every generated keyframe is fully
+            editable.
+          </p>
+          <span class="feature-tags">Continuous Camera · Segment-Based Camera · Per-Activity Zoom</span>
+        </div>
+        <div class="feature-mockup" data-feature-mockup>
+          <AutoZoomMockup />
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 2: Editing Bundle (Timeline + Click Effects + Keystroke) -->
+    <div class="feature-group" data-feature-group>
+      <div class="feature-row feature-row--reverse" data-animate="reveal">
+        <div class="feature-content" data-feature-content>
+          <span class="feature-label">Full Control When You Want It</span>
+          <h2 class="feature-title">Multi-Track Timeline</h2>
+          <p class="feature-desc">
+            Don't like how a zoom turned out? Change it. Four tracks — Camera, Click Effects, Cursor,
+            Keystrokes — each with independent keyframes and easing curves. Preview changes in real
+            time before export.
+          </p>
+          <span class="feature-tags">Camera · Click Effects · Cursor · Keystroke Tracks</span>
+        </div>
+        <div class="feature-mockup" data-feature-mockup>
+          <TimelineMockup />
+        </div>
+      </div>
+
+      <div class="feature-row" data-animate="reveal">
+        <div class="feature-content" data-feature-content>
+          <span class="feature-label">Show Every Click</span>
+          <h2 class="feature-title">Click Effects</h2>
+          <p class="feature-desc">
+            Your viewers see exactly what you're doing. Ripple animations on every click,
+            color-coded by type — left, right, double-click. Adjust color, intensity, and duration
+            to match your style.
+          </p>
+          <span class="feature-tags">Left · Right · Double Click · Custom Colors</span>
+        </div>
+        <div class="feature-mockup" data-feature-mockup>
+          <ClickEffectsMockup />
+        </div>
+      </div>
+
+      <div class="feature-row feature-row--reverse" data-animate="reveal">
+        <div class="feature-content" data-feature-content>
+          <span class="feature-label">No More 'What Did You Just Press?'</span>
+          <h2 class="feature-title">Keystroke Overlays</h2>
+          <p class="feature-desc">
+            Press ⌘C and it shows on screen. Keyboard shortcuts are detected and overlaid
+            automatically with customizable style, duration, and position. Perfect for tutorials
+            and demos.
+          </p>
+          <span class="feature-tags">Auto-Detection · Shortcuts Mode · All Keys Mode</span>
+        </div>
+        <div class="feature-mockup" data-feature-mockup>
+          <KeystrokeMockup />
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 3: Finishing Bundle (Cursors + Backgrounds + Export) -->
+    <div class="feature-group" data-feature-group>
+      <div class="feature-row" data-animate="reveal">
+        <div class="feature-content" data-feature-content>
+          <span class="feature-label">Look Like You Spent Hours</span>
+          <h2 class="feature-title">Cursors &amp; Backgrounds</h2>
+          <p class="feature-desc">
+            Swap the system cursor for 7 clean styles at any size. Add gradient backgrounds,
+            rounded corners, shadows, and padding. Ship recordings that look polished without
+            the effort.
+          </p>
+          <span class="feature-tags">7 Cursor Styles · Gradient Presets · Shadow &amp; Padding</span>
+        </div>
+        <div class="feature-mockup" data-feature-mockup>
+          <CursorMockup />
+        </div>
+      </div>
+
+      <div class="feature-row feature-row--reverse" data-animate="reveal">
+        <div class="feature-content" data-feature-content>
+          <span class="feature-label">Export Your Way</span>
+          <h2 class="feature-title">Professional Export</h2>
+          <p class="feature-desc">
+            MP4 or MOV. H.264, H.265, or ProRes. Up to 4K at up to 240fps. Save export presets
+            for your workflow so you never configure the same settings twice.
+          </p>
+          <span class="feature-tags">H.264 · H.265 · ProRes · Up to 4K 240fps</span>
+        </div>
+        <div class="feature-mockup" data-feature-mockup>
+          <ExportMockup />
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  .features {
+    padding: 120px 0;
+    position: relative;
+  }
+
+  .feature-group {
+    margin-bottom: 0;
+  }
+
+  .feature-group + .feature-group {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .feature-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    padding: 80px 0;
+  }
+
+  .feature-row--reverse {
+    direction: rtl;
+  }
+
+  .feature-row--reverse > * {
+    direction: ltr;
+  }
+
+  .feature-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent-start);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .feature-title {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--text-0);
+  }
+
+  .feature-desc {
+    color: var(--text-1);
+    margin-top: 16px;
+    max-width: 480px;
+    line-height: 1.7;
+    font-size: 1rem;
+  }
+
+  .feature-desc strong {
+    color: var(--text-0);
+    font-weight: 600;
+  }
+
+  .feature-tags {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    margin-top: 16px;
+    display: block;
+  }
+
+  .feature-mockup {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  @media (max-width: 768px) {
+    .features {
+      padding: 80px 0;
+    }
+
+    .feature-row {
+      grid-template-columns: 1fr;
+      gap: 40px;
+      padding: 60px 0;
+      direction: ltr;
+    }
+
+    .feature-row--reverse {
+      direction: ltr;
+    }
+
+    .feature-content {
+      text-align: center;
+    }
+
+    .feature-desc {
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .feature-mockup {
+      max-width: 100%;
+    }
+
+    .feature-group + .feature-group {
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .feature-row {
+      gap: 28px;
+      padding: 40px 0;
+    }
+
+    .feature-title {
+      font-size: 1.5rem;
+    }
+  }
+</style>

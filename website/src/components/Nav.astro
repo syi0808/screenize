@@ -1,0 +1,216 @@
+---
+---
+
+<header data-animate="nav">
+  <div class="nav-inner container">
+    <a href="/screenize/" class="logo">
+      <img src="/screenize/images/icon-256.png" alt="Screenize icon" width="32" height="32" />
+      <span>Screenize</span>
+    </a>
+
+    <nav id="nav-links" aria-label="Primary navigation">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#faq">FAQ</a>
+      <a
+        href="https://github.com/syi0808/screenize"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="View on GitHub"
+        class="github-link"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+        </svg>
+      </a>
+    </nav>
+
+    <button id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</header>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const navLinks = document.getElementById('nav-links');
+  hamburger?.addEventListener('click', () => {
+    navLinks?.classList.toggle('open');
+    hamburger.classList.toggle('active');
+    document.body.classList.toggle('nav-open');
+    const expanded = hamburger.getAttribute('aria-expanded') === 'true';
+    hamburger.setAttribute('aria-expanded', String(!expanded));
+  });
+  // Close on link click
+  navLinks?.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      hamburger?.classList.remove('active');
+      document.body.classList.remove('nav-open');
+      hamburger?.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+
+<style>
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    width: 100%;
+    background: transparent;
+    transition: background 0.3s, backdrop-filter 0.3s, border-color 0.3s;
+    border-bottom: 1px solid transparent;
+  }
+
+  header.scrolled {
+    background: rgba(3, 3, 8, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-0);
+    flex-shrink: 0;
+  }
+
+  .logo img {
+    border-radius: 7px;
+    display: block;
+  }
+
+  nav {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  nav a {
+    color: var(--text-1);
+    font-size: 14px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+  }
+
+  nav a:hover {
+    color: var(--text-0);
+  }
+
+  .github-link {
+    display: flex;
+    align-items: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .github-link:hover {
+    opacity: 1;
+    color: var(--text-0);
+  }
+
+  /* Hamburger */
+  #hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+  }
+
+  #hamburger:hover {
+    background: var(--border);
+  }
+
+  #hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--text-0);
+    border-radius: 2px;
+    transform-origin: center;
+    transition: transform 0.3s var(--ease-out), opacity 0.3s;
+  }
+
+  #hamburger.active span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  #hamburger.active span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+
+  #hamburger.active span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Mobile drawer */
+  @media (max-width: 768px) {
+    #hamburger {
+      display: flex;
+    }
+
+    nav {
+      position: fixed;
+      top: 64px;
+      right: 0;
+      bottom: 0;
+      width: 280px;
+      background: var(--bg-1);
+      border-left: 1px solid var(--border);
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 0;
+      padding: 24px;
+      transform: translateX(100%);
+      transition: transform 0.3s var(--ease-out);
+    }
+
+    nav.open {
+      transform: translateX(0);
+    }
+
+    nav a {
+      font-size: 16px;
+      padding: 14px 0;
+      width: 100%;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-0);
+    }
+
+    nav a:last-child {
+      border-bottom: none;
+    }
+
+    .github-link {
+      opacity: 1;
+    }
+  }
+</style>

@@ -1,0 +1,114 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="mac-window" data-tilt>
+  <div class="mac-window__bar">
+    <div class="mac-window__dots">
+      <span class="dot dot--red"></span>
+      <span class="dot dot--yellow"></span>
+      <span class="dot dot--green"></span>
+    </div>
+    {title && <span class="mac-window__title">{title}</span>}
+  </div>
+  <div class="mac-window__body">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .mac-window {
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    box-shadow:
+      0 24px 80px rgba(0, 0, 0, 0.5),
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .mac-window__bar {
+    height: 40px;
+    background: var(--bg-2);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .mac-window__dots {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: block;
+    position: relative;
+  }
+
+  .dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .mac-window:hover .dot::after {
+    opacity: 1;
+  }
+
+  .dot--red {
+    background: #ff5f57;
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.3) inset;
+  }
+
+  .dot--yellow {
+    background: #febc2e;
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.2) inset;
+  }
+
+  .dot--green {
+    background: #28c840;
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.2) inset;
+  }
+
+  .mac-window__title {
+    font-size: 12px;
+    color: var(--text-2);
+    font-family: 'JetBrains Mono', monospace;
+    margin-left: auto;
+    margin-right: auto;
+    letter-spacing: 0.01em;
+    user-select: none;
+    /* Offset to account for dots width so title appears truly centered */
+    transform: translateX(-28px);
+  }
+
+  .mac-window__body {
+    min-height: 240px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (max-width: 768px) {
+    .mac-window {
+      max-width: 100%;
+    }
+  }
+</style>

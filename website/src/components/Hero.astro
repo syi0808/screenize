@@ -1,0 +1,228 @@
+---
+---
+
+<section class="hero">
+  <div class="orb orb-1" data-animate="orb" aria-hidden="true"></div>
+  <div class="orb orb-2" data-animate="orb" aria-hidden="true"></div>
+
+  <div class="container hero-content">
+    <h1 data-animate="hero-title">
+      Record your screen.<br />
+      <span class="gradient-text">Let auto-zoom do the rest.</span>
+    </h1>
+
+    <p data-animate="hero-subtitle">
+      Stop paying $89+ for polished screen recordings. Screenize auto-zooms to your cursor,
+      adds click effects and keystroke overlays, and gives you a timeline editor to fine-tune
+      everything. Free and open source.
+    </p>
+
+    <div class="cta-group">
+      <a
+        href="https://github.com/syi0808/screenize/releases/latest/download/Screenize.dmg"
+        class="btn-primary"
+        data-animate="hero-cta"
+        data-magnetic
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Download for macOS
+      </a>
+
+      <a
+        href="https://github.com/syi0808/screenize"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-ghost"
+        data-animate="hero-cta"
+        data-magnetic
+      >
+        View on GitHub
+      </a>
+    </div>
+
+    <p class="requirement-note">Requires macOS 13.0 or later</p>
+  </div>
+</section>
+
+<style>
+  .hero {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding-top: 0;
+    padding-bottom: 80px;
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .orb-1 {
+    top: -20%;
+    left: -10%;
+    width: 600px;
+    aspect-ratio: 1;
+    background: radial-gradient(circle, var(--accent-start), transparent 70%);
+    filter: blur(120px);
+    opacity: 0.3;
+  }
+
+  .orb-2 {
+    bottom: -20%;
+    right: -10%;
+    width: 500px;
+    aspect-ratio: 1;
+    background: radial-gradient(circle, var(--accent-end), transparent 70%);
+    filter: blur(120px);
+    opacity: 0.25;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  p.subtitle {
+    max-width: 600px;
+    margin: 24px auto 0;
+    color: var(--text-1);
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+
+  [data-animate="hero-subtitle"] {
+    max-width: 600px;
+    margin: 24px auto 0;
+    color: var(--text-1);
+    font-size: 1.125rem;
+    line-height: 1.7;
+  }
+
+  .cta-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.35);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-0);
+    font-weight: 600;
+    font-size: 15px;
+    transition: border-color 0.2s, transform 0.2s var(--ease-out), background 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--text-2);
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .btn-ghost:active {
+    transform: translateY(0);
+  }
+
+  .requirement-note {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  @media (max-width: 768px) {
+    .orb-1 {
+      width: 400px;
+      top: -10%;
+      left: -20%;
+    }
+
+    .orb-2 {
+      width: 350px;
+      bottom: -10%;
+      right: -20%;
+    }
+
+    .cta-group {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .btn-primary,
+    .btn-ghost {
+      width: 100%;
+      justify-content: center;
+      max-width: 320px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero {
+      padding-bottom: 60px;
+    }
+
+    .orb-1 {
+      width: 280px;
+      top: -5%;
+      left: -25%;
+    }
+
+    .orb-2 {
+      width: 240px;
+      bottom: -5%;
+      right: -25%;
+    }
+
+    [data-animate="hero-subtitle"] {
+      font-size: 1rem;
+    }
+  }
+</style>

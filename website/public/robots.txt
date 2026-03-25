@@ -1,0 +1,31 @@
+# Screenize — Allow all search engines and AI bots
+User-agent: *
+Allow: /
+
+# AI search bots — explicitly allowed for citation
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Block training-only crawlers (no search citation value)
+User-agent: CCBot
+Disallow: /
+
+Sitemap: https://syi0808.github.io/screenize/sitemap.xml

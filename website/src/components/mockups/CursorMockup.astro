@@ -1,0 +1,288 @@
+---
+import MacWindow from './MacWindow.astro';
+---
+
+<MacWindow title="Cursors &amp; Backgrounds">
+  <div class="cursors">
+    <!-- Top half: cursor style variants -->
+    <div class="cursors__top">
+      <div class="cursors__row-label">Cursor Style</div>
+      <div class="cursors__variants">
+
+        <!-- Arrow cursor -->
+        <div class="cursors__card cursors__card--active">
+          <div class="cursors__preview">
+            <svg class="cursors__icon" width="20" height="24" viewBox="0 0 20 24" fill="none">
+              <path d="M2 2 L2 20 L7 14 L11 23 L14 21.5 L10 12.5 L17 12.5 Z" fill="white" stroke="#000" stroke-width="1.2"/>
+            </svg>
+          </div>
+          <span class="cursors__card-label">Arrow</span>
+        </div>
+
+        <!-- Crosshair cursor -->
+        <div class="cursors__card">
+          <div class="cursors__preview">
+            <svg class="cursors__icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="3.5" stroke="white" stroke-width="1.5"/>
+              <line x1="11" y1="1" x2="11" y2="7" stroke="white" stroke-width="1.5"/>
+              <line x1="11" y1="15" x2="11" y2="21" stroke="white" stroke-width="1.5"/>
+              <line x1="1" y1="11" x2="7" y2="11" stroke="white" stroke-width="1.5"/>
+              <line x1="15" y1="11" x2="21" y2="11" stroke="white" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <span class="cursors__card-label">Cross</span>
+        </div>
+
+        <!-- Pointer hand cursor -->
+        <div class="cursors__card">
+          <div class="cursors__preview">
+            <svg class="cursors__icon" width="18" height="22" viewBox="0 0 18 22" fill="none">
+              <path d="M6 10V4a2 2 0 0 1 4 0v6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M10 8a2 2 0 0 1 4 0v3" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M14 10a2 2 0 0 1 4 0v4c0 4-2 7-5 7H6c-2.5 0-4-2-4-4V12a2 2 0 0 1 4 0" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M6 10V8a2 2 0 0 0-4 0v4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="cursors__card-label">Pointer</span>
+        </div>
+
+        <!-- Circle cursor -->
+        <div class="cursors__card">
+          <div class="cursors__preview">
+            <svg class="cursors__icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="white" stroke-width="1.5"/>
+              <circle cx="11" cy="11" r="2" fill="white"/>
+            </svg>
+          </div>
+          <span class="cursors__card-label">Circle</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="cursors__divider"></div>
+
+    <!-- Bottom half: background gradient swatches -->
+    <div class="cursors__bottom">
+      <div class="cursors__row-label">Background</div>
+      <div class="cursors__swatches">
+        <div class="cursors__swatch cursors__swatch--1">
+          <span class="cursors__swatch-label">Indigo</span>
+        </div>
+        <div class="cursors__swatch cursors__swatch--2">
+          <span class="cursors__swatch-label">Violet</span>
+        </div>
+        <div class="cursors__swatch cursors__swatch--3">
+          <span class="cursors__swatch-label">Teal</span>
+        </div>
+        <div class="cursors__swatch cursors__swatch--active cursors__swatch--4">
+          <span class="cursors__swatch-label">Warm</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</MacWindow>
+
+<style>
+  .cursors {
+    width: 100%;
+    height: 280px;
+    background: var(--bg-0);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---- Top half ---- */
+  .cursors__top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 16px 8px;
+    gap: 10px;
+  }
+
+  .cursors__row-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .cursors__variants {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    align-items: center;
+  }
+
+  .cursors__card {
+    flex: 1;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 8px;
+    transition: border-color 0.3s ease;
+    animation: cursor-rotate 8s ease-in-out infinite;
+  }
+
+  .cursors__card:nth-child(1) { animation-delay: 0s; }
+  .cursors__card:nth-child(2) { animation-delay: 2s; }
+  .cursors__card:nth-child(3) { animation-delay: 4s; }
+  .cursors__card:nth-child(4) { animation-delay: 6s; }
+
+  .cursors__card--active {
+    border-color: var(--accent-start);
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .cursors__preview {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cursors__icon {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    opacity: 0.9;
+  }
+
+  .cursors__card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ---- Divider ---- */
+  .cursors__divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 16px;
+  }
+
+  /* ---- Bottom half ---- */
+  .cursors__bottom {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 16px 16px;
+    gap: 10px;
+  }
+
+  .cursors__swatches {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    align-items: center;
+  }
+
+  .cursors__swatch {
+    flex: 1;
+    height: 56px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    padding: 5px 7px;
+  }
+
+  .cursors__swatch--1 {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+    border-color: rgba(67, 56, 202, 0.4);
+  }
+
+  .cursors__swatch--2 {
+    background: linear-gradient(135deg, #2e1065 0%, #6d28d9 50%, #a855f7 100%);
+    border-color: rgba(109, 40, 217, 0.4);
+  }
+
+  .cursors__swatch--3 {
+    background: linear-gradient(135deg, #042f2e 0%, #0d9488 50%, #2dd4bf 100%);
+    border-color: rgba(13, 148, 136, 0.4);
+  }
+
+  .cursors__swatch--4 {
+    background: linear-gradient(135deg, #431407 0%, #ea580c 50%, #fb923c 100%);
+    border-color: rgba(234, 88, 12, 0.4);
+  }
+
+  .cursors__swatch--active {
+    border-color: white !important;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
+  }
+
+  .cursors__swatch-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  @keyframes cursor-rotate {
+    0% {
+      border-color: var(--border);
+      background: var(--bg-2);
+      box-shadow: none;
+    }
+    5% {
+      border-color: var(--accent-start);
+      background: rgba(99, 102, 241, 0.08);
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+    }
+    20% {
+      border-color: var(--accent-start);
+      background: rgba(99, 102, 241, 0.08);
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+    }
+    30% {
+      border-color: var(--border);
+      background: var(--bg-2);
+      box-shadow: none;
+    }
+    100% {
+      border-color: var(--border);
+      background: var(--bg-2);
+      box-shadow: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .cursors {
+      max-width: 100%;
+      height: 240px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cursors {
+      height: 220px;
+    }
+
+    .cursors__card {
+      padding: 8px 4px;
+    }
+
+    .cursors__preview {
+      width: 32px;
+      height: 32px;
+    }
+
+    .cursors__swatch {
+      height: 44px;
+    }
+  }
+</style>

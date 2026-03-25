@@ -1,0 +1,311 @@
+---
+import MacWindow from './MacWindow.astro';
+---
+
+<MacWindow title="Keystroke Overlays">
+  <div class="keys">
+    <!-- Background hint -->
+    <div class="keys__bg">
+      <div class="keys__bg-screen">
+        <div class="keys__bg-line"></div>
+        <div class="keys__bg-line keys__bg-line--short"></div>
+        <div class="keys__bg-line"></div>
+        <div class="keys__bg-line keys__bg-line--med"></div>
+        <div class="keys__bg-code">
+          <span class="keys__bg-keyword">const</span>
+          <span class="keys__bg-var"> undoStack</span>
+          <span class="keys__bg-op"> =</span>
+          <span class="keys__bg-text"> []</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Label -->
+    <div class="keys__title">Keyboard Shortcut</div>
+
+    <!-- Shortcut display: ⌘ + ⇧ + Z -->
+    <div class="keys__shortcut">
+      <div class="keys__key keys__key--cmd">
+        <span class="keys__glyph">⌘</span>
+        <span class="keys__keylabel">Command</span>
+      </div>
+      <span class="keys__plus">+</span>
+      <div class="keys__key keys__key--shift">
+        <span class="keys__glyph">⇧</span>
+        <span class="keys__keylabel">Shift</span>
+      </div>
+      <span class="keys__plus">+</span>
+      <div class="keys__key keys__key--z">
+        <span class="keys__glyph">Z</span>
+        <span class="keys__keylabel">Redo</span>
+      </div>
+    </div>
+
+    <!-- Second shortcut row: ⌘ + Z -->
+    <div class="keys__shortcut keys__shortcut--2">
+      <div class="keys__key keys__key--cmd2">
+        <span class="keys__glyph">⌘</span>
+        <span class="keys__keylabel">Command</span>
+      </div>
+      <span class="keys__plus">+</span>
+      <div class="keys__key keys__key--z2">
+        <span class="keys__glyph">Z</span>
+        <span class="keys__keylabel">Undo</span>
+      </div>
+    </div>
+
+    <!-- Action badge -->
+    <div class="keys__badge">
+      <span class="keys__badge-icon">↩</span>
+      <span class="keys__badge-text">Redo last action</span>
+    </div>
+  </div>
+</MacWindow>
+
+<style>
+  .keys {
+    width: 100%;
+    height: 280px;
+    background: var(--bg-0);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  /* ---- Background ---- */
+  .keys__bg {
+    position: absolute;
+    inset: 0;
+    padding: 16px;
+    opacity: 0.2;
+  }
+
+  .keys__bg-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .keys__bg-line {
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 3px;
+  }
+
+  .keys__bg-line--short {
+    width: 45%;
+  }
+
+  .keys__bg-line--med {
+    width: 70%;
+  }
+
+  .keys__bg-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    margin-top: 4px;
+    opacity: 0.8;
+  }
+
+  .keys__bg-keyword { color: #a855f7; }
+  .keys__bg-var { color: #6366f1; }
+  .keys__bg-op { color: var(--text-2); }
+  .keys__bg-text { color: #22c55e; }
+
+  /* ---- Title ---- */
+  .keys__title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: relative;
+    z-index: 5;
+  }
+
+  /* ---- Shortcut rows ---- */
+  .keys__shortcut {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    z-index: 5;
+  }
+
+  .keys__shortcut--2 {
+    opacity: 0.55;
+    transform: scale(0.88);
+    transform-origin: center;
+  }
+
+  /* ---- Key cap ---- */
+  .keys__key {
+    background: var(--bg-3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    box-shadow:
+      0 2px 0 rgba(255, 255, 255, 0.06),
+      0 4px 8px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    cursor: default;
+    user-select: none;
+    min-width: 48px;
+  }
+
+  .keys__glyph {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-0);
+    line-height: 1;
+  }
+
+  .keys__keylabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .keys__plus {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1;
+  }
+
+  /* ---- Animations per key (staggered press) ---- */
+  .keys__key--cmd {
+    animation: key-press 4s ease-in-out 0s infinite;
+  }
+
+  .keys__key--shift {
+    animation: key-press 4s ease-in-out 0.4s infinite;
+  }
+
+  .keys__key--z {
+    animation: key-press 4s ease-in-out 0.8s infinite;
+  }
+
+  .keys__key--cmd2 {
+    animation: key-press-subtle 6s ease-in-out 2s infinite;
+  }
+
+  .keys__key--z2 {
+    animation: key-press-subtle 6s ease-in-out 2.4s infinite;
+  }
+
+  @keyframes key-press {
+    0%, 15% {
+      transform: translateY(0);
+      box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06),
+        0 4px 8px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background: var(--bg-3);
+    }
+    20% {
+      transform: translateY(3px);
+      box-shadow:
+        0 0px 0 rgba(255, 255, 255, 0.04),
+        0 2px 4px rgba(0, 0, 0, 0.5),
+        0 0 16px rgba(99, 102, 241, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      background: rgba(99, 102, 241, 0.2);
+    }
+    30%, 100% {
+      transform: translateY(0);
+      box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.06),
+        0 4px 8px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background: var(--bg-3);
+    }
+  }
+
+  @keyframes key-press-subtle {
+    0%, 10% {
+      transform: translateY(0);
+      background: var(--bg-3);
+    }
+    15% {
+      transform: translateY(2px);
+      background: rgba(168, 85, 247, 0.15);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+    }
+    25%, 100% {
+      transform: translateY(0);
+      background: var(--bg-3);
+    }
+  }
+
+  /* ---- Badge ---- */
+  .keys__badge {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    background: rgba(8, 8, 15, 0.88);
+    border: 1px solid var(--border-accent);
+    border-radius: 6px;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(8px);
+    z-index: 10;
+    animation: badge-fade 4s ease-in-out 1.2s infinite;
+  }
+
+  .keys__badge-icon {
+    font-size: 11px;
+    color: var(--accent-light-start);
+  }
+
+  .keys__badge-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-1);
+    letter-spacing: 0.03em;
+  }
+
+  @keyframes badge-fade {
+    0%, 15% { opacity: 0; transform: translateY(4px); }
+    25%, 70% { opacity: 1; transform: translateY(0); }
+    85%, 100% { opacity: 0; transform: translateY(4px); }
+  }
+
+  @media (max-width: 768px) {
+    .keys {
+      max-width: 100%;
+      height: 240px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .keys {
+      height: 220px;
+      gap: 12px;
+    }
+
+    .keys__key {
+      padding: 8px 10px;
+      min-width: 40px;
+    }
+
+    .keys__glyph {
+      font-size: 16px;
+    }
+  }
+</style>

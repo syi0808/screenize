@@ -1,0 +1,131 @@
+---
+---
+
+<section id="how-it-works" class="how-it-works">
+  <div class="container">
+    <h2 class="section-title" data-animate="reveal">How It Works</h2>
+
+    <div class="steps">
+      <div class="step" data-animate="reveal">
+        <span class="step-number">01</span>
+        <h3 class="step-title">Record</h3>
+        <p class="step-desc">Pick a screen or window and hit record. Screenize tracks your cursor, clicks, and keystrokes in the background.</p>
+      </div>
+
+      <div class="connector" aria-hidden="true"></div>
+
+      <div class="step" data-animate="reveal">
+        <span class="step-number">02</span>
+        <h3 class="step-title">Edit</h3>
+        <p class="step-desc">Auto-generated zoom and effects are already on the timeline. Tweak anything you want, or leave it as is.</p>
+      </div>
+
+      <div class="connector" aria-hidden="true"></div>
+
+      <div class="step" data-animate="reveal">
+        <span class="step-number">03</span>
+        <h3 class="step-title">Export</h3>
+        <p class="step-desc">One click. Polished result. Pick your format and resolution, or use a saved preset.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .how-it-works {
+    padding: 120px 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .section-title {
+    text-align: center;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    color: var(--text-0);
+    margin-bottom: 64px;
+  }
+
+  .steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 280px;
+    flex: 1;
+  }
+
+  .step-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    opacity: 0.3;
+    line-height: 1;
+  }
+
+  .step-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-0);
+    margin-top: 16px;
+    margin-bottom: 0;
+  }
+
+  .step-desc {
+    color: var(--text-1);
+    margin-top: 8px;
+    max-width: 280px;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .connector {
+    border-top: 1px dashed var(--text-2);
+    width: 80px;
+    align-self: center;
+    flex-shrink: 0;
+    margin-top: -32px;
+  }
+
+  @media (max-width: 768px) {
+    .steps {
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .step {
+      align-items: center;
+      text-align: center;
+      max-width: 320px;
+      padding: 24px 0;
+    }
+
+    .step-desc {
+      text-align: center;
+    }
+
+    .connector {
+      width: 1px;
+      height: 40px;
+      border-top: none;
+      border-left: 1px dashed var(--text-2);
+      align-self: center;
+      margin-top: 0;
+    }
+  }
+</style>

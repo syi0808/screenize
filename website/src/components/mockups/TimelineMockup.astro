@@ -1,0 +1,311 @@
+---
+import MacWindow from './MacWindow.astro';
+---
+
+<MacWindow title="Multi-Track Timeline">
+  <div class="timeline">
+    <!-- Time ruler -->
+    <div class="timeline__ruler">
+      <div class="timeline__ruler-labels">
+        <span class="timeline__label-spacer"></span>
+        <div class="timeline__ticks">
+          <span class="timeline__tick">0:00</span>
+          <span class="timeline__tick">0:05</span>
+          <span class="timeline__tick">0:10</span>
+          <span class="timeline__tick">0:15</span>
+          <span class="timeline__tick">0:20</span>
+          <span class="timeline__tick">0:25</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tracks -->
+    <div class="timeline__tracks">
+      <!-- Camera track -->
+      <div class="timeline__row">
+        <div class="timeline__track-label">
+          <span class="timeline__track-dot" style="background:#6366f1"></span>
+          <span>Camera</span>
+        </div>
+        <div class="timeline__track-lane timeline__track-lane--camera">
+          <div class="timeline__segment" style="left:4%;width:28%;background:rgba(99,102,241,0.35);border-color:#6366f1"></div>
+          <div class="timeline__segment" style="left:38%;width:20%;background:rgba(99,102,241,0.35);border-color:#6366f1"></div>
+          <div class="timeline__segment" style="left:65%;width:30%;background:rgba(99,102,241,0.35);border-color:#6366f1"></div>
+          <!-- diamonds -->
+          <div class="timeline__diamond" style="left:4%;border-color:#6366f1"></div>
+          <div class="timeline__diamond" style="left:32%;border-color:#6366f1"></div>
+          <div class="timeline__diamond" style="left:38%;border-color:#6366f1"></div>
+          <div class="timeline__diamond" style="left:58%;border-color:#6366f1"></div>
+          <div class="timeline__diamond" style="left:65%;border-color:#6366f1"></div>
+          <div class="timeline__diamond" style="left:95%;border-color:#6366f1"></div>
+        </div>
+      </div>
+
+      <!-- Click Effects track -->
+      <div class="timeline__row">
+        <div class="timeline__track-label">
+          <span class="timeline__track-dot" style="background:#ec4899"></span>
+          <span>Clicks</span>
+        </div>
+        <div class="timeline__track-lane">
+          <div class="timeline__marker" style="left:8%;background:#ec4899"></div>
+          <div class="timeline__marker" style="left:22%;background:#ec4899"></div>
+          <div class="timeline__marker" style="left:41%;background:#ec4899"></div>
+          <div class="timeline__marker" style="left:55%;background:#ec4899"></div>
+          <div class="timeline__marker" style="left:69%;background:#ec4899"></div>
+          <div class="timeline__marker" style="left:84%;background:#ec4899"></div>
+        </div>
+      </div>
+
+      <!-- Cursor track -->
+      <div class="timeline__row">
+        <div class="timeline__track-label">
+          <span class="timeline__track-dot" style="background:#22c55e"></span>
+          <span>Cursor</span>
+        </div>
+        <div class="timeline__track-lane">
+          <div class="timeline__segment timeline__segment--cursor" style="left:2%;width:96%;background:rgba(34,197,94,0.2);border-color:#22c55e"></div>
+        </div>
+      </div>
+
+      <!-- Keystrokes track -->
+      <div class="timeline__row">
+        <div class="timeline__track-label">
+          <span class="timeline__track-dot" style="background:#f59e0b"></span>
+          <span>Keys</span>
+        </div>
+        <div class="timeline__track-lane">
+          <div class="timeline__keystroke" style="left:14%;background:rgba(245,158,11,0.4);border-color:#f59e0b"></div>
+          <div class="timeline__keystroke" style="left:28%;background:rgba(245,158,11,0.4);border-color:#f59e0b"></div>
+          <div class="timeline__keystroke" style="left:46%;background:rgba(245,158,11,0.4);border-color:#f59e0b"></div>
+          <div class="timeline__keystroke" style="left:60%;background:rgba(245,158,11,0.4);border-color:#f59e0b"></div>
+          <div class="timeline__keystroke" style="left:75%;background:rgba(245,158,11,0.4);border-color:#f59e0b"></div>
+          <div class="timeline__keystroke" style="left:88%;background:rgba(245,158,11,0.4);border-color:#f59e0b"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animated playhead -->
+    <div class="timeline__playhead">
+      <div class="timeline__playhead-head"></div>
+      <div class="timeline__playhead-line"></div>
+    </div>
+  </div>
+</MacWindow>
+
+<style>
+  .timeline {
+    width: 100%;
+    height: 280px;
+    background: var(--bg-0);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---- Ruler ---- */
+  .timeline__ruler {
+    height: 28px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .timeline__ruler-labels {
+    display: flex;
+    height: 100%;
+    align-items: flex-end;
+    padding-bottom: 4px;
+  }
+
+  .timeline__label-spacer {
+    width: 72px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+  }
+
+  .timeline__ticks {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+
+  .timeline__tick {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 0.02em;
+  }
+
+  /* ---- Tracks container ---- */
+  .timeline__tracks {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 0;
+    gap: 2px;
+  }
+
+  /* ---- Row ---- */
+  .timeline__row {
+    display: flex;
+    align-items: center;
+    height: 42px;
+    padding: 0 0 0 0;
+  }
+
+  .timeline__track-label {
+    width: 72px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 10px;
+    border-right: 1px solid var(--border);
+    height: 100%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 0.02em;
+  }
+
+  .timeline__track-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ---- Lane ---- */
+  .timeline__track-lane {
+    flex: 1;
+    height: 100%;
+    position: relative;
+    background: rgba(255, 255, 255, 0.015);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ---- Segments ---- */
+  .timeline__segment {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+  }
+
+  .timeline__segment--cursor {
+    height: 10px;
+    border-radius: 6px;
+  }
+
+  /* ---- Diamond keyframe markers ---- */
+  .timeline__diamond {
+    position: absolute;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    border: 1.5px solid transparent;
+    background: var(--bg-1);
+    z-index: 2;
+  }
+
+  /* ---- Click markers ---- */
+  .timeline__marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  /* ---- Keystroke rects ---- */
+  .timeline__keystroke {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+  }
+
+  /* ---- Playhead ---- */
+  .timeline__playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    /* offset by label width */
+    left: calc(72px + 0%);
+    width: 2px;
+    pointer-events: none;
+    z-index: 20;
+    animation: playhead-sweep 8s linear infinite;
+  }
+
+  .timeline__playhead-head {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    background: var(--accent-start);
+    border-radius: 2px 2px 0 0;
+    clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.8);
+  }
+
+  .timeline__playhead-line {
+    position: absolute;
+    top: 12px;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1.5px;
+    background: linear-gradient(to bottom, var(--accent-start), rgba(99, 102, 241, 0.2));
+  }
+
+  @keyframes playhead-sweep {
+    0% {
+      left: 72px;
+    }
+    100% {
+      /* full track lane width = container - label */
+      left: calc(100% - 2px);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .timeline {
+      max-width: 100%;
+      height: 240px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .timeline {
+      height: 200px;
+    }
+
+    .timeline__label-spacer {
+      width: 52px;
+    }
+
+    .timeline__track-label {
+      width: 52px;
+      padding: 0 6px;
+      font-size: 8px;
+    }
+
+    @keyframes playhead-sweep {
+      0% { left: 52px; }
+      100% { left: calc(100% - 2px); }
+    }
+  }
+</style>

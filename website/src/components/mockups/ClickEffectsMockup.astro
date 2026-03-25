@@ -1,0 +1,286 @@
+---
+import MacWindow from './MacWindow.astro';
+---
+
+<MacWindow title="Click Effects">
+  <div class="clicks">
+    <!-- Background simulated content -->
+    <div class="clicks__bg">
+      <div class="clicks__bg-nav"></div>
+      <div class="clicks__bg-content">
+        <div class="clicks__bg-sidebar"></div>
+        <div class="clicks__bg-main">
+          <div class="clicks__bg-block"></div>
+          <div class="clicks__bg-block clicks__bg-block--short"></div>
+          <div class="clicks__bg-block"></div>
+          <div class="clicks__bg-row">
+            <div class="clicks__bg-card"></div>
+            <div class="clicks__bg-card"></div>
+            <div class="clicks__bg-card"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Click point 1: left (left click, accent) -->
+    <div class="clicks__point clicks__point--1">
+      <div class="clicks__ring clicks__ring--1a"></div>
+      <div class="clicks__ring clicks__ring--1b"></div>
+      <div class="clicks__ring clicks__ring--1c"></div>
+      <div class="clicks__dot clicks__dot--accent"></div>
+      <div class="clicks__label">Left Click</div>
+    </div>
+
+    <!-- Click point 2: center (left click, accent) -->
+    <div class="clicks__point clicks__point--2">
+      <div class="clicks__ring clicks__ring--2a"></div>
+      <div class="clicks__ring clicks__ring--2b"></div>
+      <div class="clicks__ring clicks__ring--2c"></div>
+      <div class="clicks__dot clicks__dot--accent"></div>
+      <div class="clicks__label">Left Click</div>
+    </div>
+
+    <!-- Click point 3: right (right click, pink) -->
+    <div class="clicks__point clicks__point--3">
+      <div class="clicks__ring clicks__ring--3a"></div>
+      <div class="clicks__ring clicks__ring--3b"></div>
+      <div class="clicks__ring clicks__ring--3c"></div>
+      <div class="clicks__dot clicks__dot--pink"></div>
+      <div class="clicks__label">Right Click</div>
+    </div>
+  </div>
+</MacWindow>
+
+<style>
+  .clicks {
+    width: 100%;
+    height: 280px;
+    background: var(--bg-0);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ---- Simulated background content ---- */
+  .clicks__bg {
+    position: absolute;
+    inset: 0;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    opacity: 0.35;
+  }
+
+  .clicks__bg-nav {
+    height: 24px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .clicks__bg-content {
+    flex: 1;
+    display: flex;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .clicks__bg-sidebar {
+    width: 52px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .clicks__bg-main {
+    flex: 1;
+    background: var(--bg-1);
+    border-radius: 4px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid var(--border);
+  }
+
+  .clicks__bg-block {
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 3px;
+  }
+
+  .clicks__bg-block--short {
+    width: 60%;
+  }
+
+  .clicks__bg-row {
+    display: flex;
+    gap: 5px;
+    margin-top: 4px;
+    flex: 1;
+  }
+
+  .clicks__bg-card {
+    flex: 1;
+    background: var(--bg-2);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ---- Click points ---- */
+  .clicks__point {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clicks__point--1 {
+    left: 22%;
+    top: 52%;
+  }
+
+  .clicks__point--2 {
+    left: 52%;
+    top: 38%;
+  }
+
+  .clicks__point--3 {
+    left: 76%;
+    top: 60%;
+  }
+
+  /* ---- Label ---- */
+  .clicks__label {
+    position: absolute;
+    bottom: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-2);
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ---- Center dot ---- */
+  .clicks__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .clicks__dot--accent {
+    background: var(--accent-start);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+  }
+
+  .clicks__dot--pink {
+    background: #ec4899;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.8);
+  }
+
+  /* ---- Rings ---- */
+  .clicks__ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    pointer-events: none;
+  }
+
+  /* Point 1 rings — accent, delay 0s */
+  .clicks__ring--1a {
+    width: 30px;
+    height: 30px;
+    border-color: var(--accent-start);
+    animation: ripple-expand 2s ease-out 0s infinite;
+  }
+
+  .clicks__ring--1b {
+    width: 30px;
+    height: 30px;
+    border-color: var(--accent-start);
+    animation: ripple-expand 2s ease-out 0.5s infinite;
+  }
+
+  .clicks__ring--1c {
+    width: 30px;
+    height: 30px;
+    border-color: var(--accent-end);
+    animation: ripple-expand 2s ease-out 1s infinite;
+  }
+
+  /* Point 2 rings — accent, delay 2s */
+  .clicks__ring--2a {
+    width: 30px;
+    height: 30px;
+    border-color: var(--accent-end);
+    animation: ripple-expand 2s ease-out 2s infinite;
+  }
+
+  .clicks__ring--2b {
+    width: 30px;
+    height: 30px;
+    border-color: var(--accent-start);
+    animation: ripple-expand 2s ease-out 2.5s infinite;
+  }
+
+  .clicks__ring--2c {
+    width: 30px;
+    height: 30px;
+    border-color: var(--accent-end);
+    animation: ripple-expand 2s ease-out 3s infinite;
+  }
+
+  /* Point 3 rings — pink, delay 4s */
+  .clicks__ring--3a {
+    width: 30px;
+    height: 30px;
+    border-color: #ec4899;
+    animation: ripple-expand 2s ease-out 4s infinite;
+  }
+
+  .clicks__ring--3b {
+    width: 30px;
+    height: 30px;
+    border-color: #ec4899;
+    animation: ripple-expand 2s ease-out 4.5s infinite;
+  }
+
+  .clicks__ring--3c {
+    width: 30px;
+    height: 30px;
+    border-color: #f472b6;
+    animation: ripple-expand 2s ease-out 5s infinite;
+  }
+
+  @keyframes ripple-expand {
+    0% {
+      transform: scale(0.5);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .clicks {
+      max-width: 100%;
+      height: 240px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .clicks {
+      height: 200px;
+    }
+  }
+</style>

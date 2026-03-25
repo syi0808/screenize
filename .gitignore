@@ -67,3 +67,4 @@ projects/
 
 __pycache__
 .worktrees/
+.superpowers/

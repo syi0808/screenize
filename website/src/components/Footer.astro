@@ -1,0 +1,103 @@
+---
+---
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <img src="/screenize/images/icon-256.png" alt="Screenize" width="24" height="24" class="footer-icon" />
+        <span>© 2026 Screenize. Apache 2.0 License.</span>
+      </div>
+      <div class="footer-right">
+        <nav class="footer-links">
+          <a href="https://github.com/syi0808/screenize" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/syi0808/screenize/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+          <a href="https://github.com/syi0808/screenize/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+        </nav>
+        <span class="footer-updated">Last updated: March 2026</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--text-2);
+  }
+
+  .footer-icon {
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .footer-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    font-size: 14px;
+  }
+
+  .footer-links a {
+    color: var(--text-2);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-links a:hover {
+    color: var(--text-0);
+  }
+
+  .footer-updated {
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  @media (max-width: 768px) {
+    .footer-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .footer-right {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .footer-links {
+      gap: 16px;
+    }
+  }
+</style>

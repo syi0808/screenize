@@ -1,0 +1,296 @@
+---
+import MacWindow from './MacWindow.astro';
+---
+
+<MacWindow title="Export">
+  <div class="export">
+    <!-- Format selector -->
+    <div class="export__section">
+      <span class="export__section-label">Format</span>
+      <div class="export__pills">
+        <button class="export__pill">MP4</button>
+        <button class="export__pill export__pill--selected">MOV</button>
+        <button class="export__pill">ProRes</button>
+      </div>
+    </div>
+
+    <!-- Resolution selector -->
+    <div class="export__section">
+      <span class="export__section-label">Resolution</span>
+      <div class="export__pills">
+        <button class="export__pill">1080p</button>
+        <button class="export__pill export__pill--selected">4K</button>
+      </div>
+    </div>
+
+    <!-- Quality slider -->
+    <div class="export__section">
+      <span class="export__section-label">Quality</span>
+      <div class="export__slider-wrap">
+        <div class="export__slider-track">
+          <div class="export__slider-fill"></div>
+          <div class="export__slider-thumb"></div>
+        </div>
+        <span class="export__slider-value">87%</span>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="export__divider"></div>
+
+    <!-- Progress bar -->
+    <div class="export__progress-section">
+      <div class="export__progress-header">
+        <span class="export__progress-label">Exporting...</span>
+        <span class="export__progress-pct">65%</span>
+      </div>
+      <div class="export__progress-track">
+        <div class="export__progress-bar"></div>
+        <div class="export__progress-shimmer"></div>
+      </div>
+    </div>
+
+    <!-- File info -->
+    <div class="export__file-info">
+      <span class="export__file-icon">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 1h6l3 3v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M7 1v3h3" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </span>
+      <span class="export__file-text">output.mov</span>
+      <span class="export__file-sep">·</span>
+      <span class="export__file-text">4K</span>
+      <span class="export__file-sep">·</span>
+      <span class="export__file-text">ProRes 422</span>
+    </div>
+  </div>
+</MacWindow>
+
+<style>
+  .export {
+    width: 100%;
+    height: 280px;
+    background: var(--bg-0);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 20px;
+    gap: 14px;
+    overflow: hidden;
+  }
+
+  /* ---- Section ---- */
+  .export__section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .export__section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    width: 68px;
+    flex-shrink: 0;
+  }
+
+  /* ---- Pills ---- */
+  .export__pills {
+    display: flex;
+    gap: 6px;
+  }
+
+  .export__pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-1);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 12px;
+    cursor: default;
+    letter-spacing: 0.04em;
+    transition: none;
+  }
+
+  .export__pill--selected {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--accent-start);
+    color: var(--accent-light-start);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+  }
+
+  /* ---- Quality slider ---- */
+  .export__slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .export__slider-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 3px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .export__slider-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 87%;
+    background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+    border-radius: 3px;
+  }
+
+  .export__slider-thumb {
+    position: absolute;
+    top: 50%;
+    left: 87%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+
+  .export__slider-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-1);
+    width: 30px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ---- Divider ---- */
+  .export__divider {
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ---- Progress ---- */
+  .export__progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .export__progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .export__progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-1);
+    letter-spacing: 0.02em;
+  }
+
+  .export__progress-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent-light-start);
+    letter-spacing: 0.04em;
+  }
+
+  .export__progress-track {
+    height: 8px;
+    background: var(--bg-3);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .export__progress-bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+    border-radius: 4px;
+    animation: progress-fill 6s linear infinite;
+  }
+
+  .export__progress-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.12) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-slide 2s linear infinite;
+  }
+
+  @keyframes progress-fill {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+
+  @keyframes shimmer-slide {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* ---- File info ---- */
+  .export__file-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: auto;
+    padding-top: 2px;
+    color: var(--text-2);
+  }
+
+  .export__file-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-2);
+  }
+
+  .export__file-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-2);
+    letter-spacing: 0.04em;
+  }
+
+  .export__file-sep {
+    font-size: 9px;
+    color: var(--text-2);
+    opacity: 0.5;
+  }
+
+  @media (max-width: 768px) {
+    .export {
+      max-width: 100%;
+      height: 240px;
+      padding: 14px 16px;
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .export {
+      height: 220px;
+      padding: 12px 14px;
+      gap: 10px;
+    }
+
+    .export__section-label {
+      width: 56px;
+      font-size: 8px;
+    }
+  }
+</style>

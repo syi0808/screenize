@@ -1,0 +1,511 @@
+---
+import MacWindow from './MacWindow.astro';
+---
+
+<MacWindow title="Smart Auto-Zoom">
+  <div class="autozoom">
+    <div class="autozoom__viewport">
+      <!-- Simulated screen content: a simplified app-like UI -->
+      <div class="autozoom__screen">
+        <div class="autozoom__ui-nav">
+          <div class="autozoom__ui-nav-logo"></div>
+          <div class="autozoom__ui-nav-links">
+            <div class="autozoom__ui-nav-link"></div>
+            <div class="autozoom__ui-nav-link"></div>
+            <div class="autozoom__ui-nav-link"></div>
+          </div>
+          <div class="autozoom__ui-nav-btn"></div>
+        </div>
+        <div class="autozoom__ui-content">
+          <div class="autozoom__ui-sidebar">
+            <div class="autozoom__ui-sidebar-item autozoom__ui-sidebar-item--active"></div>
+            <div class="autozoom__ui-sidebar-item"></div>
+            <div class="autozoom__ui-sidebar-item"></div>
+            <div class="autozoom__ui-sidebar-item"></div>
+            <div class="autozoom__ui-sidebar-item"></div>
+          </div>
+          <div class="autozoom__ui-main">
+            <div class="autozoom__ui-heading"></div>
+            <div class="autozoom__ui-block"></div>
+            <div class="autozoom__ui-block autozoom__ui-block--short"></div>
+            <div class="autozoom__ui-block"></div>
+            <div class="autozoom__ui-row">
+              <div class="autozoom__ui-card"></div>
+              <div class="autozoom__ui-card"></div>
+              <div class="autozoom__ui-card"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zoom lens overlay that moves and scales -->
+      <div class="autozoom__lens">
+        <div class="autozoom__lens-corner autozoom__lens-corner--tl"></div>
+        <div class="autozoom__lens-corner autozoom__lens-corner--tr"></div>
+        <div class="autozoom__lens-corner autozoom__lens-corner--bl"></div>
+        <div class="autozoom__lens-corner autozoom__lens-corner--br"></div>
+      </div>
+
+      <!-- Cursor indicator -->
+      <div class="autozoom__cursor">
+        <svg width="16" height="20" viewBox="0 0 16 20" fill="white" stroke="var(--bg-0)" stroke-width="1">
+          <path d="M0 0 L0 16 L4 12 L8 20 L10 19 L6 11 L12 11 Z"/>
+        </svg>
+      </div>
+
+      <!-- Zoom level badge -->
+      <div class="autozoom__badge">
+        <span class="autozoom__badge-label">Smart Zoom</span>
+        <span class="autozoom__badge-value">2.4×</span>
+      </div>
+    </div>
+  </div>
+</MacWindow>
+
+<style>
+  /* ---- Container ---- */
+  .autozoom {
+    width: 100%;
+  }
+
+  /* ---- Viewport ---- */
+  .autozoom__viewport {
+    width: 100%;
+    height: 280px;
+    position: relative;
+    background: var(--bg-0);
+    overflow: hidden;
+  }
+
+  /* ---- Simulated screen UI ---- */
+  .autozoom__screen {
+    position: absolute;
+    inset: 0;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Nav bar */
+  .autozoom__ui-nav {
+    height: 28px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .autozoom__ui-nav-logo {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+    flex-shrink: 0;
+  }
+
+  .autozoom__ui-nav-links {
+    display: flex;
+    gap: 4px;
+    margin-left: 4px;
+  }
+
+  .autozoom__ui-nav-link {
+    width: 28px;
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 3px;
+  }
+
+  .autozoom__ui-nav-btn {
+    width: 36px;
+    height: 14px;
+    background: var(--accent-start);
+    border-radius: 3px;
+    margin-left: auto;
+    opacity: 0.7;
+  }
+
+  /* Content area */
+  .autozoom__ui-content {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    min-height: 0;
+  }
+
+  /* Sidebar */
+  .autozoom__ui-sidebar {
+    width: 56px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    flex-shrink: 0;
+    padding: 6px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .autozoom__ui-sidebar-item {
+    height: 18px;
+    background: var(--bg-3);
+    border-radius: 3px;
+  }
+
+  .autozoom__ui-sidebar-item--active {
+    background: rgba(99, 102, 241, 0.3);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+  }
+
+  /* Main content */
+  .autozoom__ui-main {
+    flex: 1;
+    background: var(--bg-1);
+    border-radius: 4px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid var(--border);
+  }
+
+  .autozoom__ui-heading {
+    height: 10px;
+    width: 45%;
+    background: var(--bg-3);
+    border-radius: 3px;
+    margin-bottom: 2px;
+  }
+
+  .autozoom__ui-block {
+    height: 6px;
+    background: var(--bg-2);
+    border-radius: 3px;
+  }
+
+  .autozoom__ui-block--short {
+    width: 65%;
+  }
+
+  .autozoom__ui-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .autozoom__ui-card {
+    flex: 1;
+    height: 40px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ---- Zoom lens ---- */
+  .autozoom__lens {
+    position: absolute;
+    width: 180px;
+    height: 120px;
+    border: 2px solid var(--accent-start);
+    border-radius: 8px;
+    box-shadow:
+      0 0 20px rgba(99, 102, 241, 0.25),
+      0 0 60px rgba(99, 102, 241, 0.1),
+      inset 0 0 20px rgba(99, 102, 241, 0.04);
+    animation: lens-move 10s infinite ease-in-out;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Corner accent marks on lens */
+  .autozoom__lens-corner {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: var(--accent-light-start);
+    border-style: solid;
+    opacity: 0.8;
+  }
+
+  .autozoom__lens-corner--tl {
+    top: -2px;
+    left: -2px;
+    border-width: 2px 0 0 2px;
+    border-radius: 4px 0 0 0;
+  }
+
+  .autozoom__lens-corner--tr {
+    top: -2px;
+    right: -2px;
+    border-width: 2px 2px 0 0;
+    border-radius: 0 4px 0 0;
+  }
+
+  .autozoom__lens-corner--bl {
+    bottom: -2px;
+    left: -2px;
+    border-width: 0 0 2px 2px;
+    border-radius: 0 0 0 4px;
+  }
+
+  .autozoom__lens-corner--br {
+    bottom: -2px;
+    right: -2px;
+    border-width: 0 2px 2px 0;
+    border-radius: 0 0 4px 0;
+  }
+
+  /* ---- Cursor ---- */
+  .autozoom__cursor {
+    position: absolute;
+    animation: cursor-path 10s infinite ease-in-out;
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    pointer-events: none;
+  }
+
+  /* ---- Badge ---- */
+  .autozoom__badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(8, 8, 15, 0.85);
+    border: 1px solid var(--border-accent);
+    border-radius: 6px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(8px);
+    z-index: 20;
+    animation: badge-pulse 10s infinite ease-in-out;
+  }
+
+  .autozoom__badge-label {
+    font-size: 9px;
+    color: var(--text-2);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .autozoom__badge-value {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    background: linear-gradient(90deg, var(--accent-light-start), var(--accent-light-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ============================================================
+     Keyframe animations — 10s loop
+     Phase 1 (0–30%):  Cursor at top nav area, lens on nav bar
+     Phase 2 (30–60%): Cursor moves to main content, lens tracks
+     Phase 3 (60–90%): Cursor to sidebar, lens zooms on sidebar
+     Phase 4 (90–100%): Transition back to start
+     ============================================================ */
+
+  @keyframes cursor-path {
+    /* Phase 1: hover over nav area */
+    0% {
+      top: 20px;
+      left: 60px;
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    3% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    15% {
+      top: 20px;
+      left: 120px;
+    }
+    25% {
+      top: 24px;
+      left: 80px;
+    }
+
+    /* Phase 2: move to main content */
+    30% {
+      top: 24px;
+      left: 80px;
+    }
+    45% {
+      top: 140px;
+      left: 200px;
+    }
+    55% {
+      top: 160px;
+      left: 220px;
+    }
+
+    /* Phase 3: move to sidebar */
+    60% {
+      top: 160px;
+      left: 220px;
+    }
+    75% {
+      top: 120px;
+      left: 40px;
+    }
+    85% {
+      top: 140px;
+      left: 36px;
+    }
+
+    /* Phase 4: fade out and reset */
+    90% {
+      top: 140px;
+      left: 36px;
+      opacity: 1;
+      transform: scale(1);
+    }
+    98% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      top: 20px;
+      left: 60px;
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+
+  @keyframes lens-move {
+    /* Phase 1: lens on nav bar */
+    0% {
+      top: 4px;
+      left: 20px;
+      width: 200px;
+      height: 42px;
+      opacity: 0;
+      border-color: var(--accent-start);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+    }
+    3% {
+      opacity: 1;
+    }
+    25% {
+      top: 4px;
+      left: 20px;
+      width: 200px;
+      height: 42px;
+      border-color: var(--accent-start);
+    }
+
+    /* Phase 2: lens pans to main content area */
+    30% {
+      top: 4px;
+      left: 20px;
+      width: 200px;
+      height: 42px;
+    }
+    45% {
+      top: 60px;
+      left: 70px;
+      width: 180px;
+      height: 120px;
+      border-color: var(--accent-start);
+    }
+    55% {
+      top: 70px;
+      left: 76px;
+      width: 170px;
+      height: 130px;
+      border-color: var(--accent-start);
+    }
+
+    /* Phase 3: lens to sidebar */
+    60% {
+      top: 70px;
+      left: 76px;
+      width: 170px;
+      height: 130px;
+    }
+    75% {
+      top: 52px;
+      left: 4px;
+      width: 72px;
+      height: 140px;
+      border-color: var(--accent-light-start);
+      box-shadow: 0 0 20px rgba(129, 140, 248, 0.3);
+    }
+    85% {
+      top: 52px;
+      left: 4px;
+      width: 72px;
+      height: 140px;
+      border-color: var(--accent-light-start);
+    }
+
+    /* Phase 4: fade out */
+    90% {
+      top: 52px;
+      left: 4px;
+      width: 72px;
+      height: 140px;
+      opacity: 1;
+    }
+    98% {
+      opacity: 0;
+    }
+    100% {
+      top: 4px;
+      left: 20px;
+      width: 200px;
+      height: 42px;
+      opacity: 0;
+    }
+  }
+
+  @keyframes badge-pulse {
+    0%,
+    2% {
+      opacity: 0.6;
+    }
+    5% {
+      opacity: 1;
+    }
+    /* Phase 2: content area — higher zoom */
+    40%,
+    55% {
+      opacity: 1;
+    }
+    /* Phase 3: sidebar — different zoom level */
+    70% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    98%,
+    100% {
+      opacity: 0.6;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .autozoom {
+      max-width: 100%;
+    }
+
+    .autozoom__viewport {
+      height: 220px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .autozoom__viewport {
+      height: 180px;
+    }
+  }
+</style>
