@@ -28,7 +28,7 @@ const { title, description } = Astro.props;
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content={title} />
-  <meta property="og:description" content="Record your screen, let auto-zoom do the rest. Smart zoom, click effects, and a timeline editor you control. Free and open source." />
+  <meta property="og:description" content="Record your screen, let auto-zoom do the rest. Click effects, keystroke overlays, and a timeline editor you control. Free and open source." />
   <meta property="og:image" content="https://syi0808.github.io/screenize/images/og-image.png" />
   <meta property="og:url" content="https://syi0808.github.io/screenize/" />
   <meta property="og:site_name" content="Screenize" />
@@ -36,7 +36,7 @@ const { title, description } = Astro.props;
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
-  <meta name="twitter:description" content="Record your screen, let auto-zoom do the rest. Smart zoom, click effects, and a timeline editor you control. Free and open source." />
+  <meta name="twitter:description" content="Record your screen, let auto-zoom do the rest. Click effects, keystroke overlays, and a timeline editor you control. Free and open source." />
   <meta name="twitter:image" content="https://syi0808.github.io/screenize/images/og-image.png" />
 
   <!-- Favicon -->
@@ -49,7 +49,7 @@ const { title, description } = Astro.props;
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Screenize",
-    "description": "Screenize is a free, open-source macOS screen recording app with smart auto-zoom, click effects, keystroke overlays, and a multi-track timeline editor. It is an open-source alternative to Screen Studio.",
+    "description": "Free, open-source macOS screen recording app with auto-zoom, click effects, keystroke overlays, and a multi-track timeline editor. Open-source alternative to Screen Studio.",
     "applicationCategory": "MultimediaApplication",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "operatingSystem": "macOS 13.0+",
@@ -76,7 +76,7 @@ const { title, description } = Astro.props;
         "name": "What is Screenize?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Screenize is a free, open-source macOS screen recording app that automatically adds zoom effects, click highlights, and keystroke overlays to your recordings. It tracks your cursor and clicks during recording, then generates zoom keyframes automatically. You can fine-tune everything in a multi-track timeline editor before exporting."
+          "text": "A free, open-source macOS screen recording app. It tracks your cursor and clicks while you record, then generates zoom effects, click highlights, and keystroke overlays on its own. You can fine-tune everything in a multi-track timeline editor before exporting."
         }
       },
       {
@@ -84,7 +84,7 @@ const { title, description } = Astro.props;
         "name": "Is Screenize really free?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, Screenize is completely free and open source under the Apache 2.0 license. There are no subscriptions, no premium tiers, no tracking, and no vendor lock-in. You can use it, modify it, and distribute it freely."
+          "text": "Yes. Apache 2.0 license. No subscriptions, no premium tiers, no tracking, no vendor lock-in. Use it, modify it, distribute it."
         }
       },
       {
@@ -92,7 +92,7 @@ const { title, description } = Astro.props;
         "name": "How is Screenize different from Screen Studio?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Screenize is a free, open-source alternative to Screen Studio. While Screen Studio costs $89+, Screenize offers similar auto-zoom and click effects at no cost. Screenize also gives you a full multi-track timeline editor where every auto-generated keyframe is visible and editable, offering more control over the final result."
+          "text": "Screen Studio costs $89+. Screenize is free and open source with similar auto-zoom and click effects. The bigger difference: Screenize gives you a multi-track timeline editor where every auto-generated keyframe is visible and editable. You get more control over the final result."
         }
       },
       {
@@ -100,7 +100,7 @@ const { title, description } = Astro.props;
         "name": "What macOS version does Screenize require?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Screenize requires macOS 13.0 (Ventura) or later. It is built with native Apple frameworks including ScreenCaptureKit, AVFoundation, and CoreImage."
+          "text": "macOS 13.0 (Ventura) or later. Built with native Apple frameworks: ScreenCaptureKit, AVFoundation, and CoreImage."
         }
       },
       {
@@ -108,7 +108,7 @@ const { title, description } = Astro.props;
         "name": "What export formats does Screenize support?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Screenize supports MP4 (H.264, H.265), MOV (ProRes 422, ProRes 4444), and GIF. You can export up to 4K resolution at up to 240fps, with configurable color spaces including sRGB, Display P3, BT.709, and BT.2020. Export presets let you save your preferred settings."
+          "text": "MP4 (H.264, H.265), MOV (ProRes 422, ProRes 4444), and GIF. Up to 4K at up to 240fps. Color spaces: sRGB, Display P3, BT.709, BT.2020. You can save export presets for repeated use."
         }
       },
       {
@@ -116,7 +116,7 @@ const { title, description } = Astro.props;
         "name": "How does the auto-zoom feature work?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Screenize offers two auto-zoom modes. Continuous Camera follows your cursor in real time using spring physics with dead zones. Segment-based Camera analyzes your recording and plans zoom levels per activity type — typing, clicking, scrolling, dragging, navigating, and idle. Both modes generate editable keyframes on the timeline."
+          "text": "Two modes. Continuous Camera follows your cursor in real time using spring physics with dead zones. Segment-based Camera analyzes your recording and plans zoom levels per activity type (typing, clicking, scrolling, dragging, navigating, idle). Both modes generate editable keyframes on the timeline."
         }
       }
     ]
@@ -129,7 +129,7 @@ const { title, description } = Astro.props;
     "@context": "https://schema.org",
     "@type": "HowTo",
     "name": "How to create polished screen recordings with Screenize",
-    "description": "Record your screen with auto-zoom, click effects, and keystroke overlays using the free Screenize app for macOS.",
+    "description": "Record your screen with auto-zoom, click effects, and keystroke overlays using Screenize for macOS.",
     "step": [
       {
         "@type": "HowToStep",
