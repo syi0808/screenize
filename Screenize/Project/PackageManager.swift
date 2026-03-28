@@ -104,7 +104,7 @@ final class PackageManager {
 
         if fileManager.fileExists(atPath: videoURL.path),
            !fileManager.fileExists(atPath: destVideoURL.path) {
-            try fileManager.moveItem(at: videoURL, to: destVideoURL)
+            try fileManager.copyItem(at: videoURL, to: destVideoURL)
         }
 
         return PackageInfo(
